@@ -40,31 +40,10 @@
 
 char *random_str()
 {
-	size_t len = 17;
+	size_t len = 17; /* sixteen hex digits plus terminating zero */
 	char *dest = mymalloc(len);
 
 	snprintf(dest, len, "%08x%08x", random_int(), random_int());
-
-	return dest;
-}
-
-char *random_plus_addr(const char *addr)
-{
-	size_t len = strlen(addr) + 128;
-	char *dest = mymalloc(len);
-	char *atsign;
-	char *tmpstr;
-
-	tmpstr = mymalloc(len);
-	snprintf(tmpstr, len, "%s", addr);
-
-	atsign = strchr(tmpstr, '@');
-	MY_ASSERT(atsign);
-	*atsign = '=';
-
-	snprintf(dest, len, "%08x%08x-%s", random_int(), random_int(), tmpstr);
-
-	myfree(tmpstr);
 	
 	return dest;
 }

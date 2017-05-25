@@ -413,7 +413,7 @@ void generate_subconfirm(const char *listdir, const char *listaddr,
         do {
                 myfree(confirmfilename);
                 myfree(randomstr);
-		randomstr = random_plus_addr(subaddr);
+		randomstr = random_str();
                 confirmfilename = concatstr(3, listdir, "/subconf/",
 					    randomstr);
 
