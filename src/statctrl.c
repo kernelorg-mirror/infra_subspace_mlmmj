@@ -21,34 +21,25 @@
  * IN THE SOFTWARE.
  */
 
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "strgen.h"
 #include "statctrl.h"
-#include "memory.h"
 #include "log_error.h"
 
 int statctrl(const char *listdir, const char *ctrlstr)
 {
 	char *filename = concatstr(3, listdir, "/control/", ctrlstr);
-	struct stat st;
-	int res;
 	
-	res = stat(filename, &st);
-	myfree(filename);
-	
-	if(res < 0) {
-		if(errno == ENOENT) {
+	if (access(filename, F_OK) == -1) {
+		if(errno == ENOENT)
 			return 0;
-		} else {
-			log_error(LOG_ARGS, "Could not stat %s/control/%s. "
-					    "Bailing out.", listdir, ctrlstr);
-			exit(EXIT_FAILURE);
-		}
+		log_error(LOG_ARGS, "Could not stat %s/control/%s. "
+		    "Bailing out.", listdir, ctrlstr);
+		exit(EXIT_FAILURE);
 	}
 
 	return 1;
