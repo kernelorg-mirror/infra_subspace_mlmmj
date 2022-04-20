@@ -43,7 +43,7 @@
 int log_oper(const char *prefix, const char *basename, const char *fmt, ...)
 {
 	int fd, statres;
-	char ct[26], *logstr, *logfilename, *tmp, log_msg[256];
+	char ct[26], *logfilename, *tmp, log_msg[256];
 	struct stat st;
 	time_t t;
 	va_list ap;
@@ -96,13 +96,11 @@ int log_oper(const char *prefix, const char *basename, const char *fmt, ...)
 
 	va_end(ap);
 
-	logstr = concatstr(4, ct, " ", log_msg, "\n");
-	if(writen(fd, logstr, strlen(logstr)) < 0)
+	if(dprintf(fd, "%s %s\n", ct, log_msg) < 0)
 		log_error(LOG_ARGS, "Could not write to %s", logfilename);
 	
 	close(fd);
 	myfree(logfilename);
-	myfree(logstr);
 	
 	return 0;
 }

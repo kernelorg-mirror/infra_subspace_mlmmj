@@ -801,11 +801,10 @@ int run_digests(const char *listdir, const char *mlmmjsend)
 	char *lasttimestr, *lastindexstr, *lastissuestr;
 	char *digestname, *indexname;
 	char *digestintervalstr, *digestmaxmailsstr;
-	char *s1, *s2, *s3;
+	char *s1, *s2;
 	time_t digestinterval, t, lasttime;
 	long digestmaxmails, lastindex, index, lastissue;
 	int fd, indexfd, lock;
-	size_t lenbuf, lenstr;
 
 	if (statctrl(listdir, "noarchive")) {
 		return 0;
@@ -911,17 +910,10 @@ int run_digests(const char *listdir, const char *mlmmjsend)
 		if (lseek(fd, 0, SEEK_SET) < 0) {
 			log_error(LOG_ARGS, "Could not seek '%s'", digestname);
 		} else {
-			/* index + ':' + time + ':' + issue + '\n' + '\0' */
-			lenbuf = 20 + 1 + 20 + 1 + 20 + 2;
-			s3 = mymalloc(lenbuf);
-			lenstr = snprintf(s3, lenbuf, "%ld:%ld:%ld\n", index, (long)t, lastissue);
-			if (lenstr >= lenbuf)
-				lenstr = lenbuf - 1;
-			if (writen(fd, s3, lenstr) == -1) {
+			if (dprintf(fd, "%ld:%ld:%ld\n", index, (long)t, lastissue) < 0 ) {
 				log_error(LOG_ARGS, "Could not write new '%s'",
 						digestname);
 			}
-			myfree(s3);
 		}
 	}
 

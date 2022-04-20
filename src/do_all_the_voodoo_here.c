@@ -21,6 +21,7 @@
  * IN THE SOFTWARE.
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -75,7 +76,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 		 const struct strlist *delhdrs, struct mailhdr *readhdrs,
 		 struct strlist *allhdrs, const char *prefix)
 {
-	char *hdrline, *unfolded, *subject, *unqp;
+	char *hdrline, *unfolded, *unqp;
 	int hdrsadded = 0;
 	int subject_present = 0;
 
@@ -108,13 +109,11 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 			/* add Subject if none is present
 			   and a prefix is defined */
 			if (prefix && !subject_present) {
-				subject = concatstr(3,"Subject: ",prefix,"\n");
-				writen(outfd, subject, strlen(subject));
-				myfree(subject);
+				dprintf(outfd, "Subject: %s\n", prefix);
 				subject_present = 1;
 			}
 			/* write LF */
-			if(writen(outfd, "\n", 1) < 0) {
+			if(dprintf(outfd, "\n") < 0) {
 				myfree(hdrline);
 				myfree(unfolded);
 				log_error(LOG_ARGS, "Error writing hdrs.");
@@ -142,12 +141,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 				unqp = cleanquotedp(hdrline + 8);
 				if(strstr(hdrline + 8, prefix) == NULL &&
 				   strstr(unqp, prefix) == NULL) {
-					subject = concatstr(4,
-							"Subject: ", prefix,
-							hdrline + 8, "\n");
-					writen(outfd, subject,
-							strlen(subject));
-					myfree(subject);
+					dprintf(outfd, "Subject: %s%s\n", prefix, hdrline + 8);
 					myfree(hdrline);
 					myfree(unqp);
 					continue;
@@ -158,7 +152,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 
 		/* Should it be stripped? */
 		if(!delhdrs || !findit(hdrline, delhdrs))
-			writen(outfd, unfolded, strlen(unfolded));
+			dprintf(outfd, "%s", unfolded);
 
 		myfree(hdrline);
 		myfree(unfolded);

@@ -74,9 +74,8 @@ int incindexfile(const char *listdir)
 	}
 	index = atol(intbuf);
 	index++;
-	snprintf(intbuf, sizeof(intbuf), "%ld", index);
 	lseek(fd, 0, SEEK_SET);
-	writen(fd, intbuf, strlen(intbuf));
+	dprintf(fd, "%ld", index);
 
 	close(fd); /* Lock is also released */
 	myfree(indexfilename);

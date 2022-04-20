@@ -328,20 +328,20 @@ int send_mail(int sockfd, const char *from, const char *to,
 		tohdr = NULL;
 
 	if(prepmailinmem) {
-		retval = writen(sockfd, hdrs, hdrslen);
+		retval = dprintf(sockfd, "%s", hdrs);
 		if(retval < 0) {
 			log_error(LOG_ARGS, "Could not write mailheaders.\n");
 			return retval;
 		}
 		if(tohdr) {
-			retval = writen(sockfd, tohdr, strlen(tohdr));
+			retval = dprintf(sockfd, "%s", tohdr);
 			if(retval < 0) {
 				log_error(LOG_ARGS, "Could not write To:.\n");
 				return retval;
 			}
 			myfree(tohdr);
 		}
-		retval = writen(sockfd, body, bodylen);
+		retval = dprintf(sockfd, "%s", body);
 		if(retval < 0) {
 			log_error(LOG_ARGS, "Could not write mailbody.\n");
 			return retval;
@@ -591,12 +591,12 @@ int send_mail_verp(int sockfd, struct strlist *addrs, char *mailmap,
 	}
 
 	if(prepmailinmem) {
-		retval = writen(sockfd, hdrs, hdrslen);
+		retval = dprintf(sockfd, "%s", hdrs);
 		if(retval < 0) {
 			log_error(LOG_ARGS, "Could not write mailheaders.\n");
 			return retval;
 		}
-		retval = writen(sockfd, body, bodylen);
+		retval = dprintf(sockfd, "%s", body);
 		if(retval < 0) {
 			log_error(LOG_ARGS, "Could not write mailbody.\n");
 			return retval;
@@ -678,7 +678,7 @@ int requeuemail(const char *listdir, const char *index, struct strlist *addrs,
 		int addrcount)
 {
 	int addrfd, i;
-	char *dirname, *addrfilename, *addr;
+	char *dirname, *addrfilename;
 	
 	dirname = concatstr(3, listdir, "/requeue/", index);
 	if(mkdir(dirname, 0750) < 0 && errno != EEXIST) {
@@ -703,21 +703,17 @@ int requeuemail(const char *listdir, const char *index, struct strlist *addrs,
 		 * ones will be tried first when mlmmj-maintd sends out mails
 		 * that have been requeued. addrcount was so far we were */
 		for(i = addrcount + 1; i < addrs->count; i++) {
-			addr = concatstr(2, addrs->strs[i], "\n");
-			if(writen(addrfd, addr, strlen(addr)) < 0) {
+			if(dprintf(addrfd, "%s\n", addrs->strs[i]) < 0) {
 				log_error(LOG_ARGS, "Could not add [%s] "
-						    "to requeue file", addr);
+						    "to requeue file", addrs->strs[i]);
 				return -1;
 			}
-			myfree(addr);
 		}
-		addr = concatstr(2, addrs->strs[addrcount], "\n");
-		if(writen(addrfd, addr, strlen(addr)) < 0) {
+		if(dprintf(addrfd, "%s\n", addrs->strs[addrcount]) < 0) {
 			log_error(LOG_ARGS, "Could not add [%s] to requeue "
-					"file", addr);
+					"file", addrs->strs[addrcount]);
 			return -1;
 		}
-		myfree(addr);
 	}
 	myfree(addrfilename);
 	close(addrfd);
@@ -1109,7 +1105,7 @@ int main(int argc, char **argv)
 						S_IRUSR|S_IWUSR);
 			myfree(tmpstr);
 			if(tmpfd >= 0) {
-				writen(tmpfd, bounceaddr, strlen(bounceaddr));
+				dprintf(tmpfd, "%s", bounceaddr);
 				fsync(tmpfd);
 			}
 			close(tmpfd);
@@ -1122,7 +1118,7 @@ int main(int argc, char **argv)
 						S_IRUSR|S_IWUSR);
 			myfree(tmpstr);
 			if(tmpfd >= 0) {
-				writen(tmpfd, to_addr, strlen(to_addr));
+				dprintf(tmpfd, "%s", to_addr);
 				fsync(tmpfd);
 			}
 			close(tmpfd);
@@ -1137,8 +1133,7 @@ int main(int argc, char **argv)
 							S_IRUSR|S_IWUSR);
 				myfree(tmpstr);
 				if(tmpfd >= 0) {
-					writen(tmpfd, replyto,
-						strlen(replyto));
+					dprintf(tmpfd, "%s", replyto);
 					fsync(tmpfd);
 				}
 				close(tmpfd);

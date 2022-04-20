@@ -143,10 +143,10 @@ static void print_subs(int fd, subs_list_state *s)
 	const char *sub;
 	rewind_subs_list(s);
 	while ((sub = get_sub(s)) != NULL) {
-		if (writen(fd, sub, strlen(sub)) < 0) {
+		if (dprintf(fd, "%s", sub) < 0) {
 			log_error(LOG_ARGS, "error writing subs list");
 		}
-		writen(fd, "\n", 1);
+		dprintf(fd, "\n");
 	}
 }
 
@@ -202,11 +202,11 @@ void send_list(const char *listdir, const char *emailaddr,
 			exit(EXIT_FAILURE);
 		}
 		print_subs(fd, normalsls);
-		writen(fd, "\n-- \n", 5);
+		dprintf(fd, "\n-- \n");
 		print_subs(fd, nomailsls);
-		writen(fd, "\n-- \n", 5);
+		dprintf(fd, "\n-- \n");
 		print_subs(fd, digestsls);
-		writen(fd, "\n-- \nend of output\n", 19);
+		dprintf(fd, "\n-- \nend of output\n");
 		close(fd);
 	}
 

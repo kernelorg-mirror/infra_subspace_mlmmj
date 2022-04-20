@@ -41,80 +41,44 @@
 #define EXTRA_EHLO_LEN 7
 int write_ehlo(int sockfd, const char *hostname)
 {
-	size_t len = (size_t)(strlen(hostname) + EXTRA_EHLO_LEN + 1);
-	char *ehlo;
 	size_t bytes_written;
 	
-	if((ehlo = mymalloc(len)) == 0)
-		return errno;
-	snprintf(ehlo, len, "EHLO %s\r\n", hostname);
-	len = strlen(ehlo);
-#if 0
-	fprintf(stderr, "\nwrite_ehlo, ehlo = [%s]\n", ehlo);
-#endif
-	bytes_written = writen(sockfd, ehlo, len);
+	bytes_written = dprintf(sockfd, "EHLO %s\r\n", hostname);
 	if(bytes_written < 0) {
 		log_error(LOG_ARGS, "Could not write EHLO");
-		myfree(ehlo);
 		return errno;
 	}
-	myfree(ehlo);
 	return 0;
 }
 /* "HELO \r\n" has length 7 */
 #define EXTRA_HELO_LEN 7
 int write_helo(int sockfd, const char *hostname)
 {
-	size_t len = (size_t)(strlen(hostname) + EXTRA_HELO_LEN + 1);
-	char *helo;
 	size_t bytes_written;
 	
-	if((helo = mymalloc(len)) == 0)
-		return errno;
-	snprintf(helo, len, "HELO %s\r\n", hostname);
-	len = strlen(helo);
-#if 0
-	fprintf(stderr, "\nwrite_helo, helo = [%s]\n", helo);
-#endif
-	bytes_written = writen(sockfd, helo, len);
+	bytes_written = dprintf(sockfd, "HELO %s\r\n", hostname);
 	if(bytes_written < 0) {
 		log_error(LOG_ARGS, "Could not write HELO");
-		myfree(helo);
 		return errno;
 	}
-	myfree(helo);
 	return 0;
 }
 /* "MAIL FROM:<> \r\n" has length 15 */
 #define EXTRA_FROM_LEN 15
 int write_mail_from(int sockfd, const char *from_addr, const char *extra)
 {
-	size_t len = (size_t)(strlen(from_addr) + EXTRA_FROM_LEN +
-			strlen(extra) + 1);
-	char *mail_from;
 	size_t bytes_written;
-
-	mail_from = mymalloc(len);
 
 	if(extra && extra[0] != '\0') {
 		if(extra[0] == ' ') extra++;
-		snprintf(mail_from, len, "MAIL FROM:<%s> %s\r\n", from_addr,
+		bytes_written = dprintf(sockfd, "MAIL FROM:<%s> %s\r\n", from_addr,
 				extra);
 	} else
-		snprintf(mail_from, len, "MAIL FROM:<%s>\r\n", from_addr);
-
-	len = strlen(mail_from);
-
-#if 0
-	fprintf(stderr, "%s", mail_from);
-#endif
-	bytes_written = writen(sockfd, mail_from, len);
+		bytes_written = dprintf(sockfd, "MAIL FROM:<%s>\r\n", from_addr);
 	if(bytes_written < 0) {
 		log_error(LOG_ARGS, "Could not write FROM");
-		myfree(mail_from);
 		return errno;
 	}
-	myfree(mail_from);
 	return 0;
 }
 
@@ -122,25 +86,13 @@ int write_mail_from(int sockfd, const char *from_addr, const char *extra)
 #define EXTRA_RCPT_LEN 12
 int write_rcpt_to(int sockfd, const char *rcpt_addr)
 {
-	size_t len = (size_t)(strlen(rcpt_addr) + EXTRA_RCPT_LEN + 1);
-	char *rcpt_to;
 	size_t bytes_written;
 	
-	if((rcpt_to = mymalloc(len)) == 0)
-		return errno;
-
-	snprintf(rcpt_to, len, "RCPT TO:<%s>\r\n", rcpt_addr);
-	len = strlen(rcpt_to);
-#if 0
-	log_error(LOG_ARGS, "%s", rcpt_to);
-#endif
-	bytes_written = writen(sockfd, rcpt_to, len);
+	bytes_written = dprintf(sockfd, "RCPT TO:<%s>\r\n", rcpt_addr);
 	if(bytes_written < 0) {
 		log_error(LOG_ARGS, "Could not write TO");
-		myfree(rcpt_to);
 		return errno;
 	}
-	myfree(rcpt_to);
 	return 0;
 }
 
@@ -150,7 +102,6 @@ int write_mailbody_from_map(int sockfd, char *mapstart, size_t size,
 {
 	char *cur, *next;
 	char newlinebuf[3];
-	size_t len;
 	int i = 1;
 
 	for(next = cur = mapstart; next < mapstart + size; next++) {
@@ -161,17 +112,15 @@ int write_mailbody_from_map(int sockfd, char *mapstart, size_t size,
 			}
 			newlinebuf[0] = '\r';
 			newlinebuf[1] = '\n';
-			len = 2;
 			if(next < (mapstart + size - 1) && *(next+1) == '.') {
 				newlinebuf[2] = '.';
-				len = 3;
 			}
-			if(writen(sockfd, newlinebuf, len) < 0) {
+			if(dprintf(sockfd, "%s", newlinebuf) < 0) {
 				log_error(LOG_ARGS, "Could not write mail");
 				return -1;
 			}
 			if(i && tohdr && *(next+1) == '\n') { /* add To: header */
-				if(writen(sockfd, tohdr, strlen(tohdr)) < 0) {
+				if(dprintf(sockfd, "%s", tohdr) < 0) {
 					log_error(LOG_ARGS, "Could not write"
 							    " To: header");
 					return -1;
@@ -268,7 +217,7 @@ int write_dot(int sockfd)
 {
 	size_t bytes_written;
 
-	bytes_written = writen(sockfd, "\r\n.\r\n", 5);	
+	bytes_written = dprintf(sockfd, "\r\n.\r\n");	
 	if(bytes_written < 0)
 		return errno;
 
@@ -279,26 +228,13 @@ int write_dot(int sockfd)
 #define EXTRA_CUSTOM_LEN 2
 int write_custom_line(int sockfd, const char *line)
 {
-	size_t len = strlen(line) + EXTRA_CUSTOM_LEN + 1;
 	size_t bytes_written;
-	char *customline;
 	
-	if((customline = mymalloc(len)) == 0)
-		return errno;
-	
-	snprintf(customline, len, "%s\r\n", line);
-	len = strlen(customline);
-#if 0
-	fprintf(stderr, "write_custom_line = [%s]\n", customline);
-	fprintf(stderr, "strlen(customline) = [%d]\n", strlen(customline));
-#endif
-	bytes_written = writen(sockfd, customline, len);
+	bytes_written = dprintf(sockfd, "%s\r\n", line);
 	if(bytes_written < 0) {
 		log_error(LOG_ARGS, "Could not write customline");
-		myfree(customline);
 		return errno;
 	}
-	myfree(customline);
 	return 0;
 }
 
@@ -306,26 +242,13 @@ int write_custom_line(int sockfd, const char *line)
 #define EXTRA_REPLYTO_LEN 12
 int write_replyto(int sockfd, const char *replyaddr)
 {
-	size_t len = (size_t)(strlen(replyaddr) + EXTRA_REPLYTO_LEN + 1);
-	char *replyto;
 	size_t bytes_written;
 	
-	if((replyto = mymalloc(len)) == 0)
-		return errno;
-
-	snprintf(replyto, len, "Reply-To: %s\r\n", replyaddr);
-	len = strlen(replyto);
-
-#if 0
-	fprintf(stderr, "\nwrite_replyto, replyto = [%s]\n", replyto);
-#endif
-	bytes_written = writen(sockfd, replyto, len);
+	bytes_written = dprintf(sockfd, "Reply-To: %s\r\n", replyaddr);
 	if(bytes_written < 0) {
 		log_error(LOG_ARGS, "Could not write Reply-To header");
-		myfree(replyto);
 		return errno;
 	}
-	myfree(replyto);
 	return 0;
 }
 

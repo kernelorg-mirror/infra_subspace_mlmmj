@@ -99,7 +99,7 @@ static void moderate_sub(const char *listdir, const char *listaddr,
 		break;
 	}
 
-	if(writen(fd, str, strlen(str)) < 0) {
+	if(dprintf(fd, "%s", str) < 0) {
 		log_error(LOG_ARGS, "could not write to %s"
 				"ignoring request: %s", str);
 		exit(EXIT_FAILURE);
@@ -432,7 +432,7 @@ void generate_subconfirm(const char *listdir, const char *listaddr,
 
 	myfree(confirmfilename);
 
-	if(writen(subconffd, subaddr, strlen(subaddr)) < 0) {
+	if(dprintf(subconffd, "%s", subaddr) < 0) {
 		log_error(LOG_ARGS, "Could not write to subconffd");
 		myfree(confirmfilename);
                 myfree(randomstr);

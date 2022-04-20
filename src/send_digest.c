@@ -369,21 +369,18 @@ fallback_subject:
 		myfree(tmp);
 	}
 
-	tmp = concatstr(10, "From: ", listname, listdelim, "help@", listfqdn,
-			   "\nMIME-Version: 1.0"
-			   "\nContent-Type: multipart/" DIGESTMIMETYPE "; "
-			   "boundary=", boundary,
-			   "\nSubject: ", subject,
-			   "\n");
-
-	myfree(listfqdn);
-	myfree(subject);
-
-	if (writen(fd, tmp, strlen(tmp)) < 0) {
-		myfree(tmp);
+	if (dprintf(fd, "From: %s%shelp@%s"
+	    "\nMIME-Version: 1.0"
+	    "\nContent-Type: multipart/" DIGESTMIMETYPE "; "
+	    "boundary=%s"
+	    "\nSubject: %s\n",
+	    listname, listdelim, listfqdn, boundary, subject) < 0) {
+		myfree(listfqdn);
+		myfree(subject);
 		goto errdighdrs;
 	}
-	myfree(tmp);
+	myfree(listfqdn);
+	myfree(subject);
 
 	if(hdrfd >= 0 && dumpfd2fd(hdrfd, fd) < 0) {
 		goto errdighdrs;
@@ -392,7 +389,7 @@ fallback_subject:
 	close(hdrfd);
 	hdrfd = -1;
 
-	if (writen(fd, "\n", 1) < 0) {
+	if (dprintf(fd, "\n") < 0) {
 errdighdrs:
 		log_error(LOG_ARGS, "Could not write digest headers to '%s'",
 				queuename);
@@ -415,17 +412,15 @@ errdighdrs:
 
 	if ((txt != NULL) && !statctrl(listdir, "nodigesttext")) {
 
-		tmp = concatstr(3, "\n--", boundary,
-				"\nContent-Type: text/plain; charset=UTF-8"
-				"\nContent-Transfer-Encoding: 8bit"
-				"\n\n");
-		if (writen(fd, tmp, strlen(tmp)) == -1) {
+		if (dprintf(fd, "\n--%s"
+		    "\nContent-Type: text/plain; charset=UTF-8"
+		    "\nContent-Transfer-Encoding: 8bit"
+		    "\n\n", boundary) < 0) {
 			log_error(LOG_ARGS, "Could not write digest text/plain"
 					" part headers to '%s'", queuename);
 			close(fd);
 			unlink(queuename);
 			myfree(boundary);
-			myfree(tmp);
 			myfree(queuename);
 			myfree(listaddr);
 			myfree(listname);
@@ -436,15 +431,12 @@ errdighdrs:
 			}
 			return -1;
 		}
-		myfree(tmp);
 
 		for (;;) {
 			line = get_processed_text_line(txt, 0, listaddr, listdelim,
 					listdir);
 			if (line == NULL) break;
-			len = strlen(line);
-			line[len] = '\n';
-			if(writen(fd, line, len+1) < 0) {
+			if(dprintf(fd, "%s\n", line) < 0) {
 				myfree(line);
 				log_error(LOG_ARGS, "Could not write"
 						" std mail");
@@ -474,12 +466,10 @@ errdighdrs:
 		if (archivefd < 0)
 			continue;
 		
-		tmp = concatstr(7, "\n--", boundary,
-				"\nContent-Type: message/rfc822"
-				"\nContent-Disposition: inline; filename=\"",
-					listname, "_", buf, ".eml\""
-				"\n\n");
-		if (writen(fd, tmp, strlen(tmp)) == -1) {
+		if (dprintf(fd, "\n--%s"
+		    "\nContent-Type: message/rfc822"
+		    "\nContent-Disposition: inline; filename=\"%s_%s.eml\"\n\n",
+		    boundary, listname, buf) < 0) {
 			log_error(LOG_ARGS, "Could not write digest part "
 					"headers for archive index %d to "
 					"'%s'", i, queuename);
@@ -492,7 +482,6 @@ errdighdrs:
 			myfree(listname);
 			return -1;
 		}
-		myfree(tmp);
 
 		if (dumpfd2fd(archivefd, fd) < 0) {
 			log_error(LOG_ARGS, "Could not write digest part %d "
@@ -510,8 +499,7 @@ errdighdrs:
 		close(archivefd);
 	}
 
-	tmp = concatstr(3, "\n--", boundary, "--\n");
-	if (writen(fd, tmp, strlen(tmp)) == -1) {
+	if (dprintf(fd, "\n--%s--\n", boundary) < 0) {
 		log_error(LOG_ARGS, "Could not write digest end to '%s'",
 				queuename);
 		close(fd);
@@ -525,7 +513,6 @@ errdighdrs:
 	close(fd);
 	myfree(boundary);
 	myfree(listname);
-	myfree(tmp);
 
 	childpid = fork();
 

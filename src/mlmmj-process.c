@@ -1163,7 +1163,7 @@ int main(int argc, char **argv)
 				exit(EXIT_FAILURE);
 			}
 			myfree(omitfilename);
-			if(writen(omitfd, posteraddr, strlen(posteraddr)) < 0) {
+			if(dprintf(omitfd, "%s", posteraddr) < 0) {
 				log_error(LOG_ARGS,
 						"could not write omit file");
 				myfree(mqueuename);

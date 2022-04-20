@@ -211,7 +211,7 @@ static int read_hdrs(int fd, struct strlist *allhdrs,struct strlist* delmime,str
 static int write_hdrs(int outfd,struct strlist* hdrs,off_t* unwantedmime_hdrpos) {
 	int i;
 	for(i = 0; i < hdrs->count ; i++) {
-		if(writen(outfd, hdrs->strs[i], strlen(hdrs->strs[i])) < 0){
+		if(dprintf(outfd, "%s", hdrs->strs[i]) < 0){
 			log_error(LOG_ARGS, "Error when dumping headers");
 			return -1;
 		}
@@ -220,7 +220,7 @@ static int write_hdrs(int outfd,struct strlist* hdrs,off_t* unwantedmime_hdrpos)
 	/* if this is not the header of an embedded part add the header that will
 	   indicate if the mail contains unwanted mime parts */
 	if(unwantedmime_hdrpos) {
-		if(writen(outfd, UNWANTED_MIME_HDR,strlen(UNWANTED_MIME_HDR)) < 0){
+		if(dprintf(outfd, "%s", UNWANTED_MIME_HDR) < 0){
 			log_error(LOG_ARGS, "Error writting unwanted mime header");
 			return -1;
 		}
@@ -234,7 +234,7 @@ static int write_hdrs(int outfd,struct strlist* hdrs,off_t* unwantedmime_hdrpos)
 	}
 
 	/* write a single line feed to terminate the header part */
-	if(writen(outfd, "\n", 1) < 0) {
+	if(dprintf(outfd, "\n") < 0) {
 		log_error(LOG_ARGS,"Error writting end of hdrs.");
 		return -1;
 	}
@@ -250,7 +250,7 @@ static int update_unwantedmime_hdr(int outfd,off_t unwantedmime_hdrpos) {
 	}
 
 	/* update the header */
-	if(writen(outfd, "Y\n",2) < 0){
+	if(dprintf(outfd, "Y\n") < 0){
 		log_error(LOG_ARGS, "Error writting extra header");
 		return -1;
 	}
@@ -279,7 +279,7 @@ static int parse_body(int infd,int outfd, struct strlist* delmime, struct strlis
 					strip = 1;
 				else {
 					/* write boundary */
-					if(writen(outfd, line, strlen(line)) < 0){
+					if(dprintf(outfd, "%s", line) < 0){
 						log_error(LOG_ARGS, "Error writting boundary");
 						return -1;
 					}
@@ -299,7 +299,7 @@ static int parse_body(int infd,int outfd, struct strlist* delmime, struct strlis
 					myfree(new_boundary);
 			}else{
 				/* write end of part */
-				if(writen(outfd, line, strlen(line)) < 0){
+				if(dprintf(outfd, "%s", line) < 0){
 					log_error(LOG_ARGS, "Error writting hdrs");
 					return -1;
 				}
@@ -309,7 +309,7 @@ static int parse_body(int infd,int outfd, struct strlist* delmime, struct strlis
 			}
 		}else {
 			if(!strip) { /* write the current line */
-				if(writen(outfd, line, strlen(line)) < 0){
+				if(dprintf(outfd, "%s", line) < 0){
 					log_error(LOG_ARGS, "Error when dumping line");
 					return -1;
 				}

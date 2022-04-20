@@ -1663,9 +1663,7 @@ char *prepstdreply(text *txt, const char *listdir,
 		if (*line == ' ' || *line == '\t') {
 			/* line beginning with linear whitespace is a
 			   continuation of previous header line */
-			len = strlen(line);
-			line[len] = '\n';
-			if(writen(outfd, line, len+1) < 0) {
+			if(dprintf(outfd, "%s\n", line) < 0) {
 				log_error(LOG_ARGS, "Could not write std mail");
 				myfree(line);
 				myfree(retstr);
@@ -1703,9 +1701,7 @@ char *prepstdreply(text *txt, const char *listdir,
 				line = concatstr(2, "Subject: ", tmp);
 				myfree(tmp);
 			}
-			len = strlen(line);
-			line[len] = '\n';
-			if(writen(outfd, line, len+1) < 0) {
+			if(dprintf(outfd, "%s\n", line) < 0) {
 				log_error(LOG_ARGS, "Could not write std mail");
 				myfree(line);
 				myfree(retstr);
@@ -1718,9 +1714,7 @@ char *prepstdreply(text *txt, const char *listdir,
 	}
 
 	for (i=0; headers[i] != NULL; i++) {
-		len = strlen(headers[i]);
-		headers[i][len] = '\n';
-		if(writen(outfd, headers[i], len+1) < 0) {
+		if(dprintf(outfd, "%s\n", headers[i]) < 0) {
 			log_error(LOG_ARGS, "Could not write std mail");
 			if (line)
 				myfree(line);
@@ -1731,7 +1725,7 @@ char *prepstdreply(text *txt, const char *listdir,
 	}
 
 	/* end the headers */
-	if(writen(outfd, "\n", 1) < 0) {
+	if(dprintf(outfd, "\n") < 0) {
 		log_error(LOG_ARGS, "Could not write std mail");
 		if (line)
 			myfree(line);
@@ -1745,9 +1739,7 @@ char *prepstdreply(text *txt, const char *listdir,
 				listdir);
 	}
 	while(line) {
-			len = strlen(line);
-			line[len] = '\n';
-			if(writen(outfd, line, len+1) < 0) {
+			if(dprintf(outfd, "%s\n", line) < 0) {
 				myfree(str);
 				log_error(LOG_ARGS, "Could not write std mail");
 				myfree(retstr);

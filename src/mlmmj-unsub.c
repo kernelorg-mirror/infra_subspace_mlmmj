@@ -189,7 +189,7 @@ void generate_unsubconfirm(const char *listdir, const char *listaddr,
 
 	myfree(confirmfilename);
 
-	if(writen(subconffd, subaddr, strlen(subaddr)) < 0) {
+	if(dprintf(subconffd, "%s", subaddr) < 0) {
 		log_error(LOG_ARGS, "Could not write unsubconffile");
                 myfree(randomstr);
 		myfree(confirmfilename);

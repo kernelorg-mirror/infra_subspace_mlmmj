@@ -106,7 +106,7 @@ void do_probe(const char *listdir, const char *mlmmjsend, const char *addr)
 	if(fd < 0)
 		log_error(LOG_ARGS, "Could not open %s", probefile);
 	else
-		if(writen(fd, a, strlen(a)) < 0)
+		if(dprintf(fd, "%s", a) < 0)
 			log_error(LOG_ARGS, "Could not write time in probe");
 
 	myfree(probefile);
@@ -381,7 +381,7 @@ int main(int argc, char **argv)
 	t = time(NULL);
 	snprintf(buf, len-26, "%s:%ld # ", number, (long int)t);
 	ctime_r(&t, buf+strlen(buf));
-	writen(fd, buf, strlen(buf));
+	dprintf(fd, "%s", buf);
 	close(fd);
 
 	if(mailname) {
