@@ -100,7 +100,7 @@ int dumpcount(const char *filename, int *count)
 
 int main(int argc, char **argv)
 {
-	int opt, ret, count = 0, docount = 0;
+	int opt, count = 0, docount = 0;
 	char *listdir = NULL, *fileiter = NULL, *tmp;
 	char *subddir, *subdir, *subfile = NULL;
 	DIR *dirp;
@@ -183,7 +183,7 @@ int main(int argc, char **argv)
 			if(docount)
 				dumpcount(fileiter, &count);
 			else
-				ret = dumpcount(fileiter, NULL);
+				dumpcount(fileiter, NULL);
 
 			free(fileiter);
 		}
