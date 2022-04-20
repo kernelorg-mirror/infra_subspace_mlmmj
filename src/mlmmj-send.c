@@ -1101,12 +1101,11 @@ int main(int argc, char **argv)
 				myfree(tmpstr);
 				break;
 			}
-			tmpfd = open(tmpstr, O_WRONLY|O_CREAT|O_TRUNC,
+			tmpfd = open(tmpstr, O_WRONLY|O_CREAT|O_TRUNC|O_SYNC,
 						S_IRUSR|S_IWUSR);
 			myfree(tmpstr);
 			if(tmpfd >= 0) {
 				dprintf(tmpfd, "%s", bounceaddr);
-				fsync(tmpfd);
 			}
 			close(tmpfd);
 			tmpstr = concatstr(2, mailfilename, ".reciptto");
@@ -1114,12 +1113,11 @@ int main(int argc, char **argv)
 				myfree(tmpstr);
 				break;
 			}
-			tmpfd = open(tmpstr, O_WRONLY|O_CREAT|O_TRUNC,
+			tmpfd = open(tmpstr, O_WRONLY|O_CREAT|O_TRUNC|O_SYNC,
 						S_IRUSR|S_IWUSR);
 			myfree(tmpstr);
 			if(tmpfd >= 0) {
 				dprintf(tmpfd, "%s", to_addr);
-				fsync(tmpfd);
 			}
 			close(tmpfd);
 			if(replyto) {
@@ -1129,12 +1127,11 @@ int main(int argc, char **argv)
 					myfree(tmpstr);
 					break;
 				}
-				tmpfd = open(tmpstr, O_WRONLY|O_CREAT|O_TRUNC,
+				tmpfd = open(tmpstr, O_WRONLY|O_CREAT|O_TRUNC|O_SYNC,
 							S_IRUSR|S_IWUSR);
 				myfree(tmpstr);
 				if(tmpfd >= 0) {
 					dprintf(tmpfd, "%s", replyto);
-					fsync(tmpfd);
 				}
 				close(tmpfd);
 			}
