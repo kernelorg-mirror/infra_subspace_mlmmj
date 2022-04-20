@@ -566,7 +566,6 @@ static void subscribe_type(char *listdir, char *listaddr, char *listdelim,
 	char *subddirname = NULL, *sublockname;
 	int groupwritable = 0, sublock, sublockfd, lock, subfilefd;
 	struct stat st;
-	size_t len;
 
 	switch(typesub) {
 		default:
@@ -630,10 +629,7 @@ static void subscribe_type(char *listdir, char *listaddr, char *listdelim,
 		exit(EXIT_FAILURE);
 	}
 
-	len = strlen(address);
-	address[len] = '\n';
-	writen(subfilefd, address, len + 1);
-	address[len] = 0;
+	dprintf(subfilefd, "%s\n", address);
 	close(subfilefd);
 	close(sublockfd);
 	unlink(sublockname);
