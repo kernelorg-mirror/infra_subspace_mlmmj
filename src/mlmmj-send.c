@@ -46,7 +46,6 @@
 #include "mlmmj.h"
 #include "mlmmj-send.h"
 #include "mail-functions.h"
-#include "itoa.h"
 #include "incindexfile.h"
 #include "chomp.h"
 #include "checkwait_smtpreply.h"
@@ -1077,7 +1076,7 @@ int main(int argc, char **argv)
 			 mindex);
 	}
 
-	itoa(mindex, strindex);
+	snprintf(strindex, sizeof(strindex), "%d", mindex);
 
 	if(!relayhost)
 		relayhost = ctrlvalue(listdir, "relayhost");

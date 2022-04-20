@@ -33,7 +33,6 @@
 #include "wrappers.h"
 #include "mylocking.h"
 #include "incindexfile.h"
-#include "itoa.h"
 #include "log_error.h"
 #include "strgen.h"
 #include "memory.h"
@@ -75,7 +74,7 @@ int incindexfile(const char *listdir)
 	}
 	index = atol(intbuf);
 	index++;
-	itoa(index, intbuf);
+	snprintf(intbuf, sizeof(intbuf), "%ld", index);
 	lseek(fd, 0, SEEK_SET);
 	writen(fd, intbuf, strlen(intbuf));
 

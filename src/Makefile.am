@@ -11,7 +11,7 @@ bin_SCRIPTS = mlmmj-make-ml
 
 EXTRA_DIST = mlmmj-make-ml
 
-mlmmj_send_SOURCES = mlmmj-send.c writen.c mail-functions.c itoa.c chomp.c \
+mlmmj_send_SOURCES = mlmmj-send.c writen.c mail-functions.c chomp.c \
                      incindexfile.c checkwait_smtpreply.c getlistaddr.c \
 		     mylocking.c init_sockfd.c strgen.c random-int.c \
 		     print-version.c log_error.c mygetline.c memory.c \
@@ -23,7 +23,7 @@ mlmmj_receive_SOURCES = mlmmj-receive.c writen.c random-int.c strgen.c \
 			log_oper.c mylocking.c readn.c
 
 mlmmj_process_SOURCES = mlmmj-process.c writen.c find_email_adr.c \
-			incindexfile.c itoa.c getlistaddr.c chomp.c \
+			incindexfile.c getlistaddr.c chomp.c \
 			mylocking.c listcontrol.c random-int.c strgen.c \
 			print-version.c send_help.c prepstdreply.c \
 			do_all_the_voodoo_here.c mygetline.c gethdrline.c \
