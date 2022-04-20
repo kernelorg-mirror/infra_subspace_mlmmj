@@ -29,14 +29,14 @@
 #include <stdio.h>
 
 #include "mygetline.h"
-#include "memory.h"
+#include "xmalloc.h"
 
 static char *mygetuntil(int fd, int eof)
 {
 	size_t i = 0, res, buf_size = BUFSIZE;  /* initial buffer size */
 	char *buf, ch;
 
-	buf = mymalloc(buf_size);
+	buf = xmalloc(buf_size);
 	buf[0] = '\0';
 	while(1) {	
 		res = read(fd, &ch, 1);
@@ -44,7 +44,7 @@ static char *mygetuntil(int fd, int eof)
 			if(errno == EINTR)
 				continue;
 			else {
-				myfree(buf);
+				free(buf);
 				return NULL;
 			}
 		}
@@ -53,14 +53,14 @@ static char *mygetuntil(int fd, int eof)
 				buf[i] = '\0';
 				return buf;
 			} else {
-				myfree(buf);
+				free(buf);
 				return NULL;
 			}
 		}
 
 		if(i == buf_size - 1) {
 			buf_size *= 2;
-			buf = myrealloc(buf, buf_size);
+			buf = xrealloc(buf, buf_size);
 		}
 		buf[i++] = ch;
 		if(eof != EOF && ch == eof) {

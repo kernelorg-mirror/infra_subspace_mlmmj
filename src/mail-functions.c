@@ -32,10 +32,10 @@
 #include <string.h>
 #include <fcntl.h>
 
+#include "xmalloc.h"
 #include "mail-functions.h"
 #include "wrappers.h"
 #include "log_error.h"
-#include "memory.h"
 
 /* "EHLO \r\n" has length 7 */
 #define EXTRA_EHLO_LEN 7
@@ -150,7 +150,7 @@ char *get_preppedhdrs_from_map(char *mapstart, size_t *hlen)
 		if(*next == '\n')
 			n++;
 
-	retstr = mymalloc(hdrlen + n);
+	retstr = xmalloc(hdrlen + n);
 	*hlen = hdrlen + n;	
 	r = retstr;	
 
@@ -189,7 +189,7 @@ char *get_prepped_mailbody_from_map(char *mapstart, size_t size, size_t *blen)
 		}
 	}
 
-	retstr = mymalloc(bodylen + n);
+	retstr = xmalloc(bodylen + n);
 	*blen = bodylen + n;
 	r = retstr;	
 	

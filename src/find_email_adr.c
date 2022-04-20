@@ -44,7 +44,7 @@
 #include <stdlib.h>
 
 #include "find_email_adr.h"
-#include "memory.h"
+#include "xmalloc.h"
 
 /*
  * Start of a "comment".
@@ -85,7 +85,7 @@ static char *skin(char *name)
 		return (NULL);
 
 	/* We assume that length(input) <= length(output) */
-	nbuf = mymalloc(strlen(name) + 1);
+	nbuf = xmalloc(strlen(name) + 1);
 
 	if (strchr(name, '(') == NULL && strchr(name, '<') == NULL
 	    && strchr(name, ' ') == NULL) {
@@ -176,7 +176,7 @@ static char *skin(char *name)
 	}
 	*cp2 = '\0';
 
-	nbuf = (char *)myrealloc(nbuf, strlen(nbuf) + 1);
+	nbuf = (char *)xrealloc(nbuf, strlen(nbuf) + 1);
 	return (nbuf);
 }
 
@@ -188,7 +188,7 @@ struct email_container *find_email_adr(const char *str,
 	char *p;
 	char *s;
 
-	s = (char *)mymalloc(strlen(str) + 1);
+	s = (char *)xmalloc(strlen(str) + 1);
 	strcpy(s, str);
 
 	p = s;
@@ -236,13 +236,13 @@ oncemore:
 		adr = skin(cur);
 		if (adr) {
 			retstruct->emailcount++;
-			retstruct->emaillist = (char **)myrealloc(retstruct->emaillist,
+			retstruct->emaillist = (char **)xrealloc(retstruct->emaillist,
 					  sizeof(char *) * retstruct->emailcount);
 			retstruct->emaillist[retstruct->emailcount-1] = adr;
 		}
 	}
 
-	myfree(s);
+	free(s);
 
 	return retstruct;
 }

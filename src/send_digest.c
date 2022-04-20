@@ -35,7 +35,7 @@
 #include "send_digest.h"
 #include "log_error.h"
 #include "strgen.h"
-#include "memory.h"
+#include "xmalloc.h"
 #include "getlistaddr.h"
 #include "getlistdelim.h"
 #include "wrappers.h"
@@ -110,7 +110,7 @@ static void rewind_thread_list(void * state)
 
 		archivename = concatstr(3, s->listdir, "/archive/", buf);
 		archivefd = open(archivename, O_RDONLY);
-		myfree(archivename);
+		free(archivename);
 
 		if (archivefd < 0)
 			continue;
@@ -120,22 +120,22 @@ static void rewind_thread_list(void * state)
 
 		while ((line = gethdrline(archivefd, NULL))) {
 			if (strncasecmp(line, "Subject:", 8) == 0) {
-				myfree(subj);
+				free(subj);
 				subj = unistr_header_to_utf8(line + 8);
 			}
 			if (strncasecmp(line, "From:", 5) == 0) {
-				myfree(from);
+				free(from);
 				from = unistr_header_to_utf8(line + 5);
 			}
-			myfree(line);
+			free(line);
 		}
 
 		if (!subj) {
-			subj = mystrdup("no subject");
+			subj = xstrdup("no subject");
 		}
 
 		if (!from) {
-			from = mystrdup("anonymous");
+			from = xstrdup("anonymous");
 		}
 
 		tmp = subj;
@@ -161,7 +161,7 @@ static void rewind_thread_list(void * state)
 		}
 		if (thread_idx == -1) {
 			num_threads++;
-			threads = myrealloc(threads,
+			threads = xrealloc(threads,
 					num_threads*sizeof(struct thread));
 			threads[num_threads-1].subject = concatstr(2,tmp,"\n");
 			threads[num_threads-1].num_mails = 0;
@@ -180,14 +180,14 @@ static void rewind_thread_list(void * state)
 		/* tmp is now left-trimmed from */
 
 		threads[thread_idx].num_mails++;
-		threads[thread_idx].mails = myrealloc(threads[thread_idx].mails,
+		threads[thread_idx].mails = xrealloc(threads[thread_idx].mails,
 				threads[thread_idx].num_mails*sizeof(struct mail));
 		threads[thread_idx].mails[threads[thread_idx].num_mails-1].idx = i;
 		threads[thread_idx].mails[threads[thread_idx].num_mails-1].from =
 				concatstr(5, "      ", buf, " - ", tmp, "\n");
 
-		myfree(subj);
-		myfree(from);
+		free(subj);
+		free(from);
 
 		close(archivefd);
 	}
@@ -225,13 +225,13 @@ static void finish_thread_list(thread_list_state * s)
 	int i, j;
 	if (s->threads == NULL) return;
 	for (i=0; i<s->num_threads; i++) {
-		myfree(s->threads[i].subject);
+		free(s->threads[i].subject);
 		for (j=0; j<s->threads[i].num_mails; j++) {
-			myfree(s->threads[i].mails[j].from);
+			free(s->threads[i].mails[j].from);
 		}
-		myfree(s->threads[i].mails);
+		free(s->threads[i].mails);
 	}
-	myfree(s->threads);
+	free(s->threads);
 	s->threads = NULL;
 }
 
@@ -260,22 +260,22 @@ int send_digest(const char *listdir, int firstindex, int lastindex,
 	
 	do {
 		tmp = random_str();
-		myfree(queuename);
+		free(queuename);
 		queuename = concatstr(3, listdir, "/queue/", tmp);
-		myfree(tmp);
+		free(tmp);
 		fd = open(queuename, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
 	} while ((fd < 0) && (errno == EEXIST));
 
 	if (fd < 0) {
 		log_error(LOG_ARGS, "Could not open digest queue file '%s'",
 				queuename);
-		myfree(queuename);
+		free(queuename);
 		return -1;
 	}
 
 	tmp = concatstr(2, listdir, "/control/customheaders");
 	hdrfd = open(tmp, O_RDONLY);
-	myfree(tmp);
+	free(tmp);
 
 	boundary = random_str();
 
@@ -335,8 +335,8 @@ int send_digest(const char *listdir, int firstindex, int lastindex,
 	if (strncasecmp(line, "Subject:", len) == 0) {
 		tmp = unistr_utf8_to_header(tmp);
 		subject = concatstr(2, "Subject: ", tmp);
-		myfree(tmp);
-		myfree(line);
+		free(tmp);
+		free(line);
 
 		/* Skip the empty line after the subject */
 		line = get_processed_text_line(txt, 1, listaddr, listdelim,
@@ -347,7 +347,7 @@ int send_digest(const char *listdir, int firstindex, int lastindex,
 			goto fallback_subject;
 		}
 
-		if (line != NULL) myfree(line);
+		if (line != NULL) free(line);
 		line = NULL;
 	} else {
 		log_error(LOG_ARGS, "No subject or invalid "
@@ -362,11 +362,11 @@ fallback_subject:
 		} else {
 			snprintf(buf, sizeof(buf), "%d-%d", firstindex, lastindex);
 		}
-		tmp = mystrdup(buf);
+		tmp = xstrdup(buf);
 		snprintf(buf, sizeof(buf), "Digest of %s issue %d (%s)",
 				listaddr, issue, tmp);
 		subject = unistr_utf8_to_header(buf);
-		myfree(tmp);
+		free(tmp);
 	}
 
 	if (dprintf(fd, "From: %s%shelp@%s"
@@ -375,12 +375,12 @@ fallback_subject:
 	    "boundary=%s"
 	    "\nSubject: %s\n",
 	    listname, listdelim, listfqdn, boundary, subject) < 0) {
-		myfree(listfqdn);
-		myfree(subject);
+		free(listfqdn);
+		free(subject);
 		goto errdighdrs;
 	}
-	myfree(listfqdn);
-	myfree(subject);
+	free(listfqdn);
+	free(subject);
 
 	if(hdrfd >= 0 && dumpfd2fd(hdrfd, fd) < 0) {
 		goto errdighdrs;
@@ -395,14 +395,14 @@ errdighdrs:
 				queuename);
 		close(fd);
 		unlink(queuename);
-		myfree(boundary);
-		myfree(queuename);
-		myfree(listaddr);
-		myfree(listname);
-		myfree(listdelim);
+		free(boundary);
+		free(queuename);
+		free(listaddr);
+		free(listname);
+		free(listdelim);
 		if (txt != NULL) {
 			close_text(txt);
-			myfree(line);
+			free(line);
 		}
 		if (hdrfd > 0) {
 			close(hdrfd);
@@ -420,14 +420,14 @@ errdighdrs:
 					" part headers to '%s'", queuename);
 			close(fd);
 			unlink(queuename);
-			myfree(boundary);
-			myfree(queuename);
-			myfree(listaddr);
-			myfree(listname);
-			myfree(listdelim);
+			free(boundary);
+			free(queuename);
+			free(listaddr);
+			free(listname);
+			free(listdelim);
 			if (txt != NULL) {
 				close_text(txt);
-				myfree(line);
+				free(line);
 			}
 			return -1;
 		}
@@ -437,12 +437,12 @@ errdighdrs:
 					listdir);
 			if (line == NULL) break;
 			if(dprintf(fd, "%s\n", line) < 0) {
-				myfree(line);
+				free(line);
 				log_error(LOG_ARGS, "Could not write"
 						" std mail");
 				break;
 			}
-			myfree(line);
+			free(line);
 		}
 
 		finish_thread_list(tls);
@@ -452,16 +452,16 @@ errdighdrs:
 		close_text(txt);
 	}
 
-	if (line != NULL) myfree(line);
-	myfree(listaddr);
-	myfree(listdelim);
+	if (line != NULL) free(line);
+	free(listaddr);
+	free(listdelim);
 
 	for (i=firstindex; i<=lastindex; i++) {
 		snprintf(buf, sizeof(buf), "%d", i);
 		
 		archivename = concatstr(3, listdir, "/archive/", buf);
 		archivefd = open(archivename, O_RDONLY);
-		myfree(archivename);
+		free(archivename);
 		
 		if (archivefd < 0)
 			continue;
@@ -476,10 +476,10 @@ errdighdrs:
 			close(fd);
 			close(archivefd);
 			unlink(queuename);
-			myfree(boundary);
-			myfree(tmp);
-			myfree(queuename);
-			myfree(listname);
+			free(boundary);
+			free(tmp);
+			free(queuename);
+			free(listname);
 			return -1;
 		}
 
@@ -490,9 +490,9 @@ errdighdrs:
 			close(fd);
 			close(archivefd);
 			unlink(queuename);
-			myfree(boundary);
-			myfree(queuename);
-			myfree(listname);
+			free(boundary);
+			free(queuename);
+			free(listname);
 			return -1;
 		}
 		
@@ -504,21 +504,21 @@ errdighdrs:
 				queuename);
 		close(fd);
 		unlink(queuename);
-		myfree(boundary);
-		myfree(queuename);
-		myfree(listname);
+		free(boundary);
+		free(queuename);
+		free(listname);
 		return -1;
 	}
 
 	close(fd);
-	myfree(boundary);
-	myfree(listname);
+	free(boundary);
+	free(listname);
 
 	childpid = fork();
 
 	if(childpid < 0) {
 		log_error(LOG_ARGS, "Could not fork");
-		myfree(queuename);
+		free(queuename);
 		return -1;
 	}
 
@@ -536,7 +536,7 @@ errdighdrs:
 		exit(EXIT_FAILURE);  /* It is OK to exit, as this is a child */
 	}
 
-	myfree(queuename);
+	free(queuename);
 
 	return 0;
 }

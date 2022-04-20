@@ -53,7 +53,7 @@ int log_oper(const char *prefix, const char *basename, const char *fmt, ...)
 	statres = lstat(logfilename, &st);
 	if(statres < 0 && errno != ENOENT) {
 		log_error(LOG_ARGS, "Could not stat logfile %s", logfilename);
-		myfree(logfilename);
+		free(logfilename);
 		return -1;
 	}
 	
@@ -63,13 +63,13 @@ int log_oper(const char *prefix, const char *basename, const char *fmt, ...)
 			log_error(LOG_ARGS, "Could not rename %s,%s",
 					logfilename, tmp);
 		}
-		myfree(tmp);
+		free(tmp);
 	}
 	
 	fd = open(logfilename, O_RDWR|O_CREAT|O_APPEND, S_IRUSR|S_IWUSR);
 	if(fd < 0) {
 		log_error(LOG_ARGS, "Could not open %s", logfilename);
-		myfree(logfilename);
+		free(logfilename);
 		return -1;
 	}
 
@@ -80,7 +80,7 @@ int log_oper(const char *prefix, const char *basename, const char *fmt, ...)
 
 	if(myexcllock(fd) < 0) {
 		log_error(LOG_ARGS, "Could not lock %s", logfilename);
-		myfree(logfilename);
+		free(logfilename);
 		return -1;
 	}
 
@@ -100,7 +100,7 @@ int log_oper(const char *prefix, const char *basename, const char *fmt, ...)
 		log_error(LOG_ARGS, "Could not write to %s", logfilename);
 	
 	close(fd);
-	myfree(logfilename);
+	free(logfilename);
 	
 	return 0;
 }

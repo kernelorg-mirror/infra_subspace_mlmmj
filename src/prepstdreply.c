@@ -32,6 +32,7 @@
 #include <string.h>
 #include <errno.h>
 
+#include "xmalloc.h"
 #include "prepstdreply.h"
 #include "statctrl.h"
 #include "ctrlvalue.h"
@@ -40,7 +41,6 @@
 #include "log_error.h"
 #include "mygetline.h"
 #include "wrappers.h"
-#include "memory.h"
 #include "getlistaddr.h"
 #include "mlmmj.h"
 #include "getlistdelim.h"
@@ -149,17 +149,17 @@ struct file_lines_state {
 
 memory_lines_state *init_memory_lines(const char *lines)
 {
-	memory_lines_state *s = mymalloc(sizeof(memory_lines_state));
+	memory_lines_state *s = xmalloc(sizeof(memory_lines_state));
 	size_t len;
 
 	/* Ensure there *is* a trailing newline */
 	s->pos = NULL;
 	len = strlen(lines);
 	if (lines[len-1] == '\n') {
-		s->lines = mystrdup(lines);
+		s->lines = xstrdup(lines);
 		return s;
 	}
-	s->lines = mymalloc((len + 2) * sizeof(char));
+	s->lines = xmalloc((len + 2) * sizeof(char));
 	strcpy(s->lines, lines);
 	s->lines[len] = '\n';
 	s->lines[len+1] = '\0';
@@ -204,24 +204,24 @@ const char *get_memory_line(void *state)
 void finish_memory_lines(memory_lines_state *s)
 {
 	if (s == NULL) return;
-	myfree(s->lines);
-	myfree(s);
+	free(s->lines);
+	free(s);
 }
 
 
 file_lines_state *init_file_lines(const char *filename, int open_now)
 {
-	file_lines_state *s = mymalloc(sizeof(file_lines_state));
+	file_lines_state *s = xmalloc(sizeof(file_lines_state));
 
 	if (open_now) {
 		s->fd = open(filename, O_RDONLY);
 		s->filename = NULL;
 		if (s->fd < 0) {
-			myfree(s);
+			free(s);
 			return NULL;
 		}
 	} else {
-		s->filename = mystrdup(filename);
+		s->filename = xstrdup(filename);
 		s->fd = -1;
 	}
 
@@ -248,7 +248,7 @@ void rewind_file_lines(void *state)
 	if (s == NULL) return;
 	if (s->filename != NULL) {
 		s->fd = open(s->filename, O_RDONLY);
-		myfree(s->filename);
+		free(s->filename);
 		s->filename = NULL;
 	}
 	if (s->fd >= 0) {
@@ -267,7 +267,7 @@ const char *get_file_line(void *state)
 	char *end;
 	if (s == NULL) return NULL;
 	if (s->line != NULL) {
-		myfree(s->line);
+		free(s->line);
 		s->line = NULL;
 	}
 	if (s->fd >= 0) {
@@ -289,10 +289,10 @@ const char *get_file_line(void *state)
 void finish_file_lines(file_lines_state *s)
 {
 	if (s == NULL) return;
-	if (s->line != NULL) myfree(s->line);
+	if (s->line != NULL) free(s->line);
 	if (s->fd >= 0) close(s->fd);
-	if (s->filename != NULL) myfree(s->filename);
-	myfree(s);
+	if (s->filename != NULL) free(s->filename);
+	free(s);
 }
 
 
@@ -356,16 +356,16 @@ static void substitute_one(char **line_p, char **pos_p, int *width_p,
 	listname = genlistname(listaddr);
 
 	if(strcmp(token, "") == 0) {
-		value = mystrdup("$");
+		value = xstrdup("$");
 	} else if(strcmp(token, "listaddr") == 0) {
 		/* DEPRECATED: use $list$@$domain$ instead */
-		value = mystrdup(listaddr);
+		value = xstrdup(listaddr);
 	} else if(strcmp(token, "list+") == 0) {
 		value = concatstr(2, listname, listdelim);
 	} else if(strcmp(token, "list") == 0) {
-		value = mystrdup(listname);
+		value = xstrdup(listname);
 	} else if(strcmp(token, "domain") == 0) {
-		value = mystrdup(fqdn);
+		value = xstrdup(fqdn);
 	} else if(strcmp(token, "listowner") == 0) {
 		/* DEPRECATED: use $list+$owner@$domain$ instead */
 		value = concatstr(4, listname, listdelim, "owner@", fqdn);
@@ -408,12 +408,12 @@ static void substitute_one(char **line_p, char **pos_p, int *width_p,
 		if (token != NULL) value = textcontent(listdir, token);
 	} else if(strcmp(token, "originalmail") == 0) {
 		/* DEPRECATED: use %originalmail% instead */
-		value = mystrdup(" %originalmail 100%");
+		value = xstrdup(" %originalmail 100%");
 	} else {
 		subst = txt->substs;
 		while (subst != NULL) {
 			if(strcmp(token, subst->token) == 0) {
-				value = mystrdup(subst->subst);
+				value = xstrdup(subst->subst);
 				break;
 			}
 			subst = subst->next;
@@ -427,17 +427,17 @@ static void substitute_one(char **line_p, char **pos_p, int *width_p,
 			(*pos_p)++;
 			(*width_p)++;
 		}
-		myfree(*line_p);
+		free(*line_p);
 		*line_p = line;
-		myfree(value);
+		free(value);
 	} else {
 		*pos = '$';
 		*endpos = '$';
 		(*pos_p)++;
 		(*width_p)++;
 	}
-	myfree(fqdn);
-	myfree(listname);
+	free(fqdn);
+	free(listname);
 }
 
 
@@ -448,7 +448,7 @@ char *substitute(const char *line, const char *listaddr, const char *listdelim,
 	char *pos;
 	int width = 0; /* Just a dummy here */
 
-	new = mystrdup(line);
+	new = xstrdup(line);
 	pos = new;
 
 	while (*pos != '\0') {
@@ -471,8 +471,8 @@ text *open_text_file(const char *listdir, const char *filename)
 	char *tmp;
 	text *txt;
 
-	txt = mymalloc(sizeof(text));
-	txt->src = mymalloc(sizeof(source));
+	txt = xmalloc(sizeof(text));
+	txt->src = xmalloc(sizeof(source));
 	txt->src->prev = NULL;
 	txt->src->upcoming = NULL;
 	txt->src->processedlen = 0;
@@ -500,17 +500,17 @@ text *open_text_file(const char *listdir, const char *filename)
 
 	tmp = concatstr(3, listdir, "/text/", filename);
 	txt->src->fd = open(tmp, O_RDONLY);
-	myfree(tmp);
+	free(tmp);
 	if (txt->src->fd >= 0) return txt;
 
 	tmp = concatstr(2, DEFAULTTEXTDIR "/default/", filename);
 	txt->src->fd = open(tmp, O_RDONLY);
-	myfree(tmp);
+	free(tmp);
 	if (txt->src->fd >= 0) return txt;
 
 	tmp = concatstr(2, DEFAULTTEXTDIR "/en/", filename);
 	txt->src->fd = open(tmp, O_RDONLY);
-	myfree(tmp);
+	free(tmp);
 	if (txt->src->fd >= 0) return txt;
 
 	return NULL;
@@ -544,18 +544,18 @@ text *open_text(const char *listdir, const char *purpose, const char *action,
 		filename[filenamelen-len-1] = '-';
 		filenamelen -= len + 1;
 		if ((txt = open_text_file(listdir, compat)) != NULL) {
-			myfree(filename);
-			filename = mystrdup(compat);
+			free(filename);
+			filename = xstrdup(compat);
 			break;
 		}
 		log_error(LOG_ARGS, "Could not open listtext '%s'", filename);
-		myfree(filename);
+		free(filename);
 		return NULL;
 	} while (0);
 
-	txt->action = action != NULL ? mystrdup(action) : NULL;
-	txt->reason = reason != NULL ? mystrdup(reason) : NULL;
-	txt->type = type != NULL ? mystrdup(type) : NULL;
+	txt->action = action != NULL ? xstrdup(action) : NULL;
+	txt->reason = reason != NULL ? xstrdup(reason) : NULL;
+	txt->type = type != NULL ? xstrdup(type) : NULL;
 
 	return txt;
 }
@@ -565,19 +565,19 @@ void close_source(text *txt)
 {
 	source *tmp;
 	if (txt->src->fd != -1) close(txt->src->fd);
-	if (txt->src->prefix != NULL) myfree(txt->src->prefix);
-	if (txt->src->suffix != NULL) myfree(txt->src->suffix);
+	if (txt->src->prefix != NULL) free(txt->src->prefix);
+	if (txt->src->suffix != NULL) free(txt->src->suffix);
 	tmp = txt->src;
 	txt->src = txt->src->prev;
-	myfree(tmp);
+	free(tmp);
 }
 
 
 void register_unformatted(text *txt, const char *token, const char *replacement)
 {
-	substitution * subst = mymalloc(sizeof(substitution));
-	subst->token = mystrdup(token);
-	subst->subst = mystrdup(replacement);
+	substitution * subst = xmalloc(sizeof(substitution));
+	subst->token = xstrdup(token);
+	subst->subst = xstrdup(replacement);
 	subst->next = txt->substs;
 	txt->substs = subst;
 }
@@ -585,15 +585,15 @@ void register_unformatted(text *txt, const char *token, const char *replacement)
 
 void register_originalmail(text *txt, const char *mailname)
 {
-	txt->mailname = mystrdup(mailname);
+	txt->mailname = xstrdup(mailname);
 }
 
 
 void register_formatted(text *txt, const char *token,
 		rewind_function rew, get_function get, void *state)
 {
-	formatted * fmt = mymalloc(sizeof(formatted));
-	fmt->token = mystrdup(token);
+	formatted * fmt = xmalloc(sizeof(formatted));
+	fmt->token = xstrdup(token);
 	fmt->rew = rew;
 	fmt->get = get;
 	fmt->state = state;
@@ -616,7 +616,7 @@ static void begin_new_source_file(text *txt, char **line_p, char **pos_p,
 	if (*pos == '\r') pos++;
 	if (*pos == '\n') pos++;
 	if (*pos != '\0') {
-		txt->src->upcoming = mystrdup(pos);
+		txt->src->upcoming = xstrdup(pos);
 		txt->src->processedlen = 0;
 		txt->src->processedwidth = 0;
 	}
@@ -628,12 +628,12 @@ static void begin_new_source_file(text *txt, char **line_p, char **pos_p,
 		return;
 	}
 
-	src = mymalloc(sizeof(source));
+	src = xmalloc(sizeof(source));
 	src->prev = txt->src;
 	src->upcoming = NULL;
 	src->prefixlen = strlen(line);
 	src->prefixwidth = *width_p;
-	src->prefix = mymalloc((*width_p + 1) * sizeof(char));
+	src->prefix = xmalloc((*width_p + 1) * sizeof(char));
 	for (tmp = src->prefix, i = 0; i < *width_p; tmp++, i++) *tmp = ' ';
 	*tmp = '\0';
 	src->suffix = NULL;
@@ -650,14 +650,14 @@ static void begin_new_source_file(text *txt, char **line_p, char **pos_p,
 	}
 	if (!transparent) {
 		esc = unistr_escaped_to_utf8(tmp);
-		myfree(tmp);
+		free(tmp);
 		tmp = esc;
 	}
 	line = concatstr(2, line, tmp);
 	*pos_p = line + (*pos_p - *line_p);
-	myfree(*line_p);
+	free(*line_p);
 	*line_p = line;
-	myfree(tmp);
+	free(tmp);
 }
 
 
@@ -673,27 +673,27 @@ static void begin_new_formatted_source(text *txt, char **line_p, char **pos_p,
 	if (*pos == '\r') pos++;
 	if (*pos == '\n') pos++;
 	if (*pos != '\0') {
-		txt->src->upcoming = mystrdup(pos);
+		txt->src->upcoming = xstrdup(pos);
 		txt->src->processedlen = 0;
 		txt->src->processedwidth = 0;
 	}
 
 	(*fmt->rew)(fmt->state);
 
-	src = mymalloc(sizeof(source));
+	src = xmalloc(sizeof(source));
 	src->prev = txt->src;
 	src->upcoming = NULL;
 	if (*line == '\0') {
 		src->prefix = NULL;
 	} else {
-		src->prefix = mystrdup(line);
+		src->prefix = xstrdup(line);
 	}
 	src->prefixlen = strlen(line);
 	src->prefixwidth = *width_p;
 	if (*suffix == '\0' || *suffix == '\r' || *suffix == '\n') {
 		src->suffix = NULL;
 	} else {
-		src->suffix = mystrdup(suffix);
+		src->suffix = xstrdup(suffix);
 	}
 	src->fd = -1;
 	src->fmt = fmt;
@@ -712,7 +712,7 @@ static void begin_new_formatted_source(text *txt, char **line_p, char **pos_p,
 	line = concatstr(2, line, str);
 	/* The suffix will be added back in get_processed_text_line() */
 	*pos_p = line + strlen(*line_p);
-	myfree(*line_p);
+	free(*line_p);
 	*line_p = line;
 }
 
@@ -791,7 +791,7 @@ static int handle_conditional(text *txt, char **line_p, char **pos_p,
 		multi = 0;
 	}
 
-	cond = mymalloc(sizeof(conditional));
+	cond = xmalloc(sizeof(conditional));
 	cond->satisfied = satisfied;
 	cond->elsepart = 0;
 	cond->outer = txt->cond;
@@ -809,7 +809,7 @@ static int handle_conditional(text *txt, char **line_p, char **pos_p,
 	}
 	line = concatstr(2, line, pos);
 	*pos_p = line + (*pos_p - *line_p);
-	myfree(*line_p);
+	free(*line_p);
 	*line_p = line;
 
 	return 0;
@@ -888,7 +888,7 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 			}
 			line = concatstr(2, line, endpos);
 			*pos_p = line + (*pos_p - *line_p);
-			myfree(*line_p);
+			free(*line_p);
 			*line_p = line;
 			return 0;
 		}
@@ -898,7 +898,7 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 			cond = txt->cond;
 			swallow = (!cond->satisfied && !cond->elsepart)?1:0;
 			txt->cond = cond->outer;
-			myfree(cond);
+			free(cond);
 			endpos++;
 			if (*skipwhite_p) {
 				while (*endpos == ' ' || *endpos == '\t')
@@ -906,7 +906,7 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 			}
 			line = concatstr(2, line, endpos);
 			*pos_p = line + (*pos_p - *line_p);
-			myfree(*line_p);
+			free(*line_p);
 			*line_p = line;
 			return swallow;
 		}
@@ -934,7 +934,7 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 		line = concatstr(3, line, "%", endpos + 1);
 		*pos_p = line + (*pos_p - *line_p) + 1;
 		(*width_p)++;
-		myfree(*line_p);
+		free(*line_p);
 		*line_p = line;
 		return 0;
 	} else if(strcmp(token, "^") == 0) {
@@ -943,11 +943,11 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 			line = concatstr(2, line, endpos + 1);
 			*width_p = txt->src->prefixwidth;
 		} else {
-			line = mystrdup(endpos + 1);
+			line = xstrdup(endpos + 1);
 			*width_p = 0;
 		}
 		*pos_p = line;
-		myfree(*line_p);
+		free(*line_p);
 		*line_p = line;
 		return 0;
 	} else if(strcmp(token, "comment") == 0 || strcmp(token, "$") == 0 ) {
@@ -955,7 +955,7 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 		while (*pos != '\0' && *pos != '\r' && *pos != '\n') pos++;
 		line = concatstr(2, line, pos);
 		*pos_p = line + (*pos_p - *line_p);
-		myfree(*line_p);
+		free(*line_p);
 		*line_p = line;
 		return 0;
 	} else if(strncmp(token, "wrap", 4) == 0) {
@@ -972,7 +972,7 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 			txt->wrapwidth = limit;
 			line = concatstr(2, line, endpos + 1);
 			*pos_p = line + (*pos_p - *line_p);
-			myfree(*line_p);
+			free(*line_p);
 			*line_p = line;
 			return 0;
 		}
@@ -980,7 +980,7 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 		txt->wrapwidth = 0;
 		line = concatstr(2, line, endpos + 1);
 		*pos_p = line + (*pos_p - *line_p);
-		myfree(*line_p);
+		free(*line_p);
 		*line_p = line;
 		return 0;
 	} else if(strcmp(token, "ww") == 0 ||
@@ -994,30 +994,30 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 		if (*token == 'u') txt->wrapmode = WRAP_USER;
 		line = concatstr(2, line, endpos + 1);
 		*pos_p = line + (*pos_p - *line_p);
-		myfree(*line_p);
+		free(*line_p);
 		*line_p = line;
 		return 0;
 	} else if(strcmp(token, "thin") == 0) {
 		txt->widthreckoning = WIDTH_THIN;
 		line = concatstr(2, line, endpos + 1);
 		*pos_p = line + (*pos_p - *line_p);
-		myfree(*line_p);
+		free(*line_p);
 		*line_p = line;
 		return 0;
 	} else if(strcmp(token, "wide") == 0) {
 		txt->widthreckoning = WIDTH_WIDE;
 		line = concatstr(2, line, endpos + 1);
 		*pos_p = line + (*pos_p - *line_p);
-		myfree(*line_p);
+		free(*line_p);
 		*line_p = line;
 		return 0;
 	} else if(strncmp(token, "zero ", 5) == 0) {
 		token += 5;
-		if (txt->zerowidth != NULL) myfree(txt->zerowidth);
-		txt->zerowidth = mystrdup(token);
+		if (txt->zerowidth != NULL) free(txt->zerowidth);
+		txt->zerowidth = xstrdup(token);
 		line = concatstr(2, line, endpos + 1);
 		*pos_p = line + (*pos_p - *line_p);
-		myfree(*line_p);
+		free(*line_p);
 		*line_p = line;
 		return 0;
 	} else if(strncmp(token, "control ", 8) == 0) {
@@ -1026,7 +1026,7 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 			filename = concatstr(3, listdir, "/control/", token);
 			begin_new_source_file(txt,
 					line_p, pos_p, width_p, filename, 0);
-			myfree(filename);
+			free(filename);
 			return 0;
 		}
 	} else if(strncmp(token, "text ", 5) == 0) {
@@ -1035,7 +1035,7 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 			filename = concatstr(3, listdir, "/text/", token);
 			begin_new_source_file(txt,
 					line_p, pos_p, width_p, filename, 0);
-			myfree(filename);
+			free(filename);
 			return 0;
 		}
 	} else if(strncmp(token, "originalmail", 12) == 0 &&
@@ -1150,7 +1150,7 @@ char *get_processed_text_line(text *txt, int headers,
 					processedwidth += txt->wrapindent -
 						txt->src->prefixwidth;
 				}
-				line = mymalloc((len + 1) * sizeof(char));
+				line = xmalloc((len + 1) * sizeof(char));
 				if (txt->src->prefixwidth != 0) {
 					strcpy(line, txt->src->prefix);
 					pos = line + txt->src->prefixlen;
@@ -1164,7 +1164,7 @@ char *get_processed_text_line(text *txt, int headers,
 					wrapindentlen = pos - line;
 				}
 				strcpy(pos, txt->src->upcoming);
-				myfree(txt->src->upcoming);
+				free(txt->src->upcoming);
 				txt->src->upcoming = NULL;
 				break;
 			}
@@ -1175,7 +1175,7 @@ char *get_processed_text_line(text *txt, int headers,
 					item = (*txt->src->fmt->get)(
 						txt->src->fmt->state);
 					if (item==NULL) tmp = NULL;
-					else tmp = mystrdup(item);
+					else tmp = xstrdup(item);
 				} else {
 					tmp = NULL;
 				}
@@ -1191,7 +1191,7 @@ char *get_processed_text_line(text *txt, int headers,
 						unistr_escaped_to_utf8(tmp);
 					txt->src->processedlen = 0;
 					txt->src->processedwidth = 0;
-					myfree(tmp);
+					free(tmp);
 				}
 			} else {
 				txt->src->upcoming = NULL;
@@ -1200,7 +1200,7 @@ char *get_processed_text_line(text *txt, int headers,
 			close_source(txt);
 		}
 		if (line == NULL) {
-			if (peeking) return mystrdup("");
+			if (peeking) return xstrdup("");
 			if (prev != NULL) return prev;
 			return NULL;
 		}
@@ -1237,7 +1237,7 @@ char *get_processed_text_line(text *txt, int headers,
 				skipwhite = 0;
 			} else {
 				if (*prev == '\0') {
-					tmp = mystrdup(pos);
+					tmp = xstrdup(pos);
 				} else {
 					if (txt->wrapmode == WRAP_WORD &&
 							len > wrapindentlen) {
@@ -1248,9 +1248,9 @@ char *get_processed_text_line(text *txt, int headers,
 					    tmp = concatstr(2, prev, pos);
 					}
 				}
-				myfree(line);
+				free(line);
 				line = tmp;
-				myfree(prev);
+				free(prev);
 				pos = line + len;
 				skipwhite = 1;
 			}
@@ -1294,7 +1294,7 @@ char *get_processed_text_line(text *txt, int headers,
 				pos++;
 				if (*pos == '\n') pos++;
 				if (*pos == '\0') break;
-				txt->src->upcoming = mystrdup(pos);
+				txt->src->upcoming = xstrdup(pos);
 				txt->src->processedlen = 0;
 				txt->src->processedwidth = 0;
 				break;
@@ -1302,7 +1302,7 @@ char *get_processed_text_line(text *txt, int headers,
 				*pos = '\0';
 				pos++;
 				if (*pos == '\0') break;
-				txt->src->upcoming = mystrdup(pos);
+				txt->src->upcoming = xstrdup(pos);
 				txt->src->processedlen = 0;
 				txt->src->processedwidth = 0;
 				break;
@@ -1344,7 +1344,7 @@ char *get_processed_text_line(text *txt, int headers,
 				*pos = '\0';
 				tmp = concatstr(2, line, tmp);
 				pos = tmp + len;
-				myfree(line);
+				free(line);
 				line = tmp;
 				skipwhite = 0;
 				continue;
@@ -1383,7 +1383,7 @@ char *get_processed_text_line(text *txt, int headers,
 						line[incision] = '\0';
 						tmp = concatstr(2, line, pos);
 						pos = tmp + incision;
-						myfree(line);
+						free(line);
 						line = tmp;
 					    }
 					    incision = -1;
@@ -1448,7 +1448,7 @@ char *get_processed_text_line(text *txt, int headers,
 			/* The whole line was skipped; nothing to return yet;
 			 * keep reading */
 			incision = -1;
-			myfree(line);
+			free(line);
 			continue;
 		}
 
@@ -1456,9 +1456,9 @@ char *get_processed_text_line(text *txt, int headers,
 			/* Time to cut */
 			if (pos - line != incision) {
 				line[incision] = '\0';
-				tmp = mystrdup(line);
+				tmp = xstrdup(line);
 				pos = tmp + incision;
-				myfree(line);
+				free(line);
 				line = tmp;
 			}
 			incision = -1;
@@ -1479,14 +1479,14 @@ char *get_processed_text_line(text *txt, int headers,
 			}
 			if (linebreak != 0) {
 				if (txt->src->upcoming == NULL) {
-				    tmp = mystrdup(line + linebreak);
+				    tmp = xstrdup(line + linebreak);
 				} else {
 				    /* If something's coming up, it's because
 				     * it was a new line. */
 				    if (*(line + linebreak) != '\0') {
 					tmp = concatstr(3, line + linebreak,
 						"\n", txt->src->upcoming);
-					myfree(txt->src->upcoming);
+					free(txt->src->upcoming);
 				    } else {
 				    	tmp = txt->src->upcoming;
 				    }
@@ -1497,8 +1497,8 @@ char *get_processed_text_line(text *txt, int headers,
 						width - linebreakwidth;
 			}
 			line[linebreak] = '\0';
-			tmp = mystrdup(line);
-			myfree(line);
+			tmp = xstrdup(line);
+			free(line);
 			line = tmp;
 		} else {
 			if (directive) {
@@ -1507,7 +1507,7 @@ char *get_processed_text_line(text *txt, int headers,
 				if (*pos == '\0') {
 					/* Omit whitespace-only line with
 					 * directives */
-					myfree(line);
+					free(line);
 					continue;
 				}
 			}
@@ -1517,7 +1517,7 @@ char *get_processed_text_line(text *txt, int headers,
 				 * not followed by an unsatisfied conditional
 				 * without an else */
 				peeking = 1;
-				myfree(line);
+				free(line);
 				continue;
 			} else if (peeking) {
 				/* We found something; return preceding blank
@@ -1533,16 +1533,16 @@ char *get_processed_text_line(text *txt, int headers,
 							txt->src->upcoming);
 					txt->src->processedlen = len;
 					txt->src->processedwidth = width;
-					myfree(line);
-					myfree(tmp);
+					free(line);
+					free(tmp);
 				}
-				line = mystrdup("");
+				line = xstrdup("");
 			}
 		}
 
 		if (txt->src->suffix != NULL) {
 			tmp = concatstr(2, line, txt->src->suffix);
-			myfree(line);
+			free(line);
 			return tmp;
 		} else {
 			return line;
@@ -1561,24 +1561,24 @@ void close_text(text *txt)
 	}
 	while (txt->substs != NULL) {
 		subst = txt->substs;
-		myfree(subst->token);
-		myfree(subst->subst);
+		free(subst->token);
+		free(subst->subst);
 		txt->substs = txt->substs->next;
-		myfree(subst);
+		free(subst);
 	}
-	if (txt->mailname != NULL) myfree(txt->mailname);
+	if (txt->mailname != NULL) free(txt->mailname);
 	while (txt->fmts != NULL) {
 		fmt = txt->fmts;
-		myfree(fmt->token);
+		free(fmt->token);
 		txt->fmts = txt->fmts->next;
-		myfree(fmt);
+		free(fmt);
 	}
 	while (txt->cond != NULL) {
 		cond = txt->cond;
 		txt->cond = txt->cond->outer;
-		myfree(cond);
+		free(cond);
 	}
-	myfree(txt);
+	free(txt);
 }
 
 
@@ -1599,9 +1599,9 @@ char *prepstdreply(text *txt, const char *listdir,
 	do {
 		tmp = random_str();
 		if (retstr)
-			myfree(retstr);
+			free(retstr);
 		retstr = concatstr(3, listdir, "/queue/", tmp);
-		myfree(tmp);
+		free(tmp);
 
 		outfd = open(retstr, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
 
@@ -1609,42 +1609,42 @@ char *prepstdreply(text *txt, const char *listdir,
 	
 	if(outfd < 0) {
 		log_error(LOG_ARGS, "Could not open std mail %s", retstr);
-		myfree(listaddr);
-		myfree(listdelim);
-		myfree(listfqdn);
-		myfree(retstr);
-		myfree(txt);
+		free(listaddr);
+		free(listdelim);
+		free(listfqdn);
+		free(retstr);
+		free(txt);
 		return NULL;
 	}
 
 	for (i=0; i<6; i++) { 
-		tmp = mystrdup("randomN");
+		tmp = xstrdup("randomN");
 		tmp[6] = '0' + i;
 		str = random_str();
 		register_unformatted(txt, tmp, str);
-		myfree(tmp);
-		myfree(str);
+		free(tmp);
+		free(str);
 	}
 
 	tmp = substitute(from, listaddr, listdelim, listdir, txt);
 	headers[0] = concatstr(2, "From: ", tmp);
-	myfree(tmp);
+	free(tmp);
 	tmp = substitute(to, listaddr, listdelim, listdir, txt);
 	headers[1] = concatstr(2, "To: ", tmp);
-	myfree(tmp);
+	free(tmp);
 	headers[2] = genmsgid(listfqdn);
 	chomp(headers[2]);
 	headers[3] = gendatestr();
 	chomp(headers[3]);
-	headers[4] = mystrdup("Subject: mlmmj administrivia");
-	headers[5] = mystrdup("MIME-Version: 1.0");
-	headers[6] = mystrdup("Content-Type: text/plain; charset=utf-8");
-	headers[7] = mystrdup("Content-Transfer-Encoding: 8bit");
+	headers[4] = xstrdup("Subject: mlmmj administrivia");
+	headers[5] = xstrdup("MIME-Version: 1.0");
+	headers[6] = xstrdup("Content-Type: text/plain; charset=utf-8");
+	headers[7] = xstrdup("Content-Transfer-Encoding: 8bit");
 
 	if(replyto) {
 		tmp = substitute(replyto, listaddr, listdelim, listdir, txt);
 		headers[8] = concatstr(2, "Reply-To: ", tmp);
-		myfree(tmp);
+		free(tmp);
 	}
 
 	for(;;) {
@@ -1656,7 +1656,7 @@ char *prepstdreply(text *txt, const char *listdir,
 		}
 		if (*line == '\0') {
 			/* end of headers */
-			myfree(line);
+			free(line);
 			line = NULL;
 			break;
 		}
@@ -1665,8 +1665,8 @@ char *prepstdreply(text *txt, const char *listdir,
 			   continuation of previous header line */
 			if(dprintf(outfd, "%s\n", line) < 0) {
 				log_error(LOG_ARGS, "Could not write std mail");
-				myfree(line);
-				myfree(retstr);
+				free(line);
+				free(retstr);
 				retstr = NULL;
 				goto freeandreturn;
 			}
@@ -1687,7 +1687,7 @@ char *prepstdreply(text *txt, const char *listdir,
 			/* remove the standard header if one matches */
 			for (i=0; headers[i] != NULL; i++) {
 				if (strncasecmp(line, headers[i], len) == 0) {
-					myfree(headers[i]);
+					free(headers[i]);
 					while (headers[i] != NULL) {
 						headers[i] = headers[i+1];
 						i++;
@@ -1697,19 +1697,19 @@ char *prepstdreply(text *txt, const char *listdir,
 			}
 			if (strncasecmp(line, "Subject:", len) == 0) {
 				tmp = unistr_utf8_to_header(tmp);
-				myfree(line);
+				free(line);
 				line = concatstr(2, "Subject: ", tmp);
-				myfree(tmp);
+				free(tmp);
 			}
 			if(dprintf(outfd, "%s\n", line) < 0) {
 				log_error(LOG_ARGS, "Could not write std mail");
-				myfree(line);
-				myfree(retstr);
+				free(line);
+				free(retstr);
 				retstr = NULL;
 				goto freeandreturn;
 			}
 		}
-		myfree(line);
+		free(line);
 		line = NULL;
 	}
 
@@ -1717,8 +1717,8 @@ char *prepstdreply(text *txt, const char *listdir,
 		if(dprintf(outfd, "%s\n", headers[i]) < 0) {
 			log_error(LOG_ARGS, "Could not write std mail");
 			if (line)
-				myfree(line);
-			myfree(retstr);
+				free(line);
+			free(retstr);
 			retstr = NULL;
 			goto freeandreturn;
 		}
@@ -1728,8 +1728,8 @@ char *prepstdreply(text *txt, const char *listdir,
 	if(dprintf(outfd, "\n") < 0) {
 		log_error(LOG_ARGS, "Could not write std mail");
 		if (line)
-			myfree(line);
-		myfree(retstr);
+			free(line);
+		free(retstr);
 		retstr = NULL;
 		goto freeandreturn;
 	}
@@ -1740,13 +1740,13 @@ char *prepstdreply(text *txt, const char *listdir,
 	}
 	while(line) {
 			if(dprintf(outfd, "%s\n", line) < 0) {
-				myfree(str);
+				free(str);
 				log_error(LOG_ARGS, "Could not write std mail");
-				myfree(retstr);
+				free(retstr);
 				retstr = NULL;
 				goto freeandreturn;
 			}
-		myfree(line);
+		free(line);
 		line = get_processed_text_line(txt, 0, listaddr, listdelim,
 				listdir);
 	}
@@ -1755,9 +1755,9 @@ char *prepstdreply(text *txt, const char *listdir,
 	close(outfd);
 
 freeandreturn:
-	myfree(listaddr);
-	myfree(listdelim);
-	myfree(listfqdn);
+	free(listaddr);
+	free(listdelim);
+	free(listfqdn);
 
 	return retstr;
 }

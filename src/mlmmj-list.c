@@ -34,7 +34,6 @@
 
 #include "mlmmj.h"
 #include "wrappers.h"
-#include "memory.h"
 #include "strgen.h"
 #include "log_error.h"
 
@@ -186,9 +185,9 @@ int main(int argc, char **argv)
 			else
 				ret = dumpcount(fileiter, NULL);
 
-			myfree(fileiter);
+			free(fileiter);
 		}
-		myfree(subdir);
+		free(subdir);
 		closedir(dirp);
 	} else {
 		tmp = concatstr(2, listdir, subfile);

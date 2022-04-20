@@ -34,6 +34,7 @@
 #include <regex.h>
 #include <err.h>
 
+#include "xmalloc.h"
 #include "mlmmj.h"
 #include "wrappers.h"
 #include "find_email_adr.h"
@@ -51,7 +52,6 @@
 #include "getlistaddr.h"
 #include "prepstdreply.h"
 #include "subscriberfuncs.h"
-#include "memory.h"
 #include "log_oper.h"
 #include "unistr.h"
 #include "chomp.h"
@@ -98,10 +98,10 @@ static int is_moderator(const char *listdir, const char *address,
 	moderatorsfilename = concatstr(2, listdir, "/control/moderators");
 	if((moderatorsfd = open(moderatorsfilename, O_RDONLY)) < 0) {
 		log_error(LOG_ARGS, "Could not open '%s'", moderatorsfilename);
-		myfree(moderatorsfilename);
+		free(moderatorsfilename);
 		exit(EXIT_FAILURE);
 	}
-	myfree(moderatorsfilename);
+	free(moderatorsfilename);
 
 	while((buf = mygetline(moderatorsfd))) {
 		chomp(buf);
@@ -109,16 +109,16 @@ static int is_moderator(const char *listdir, const char *address,
 			foundaddr = 1;
 			if (!moderators) {
 				close(moderatorsfd);
-				myfree(buf);
+				free(buf);
 				return foundaddr;
 			}
 		}
 		if (moderators) {
 			tmp = *moderators;
 			*moderators = concatstr(3, *moderators, buf, "\n");
-			myfree(tmp);
+			free(tmp);
 		}
-		myfree(buf);
+		free(buf);
 	}
 
 	close(moderatorsfd);
@@ -156,7 +156,7 @@ static void newmoderated(const char *listdir, const char *mailfilename,
 	if(efromismod) mls = init_memory_lines(efromismod);
 	else mls = init_memory_lines(moderators);
 
-	myfree(moderators);
+	free(moderators);
 
 	listdelim = getlistdelim(listdir);
 	replyto = concatstr(6, listname, listdelim, "release-", mailbasename,
@@ -167,9 +167,9 @@ static void newmoderated(const char *listdir, const char *mailfilename,
 	from = concatstr(4, listname, listdelim, "owner@", listfqdn);
 	to = concatstr(3, listname, "-moderators@", listfqdn); /* FIXME JFA: Should this be converted? Why, why not? */
 
-	myfree(listdelim);
-	myfree(listname);
-	myfree(listfqdn);
+	free(listdelim);
+	free(listname);
+	free(listfqdn);
 
 	txt = open_text(listdir, "moderate", "post",
 			modreason_strs[modreason], NULL, "moderation");
@@ -224,7 +224,7 @@ static void newmoderated(const char *listdir, const char *mailfilename,
 		exit(EXIT_FAILURE);
 	}
 
-	myfree(queuefilename);
+	free(queuefilename);
 
 	/* send mail to poster that the list is moderated */
 
@@ -365,12 +365,12 @@ static enum action do_access(struct strlist *rule_strs, struct strlist *hdrs,
 
 		if (match != not) {
 			if (match) {
-				hdr = mystrdup(hdrs->strs[j]);
+				hdr = xstrdup(hdrs->strs[j]);
 				log_oper(listdir, OPLOGFNAME, "mlmmj-process: access -"
 						" A mail from \"%s\" with header \"%s\" was %s by"
 						" rule #%d \"%s\"", from, hdr, action_strs[act],
 						i, rule_strs->strs[i]);
-				myfree(hdr);
+				free(hdr);
 			} else {
 				log_oper(listdir, OPLOGFNAME, "mlmmj-process: access -"
 						" A mail from \"%s\" was %s by rule #%d \"%s\""
@@ -428,7 +428,7 @@ static int addrmatch(const char *listaddr, const char *addr,
 
 	if (recipextra) {
 		len = atsign - delim;
-		*recipextra = (char *)mymalloc(len + 1);
+		*recipextra = (char *)xmalloc(len + 1);
 		strncpy(*recipextra, delim, len);
 		(*recipextra)[len] = '\0';
 	}
@@ -504,7 +504,7 @@ int main(int argc, char **argv)
 	mlmmjsub = concatstr(2, bindir, "/mlmmj-sub");
 	mlmmjunsub = concatstr(2, bindir, "/mlmmj-unsub");
 	mlmmjbounce = concatstr(2, bindir, "/mlmmj-bounce");
-	myfree(bindir);
+	free(bindir);
 
 	while ((opt = getopt(argc, argv, "hVPm:L:")) != -1) {
 		switch(opt) {
@@ -549,8 +549,8 @@ int main(int argc, char **argv)
 	}
 
         do {
-                myfree(donemailname);
-                myfree(randomstr);
+                free(donemailname);
+                free(randomstr);
                 randomstr = random_str();
                 donemailname = concatstr(3, listdir, "/queue/", randomstr);
 
@@ -561,7 +561,7 @@ int main(int argc, char **argv)
 
 	if(donemailfd < 0) {
 		log_error(LOG_ARGS, "could not create %s", donemailname);
-		myfree(donemailname);
+		free(donemailname);
 		exit(EXIT_FAILURE);
 	}
 #if 0
@@ -569,7 +569,7 @@ int main(int argc, char **argv)
 #endif
 	if((rawmailfd = open(mailfile, O_RDONLY)) < 0) {
 		unlink(donemailname);
-		myfree(donemailname);
+		free(donemailname);
 		log_error(LOG_ARGS, "could not open() input mail file");
 		exit(EXIT_FAILURE);
 	}
@@ -578,24 +578,24 @@ int main(int argc, char **argv)
 	 * customheaders file might not exist */
 	headerfilename = concatstr(2, listdir, "/control/customheaders");
 	hdrfd = open(headerfilename, O_RDONLY);
-	myfree(headerfilename);
+	free(headerfilename);
 
 	/* footfd is checked in do_all_the_voodoo_here(), see above */
 	footerfilename = concatstr(2, listdir, "/control/footer");
 	footfd = open(footerfilename, O_RDONLY);
-	myfree(footerfilename);
+	free(footerfilename);
 
 	delheaders = ctrlvalues(listdir, "delheaders");
 	if(delheaders == NULL) {
-		delheaders = mymalloc(sizeof(struct strlist));
+		delheaders = xmalloc(sizeof(struct strlist));
 		delheaders->count = 0;
 		delheaders->strs = NULL;
 	}
 
-	delheaders->strs = myrealloc(delheaders->strs,
+	delheaders->strs = xrealloc(delheaders->strs,
 			(delheaders->count+2) * sizeof(char *));
-	delheaders->strs[delheaders->count++] = mystrdup("From ");
-	delheaders->strs[delheaders->count++] = mystrdup("Return-Path:");
+	delheaders->strs[delheaders->count++] = xstrdup("From ");
+	delheaders->strs[delheaders->count++] = xstrdup("Return-Path:");
 
 	subjectprefix = ctrlvalue(listdir, "prefix");
 
@@ -607,8 +607,8 @@ int main(int argc, char **argv)
 	}
 
 	for(i = 0; i < delheaders->count; i++)
-		myfree(delheaders->strs[i]);
-	myfree(delheaders->strs);
+		free(delheaders->strs[i]);
+	free(delheaders->strs);
 
 	close(rawmailfd);
 	close(donemailfd);
@@ -636,19 +636,19 @@ int main(int argc, char **argv)
 	/* address extension (the "foo" part of "user+foo@domain.tld") */
 	if((envstr = getenv("DEFAULT")) != NULL) {
 		/* qmail */
-		recipextra = mystrdup(envstr);
+		recipextra = xstrdup(envstr);
 	} else if((envstr = getenv("EXTENSION")) != NULL) {
 		/* postfix */
-		recipextra = mystrdup(envstr);
+		recipextra = xstrdup(envstr);
 	} else if((envstr = getenv("LOCAL_PART_SUFFIX")) != NULL) {
 		/* exim */
 		listdelim = getlistdelim(listdir);
 		if (strncmp(envstr, listdelim, strlen(listdelim)) == 0) {
-			recipextra = mystrdup(envstr + strlen(listdelim));
+			recipextra = xstrdup(envstr + strlen(listdelim));
 		} else {
-			recipextra = mystrdup(envstr);
+			recipextra = xstrdup(envstr);
 		}
-		myfree(listdelim);
+		free(listdelim);
 		listdelim = NULL;
 	} else {
 		findaddress = 1;
@@ -666,7 +666,7 @@ int main(int argc, char **argv)
 				if(addrmatch(listaddrs->strs[j], dtemails.emaillist[i],
 						listdelim, &recipextra)) {
 					findaddress = 0;
-					myfree(listdelim);
+					free(listdelim);
 					listdelim = NULL;
 					break;
 				}
@@ -694,14 +694,14 @@ int main(int argc, char **argv)
 		}
 	}
 	if (listdelim) {
-		myfree(listdelim);
+		free(listdelim);
 		listdelim = NULL;
 	}
 	if (listaddrs) for(i = 0; i < listaddrs->count; i++)
-		myfree(listaddrs->strs[i]);
+		free(listaddrs->strs[i]);
 
 	if(recipextra && (strlen(recipextra) == 0)) {
-		myfree(recipextra);
+		free(recipextra);
 		recipextra = NULL;
 	}
 
@@ -730,9 +730,9 @@ int main(int argc, char **argv)
 					i, fromemails.emaillist[i]);
 		rename(mailfile, discardname);
 		unlink(donemailname);
-		myfree(donemailname);
-		myfree(discardname);
-		myfree(randomstr);
+		free(donemailname);
+		free(discardname);
+		free(randomstr);
 		/* TODO: free emailstructs */
 		exit(EXIT_SUCCESS);
 	}
@@ -750,18 +750,18 @@ int main(int argc, char **argv)
 	/* envelope from */
 	if((envstr = getenv("SENDER")) != NULL) {
 		/* qmail, postfix, exim */
-		efrom = mystrdup(envstr);
+		efrom = xstrdup(envstr);
 	} else if(rpemails.emailcount >= 1) {
 		/* the (first) Return-Path: header */
-		efrom = mystrdup(rpemails.emaillist[0]);
+		efrom = xstrdup(rpemails.emaillist[0]);
 	} else {
-		efrom = mystrdup("");
+		efrom = xstrdup("");
 	}
 
 	/* Subject: */
 	if (readhdrs[5].valuecount)
 			subject = unistr_header_to_utf8(readhdrs[5].values[0]);
-	if (!subject) subject = mystrdup("");
+	if (!subject) subject = xstrdup("");
 
 	if(recipextra) {
 		owner = concatstr(2, listdir, "/control/owner");
@@ -771,12 +771,12 @@ int main(int argc, char **argv)
 			/* strip envelope from before resending */
 			delheaders->count = 0;
 			delheaders->strs = NULL;
-			delheaders->strs = myrealloc(delheaders->strs,
+			delheaders->strs = xrealloc(delheaders->strs,
 					2 * sizeof(char *));
 			delheaders->strs[delheaders->count++] =
-				mystrdup("From ");
+				xstrdup("From ");
 			delheaders->strs[delheaders->count++] =
-				mystrdup("Return-Path:");
+				xstrdup("Return-Path:");
 			if((rawmailfd = open(mailfile, O_RDONLY)) < 0) {
 				log_error(LOG_ARGS, "could not open() "
 						    "input mail file");
@@ -795,8 +795,8 @@ int main(int argc, char **argv)
 				exit(EXIT_FAILURE);
 			}
 			for(i = 0; i < delheaders->count; i++)
-				myfree(delheaders->strs[i]);
-			myfree(delheaders->strs);
+				free(delheaders->strs[i]);
+			free(delheaders->strs);
 			close(rawmailfd);
 			close(donemailfd);
 			unlink(mailfile);
@@ -849,8 +849,8 @@ int main(int argc, char **argv)
 						donemailname, (st.st_size - maxmailsize));
 				unlink(donemailname);
 				unlink(mailfile);
-				myfree(donemailname);
-				myfree(maxmailsizestr);
+				free(donemailname);
+				free(maxmailsizestr);
 				exit(EXIT_SUCCESS);
 			}
 
@@ -870,13 +870,13 @@ int main(int argc, char **argv)
 					"$listowner$", posteraddr, NULL);
 			MY_ASSERT(queuefilename);
 			close_text(txt);
-			myfree(listdelim);
-			myfree(listname);
-			myfree(listfqdn);
+			free(listdelim);
+			free(listname);
+			free(listfqdn);
 			unlink(donemailname);
 			unlink(mailfile);
-			myfree(donemailname);
-			myfree(maxmailsizestr);
+			free(donemailname);
+			free(maxmailsizestr);
 			execlp(mlmmjsend, mlmmjsend,
 					"-l", "1",
 					"-L", listdir,
@@ -889,7 +889,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	myfree(delheaders);
+	free(delheaders);
 
 	if(strcmp(efrom, "") == 0) { /* don't send mails with <> in From
 					     to the list */
@@ -901,9 +901,9 @@ int main(int argc, char **argv)
 				" from address", mailfile);
 		rename(mailfile, discardname);
 		unlink(donemailname);
-		myfree(donemailname);
-		myfree(discardname);
-		myfree(randomstr);
+		free(donemailname);
+		free(discardname);
+		free(randomstr);
 		/* TODO: free emailstructs */
 		exit(EXIT_SUCCESS);
 	}
@@ -921,9 +921,9 @@ int main(int argc, char **argv)
 					" and From: was the list or"
 					" notoccdenymails was set",
 					mailfile);
-			myfree(listaddr);
+			free(listaddr);
 			unlink(donemailname);
-			myfree(donemailname);
+			free(donemailname);
 			exit(EXIT_SUCCESS);
 		}
 		listdelim = getlistdelim(listdir);
@@ -941,11 +941,11 @@ int main(int argc, char **argv)
 				"$listowner$", posteraddr, NULL);
 		MY_ASSERT(queuefilename)
 		close_text(txt);
-		myfree(listdelim);
-		myfree(listname);
-		myfree(listfqdn);
+		free(listdelim);
+		free(listname);
+		free(listfqdn);
 		unlink(donemailname);
-		myfree(donemailname);
+		free(donemailname);
 		execlp(mlmmjsend, mlmmjsend,
 				"-l", "1",
 				"-L", listdir,
@@ -973,9 +973,9 @@ int main(int argc, char **argv)
 					" address or noaccessdenymails"
 					" was set",
 					mailfile);
-				myfree(listaddr);
+				free(listaddr);
 				unlink(donemailname);
-				myfree(donemailname);
+				free(donemailname);
 				exit(EXIT_SUCCESS);
 			}
 			listdelim = getlistdelim(listdir);
@@ -993,13 +993,13 @@ int main(int argc, char **argv)
 					"$listowner$", posteraddr, NULL);
 			MY_ASSERT(queuefilename)
 			close_text(txt);
-			myfree(listaddr);
-			myfree(listdelim);
-			myfree(listname);
-			myfree(listfqdn);
+			free(listaddr);
+			free(listdelim);
+			free(listname);
+			free(listfqdn);
 			unlink(donemailname);
-			myfree(donemailname);
-			myfree(randomstr);
+			free(donemailname);
+			free(randomstr);
 			execlp(mlmmjsend, mlmmjsend,
 					"-l", "1",
 					"-L", listdir,
@@ -1016,16 +1016,16 @@ int main(int argc, char **argv)
 		} else if (accret == DISCARD) {
 	                discardname = concatstr(3, listdir,
                                 "/queue/discarded/", randomstr);
-			myfree(randomstr);
+			free(randomstr);
                 	if(rename(donemailname, discardname) < 0) {
 				log_error(LOG_ARGS, "could not rename(%s,%s)",
 					    donemailname, discardname);
-				myfree(donemailname);
-				myfree(discardname);
+				free(donemailname);
+				free(discardname);
 				exit(EXIT_FAILURE);
 			}
-			myfree(donemailname);
-			myfree(discardname);
+			free(donemailname);
+			free(discardname);
                 	exit(EXIT_SUCCESS);
 		} else if (accret == SEND) {
 			send = 1;
@@ -1061,9 +1061,9 @@ int main(int argc, char **argv)
 					" there are sender restrictions but"
 					" From: was the list address",
 					mailfile);
-			myfree(listaddr);
+			free(listaddr);
 			unlink(donemailname);
-			myfree(donemailname);
+			free(donemailname);
 			exit(EXIT_SUCCESS);
 		}
 		if(subonlypost) {
@@ -1087,9 +1087,9 @@ int main(int argc, char **argv)
 				log_error(LOG_ARGS, "Discarding %s because"
 					" no{sub|mod}onlydenymails was set",
 					mailfile);
-				myfree(listaddr);
+				free(listaddr);
 				unlink(donemailname);
-				myfree(donemailname);
+				free(donemailname);
 				exit(EXIT_SUCCESS);
 			    }
 			    listdelim = getlistdelim(listdir);
@@ -1112,12 +1112,12 @@ int main(int argc, char **argv)
 				    "$listowner$", testaddr, NULL);
 			    MY_ASSERT(queuefilename)
 			    close_text(txt);
-			    myfree(listaddr);
-			    myfree(listdelim);
-			    myfree(listname);
-			    myfree(listfqdn);
+			    free(listaddr);
+			    free(listdelim);
+			    free(listname);
+			    free(listfqdn);
 			    unlink(donemailname);
-			    myfree(donemailname);
+			    free(donemailname);
 			    execlp(mlmmjsend, mlmmjsend,
 				    "-L", listdir,
 				    "-l", "1",
@@ -1143,30 +1143,30 @@ int main(int argc, char **argv)
 	if(moderated) {
 		mqueuename = concatstr(3, listdir, "/moderation/",
 				       randomstr);
-		myfree(randomstr);
+		free(randomstr);
 		if(rename(donemailname, mqueuename) < 0) {
 			log_error(LOG_ARGS, "could not rename(%s,%s)",
 					    donemailname, mqueuename);
-			myfree(donemailname);
-			myfree(mqueuename);
+			free(donemailname);
+			free(mqueuename);
 			exit(EXIT_FAILURE);
 		}
-		myfree(donemailname);
+		free(donemailname);
 		if (notmetoo) {
 			omitfilename = concatstr(2, mqueuename, ".omit");
 			omitfd = open(omitfilename, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
 			if (omitfd < 0) {
 				log_error(LOG_ARGS, "could not open %s",
 					    	    omitfilename);
-				myfree(mqueuename);
-				myfree(omitfilename);
+				free(mqueuename);
+				free(omitfilename);
 				exit(EXIT_FAILURE);
 			}
-			myfree(omitfilename);
+			free(omitfilename);
 			if(dprintf(omitfd, "%s", posteraddr) < 0) {
 				log_error(LOG_ARGS,
 						"could not write omit file");
-				myfree(mqueuename);
+				free(mqueuename);
 				exit(EXIT_FAILURE);
 			}
 			fsync(omitfd);
@@ -1178,11 +1178,11 @@ int main(int argc, char **argv)
 		return EXIT_SUCCESS;
 	}
 
-	myfree(randomstr);
+	free(randomstr);
 
 	if(noprocess) {
-		myfree(donemailname);
-		/* XXX: toemails and ccemails etc. have to be myfree() */
+		free(donemailname);
+		/* XXX: toemails and ccemails etc. have to be free() */
 		exit(EXIT_SUCCESS);
 	}
 

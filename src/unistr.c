@@ -33,9 +33,9 @@
 #include <iconv.h>
 
 #include "mlmmj.h"
+#include "xmalloc.h"
 #include "unistr.h"
 #include "log_error.h"
-#include "memory.h"
 
 /* This is allocated on the stack, so it can't be too big. */
 #define ICONV_BUFFER_SIZE 160
@@ -45,10 +45,10 @@ unistr *unistr_new(void)
 {
 	unistr *ret;
 
-	ret = mymalloc(sizeof(unistr));
+	ret = xmalloc(sizeof(unistr));
 	ret->len = 0;
 	ret->alloc_len = 64;
-	ret->chars = mymalloc(ret->alloc_len * sizeof(unistr_char));
+	ret->chars = xmalloc(ret->alloc_len * sizeof(unistr_char));
 
 	return ret;
 }
@@ -58,8 +58,8 @@ void unistr_free(unistr *str)
 {
 	if (!str)
 		return;
-	myfree(str->chars);
-	myfree(str);
+	free(str->chars);
+	free(str);
 }
 
 
@@ -99,7 +99,7 @@ void unistr_append_char(unistr *str, unistr_char uc)
 {
 	if (str->len >= str->alloc_len) {
 		str->alloc_len *= 2;
-		str->chars = myrealloc(str->chars, str->alloc_len * sizeof(unistr_char));
+		str->chars = xrealloc(str->chars, str->alloc_len * sizeof(unistr_char));
 	}
 	str->chars[str->len++] = uc;
 }
@@ -269,12 +269,12 @@ char *unistr_to_utf8(const unistr *str)
 			errno = 0;
 			log_error(LOG_ARGS, "unistr_to_utf8(): can not utf-8 encode"
 					"U+%04X", str->chars[i]);
-			return mystrdup("");
+			return xstrdup("");
 		}
 	}
 	len++;  /* NUL */
 
-	ret = mymalloc(len);
+	ret = xmalloc(len);
 	p = ret;
 
 	for (i=0; i<str->len; i++) {
@@ -338,7 +338,7 @@ static void decode_qp(char *str, char **binary, size_t *bin_len)
 	int i;
 
 	/* decoded string will never be longer, and we don't include a NUL */
-	*binary = mymalloc(strlen(str));
+	*binary = xmalloc(strlen(str));
 	*bin_len = 0;
 
 	for (i=0; str[i]; i++) {
@@ -382,7 +382,7 @@ static void decode_base64(char *str, char **binary, size_t *bin_len)
 
 	/* decoded string will never be longer, and we don't include a NUL */
 	len = strlen(str);
-	*binary = mymalloc(len);
+	*binary = xmalloc(len);
 	*bin_len = 0;
 
 	out = 0;
@@ -419,7 +419,7 @@ static int header_decode_word(char *wsp, char *word, unistr *ret)
 		return 0;
 	}
 
-	my_word = mystrdup(word);
+	my_word = xstrdup(word);
 
 	charset = my_word + 2;
 
@@ -427,7 +427,7 @@ static int header_decode_word(char *wsp, char *word, unistr *ret)
 		/* missing encoding */
 		unistr_append_usascii(ret, wsp, word-wsp);
 		unistr_append_usascii(ret, "???", 3);
-		myfree(my_word);
+		free(my_word);
 		return 0;
 	}
 	*(encoding++) = '\0';
@@ -436,7 +436,7 @@ static int header_decode_word(char *wsp, char *word, unistr *ret)
 		/* missing string */
 		unistr_append_usascii(ret, wsp, word-wsp);
 		unistr_append_usascii(ret, "???", 3);
-		myfree(my_word);
+		free(my_word);
 		return 0;
 	}
 	*(string++) = '\0';
@@ -445,7 +445,7 @@ static int header_decode_word(char *wsp, char *word, unistr *ret)
 		/* missing end */
 		unistr_append_usascii(ret, wsp, word-wsp);
 		unistr_append_usascii(ret, "???", 3);
-		myfree(my_word);
+		free(my_word);
 		return 0;
 	}
 	*(end++) = '\0';
@@ -453,7 +453,7 @@ static int header_decode_word(char *wsp, char *word, unistr *ret)
 		/* broken end */
 		unistr_append_usascii(ret, wsp, word-wsp);
 		unistr_append_usascii(ret, "???", 3);
-		myfree(my_word);
+		free(my_word);
 		return 0;
 	}
 
@@ -465,7 +465,7 @@ static int header_decode_word(char *wsp, char *word, unistr *ret)
 		/* unknown encoding */
 		unistr_append_usascii(ret, wsp, word-wsp);
 		unistr_append_usascii(ret, "???", 3);
-		myfree(my_word);
+		free(my_word);
 		return 0;
 	}
 
@@ -479,8 +479,8 @@ static int header_decode_word(char *wsp, char *word, unistr *ret)
 		unistr_append_iconv(ret, binary, bin_len, charset);
 	}
 
-	myfree(my_word);
-	myfree(binary);
+	free(my_word);
+	free(binary);
 
 	return 1;
 }
@@ -500,7 +500,7 @@ char *unistr_header_to_utf8(const char *str)
 	unistr *us;
 	char *ret;
 
-	my_str = mystrdup(str);
+	my_str = xstrdup(str);
 	us = unistr_new();
 
 	p = my_str + strspn(my_str, " \t\n");
@@ -520,7 +520,7 @@ char *unistr_header_to_utf8(const char *str)
 		p += strspn(p, " \t\n");
 	}
 
-	myfree(my_str);
+	free(my_str);
 
 	ret = unistr_to_utf8(us);
 	unistr_free(us);
@@ -557,7 +557,7 @@ char *unistr_utf8_to_header(const char *str)
 	int clean;
 	char buf[4];
 
-	my_str = mystrdup(str);
+	my_str = xstrdup(str);
 
 	/* trim whitespace and see if the header is clean */
 
@@ -578,8 +578,8 @@ char *unistr_utf8_to_header(const char *str)
 		*wsp = '\0';
 
 	if (clean) {
-		ret = mystrdup(ret);
-		myfree(my_str);
+		ret = xstrdup(ret);
+		free(my_str);
 		return ret;
 	}
 
@@ -600,7 +600,7 @@ char *unistr_utf8_to_header(const char *str)
 
 	ret = unistr_to_utf8(us);
 	unistr_free(us);
-	myfree(my_str);
+	free(my_str);
 
 	return ret;
 }

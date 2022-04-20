@@ -4,9 +4,9 @@
 #include <unistd.h>
 #include <string.h>
 
+#include "xmalloc.h"
 #include "mlmmj.h"
 #include "log_error.h"
-#include "memory.h"
 #include "strgen.h"
 #include "getaddrsfromfd.h"
 
@@ -38,9 +38,9 @@ off_t getaddrsfromfd(struct strlist *slist, int fd, int max)
 			len = next - cur;
 			if(next == start + st.st_size - 1 && *next != '\n')
 				len++;
-			slist->strs = (char **)myrealloc(slist->strs,
+			slist->strs = (char **)xrealloc(slist->strs,
 					sizeof(char *) * slist->count);
-			slist->strs[slist->count - 1] = mymalloc(len + 1);
+			slist->strs[slist->count - 1] = xmalloc(len + 1);
 			strncpy(slist->strs[slist->count - 1], cur, len);
 			slist->strs[slist->count - 1][len] = '\0';
 			cur = next + 1;

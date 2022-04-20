@@ -32,7 +32,6 @@
 #include "log_error.h"
 #include "mygetline.h"
 #include "strgen.h"
-#include "memory.h"
 
 char *getlistaddr(const char *listdir)
 {
@@ -44,7 +43,7 @@ char *getlistaddr(const char *listdir)
 		log_error(LOG_ARGS, "Could not open '%s'", tmpstr);
 		exit(EXIT_FAILURE);
 	}
-	myfree(tmpstr);
+	free(tmpstr);
 
 	tmpstr = mygetline(listnamefd);
 

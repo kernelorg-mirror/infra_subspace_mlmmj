@@ -44,13 +44,13 @@ int run_digests(const char *listdir, const char *mlmmjsend);
 #define WRITEMAINTLOG4( s1, s2, s3, s4 ) do { \
 		logstr = concatstr( s1, s2, s3, s4 ) ;\
 		writen(maintdlogfd, logstr, strlen(logstr)); \
-		myfree(logstr); \
+		free(logstr); \
 		} while (0);
 
 #define WRITEMAINTLOG6( s1, s2, s3, s4, s5, s6 ) do { \
 		logstr = concatstr( s1, s2, s3, s4, s5, s6 ) ;\
 		writen(maintdlogfd, logstr, strlen(logstr)); \
-		myfree(logstr); \
+		free(logstr); \
 		} while (0);
 
 #endif /* MLMMJ_MAINTD_H */

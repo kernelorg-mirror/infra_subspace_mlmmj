@@ -31,6 +31,7 @@
 #include <sys/stat.h>
 #include <ctype.h>
 
+#include "xmalloc.h"
 #include "mlmmj.h"
 #include "listcontrol.h"
 #include "getlistdelim.h"
@@ -42,7 +43,6 @@
 #include "statctrl.h"
 #include "mygetline.h"
 #include "chomp.h"
-#include "memory.h"
 #include "log_oper.h"
 #include "ctrlvalues.h"
 #include "subscriberfuncs.h"
@@ -159,7 +159,7 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 						ctrl_commands[ctrl].command);
 					return -1;
                                 }
-				param = mystrdup(controlstr + cmdlen + 1);
+				param = xstrdup(controlstr + cmdlen + 1);
 				MY_ASSERT(param);
 				if (strchr(param, '/')) {
 					errno = 0;
@@ -381,7 +381,7 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 	/* listname+subconf-digest-COOKIE@domain.tld */
 	case CTRL_CONFSUB_DIGEST:
 		conffilename = concatstr(3, listdir, "/subconf/", param);
-		myfree(param);
+		free(param);
 		if((tmpfd = open(conffilename, O_RDONLY)) < 0) {
 			/* invalid COOKIE */
 			errno = 0;
@@ -409,7 +409,7 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 	/* listname+subconf-nomail-COOKIE@domain.tld */
 	case CTRL_CONFSUB_NOMAIL:
 		conffilename = concatstr(3, listdir, "/subconf/", param);
-		myfree(param);
+		free(param);
 		if((tmpfd = open(conffilename, O_RDONLY)) < 0) {
 			/* invalid COOKIE */
 			errno = 0;
@@ -437,7 +437,7 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 	/* listname+subconf-both-COOKIE@domain.tld */
 	case CTRL_CONFSUB_BOTH:
 		conffilename = concatstr(3, listdir, "/subconf/", param);
-		myfree(param);
+		free(param);
 		if((tmpfd = open(conffilename, O_RDONLY)) < 0) {
 			/* invalid COOKIE */
 			errno = 0;
@@ -465,7 +465,7 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 	/* listname+subconf-COOKIE@domain.tld */
 	case CTRL_CONFSUB:
 		conffilename = concatstr(3, listdir, "/subconf/", param);
-		myfree(param);
+		free(param);
 		if((tmpfd = open(conffilename, O_RDONLY)) < 0) {
 			/* invalid COOKIE */
 			errno = 0;
@@ -532,7 +532,7 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 			return -1;
 		}
 		conffilename = concatstr(3, listdir, "/unsubconf/", param);
-		myfree(param);
+		free(param);
 		if((tmpfd = open(conffilename, O_RDONLY)) < 0) {
 			/* invalid COOKIE */
 			errno = 0;
@@ -566,7 +566,7 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 			return -1;
 		}
 		conffilename = concatstr(3, listdir, "/unsubconf/", param);
-		myfree(param);
+		free(param);
 		if((tmpfd = open(conffilename, O_RDONLY)) < 0) {
 			/* invalid COOKIE */
 			errno = 0;
@@ -600,7 +600,7 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 			return -1;
 		}
 		conffilename = concatstr(3, listdir, "/unsubconf/", param);
-		myfree(param);
+		free(param);
 		if((tmpfd = open(conffilename, O_RDONLY)) < 0) {
 			/* invalid COOKIE */
 			errno = 0;
@@ -656,15 +656,15 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 	case CTRL_MODERATE:
 		/* Subscriber moderation; DEPRECATED */
 		if(strncmp(param, "subscribe", 9) == 0) {
-			tmpstr = mystrdup(param + 9);
-			myfree(param);
+			tmpstr = xstrdup(param + 9);
+			free(param);
 			param = tmpstr;
 			goto permit;
 		}
 
 		moderatefilename = concatstr(3, listdir, "/moderation/", param);
 		if(stat(moderatefilename, &stbuf) < 0) {
-			myfree(moderatefilename);
+			free(moderatefilename);
 			/* no mail to moderate */
 			errno = 0;
 			log_error(LOG_ARGS, "A release request was"
@@ -692,10 +692,10 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 				chomp(omit);
 			}
 			unlink(omitfilename);
-			myfree(omitfilename);
+			free(omitfilename);
 		}
 
-		myfree(moderatefilename);
+		free(moderatefilename);
 
 		log_oper(listdir, OPLOGFNAME, "%s released %s",
 				fromemails->emaillist[0], param);
@@ -718,7 +718,7 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 	case CTRL_REJECT:
 		moderatefilename = concatstr(3, listdir, "/moderation/", param);
 		if(stat(moderatefilename, &stbuf) < 0) {
-			myfree(moderatefilename);
+			free(moderatefilename);
 			/* no mail to moderate */
 			errno = 0;
 			log_error(LOG_ARGS, "A reject request was"
@@ -728,14 +728,14 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 		}
 		log_oper(listdir, OPLOGFNAME, "%s rejected %s",
 			fromemails->emaillist[0], param);
-		myfree(param);
+		free(param);
 		if (unlink(moderatefilename) != 0) {
 			log_error(LOG_ARGS, "Could not unlink %s",
 					moderatefilename);
-			myfree(moderatefilename);
+			free(moderatefilename);
 			exit(EXIT_FAILURE);
 		}
-		myfree(moderatefilename);
+		free(moderatefilename);
 		break;
 
 	/* listname+permit-COOKIE@domain.tld */
@@ -744,7 +744,7 @@ permit:
 		gatekeepfilename = concatstr(3, listdir,
 				"/moderation/subscribe", param);
 		if(stat(gatekeepfilename, &stbuf) < 0) {
-			myfree(gatekeepfilename);
+			free(gatekeepfilename);
 			/* no mail to moderate */
 			errno = 0;
 			log_error(LOG_ARGS, "A permit request was"
@@ -768,7 +768,7 @@ permit:
 		gatekeepfilename = concatstr(3, listdir,
 				"/moderation/subscribe", param);
 		if(stat(gatekeepfilename, &stbuf) < 0) {
-			myfree(gatekeepfilename);
+			free(gatekeepfilename);
 			/* no mail to moderate */
 			errno = 0;
 			log_error(LOG_ARGS, "An obstruct request was"
@@ -778,14 +778,14 @@ permit:
 		}
 		log_oper(listdir, OPLOGFNAME, "%s obstructed %s",
 			fromemails->emaillist[0], param);
-		myfree(param);
+		free(param);
 		if (unlink(gatekeepfilename) != 0) {
 			log_error(LOG_ARGS, "Could not unlink %s",
 					gatekeepfilename);
-			myfree(gatekeepfilename);
+			free(gatekeepfilename);
 			exit(EXIT_FAILURE);
 		}
-		myfree(gatekeepfilename);
+		free(gatekeepfilename);
 		break;
 
 	/* listname+help@domain.tld */

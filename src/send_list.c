@@ -30,6 +30,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 
+#include "xmalloc.h"
 #include "mlmmj.h"
 #include "send_list.h"
 #include "strgen.h"
@@ -40,7 +41,6 @@
 #include "wrappers.h"
 #include "mygetline.h"
 #include "prepstdreply.h"
-#include "memory.h"
 
 
 struct subs_list_state;
@@ -56,8 +56,8 @@ struct subs_list_state {
 
 static subs_list_state *init_subs_list(const char *dirname)
 {
-	subs_list_state *s = mymalloc(sizeof(subs_list_state));
-	s->dirname = mystrdup(dirname);
+	subs_list_state *s = xmalloc(sizeof(subs_list_state));
+	s->dirname = xstrdup(dirname);
 	s->dirp = NULL;
 	s->fd = -1;
 	s->line = NULL;
@@ -89,7 +89,7 @@ static const char *get_sub(void *state)
 	if (s->dirp == NULL) return NULL;
 
 	if (s->line != NULL) {
-		myfree(s->line);
+		free(s->line);
 		s->line = NULL;
 	}
 
@@ -110,10 +110,10 @@ static const char *get_sub(void *state)
 				log_error(LOG_ARGS,
 						"Could not open %s for reading",
 						filename);
-				myfree(filename);
+				free(filename);
 				continue;
 			}
-			myfree(filename);
+			free(filename);
 		}
 		s->line = mygetline(s->fd);
 		if (s->line == NULL) {
@@ -130,11 +130,11 @@ static const char *get_sub(void *state)
 static void finish_subs_list(subs_list_state *s)
 {
 	if (s == NULL) return;
-	if (s->line != NULL) myfree(s->line);
+	if (s->line != NULL) free(s->line);
 	if (s->fd != -1) close(s->fd);
 	if (s->dirp != NULL) closedir(s->dirp);
-	myfree(s->dirname);
-	myfree(s);
+	free(s->dirname);
+	free(s);
 }
 
 
@@ -166,7 +166,7 @@ void send_list(const char *listdir, const char *emailaddr,
 	listfqdn = genlistfqdn(listaddr);
 
 	fromaddr = concatstr(4, listname, listdelim, "bounces-help@", listfqdn);
-	myfree(listdelim);
+	free(listdelim);
 
 	subdir = concatstr(2, listdir, "/subscribers.d/");
 	digestdir = concatstr(2, listdir, "/digesters.d/");
@@ -174,9 +174,9 @@ void send_list(const char *listdir, const char *emailaddr,
 	normalsls = init_subs_list(subdir);
 	digestsls = init_subs_list(digestdir);
 	nomailsls = init_subs_list(nomaildir);
-	myfree(subdir);
-	myfree(digestdir);
-	myfree(nomaildir);
+	free(subdir);
+	free(digestdir);
+	free(nomaildir);
 
 	txt = open_text(listdir, "list", NULL, NULL, subtype_strs[SUB_ALL],
 			"listsubs");
@@ -213,9 +213,9 @@ void send_list(const char *listdir, const char *emailaddr,
 	finish_subs_list(normalsls);
 	finish_subs_list(digestsls);
 	finish_subs_list(nomailsls);
-	myfree(listaddr);
-	myfree(listname);
-	myfree(listfqdn);
+	free(listaddr);
+	free(listname);
+	free(listfqdn);
 
 	execlp(mlmmjsend, mlmmjsend,
 				"-l", "1",

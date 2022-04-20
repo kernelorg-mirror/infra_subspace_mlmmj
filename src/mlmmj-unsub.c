@@ -33,7 +33,9 @@
 #include <dirent.h>
 #include <sys/wait.h>
 #include <ctype.h>
+#include <err.h>
 
+#include "xmalloc.h"
 #include "mlmmj.h"
 #include "mlmmj-unsub.h"
 #include "mylocking.h"
@@ -44,7 +46,6 @@
 #include "subscriberfuncs.h"
 #include "strgen.h"
 #include "log_error.h"
-#include "memory.h"
 #include "statctrl.h"
 #include "prepstdreply.h"
 
@@ -61,26 +62,26 @@ void confirm_unsub(const char *listdir, const char *listaddr,
 
 	fromaddr = concatstr(4, listname, listdelim, "bounces-help@", listfqdn);
 
-	myfree(listname);
-	myfree(listfqdn);
+	free(listname);
+	free(listfqdn);
 
 	switch(typesub) {
 		default:
 		case SUB_NORMAL:
-			listtext = mystrdup("unsub-ok");
+			listtext = xstrdup("unsub-ok");
 			break;
 		case SUB_DIGEST:
-			listtext = mystrdup("unsub-ok-digest");
+			listtext = xstrdup("unsub-ok-digest");
 			break;
 		case SUB_NOMAIL:
-			listtext = mystrdup("unsub-ok-nomail");
+			listtext = xstrdup("unsub-ok-nomail");
 			break;
 	}
 
 	txt = open_text(listdir, "finish", "unsub",
 			subreason_strs[reasonsub], subtype_strs[typesub],
 			listtext);
-	myfree(listtext);
+	free(listtext);
 	MY_ASSERT(txt);
 	register_unformatted(txt, "subaddr", subaddr);
 	queuefilename = prepstdreply(txt, listdir,
@@ -114,26 +115,26 @@ void notify_unsub(const char *listdir, const char *listaddr,
         fromaddr = concatstr(4, listname, listdelim, "bounces-help@", listfqdn);
 	tostr = concatstr(4, listname, listdelim, "owner@", listfqdn);
 
-	myfree(listname);
-	myfree(listfqdn);
+	free(listname);
+	free(listfqdn);
 
 	switch(typesub) {
 		default:
 		case SUB_NORMAL:
-			listtext = mystrdup("notifyunsub");
+			listtext = xstrdup("notifyunsub");
 			break;
 		case SUB_DIGEST:
-			listtext = mystrdup("notifyunsub-digest");
+			listtext = xstrdup("notifyunsub-digest");
 			break;
 		case SUB_NOMAIL:
-			listtext = mystrdup("notifyunsub-nomail");
+			listtext = xstrdup("notifyunsub-nomail");
 			break;
 	}
 	
 	txt = open_text(listdir, "notify", "unsub",
 			subreason_strs[reasonsub], subtype_strs[typesub],
 			listtext);
-	myfree(listtext);
+	free(listtext);
 	MY_ASSERT(txt);
 	register_unformatted(txt, "subaddr", subaddr);
 	register_unformatted(txt, "oldsub", subaddr); /* DEPRECATED */
@@ -169,8 +170,8 @@ void generate_unsubconfirm(const char *listdir, const char *listaddr,
 	listfqdn = genlistfqdn(listaddr);
 
         do {
-                myfree(confirmfilename);
-                myfree(randomstr);
+		free(confirmfilename);
+		free(randomstr);
 		randomstr = random_str();
                 confirmfilename = concatstr(3, listdir, "/unsubconf/",
 					    randomstr);
@@ -182,17 +183,17 @@ void generate_unsubconfirm(const char *listdir, const char *listaddr,
 
 	if(subconffd < 0) {
 		log_error(LOG_ARGS, "Could not open '%s'", confirmfilename);
-                myfree(randomstr);
-		myfree(confirmfilename);
+                free(randomstr);
+		free(confirmfilename);
 		exit(EXIT_FAILURE);
 	}
 
-	myfree(confirmfilename);
+	free(confirmfilename);
 
 	if(dprintf(subconffd, "%s", subaddr) < 0) {
 		log_error(LOG_ARGS, "Could not write unsubconffile");
-                myfree(randomstr);
-		myfree(confirmfilename);
+                free(randomstr);
+		free(confirmfilename);
 		exit(EXIT_FAILURE);
 	}
 
@@ -204,29 +205,29 @@ void generate_unsubconfirm(const char *listdir, const char *listaddr,
 	switch(typesub) {
 		default:
 		case SUB_NORMAL:
-			listtext = mystrdup("unsub-confirm");
-			tmpstr = mystrdup("confunsub-");
+			listtext = xstrdup("unsub-confirm");
+			tmpstr = xstrdup("confunsub-");
 			break;
 		case SUB_DIGEST:
-			listtext = mystrdup("unsub-confirm-digest");
-			tmpstr = mystrdup("confunsub-digest-");
+			listtext = xstrdup("unsub-confirm-digest");
+			tmpstr = xstrdup("confunsub-digest-");
 			break;
 		case SUB_NOMAIL:
-			listtext = mystrdup("unsub-confirm-nomail");
-			tmpstr = mystrdup("confunsub-nomail-");
+			listtext = xstrdup("unsub-confirm-nomail");
+			tmpstr = xstrdup("confunsub-nomail-");
 			break;
 	}
 
 	confirmaddr = concatstr(6, listname, listdelim, tmpstr, randomstr, "@",
 				listfqdn);
 
-	myfree(randomstr);
-	myfree(tmpstr);
+	free(randomstr);
+	free(tmpstr);
 
 	txt = open_text(listdir, "confirm", "unsub",
 			subreason_strs[reasonsub], subtype_strs[typesub],
 			listtext);
-	myfree(listtext);
+	free(listtext);
 	MY_ASSERT(txt);
 	register_unformatted(txt, "subaddr", subaddr);
 	register_unformatted(txt, "confaddr", confirmaddr); /* DEPRECATED */
@@ -236,8 +237,8 @@ void generate_unsubconfirm(const char *listdir, const char *listaddr,
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
-	myfree(listname);
-	myfree(listfqdn);
+	free(listname);
+	free(listfqdn);
 
 	execlp(mlmmjsend, mlmmjsend,
 				"-l", "1",
@@ -325,7 +326,7 @@ static void generate_notsubscribed(const char *listdir, const char *subaddr,
 	listfqdn = genlistfqdn(listaddr);
 
 	fromaddr = concatstr(4, listname, listdelim, "bounces-help@", listfqdn);
-	myfree(listdelim);
+	free(listdelim);
 
 	txt = open_text(listdir,
 			"deny", "unsub", "unsubbed", subtype_strs[typesub],
@@ -337,9 +338,9 @@ static void generate_notsubscribed(const char *listdir, const char *subaddr,
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
-	myfree(listaddr);
-	myfree(listname);
-	myfree(listfqdn);
+	free(listaddr);
+	free(listname);
+	free(listfqdn);
 
 	execlp(mlmmjsend, mlmmjsend,
 				"-l", "1",
@@ -390,11 +391,11 @@ static void unsubscribe_type(char *listdir, char *listaddr, char *listdelim,
 	if((subddir = opendir(subddirname)) == NULL) {
 		log_error(LOG_ARGS, "Could not opendir(%s)",
 				    subddirname);
-		myfree(subddirname);
+		free(subddirname);
 		exit(EXIT_FAILURE);
 	}
 
-	myfree(subddirname);
+	free(subddirname);
 
 	while((dp = readdir(subddir)) != NULL) {
 		if(!strcmp(dp->d_name, "."))
@@ -406,14 +407,14 @@ static void unsubscribe_type(char *listdir, char *listaddr, char *listdelim,
 
 		subread = open(subreadname, O_RDWR);
 		if(subread == -1) {
-			myfree(subreadname);
+			free(subreadname);
 			continue;
 		}
 
 		suboff = find_subscriber(subread, address);
 		if(suboff == -1) {
 			close(subread);
-			myfree(subreadname);
+			free(subreadname);
 			continue;
 		}
 
@@ -425,7 +426,7 @@ static void unsubscribe_type(char *listdir, char *listaddr, char *listdelim,
 		if(sublockfd < 0) {
 			log_error(LOG_ARGS, "Error opening lock file %s",
 					sublockname);
-			myfree(sublockname);
+			free(sublockname);
 			continue;
 		}
 
@@ -433,7 +434,7 @@ static void unsubscribe_type(char *listdir, char *listaddr, char *listdelim,
 		if(sublock < 0) {
 			log_error(LOG_ARGS, "Error locking '%s' file",
 					sublockname);
-			myfree(sublockname);
+			free(sublockname);
 			close(sublockfd);
 			continue;
 		}
@@ -444,8 +445,8 @@ static void unsubscribe_type(char *listdir, char *listaddr, char *listdelim,
 					subreadname);
 			close(subread);
 			close(sublockfd);
-			myfree(subreadname);
-			myfree(sublockname);
+			free(subreadname);
+			free(sublockname);
 			continue;
 		}
 
@@ -458,9 +459,9 @@ static void unsubscribe_type(char *listdir, char *listaddr, char *listdelim,
 					subwritename);
 			close(subread);
 			close(sublockfd);
-			myfree(subreadname);
-			myfree(subwritename);
-			myfree(sublockname);
+			free(subreadname);
+			free(subwritename);
+			free(sublockname);
 			continue;
 		}
 
@@ -471,9 +472,9 @@ static void unsubscribe_type(char *listdir, char *listaddr, char *listdelim,
 			close(subread);
 			close(subwrite);
 			close(sublockfd);
-			myfree(subreadname);
-			myfree(subwritename);
-			myfree(sublockname);
+			free(subreadname);
+			free(subwritename);
+			free(sublockname);
 			continue;
 		}
 
@@ -483,9 +484,9 @@ static void unsubscribe_type(char *listdir, char *listaddr, char *listdelim,
 			close(subwrite);
 			close(sublockfd);
 			unlink(subwritename);
-			myfree(subreadname);
-			myfree(subwritename);
-			myfree(sublockname);
+			free(subreadname);
+			free(subwritename);
+			free(sublockname);
 			continue;
 		}
 
@@ -496,8 +497,8 @@ static void unsubscribe_type(char *listdir, char *listaddr, char *listdelim,
 					subwritename, subreadname);
 				close(subread);
 				close(subwrite);
-				myfree(subreadname);
-				myfree(subwritename);
+				free(subreadname);
+				free(subwritename);
 				continue;
 			}
 		} else { /* unsubres == 0, no subscribers left */
@@ -508,10 +509,10 @@ static void unsubscribe_type(char *listdir, char *listaddr, char *listdelim,
 		close(subread);
 		close(subwrite);
 		close(sublockfd);
-		myfree(subreadname);
-		myfree(subwritename);
+		free(subreadname);
+		free(subwritename);
 		unlink(sublockname);
-		myfree(sublockname);
+		free(sublockname);
 
         }
 
@@ -541,7 +542,7 @@ int main(int argc, char **argv)
 
 	bindir = mydirname(argv[0]);
 	mlmmjsend = concatstr(2, bindir, "/mlmmj-send");
-	myfree(bindir);
+	free(bindir);
 
 	while ((opt = getopt(argc, argv, "hcCdenNVUL:a:sbqrR")) != -1) {
 		switch(opt) {
@@ -625,7 +626,7 @@ int main(int argc, char **argv)
 	}
 
 	/* Make the address lowercase */
-	lowcaseaddr = mystrdup(address);
+	lowcaseaddr = xstrdup(address);
 	i = 0;
 	while(lowcaseaddr[i]) {
 		lowcaseaddr[i] = tolower(lowcaseaddr[i]);
@@ -667,13 +668,13 @@ int main(int argc, char **argv)
 		}
 		subddirname = concatstr(2, listdir, subdir);
 		subbed = is_subbed_in(subddirname, address);
-		myfree(subddirname);
+		free(subddirname);
 	}
 
 	if(!subbed) {
 		/* Address is not subscribed */
-		myfree(listaddr);
-		myfree(listdelim);
+		free(listaddr);
+		free(listdelim);
 
 		if(!nogennotsubscribed) {
 			generate_notsubscribed(listdir, address, mlmmjsend,
@@ -729,8 +730,8 @@ int main(int argc, char **argv)
                 notify_unsub(listdir, listaddr, listdelim, address, mlmmjsend,
 				typesub, reasonsub);
 
-	myfree(listaddr);
-	myfree(listdelim);
+	free(listaddr);
+	free(listdelim);
 
 	return EXIT_SUCCESS;
 }

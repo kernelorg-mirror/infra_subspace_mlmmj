@@ -35,7 +35,6 @@
 #include "incindexfile.h"
 #include "log_error.h"
 #include "strgen.h"
-#include "memory.h"
 
 #define INTBUF_SIZE 32
 
@@ -51,7 +50,7 @@ int incindexfile(const char *listdir)
 	fd = open(indexfilename, O_RDWR|O_CREAT, S_IRUSR|S_IWUSR);
 
 	if(fd == -1) {
-		myfree(indexfilename);
+		free(indexfilename);
 		log_error(LOG_ARGS, "Error opening index file");
 		return 0;
 	}
@@ -59,7 +58,7 @@ int incindexfile(const char *listdir)
 	lock = myexcllock(fd);
 	
 	if(lock) {
-		myfree(indexfilename);
+		free(indexfilename);
 		log_error(LOG_ARGS, "Error locking index file");
 		close(fd);
 		return 0;
@@ -78,7 +77,7 @@ int incindexfile(const char *listdir)
 	dprintf(fd, "%ld", index);
 
 	close(fd); /* Lock is also released */
-	myfree(indexfilename);
+	free(indexfilename);
 
 	return index;
 }

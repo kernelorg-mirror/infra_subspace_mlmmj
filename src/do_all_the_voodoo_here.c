@@ -26,6 +26,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "xmalloc.h"
 #include "mlmmj.h"
 #include "mygetline.h"
 #include "gethdrline.h"
@@ -34,7 +35,6 @@
 #include "do_all_the_voodoo_here.h"
 #include "log_error.h"
 #include "wrappers.h"
-#include "memory.h"
 
 int findit(const char *line, const struct strlist *headers)
 {
@@ -61,10 +61,10 @@ void getinfo(const char *line, struct mailhdr *readhdrs)
 			readhdrs[i].valuecount++;
 			valuelen = strlen(line) - tokenlen;
 			readhdrs[i].values =
-				(char **)myrealloc(readhdrs[i].values,
+				(char **)xrealloc(readhdrs[i].values,
 				  readhdrs[i].valuecount * sizeof(char *));
 			readhdrs[i].values[readhdrs[i].valuecount - 1] =
-					(char *)mymalloc(valuelen + 1);
+					(char *)xmalloc(valuelen + 1);
 			strcpy(readhdrs[i].values[readhdrs[i].valuecount - 1],
 						line+tokenlen);
 		}
@@ -95,8 +95,8 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 				if(dumpfd2fd(hdrfd, outfd) < 0) {
 					log_error(LOG_ARGS, "Could not "
 						"add extra headers");
-					myfree(hdrline);
-					myfree(unfolded);
+					free(hdrline);
+					free(unfolded);
 					return -1;
 				}
 				fsync(outfd);
@@ -114,13 +114,13 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 			}
 			/* write LF */
 			if(dprintf(outfd, "\n") < 0) {
-				myfree(hdrline);
-				myfree(unfolded);
+				free(hdrline);
+				free(unfolded);
 				log_error(LOG_ARGS, "Error writing hdrs.");
 				return -1;
 			}
-			myfree(hdrline);
-			myfree(unfolded);
+			free(hdrline);
+			free(unfolded);
 			break;
 		}
 
@@ -130,9 +130,9 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 
 		/* Snatch a copy of the header */
 		allhdrs->count++;
-		allhdrs->strs = myrealloc(allhdrs->strs,
+		allhdrs->strs = xrealloc(allhdrs->strs,
 					sizeof(char *) * (allhdrs->count));
-		allhdrs->strs[allhdrs->count-1] = mystrdup(hdrline);
+		allhdrs->strs[allhdrs->count-1] = xstrdup(hdrline);
 
 		/* Add Subject: prefix if wanted */
 		if(prefix) {
@@ -142,11 +142,11 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 				if(strstr(hdrline + 8, prefix) == NULL &&
 				   strstr(unqp, prefix) == NULL) {
 					dprintf(outfd, "Subject: %s%s\n", prefix, hdrline + 8);
-					myfree(hdrline);
-					myfree(unqp);
+					free(hdrline);
+					free(unqp);
 					continue;
 				}
-				myfree(unqp);
+				free(unqp);
 			}
 		}
 
@@ -154,8 +154,8 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 		if(!delhdrs || !findit(hdrline, delhdrs))
 			dprintf(outfd, "%s", unfolded);
 
-		myfree(hdrline);
-		myfree(unfolded);
+		free(hdrline);
+		free(unfolded);
 	}
 
 	/* Just print the rest of the mail */

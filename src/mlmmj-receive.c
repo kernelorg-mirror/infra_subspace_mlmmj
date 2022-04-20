@@ -71,7 +71,7 @@ int main(int argc, char **argv)
 
 	bindir = mydirname(argv[0]);
 	mlmmjprocess = concatstr(2, bindir, "/mlmmj-process");
-	myfree(bindir);
+	free(bindir);
 	
 	while ((opt = getopt(argc, argv, "hPVL:s:e:F")) != -1) {
 		switch(opt) {
@@ -123,20 +123,20 @@ int main(int argc, char **argv)
 	}
 	
 	infilename = concatstr(3, listdir, "/incoming/", randomstr);
-	myfree(randomstr);
+	free(randomstr);
 	fd = open(infilename, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
 	while(fd < 0 && errno == EEXIST) {
-		myfree(infilename);
+		free(infilename);
 		randomstr = random_str();
 		infilename = concatstr(3, listdir, "/incoming/", randomstr);
-		myfree(randomstr);
+		free(randomstr);
 		fd = open(infilename, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
 	}
 
 	if(fd < 0) {
 		log_error(LOG_ARGS, "could not create mail file in "
 				    "%s/incoming directory", listdir);
-		myfree(infilename);
+		free(infilename);
 		exit(EXIT_FAILURE);
 	}
 	
@@ -152,7 +152,7 @@ int main(int argc, char **argv)
 	close(fd);
 
 	if(noprocess) {
-		myfree(infilename);
+		free(infilename);
 		exit(EXIT_SUCCESS);
 	}
 

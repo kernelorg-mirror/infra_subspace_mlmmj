@@ -108,15 +108,4 @@ void print_version(const char *prg);
 			    "e.g. /usr/local/bin/%s", name); \
 			};
 
-/* make sure we use the wrappers */
-#ifndef _MEMORY_C
-#define malloc	Bad_programmer__no_biscuit
-#define realloc	Bad_programmer__no_biscuit
-#define free	Bad_programmer__no_biscuit
-#ifdef strdup
-#undef strdup
-#define strdup	Bad_programmer__no_biscuit
-#endif  /* strdup */
-#endif  /* _MEMORY_C */
-
 #endif /* MLMMJ_GENERIC_INCLUDES */

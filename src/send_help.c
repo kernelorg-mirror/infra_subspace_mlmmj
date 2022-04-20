@@ -40,7 +40,6 @@
 #include "wrappers.h"
 #include "mygetline.h"
 #include "prepstdreply.h"
-#include "memory.h"
 
 void send_help(const char *listdir, const char *queuefilename,
 		const char *emailaddr, const char *mlmmjsend)
@@ -55,10 +54,10 @@ void send_help(const char *listdir, const char *queuefilename,
 
 	fromaddr = concatstr(4, listname, listdelim, "bounces-help@", listfqdn);
 
-	myfree(listname);
-	myfree(listdelim);
-	myfree(listfqdn);
-	myfree(listaddr);
+	free(listname);
+	free(listdelim);
+	free(listfqdn);
+	free(listaddr);
 
 	execlp(mlmmjsend, mlmmjsend,
 				"-l", "1",

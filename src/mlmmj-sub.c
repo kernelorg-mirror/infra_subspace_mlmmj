@@ -35,6 +35,7 @@
 #include <ctype.h>
 #include <err.h>
 
+#include "xmalloc.h"
 #include "mlmmj.h"
 #include "mlmmj-sub.h"
 #include "mylocking.h"
@@ -47,7 +48,6 @@
 #include "mygetline.h"
 #include "statctrl.h"
 #include "prepstdreply.h"
-#include "memory.h"
 #include "ctrlvalues.h"
 #include "chomp.h"
 
@@ -88,8 +88,8 @@ static void moderate_sub(const char *listdir, const char *listaddr,
 		fd = open(modfilename, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
 		if (fd < 0) {
 			if (errno == EEXIST) {
-				myfree(cookie);
-				myfree(modfilename);
+				free(cookie);
+				free(modfilename);
 				continue;
 			}
 			log_error(LOG_ARGS, "could not create %s"
@@ -107,7 +107,7 @@ static void moderate_sub(const char *listdir, const char *listaddr,
 	
 	close(fd);
 	
-	myfree(str);
+	free(str);
 
 	submods = ctrlvalues(listdir, "submod");
 	mods = concatstr(2, listdir, "/control/submod");
@@ -119,11 +119,11 @@ static void moderate_sub(const char *listdir, const char *listaddr,
 	if(a == NULL) {
 		/* free the submods struct from above */
 		for(i = 0; i < submods->count; i++)
-			myfree(submods->strs[i]);
-		myfree(submods->strs);
-		myfree(submods);
+			free(submods->strs[i]);
+		free(submods->strs);
+		free(submods);
 		submods = ctrlvalues(listdir, "owner");
-		myfree(mods);
+		free(mods);
 		mods = concatstr(2, listdir, "/control/owner");
 	}
 
@@ -138,15 +138,15 @@ static void moderate_sub(const char *listdir, const char *listaddr,
 			"@", listfqdn);
 	obstruct = concatstr(6, listname, listdelim, "obstruct-", cookie,
 			"@", listfqdn);
-	myfree(cookie);
+	free(cookie);
 	for(i = 0; i < submods->count; i++) {
 		printf("%s", submods->strs[i]);
 		str = moderators;
 		moderators = concatstr(3, moderators, submods->strs[i], "\n");
-		myfree(str);
+		free(str);
 	}
 	mls = init_memory_lines(moderators);
-	myfree(moderators);
+	free(moderators);
 
 	txt = open_text(listdir,
 			"gatekeep", "sub",
@@ -195,8 +195,8 @@ static void moderate_sub(const char *listdir, const char *listaddr,
 		exit(EXIT_FAILURE);
 	}
 
-	myfree(to);
-	myfree(replyto);
+	free(to);
+	free(replyto);
 	
 	/* send mail to requester that the list is submod'ed */
 
@@ -217,8 +217,8 @@ static void moderate_sub(const char *listdir, const char *listaddr,
 	close_text(txt);
 
 	finish_memory_lines(mls);
-	myfree(listname);
-	myfree(listfqdn);
+	free(listname);
+	free(listfqdn);
 	execl(mlmmjsend, mlmmjsend,
 				"-l", "1",
 				"-L", listdir,
@@ -283,9 +283,9 @@ void getaddrandtype(const char *listdir, const char *modstr,
 			modfilename);
 
 freedone:
-	myfree(readtype);
+	free(readtype);
 	unlink(modfilename);
-	myfree(modfilename);
+	free(modfilename);
 }
 
 void confirm_sub(const char *listdir, const char *listaddr,
@@ -300,30 +300,30 @@ void confirm_sub(const char *listdir, const char *listaddr,
 
 	fromaddr = concatstr(4, listname, listdelim, "bounces-help@", listfqdn);
 
-	myfree(listname);
-	myfree(listfqdn);
+	free(listname);
+	free(listfqdn);
 
 	switch(typesub) {
 		default:
 		case SUB_NORMAL:
-			listtext = mystrdup("sub-ok");
+			listtext = xstrdup("sub-ok");
 			break;
 		case SUB_DIGEST:
-			listtext = mystrdup("sub-ok-digest");
+			listtext = xstrdup("sub-ok-digest");
 			break;
 		case SUB_NOMAIL:
-			listtext = mystrdup("sub-ok-nomail");
+			listtext = xstrdup("sub-ok-nomail");
 			break;
 		case SUB_BOTH:
 			/* No legacy list text as feature didn't exist. */
-			listtext = mystrdup("sub-ok");
+			listtext = xstrdup("sub-ok");
 			break;
 	}
 
 	txt = open_text(listdir, "finish", "sub",
 			subreason_strs[reasonsub], subtype_strs[typesub],
 			listtext);
-	myfree(listtext);
+	free(listtext);
 	MY_ASSERT(txt);
 	register_unformatted(txt, "subaddr", subaddr);
 	queuefilename = prepstdreply(txt, listdir,
@@ -355,30 +355,30 @@ void notify_sub(const char *listdir, const char *listaddr,
 	fromaddr = concatstr(4, listname, listdelim, "bounces-help@", listfqdn);
 	tostr = concatstr(4, listname, listdelim, "owner@", listfqdn);
 	
-	myfree(listname);
-	myfree(listfqdn);
+	free(listname);
+	free(listfqdn);
 
 	switch(typesub) {
 		default:
 		case SUB_NORMAL:
-			listtext = mystrdup("notifysub");
+			listtext = xstrdup("notifysub");
 			break;
 		case SUB_DIGEST:
-			listtext = mystrdup("notifysub-digest");
+			listtext = xstrdup("notifysub-digest");
 			break;
 		case SUB_NOMAIL:
-			listtext = mystrdup("notifysub-nomail");
+			listtext = xstrdup("notifysub-nomail");
 			break;
 		case SUB_BOTH:
 			/* No legacy list text as feature didn't exist. */
-			listtext = mystrdup("notifysub");
+			listtext = xstrdup("notifysub");
 			break;
 	}
 
 	txt = open_text(listdir, "notify", "sub",
 			subreason_strs[reasonsub], subtype_strs[typesub],
 			listtext);
-	myfree(listtext);
+	free(listtext);
 	MY_ASSERT(txt);
 	register_unformatted(txt, "subaddr", subaddr);
 	register_unformatted(txt, "newsub", subaddr); /* DEPRECATED */
@@ -412,8 +412,8 @@ void generate_subconfirm(const char *listdir, const char *listaddr,
 	listfqdn = genlistfqdn(listaddr);
 
         do {
-                myfree(confirmfilename);
-                myfree(randomstr);
+		free(confirmfilename);
+		free(randomstr);
 		randomstr = random_str();
                 confirmfilename = concatstr(3, listdir, "/subconf/",
 					    randomstr);
@@ -425,17 +425,17 @@ void generate_subconfirm(const char *listdir, const char *listaddr,
 
 	if(subconffd < 0) {
 		log_error(LOG_ARGS, "Could not open '%s'", confirmfilename);
-		myfree(confirmfilename);
-                myfree(randomstr);
+		free(confirmfilename);
+                free(randomstr);
 		exit(EXIT_FAILURE);
 	}
 
-	myfree(confirmfilename);
+	free(confirmfilename);
 
 	if(dprintf(subconffd, "%s", subaddr) < 0) {
 		log_error(LOG_ARGS, "Could not write to subconffd");
-		myfree(confirmfilename);
-                myfree(randomstr);
+		free(confirmfilename);
+                free(randomstr);
 		exit(EXIT_FAILURE);
 	}
 
@@ -447,34 +447,34 @@ void generate_subconfirm(const char *listdir, const char *listaddr,
 	switch(typesub) {
 		default:
 		case SUB_NORMAL:
-			listtext = mystrdup("sub-confirm");
-			tmpstr = mystrdup("confsub-");
+			listtext = xstrdup("sub-confirm");
+			tmpstr = xstrdup("confsub-");
 			break;
 		case SUB_DIGEST:
-			listtext = mystrdup("sub-confirm-digest");
-			tmpstr = mystrdup("confsub-digest-");
+			listtext = xstrdup("sub-confirm-digest");
+			tmpstr = xstrdup("confsub-digest-");
 			break;
 		case SUB_NOMAIL:
-			listtext = mystrdup("sub-confirm-nomail");
-			tmpstr = mystrdup("confsub-nomail-");
+			listtext = xstrdup("sub-confirm-nomail");
+			tmpstr = xstrdup("confsub-nomail-");
 			break;
 		case SUB_BOTH:
 			/* No legacy list text as feature didn't exist. */
-			listtext = mystrdup("sub-confirm");
-			tmpstr = mystrdup("confsub-both-");
+			listtext = xstrdup("sub-confirm");
+			tmpstr = xstrdup("confsub-both-");
 			break;
 	}
 
 	confirmaddr = concatstr(6, listname, listdelim, tmpstr, randomstr, "@",
 				listfqdn);
 
-	myfree(randomstr);
-	myfree(tmpstr);
+	free(randomstr);
+	free(tmpstr);
 
 	txt = open_text(listdir, "confirm", "sub",
 			subreason_strs[reasonsub], subtype_strs[typesub],
 			listtext);
-	myfree(listtext);
+	free(listtext);
 	MY_ASSERT(txt);
 	register_unformatted(txt, "subaddr", subaddr);
 	register_unformatted(txt, "confaddr", confirmaddr); /* DEPRECATED */
@@ -484,8 +484,8 @@ void generate_subconfirm(const char *listdir, const char *listaddr,
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
-	myfree(listname);
-	myfree(listfqdn);
+	free(listname);
+	free(listfqdn);
 
 	execlp(mlmmjsend, mlmmjsend,
 				"-l", "1",
@@ -532,7 +532,7 @@ void generate_subscribed(const char *listdir, const char *subaddr,
 	listfqdn = genlistfqdn(listaddr);
 
 	fromaddr = concatstr(4, listname, listdelim, "bounces-help@", listfqdn);
-	myfree(listdelim);
+	free(listdelim);
 
 	txt = open_text(listdir,
 			"deny", "sub", "subbed", subtype_strs[typesub],
@@ -544,9 +544,9 @@ void generate_subscribed(const char *listdir, const char *subaddr,
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
-	myfree(listaddr);
-	myfree(listname);
-	myfree(listfqdn);
+	free(listaddr);
+	free(listname);
+	free(listfqdn);
 	
 	execlp(mlmmjsend, mlmmjsend,
 				"-l", "1",
@@ -600,7 +600,7 @@ static void subscribe_type(char *listdir, char *listaddr, char *listdelim,
 	if(sublockfd < 0) {
 		log_error(LOG_ARGS, "Error opening lock file %s",
 				sublockname);
-		myfree(sublockname);
+		free(sublockname);
 		exit(EXIT_FAILURE);
 	}
 
@@ -608,7 +608,7 @@ static void subscribe_type(char *listdir, char *listaddr, char *listdelim,
 	if(sublock < 0) {
 		log_error(LOG_ARGS, "Error locking '%s' file",
 				sublockname);
-		myfree(sublockname);
+		free(sublockname);
 		close(sublockfd);
 		exit(EXIT_FAILURE);
 	}
@@ -617,7 +617,7 @@ static void subscribe_type(char *listdir, char *listaddr, char *listdelim,
 				S_IRUSR|S_IWUSR|groupwritable);
 	if(subfilefd == -1) {
 		log_error(LOG_ARGS, "Could not open '%s'", subfilename);
-		myfree(sublockname);
+		free(sublockname);
 		exit(EXIT_FAILURE);
 	}
 
@@ -626,7 +626,7 @@ static void subscribe_type(char *listdir, char *listaddr, char *listdelim,
 		log_error(LOG_ARGS, "Error locking subscriber file");
 		close(subfilefd);
 		close(sublockfd);
-		myfree(sublockname);
+		free(sublockname);
 		exit(EXIT_FAILURE);
 	}
 
@@ -634,7 +634,7 @@ static void subscribe_type(char *listdir, char *listaddr, char *listdelim,
 	close(subfilefd);
 	close(sublockfd);
 	unlink(sublockname);
-	myfree(sublockname);
+	free(sublockname);
 }
 
 int main(int argc, char **argv)
@@ -661,7 +661,7 @@ int main(int argc, char **argv)
 	bindir = mydirname(argv[0]);
 	mlmmjsend = concatstr(2, bindir, "/mlmmj-send");
 	mlmmjunsub = concatstr(2, bindir, "/mlmmj-unsub");
-	myfree(bindir);
+	free(bindir);
 
 	while ((opt = getopt(argc, argv, "hbcCdfm:nsVUL:a:qrR")) != -1) {
 		switch(opt) {
@@ -755,7 +755,7 @@ int main(int argc, char **argv)
 	}
 
 	/* Make the address lowercase */
-	lowcaseaddr = mystrdup(address);
+	lowcaseaddr = xstrdup(address);
 	i = 0;
 	while(lowcaseaddr[i]) {
 		lowcaseaddr[i] = tolower(lowcaseaddr[i]);
@@ -878,9 +878,9 @@ int main(int argc, char **argv)
 		notify_sub(listdir, listaddr, listdelim, address, mlmmjsend,
 				typesub, reasonsub);
 
-	myfree(address);
-	myfree(listaddr);
-	myfree(listdelim);
+	free(address);
+	free(listaddr);
+	free(listdelim);
 
 	return EXIT_SUCCESS;
 }

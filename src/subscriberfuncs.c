@@ -38,7 +38,6 @@
 #include "log_error.h"
 #include "wrappers.h"
 #include "strgen.h"
-#include "memory.h"
 
 char *subtype_strs[] = {
 	"normal",
@@ -133,13 +132,13 @@ int is_subbed_in(const char *subddirname, const char *address)
 		subread = open(subreadname, O_RDONLY);
 		if(subread < 0) {
 	                log_error(LOG_ARGS, "Could not open %s", subreadname);
-			myfree(subreadname);
+			free(subreadname);
 			continue;
 		}
 
 		suboff = find_subscriber(subread, address);
 		close(subread);
-		myfree(subreadname);
+		free(subreadname);
 
 		if(suboff == -1) {
 			continue;
@@ -161,7 +160,7 @@ enum subtype is_subbed(const char *listdir, const char *address, int both)
 	
 	subddirname = concatstr(2, listdir, "/subscribers.d/");
 	retval = is_subbed_in(subddirname, address);
-	myfree(subddirname);
+	free(subddirname);
 	if (retval) {
 		if (!both) return SUB_NORMAL;
 		typesub = SUB_NORMAL;
@@ -169,7 +168,7 @@ enum subtype is_subbed(const char *listdir, const char *address, int both)
 
 	subddirname = concatstr(2, listdir, "/digesters.d/");
 	retval = is_subbed_in(subddirname, address);
-	myfree(subddirname);
+	free(subddirname);
 	if (retval) {
 		if (typesub == SUB_NORMAL) return SUB_BOTH;
 		return SUB_DIGEST;
@@ -177,7 +176,7 @@ enum subtype is_subbed(const char *listdir, const char *address, int both)
 
 	subddirname = concatstr(2, listdir, "/nomailsubs.d/");
 	retval = is_subbed_in(subddirname, address);
-	myfree(subddirname);
+	free(subddirname);
 	if (retval) return SUB_NOMAIL;
 
 	return typesub;

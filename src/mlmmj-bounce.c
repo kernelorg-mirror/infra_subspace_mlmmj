@@ -45,7 +45,7 @@
 #include "subscriberfuncs.h"
 #include "mygetline.h"
 #include "prepstdreply.h"
-#include "memory.h"
+#include "xmalloc.h"
 #include "find_email_adr.h"
 #include "gethdrline.h"
 
@@ -59,7 +59,7 @@ void do_probe(const char *listdir, const char *mlmmjsend, const char *addr)
 	int fd;
 	time_t t;
 
-	myaddr = mystrdup(addr);
+	myaddr = xstrdup(addr);
 
 	listaddr = getlistaddr(listdir);
 	listname = genlistname(listaddr);
@@ -68,15 +68,15 @@ void do_probe(const char *listdir, const char *mlmmjsend, const char *addr)
 	from = concatstr(6, listname, listdelim, "bounces-probe-", myaddr, "@",
 			 listfqdn);
 
-	myfree(listaddr);
-	myfree(listdelim);
-	myfree(listfqdn);
-	myfree(listname);
+	free(listaddr);
+	free(listdelim);
+	free(listfqdn);
+	free(listname);
 
 	a = strrchr(myaddr, '=');
 	if (!a) {
-		myfree(myaddr);
-		myfree(from);
+		free(myaddr);
+		free(from);
 		log_error(LOG_ARGS, "do_probe(): malformed address");
 		exit(EXIT_FAILURE);
 
@@ -98,7 +98,7 @@ void do_probe(const char *listdir, const char *mlmmjsend, const char *addr)
 	probefile = concatstr(4, listdir, "/bounce/", addr, "-probe");
 	MY_ASSERT(probefile);
 	t = time(NULL);
-	a = mymalloc(32);
+	a = xmalloc(32);
 	snprintf(a, 31, "%ld", (long int)t);
 	a[31] = '\0';
 	unlink(probefile);
@@ -109,7 +109,7 @@ void do_probe(const char *listdir, const char *mlmmjsend, const char *addr)
 		if(dprintf(fd, "%s", a) < 0)
 			log_error(LOG_ARGS, "Could not write time in probe");
 
-	myfree(probefile);
+	free(probefile);
 
 	execlp(mlmmjsend, mlmmjsend,
 				"-l", "5",
@@ -137,14 +137,14 @@ char *dsnparseaddr(const char *mailname)
 	}
 
 	while((line = gethdrline(fd, NULL))) {
-		linedup = mystrdup(line);
+		linedup = xstrdup(line);
 		for(i = 0; line[i]; i++)
 			linedup[i] = tolower(line[i]);
 		search = strstr(linedup, "message/delivery-status");
-		myfree(linedup);
+		free(linedup);
 		if(search) {
 			indsn = 1;
-			myfree(line);
+			free(line);
 			continue;
 		}
 		if(indsn) {
@@ -154,17 +154,17 @@ char *dsnparseaddr(const char *mailname)
 				if (search) {
 					find_email_adr(search+1, &emails);
 					if(emails.emailcount > 0) {
-						addr = mystrdup(emails.emaillist[0]);
+						addr = xstrdup(emails.emaillist[0]);
 						for(i = 0; i < emails.emailcount; i++)
-							myfree(emails.emaillist[i]);
-						myfree(emails.emaillist);
+							free(emails.emaillist[i]);
+						free(emails.emaillist);
 					}
 				}
-				myfree(line);
+				free(line);
 				break;
 			}
 		}
-		myfree(line);
+		free(line);
 	}
 
 	return addr;
@@ -203,7 +203,7 @@ int main(int argc, char **argv)
 
 	bindir = mydirname(argv[0]);
 	mlmmjsend = concatstr(2, bindir, "/mlmmj-send");
-	myfree(bindir);
+	free(bindir);
 
 	while ((opt = getopt(argc, argv, "hdVL:a:n:m:p")) != -1) {
 		switch(opt) {
@@ -273,7 +273,7 @@ int main(int argc, char **argv)
 	}
 
 	/* Make the address lowercase */
-	lowcaseaddr = mystrdup(address);
+	lowcaseaddr = xstrdup(address);
 	i = 0;
 	while(lowcaseaddr[i]) {
 		lowcaseaddr[i] = tolower(lowcaseaddr[i]);
@@ -305,7 +305,7 @@ int main(int argc, char **argv)
 	if(strcmp(number, "confsub") == 0) {
 		a = concatstr(3, listdir, "/subconf/", address);
 		unlink(a);
-		myfree(a);
+		free(a);
 		if(mailname)
 			unlink(mailname);
 		exit(EXIT_SUCCESS);
@@ -313,7 +313,7 @@ int main(int argc, char **argv)
 	if(strcmp(number, "confunsub") == 0) {
 		a = concatstr(3, listdir, "/unsubconf/", address);
 		unlink(a);
-		myfree(a);
+		free(a);
 		if(mailname)
 			unlink(mailname);
 		exit(EXIT_SUCCESS);
@@ -326,7 +326,7 @@ int main(int argc, char **argv)
 		a = concatstr(4, listdir, "/bounce/", address, "-probe");
 		unlink(a);
 		unlink(mailname);
-		myfree(a);
+		free(a);
 		exit(EXIT_SUCCESS);
 	}
 
@@ -347,7 +347,7 @@ int main(int argc, char **argv)
 				address);
 		if(mailname)
 			unlink(mailname);
-		myfree(bfilename);
+		free(bfilename);
 		exit(EXIT_SUCCESS); /* Not subbed, so exit silently */
 	}
 
@@ -362,7 +362,7 @@ int main(int argc, char **argv)
 	if ((fd = open(bfilename, O_WRONLY|O_APPEND|O_CREAT,
 			S_IRUSR|S_IWUSR)) < 0) {
 		log_error(LOG_ARGS, "Could not open '%s'", bfilename);
-		myfree(bfilename);
+		free(bfilename);
 		exit(EXIT_FAILURE);
 	}
 
@@ -375,7 +375,7 @@ int main(int argc, char **argv)
 	/* int + ":" + int + " # Wed Jun 30 21:49:08 1993\n" + NUL */
 	len = 20 + 1 + 20 + 28 + 1;
 
-	buf = mymalloc(len);
+	buf = xmalloc(len);
 	if (!buf) exit(EXIT_FAILURE);
 
 	t = time(NULL);
@@ -387,12 +387,12 @@ int main(int argc, char **argv)
 	if(mailname) {
 		savename = concatstr(2, bfilename, ".lastmsg");
 		rename(mailname, savename);
-		myfree(savename);
+		free(savename);
 	}
 
-	myfree(bfilename);
+	free(bfilename);
 	if(dsnbounce && address)
-		myfree(address);
+		free(address);
 
 	return EXIT_SUCCESS;
 }

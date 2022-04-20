@@ -25,10 +25,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "xmalloc.h"
 #include "mygetline.h"
 #include "gethdrline.h"
 #include "strgen.h"
-#include "memory.h"
 #include "wrappers.h"
 #include "log_error.h"
 #include "chomp.h"
@@ -48,17 +48,17 @@ char *gethdrline(int fd, char **unfolded)
 	}
 
 	if (unfolded != NULL)
-		*unfolded = mystrdup(retstr);
+		*unfolded = xstrdup(retstr);
 
 	chomp(retstr);
 
 	/* end-of-headers */
 	if (*retstr == '\0') {
 		if (unfolded != NULL) {
-			myfree(*unfolded);
+			free(*unfolded);
 			*unfolded = NULL;
 		}
-		myfree(retstr);
+		free(retstr);
 		return NULL;
 	}
 
@@ -70,20 +70,20 @@ char *gethdrline(int fd, char **unfolded)
 		} else if (n == -1) {  /* error */
 			log_error(LOG_ARGS, "readn() failed in gethdrline()");
 			if (unfolded != NULL) {
-				myfree(*unfolded);
+				free(*unfolded);
 				*unfolded = NULL;
 			}
-			myfree(retstr);
+			free(retstr);
 			return NULL;
 		}
 
 		if (lseek(fd, -1, SEEK_CUR) == (off_t)-1) {
 			log_error(LOG_ARGS, "lseek() failed in gethdrline()");
 			if (unfolded != NULL) {
-				myfree(*unfolded);
+				free(*unfolded);
 				*unfolded = NULL;
 			}
-			myfree(retstr);
+			free(retstr);
 			return NULL;
 		}
 
@@ -97,14 +97,14 @@ char *gethdrline(int fd, char **unfolded)
 		if (unfolded != NULL) {
 			oldunfolded = *unfolded;
 			*unfolded = concatstr(2, oldunfolded, line);
-			myfree(oldunfolded);
+			free(oldunfolded);
 		}
 
 		chomp(line);
 		oldretstr = retstr;
 		retstr = concatstr(2, oldretstr, line);
-		myfree(oldretstr);
+		free(oldretstr);
 
-		myfree(line);
+		free(line);
 	}
 }

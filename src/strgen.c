@@ -33,26 +33,26 @@
 #include <errno.h>
 #include <locale.h>
 
+#include "xmalloc.h"
 #include "mlmmj.h"
 #include "strgen.h"
 #include "wrappers.h"
-#include "memory.h"
 #include "log_error.h"
 
 char *random_str()
 {
 	size_t len = 17; /* sixteen hex digits plus terminating zero */
-	char *dest = mymalloc(len);
+	char *dest = xmalloc(len);
 
 	snprintf(dest, len, "%08x%08x", random_int(), random_int());
-	
+
 	return dest;
 }
 
 char *headerstr(const char *headertoken, const char *str)
 {
 	size_t len = strlen(headertoken) + strlen(str) + 2;
-	char *dest = mymalloc(len);
+	char *dest = xmalloc(len);
 
 	snprintf(dest, len, "%s%s\n", headertoken, str);
 
@@ -67,7 +67,7 @@ char *genlistname(const char *listaddr)
 	atsign = strchr(listaddr, '@');
 	MY_ASSERT(atsign);
 	len = atsign - listaddr + 1;
-	dest = mymalloc(len);
+	dest = xmalloc(len);
 	
 	snprintf(dest, len, "%s", listaddr);
 
@@ -82,7 +82,7 @@ char *genlistfqdn(const char *listaddr)
 	atsign = strchr(listaddr, '@');
 	MY_ASSERT(atsign);
 	len = strlen(listaddr) - (atsign - listaddr);
-	dest = mymalloc(len);
+	dest = xmalloc(len);
 	snprintf(dest, len, "%s", atsign + 1);
 
 	return dest;
@@ -104,7 +104,7 @@ char *concatstr(int count, ...)
                         len += strlen(str);
         }
 
-        retstr = mymalloc(len + 1);
+        retstr = xmalloc(len + 1);
         retstr[0] = retstr[len] = 0;
 
         va_start(arg, count);
@@ -128,9 +128,9 @@ char *hostnamestr()
 
 	for (;;) {
 		len *= 2;
-		myfree(hostname);
+		free(hostname);
 
-		hostname = mymalloc(len);
+		hostname = xmalloc(len);
 		hostname[len-1] = '\0';
 
 		/* gethostname() is allowed to:
@@ -146,8 +146,8 @@ char *hostnamestr()
 			if (errno == ENAMETOOLONG) {
 				continue;
 			}
-			myfree(hostname);
-			return mystrdup("localhost");
+			free(hostname);
+			return xstrdup("localhost");
 		}
 		
 		if (hostname[len-1] == '\0') {
@@ -161,8 +161,8 @@ char *hostnamestr()
 	}
 
 	if ((hostlookup = gethostbyname(hostname))) {
-		myfree(hostname);
-		return mystrdup(hostlookup->h_name);
+		free(hostname);
+		return xstrdup(hostlookup->h_name);
 	}
 
 	return hostname;
@@ -172,13 +172,13 @@ char *mydirname(const char *path)
 {
 	char *mypath, *dname, *ret;
 
-	mypath = mystrdup(path);
+	mypath = xstrdup(path);
 	dname = dirname(mypath);
-	ret = mystrdup(dname);
+	ret = xstrdup(dname);
 
 	/* We don't free mypath until we have strdup()'ed dname, because
 	 * dirname() returns a pointer into mypath  -- mortenp 20040527 */
-	myfree(mypath);
+	free(mypath);
 
 	return ret;
 }
@@ -187,13 +187,13 @@ char *mybasename(const char *path)
 {
 	char *mypath, *bname, *ret;
 
-	mypath = mystrdup(path);
+	mypath = xstrdup(path);
 	bname = basename(mypath);
-	ret = mystrdup(bname);
+	ret = xstrdup(bname);
 
 	/* We don't free mypath until we have strdup()'ed bname, because
 	 * basename() returns a pointer into mypath  -- mortenp 20040527 */
-	myfree(mypath);
+	free(mypath);
 	
 	return ret;
 }
@@ -212,7 +212,7 @@ char *cleanquotedp(const char *qpstr)
 	 * complete nor correct */
 
 	len = strlen(qpstr);
-	retstr = mymalloc(len + 1);
+	retstr = xmalloc(len + 1);
 	retstr[len] = '\0';
 	qc[2] = '\0';
 	while(c < qpstr+len) {
@@ -251,7 +251,7 @@ char *genmsgid(const char *fqdn)
 	snprintf(buf, sizeof(buf), "Message-ID: <%ld-%d-mlmmj-%08x@%s>\n",
 			(long int)time(NULL), (int)getpid(), random_int(), fqdn);
 
-	return mystrdup(buf);
+	return xstrdup(buf);
 }
 
 char *gendatestr()
@@ -262,7 +262,7 @@ char *gendatestr()
 	char *timestr;
 
 	/* 6 + 26 + ' ' + timezone which is 5 + '\n\0' == 40 */
-	timestr = (char *)mymalloc(40);
+	timestr = (char *)xmalloc(40);
 	t = time(NULL);
 
 	localtime_r(&t, &lttm);

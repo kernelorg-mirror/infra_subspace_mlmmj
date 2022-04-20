@@ -25,9 +25,9 @@
 #include <unistd.h>
 #include <string.h>
 
+#include "xmalloc.h"
 #include "checkwait_smtpreply.h"
 #include "config.h"
-#include "memory.h"
 #include "mygetline.h"
 
 
@@ -38,7 +38,7 @@ char *checkwait_smtpreply(int sockfd, int replytype)
 	if(replytype == MLMMJ_EHLO) {
 		/* Consume all 8BITMIME 250- reply */
 		do {
-			myfree(smtpreply);
+			free(smtpreply);
 			smtpreply = mygetline(sockfd);
 		} while (strncmp(smtpreply, "250-", 4) == 0);
 	} else {
@@ -48,7 +48,7 @@ char *checkwait_smtpreply(int sockfd, int replytype)
 	if(smtpreply == NULL) {
 		/* This will never be a valid SMTP response so will always be returned,
 		 * but is more descriptive than an empty string. */
-		smtpreply = mystrdup("none / error / closed connection");
+		smtpreply = xstrdup("none / error / closed connection");
 	}
 
 #if 0
@@ -100,7 +100,7 @@ char *checkwait_smtpreply(int sockfd, int replytype)
 			break;
 	}
 
-	myfree(smtpreply);
+	free(smtpreply);
 
 	return NULL;
 }

@@ -49,16 +49,16 @@
 
 #include "log_error.h"
 #include "wrappers.h"
-#include "memory.h"
+#include "xmalloc.h"
 
 #define UNWANTED_MIME_HDR "X-ThisMailContainsUnwantedMimeParts: N\n"
 
 /* append a copy of a string to a string list */
 static void append_strtolist(struct strlist *list, char* str) {
 	list->count++;
-	list->strs = myrealloc(list->strs,
+	list->strs = xrealloc(list->strs,
                          sizeof(char *) * (list->count + 1));
-	list->strs[list->count-1] = mystrdup(str);
+	list->strs[list->count-1] = xstrdup(str);
 	list->strs[list->count] = NULL;
 }
 
@@ -69,8 +69,8 @@ static void free_strlist(struct strlist *list) {
 	if(list->strs) {
 		int i;
 		for(i=0;i < list->count;i++)
-			myfree(list->strs[i]);
-		myfree(list->strs);
+			free(list->strs[i]);
+		free(list->strs);
 	}
 	list->strs = NULL;
 	list->count = 0;
@@ -125,7 +125,7 @@ static void extract_boundary(struct strlist *allhdrs, char** mime_type, char** b
 
 			/* extract mime type if any */
 			if(len){
-				*mime_type = mymalloc(len+1);
+				*mime_type = xmalloc(len+1);
 				strncpy(*mime_type,pos,len);
 				(*mime_type)[len] = '\0';
 			}
@@ -149,7 +149,7 @@ static void extract_boundary(struct strlist *allhdrs, char** mime_type, char** b
 			}
 
 			/* extract boundary */
-			*boundary = mymalloc(len + 3);
+			*boundary = xmalloc(len + 3);
 			strcpy(*boundary,"--");
 			strncat(*boundary,pos,len);
 			break;
@@ -179,17 +179,17 @@ static int read_hdrs(int fd, struct strlist *allhdrs,struct strlist* delmime,str
 
 		/* end of headers */
 		if(line[0] == '\n'){
-			myfree(line);
+			free(line);
 			break;
 		}
 		if(!allhdrs->count || ((line[0] != '\t') && (line[0] != ' '))) /* first header line or no more unfolding */
 			append_strtolist(allhdrs,line);
 		else{
 			char* tmp = concatstr(2, allhdrs->strs[allhdrs->count-1], line);
-			myfree(allhdrs->strs[allhdrs->count-1]);
+			free(allhdrs->strs[allhdrs->count-1]);
 		 	allhdrs->strs[allhdrs->count-1] = tmp;
 		}
-		myfree(line);
+		free(line);
 	}
 	extract_boundary(allhdrs,&mime_type,boundary);
 	if(mime_type) {
@@ -199,7 +199,7 @@ static int read_hdrs(int fd, struct strlist *allhdrs,struct strlist* delmime,str
 		/* check if the mail should be denied */
 		if(denymime && findit(mime_type, denymime->strs))
 			*deny = 1;
-		myfree(mime_type);
+		free(mime_type);
 	}
 	return result;
 }
@@ -296,7 +296,7 @@ static int parse_body(int infd,int outfd, struct strlist* delmime, struct strlis
 				}
 				free_strlist(&hdrs);
 				if(new_boundary)
-					myfree(new_boundary);
+					free(new_boundary);
 			}else{
 				/* write end of part */
 				if(dprintf(outfd, "%s", line) < 0){
@@ -304,7 +304,7 @@ static int parse_body(int infd,int outfd, struct strlist* delmime, struct strlis
 					return -1;
 				}
 				/* and leave */
-				myfree(line);
+				free(line);
 				break;
 			}
 		}else {
@@ -315,7 +315,7 @@ static int parse_body(int infd,int outfd, struct strlist* delmime, struct strlis
 				}
 			}
 		}
-		myfree(line);
+		free(line);
 	}
 	return 0;
 }
@@ -355,7 +355,7 @@ static int dump_mail(int infd, int outfd,char* listdir) {
 			log_error(LOG_ARGS, "Could not parse mail");
 			return -1;
 		}
-		myfree(boundary);
+		free(boundary);
 	}else
 		deny = 1;
 
@@ -376,11 +376,11 @@ static int dump_mail(int infd, int outfd,char* listdir) {
 	/* free mime types */
 	if(delmime) {
 		free_strlist(delmime);
-		myfree(delmime);
+		free(delmime);
 	}
 	if(denymime) {
 		free_strlist(denymime);
-		myfree(denymime);
+		free(denymime);
 	}
 	return 0;
 }
@@ -412,7 +412,7 @@ int main(int argc, char **argv)
 
 	bindir = mydirname(argv[0]);
 	mlmmjprocess = concatstr(2, bindir, "/mlmmj-process");
-	myfree(bindir);
+	free(bindir);
 
 	while ((opt = getopt(argc, argv, "hPVL:F")) != -1) {
 		switch(opt) {
@@ -458,20 +458,20 @@ int main(int argc, char **argv)
 	}
 
 	infilename = concatstr(3, listdir, "/incoming/", randomstr);
-	myfree(randomstr);
+	free(randomstr);
 	fd = open(infilename, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
 	while(fd < 0 && errno == EEXIST) {
-		myfree(infilename);
+		free(infilename);
 		randomstr = random_str();
 		infilename = concatstr(3, listdir, "/incoming/", randomstr);
-		myfree(randomstr);
+		free(randomstr);
 		fd = open(infilename, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
 	}
 
 	if(fd < 0) {
 		log_error(LOG_ARGS, "could not create mail file in "
 				    "%s/incoming directory", listdir);
-		myfree(infilename);
+		free(infilename);
 		exit(EXIT_FAILURE);
 	}
 
@@ -487,7 +487,7 @@ int main(int argc, char **argv)
 	close(fd);
 
 	if(noprocess) {
-		myfree(infilename);
+		free(infilename);
 		exit(EXIT_SUCCESS);
 	}
 

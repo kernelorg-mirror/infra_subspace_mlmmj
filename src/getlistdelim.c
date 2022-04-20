@@ -26,13 +26,13 @@
 #include <string.h>
 #include <errno.h>
 
+#include "xmalloc.h"
 #include "mlmmj.h"
 #include "getlistdelim.h"
 #include "chomp.h"
 #include "log_error.h"
 #include "mygetline.h"
 #include "strgen.h"
-#include "memory.h"
 
 char *getlistdelim(const char *listdir)
 {
@@ -48,7 +48,7 @@ char *getlistdelim(const char *listdir)
 			log_error(LOG_ARGS,
 				  "FATAL. Could not get list delimiter from %s",
 				  delimfn);
-			myfree(delimfn);
+			free(delimfn);
 			exit(EXIT_FAILURE);
 		}
 	
@@ -58,13 +58,13 @@ char *getlistdelim(const char *listdir)
 			log_error(LOG_ARGS,
 				  "FATAL. Zero-length delimiter found from %s",
 				  delimfn);
-			myfree(delimfn);
+			free(delimfn);
 			exit(EXIT_FAILURE);
 		}
 	} else
-		delimstr = mystrdup(DEFAULT_RECIPDELIM);
+		delimstr = xstrdup(DEFAULT_RECIPDELIM);
 
-	myfree(delimfn);
+	free(delimfn);
 
 	return delimstr;
 }

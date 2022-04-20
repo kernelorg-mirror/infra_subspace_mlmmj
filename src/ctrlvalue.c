@@ -45,7 +45,7 @@ static char *ctrlval(const char *listdir, const char *subdir,
 
 	filename = concatstr(5, listdir, "/", subdir, "/", ctrlstr);
 	ctrlfd = open(filename, O_RDONLY);
-	myfree(filename);
+	free(filename);
 
 	if(ctrlfd < 0)
 		return NULL;
