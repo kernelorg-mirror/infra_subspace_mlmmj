@@ -33,6 +33,7 @@
 #include <libgen.h>
 #include <sys/wait.h>
 #include <ctype.h>
+#include <err.h>
 
 #include "mlmmj.h"
 #include "mlmmj-sub.h"
@@ -716,21 +717,18 @@ int main(int argc, char **argv)
 	}
 
 	if(listdir == NULL) {
-		fprintf(stderr, "You have to specify -L\n");
-		fprintf(stderr, "%s -h for help\n", argv[0]);
-		exit(EXIT_FAILURE);
+		errx(EXIT_FAILURE, "You have to specify -L\n"
+		    "%s -h for help", argv[0]);
 	}
 	
 	if(address == NULL && modstr == NULL) {
-		fprintf(stderr, "You have to specify -a or -m\n");
-		fprintf(stderr, "%s -h for help\n", argv[0]);
-		exit(EXIT_FAILURE);
+		errx(EXIT_FAILURE, "You have to specify -a or -m\n"
+		    "%s -h for help", argv[0]);
 	}
 
 	if(both + digest + nomail > 1) {
-		fprintf(stderr, "Specify at most one of -b, -d and -n\n");
-		fprintf(stderr, "%s -h for help\n", argv[0]);
-		exit(EXIT_FAILURE);
+		errx(EXIT_FAILURE, "Specify at most one of -b, -d and -n\n"
+		    "%s -h for help", argv[0]);
 	}
 
 	if(digest)
@@ -741,9 +739,8 @@ int main(int argc, char **argv)
 		typesub = SUB_BOTH;
 
 	if(reasonsub == SUB_CONFIRM && subconfirm) {
-		fprintf(stderr, "Cannot specify both -C and -R\n");
-		fprintf(stderr, "%s -h for help\n", argv[0]);
-		exit(EXIT_FAILURE);
+		errx(EXIT_FAILURE, "Cannot specify both -C and -R\n"
+		    "%s -h for help", argv[0]);
 	}
 
 	if(modstr) {
@@ -781,7 +778,7 @@ int main(int argc, char **argv)
 			if(setuid(st.st_uid) < 0) {
 				perror("setuid");
 				fprintf(stderr, "Continuing as uid %d\n",
-						(int)uid);
+				    (int)uid);
 			}
 		}
 	}

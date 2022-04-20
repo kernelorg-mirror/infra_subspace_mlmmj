@@ -103,10 +103,9 @@ void print_version(const char *prg);
 		}
 
 #define CHECKFULLPATH(name) if(strchr(name, '/') == NULL) { \
-			fprintf(stderr, "All mlmmj binaries have to " \
-					"be invoked with full path,\n" \
-					"e.g. /usr/local/bin/%s\n", name); \
-			exit(EXIT_FAILURE); \
+			errx(EXIT_FAILURE, "All mlmmj binaries have to " \
+			    "be invoked with full path,\n" \
+			    "e.g. /usr/local/bin/%s", name); \
 			};
 
 /* make sure we use the wrappers */

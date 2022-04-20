@@ -30,6 +30,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <libgen.h>
+#include <err.h>
 
 #include "mlmmj.h"
 #include "wrappers.h"
@@ -99,9 +100,8 @@ int main(int argc, char **argv)
 	}
 
 	if(listdir == NULL) {
-		fprintf(stderr, "You have to specify -L\n");
-		fprintf(stderr, "%s -h for help\n", argv[0]);
-		exit(EXIT_FAILURE);
+		errx(EXIT_FAILURE, "You have to specify -L\n"
+		    "%s -h for help", argv[0]);
 	}
 
 	/* Lets make sure no random user tries to send mail to the list */
@@ -113,10 +113,8 @@ int main(int argc, char **argv)
 					"Have to invoke either as root "
 					"or as the user owning listdir "
 					"Invoked with uid = [%d]", (int)uid);
-				writen(STDERR_FILENO,
-					"Have to invoke either as root "
-					"or as the user owning listdir\n", 60);
-				exit(EXIT_FAILURE);
+				errx(EXIT_FAILURE, "Have to invoke either as root "
+					"or as the user owning listdir");
 			}
 		} else {
 			log_error(LOG_ARGS, "Could not stat %s", listdir);

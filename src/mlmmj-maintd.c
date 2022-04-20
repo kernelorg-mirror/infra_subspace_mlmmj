@@ -1069,15 +1069,13 @@ int main(int argc, char **argv)
 	}
 
 	if(listdir == NULL && dirlists == NULL) {
-		fprintf(stderr, "You have to specify -d or -L\n");
-		fprintf(stderr, "%s -h for help\n", argv[0]);
-		exit(EXIT_FAILURE);
+		errx(EXIT_FAILURE, "You have to specify -d or -L\n"
+		    "%s -h for help", argv[0]);
 	}
 	
 	if(listdir && dirlists) {
-		fprintf(stderr, "You have to specify either -d or -L\n");
-		fprintf(stderr, "%s -h for help\n", argv[0]);
-		exit(EXIT_FAILURE);
+		errx(EXIT_FAILURE, "You have to specify either -d or -L\n"
+		    "%s -h for help", argv[0]);
 	}
 
 	bindir = mydirname(argv[0]);

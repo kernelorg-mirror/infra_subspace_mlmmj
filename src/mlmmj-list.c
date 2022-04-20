@@ -30,6 +30,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
+#include <err.h>
 
 #include "mlmmj.h"
 #include "wrappers.h"
@@ -143,9 +144,8 @@ int main(int argc, char **argv)
 	}
 
 	if(listdir == NULL) {
-		fprintf(stderr, "You have to specify -L\n"
-				"%s -h for help\n", argv[0]);
-		exit(EXIT_FAILURE);
+		errx(EXIT_FAILURE, "You have to specify -L\n"
+		    "%s -h for help", argv[0]);
 	}
 
 	switch(typesub) {
@@ -172,8 +172,7 @@ int main(int argc, char **argv)
 	if(subdir) {
 		dirp = opendir(subdir);
 		if(dirp == NULL) {
-			fprintf(stderr, "Could not opendir(%s);\n", subdir);
-			exit(EXIT_FAILURE);
+			errx(EXIT_FAILURE,  "Could not opendir(%s);", subdir);
 		}
 		while((dp = readdir(dirp)) != NULL) {
 			if((strcmp(dp->d_name, "..") == 0) ||

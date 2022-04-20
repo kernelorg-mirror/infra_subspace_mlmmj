@@ -34,6 +34,7 @@
 #include <sys/mman.h>
 #include <string.h>
 #include <ctype.h>
+#include <err.h>
 
 #include "getlistaddr.h"
 #include "getlistdelim.h"
@@ -235,10 +236,8 @@ int main(int argc, char **argv)
 
 	if(listdir == NULL || (address == NULL && dsnbounce == 0)
 				|| (number == NULL && probe == 0)) {
-		fprintf(stderr,
-			"You have to specify -L, -a or -d and -n or -p\n");
-		fprintf(stderr, "%s -h for help\n", argv[0]);
-		exit(EXIT_FAILURE);
+		errx(EXIT_FAILURE, "You have to specify -L, -a or -d and -n or -p\n"
+		    "%s -h for help", argv[0]);
 	}
 
 	/* Lets make sure no random user tries to do bouncehandling */
@@ -249,10 +248,8 @@ int main(int argc, char **argv)
 				log_error(LOG_ARGS,
 					"Have to invoke either as root "
 					"or as the user owning listdir");
-				writen(STDERR_FILENO,
-					"Have to invoke either as root "
-					"or as the user owning listdir\n", 60);
-				exit(EXIT_FAILURE);
+				errx(EXIT_FAILURE, "Have to invoke either as root "
+					"or as the user owning listdir");
 			}
 		} else {
 			log_error(LOG_ARGS, "Could not stat %s", listdir);
@@ -285,9 +282,8 @@ int main(int argc, char **argv)
 	address = lowcaseaddr;
 
 	if(number != NULL && probe != 0) {
-		fprintf(stderr, "You can only specify one of -n or -p\n");
-		fprintf(stderr, "%s -h for help\n", argv[0]);
-		exit(EXIT_FAILURE);
+		errx(EXIT_FAILURE, "You can only specify one of -n or -p\n"
+		    "%s -h for help", argv[0]);
 	}
 
 	if (probe) {

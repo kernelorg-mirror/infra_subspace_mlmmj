@@ -32,6 +32,7 @@
 #include <sys/wait.h>
 #include <libgen.h>
 #include <regex.h>
+#include <err.h>
 
 #include "mlmmj.h"
 #include "wrappers.h"
@@ -526,9 +527,8 @@ int main(int argc, char **argv)
 	}
 
 	if(listdir == NULL || mailfile == NULL) {
-		fprintf(stderr, "You have to specify -L and -m\n");
-		fprintf(stderr, "%s -h for help\n", argv[0]);
-		exit(EXIT_FAILURE);
+		errx(EXIT_FAILURE, "You have to specify -L and -m\n"
+		    "%s -h for help", argv[0]);
 	}
 
 	/* Lets make sure no random user tries to send mail to the list */
@@ -539,10 +539,8 @@ int main(int argc, char **argv)
 				log_error(LOG_ARGS,
 					"Have to invoke either as root "
 					"or as the user owning listdir");
-				writen(STDERR_FILENO,
-					"Have to invoke either as root "
-					"or as the user owning listdir\n", 60);
-				exit(EXIT_FAILURE);
+				errx(EXIT_FAILURE, "Have to invoke either as root "
+					"or as the user owning listdir");
 			}
 		} else {
 			log_error(LOG_ARGS, "Could not stat %s", listdir);

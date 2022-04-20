@@ -593,15 +593,13 @@ int main(int argc, char **argv)
 		}
 	}
 	if(listdir == 0 || address == 0) {
-		fprintf(stderr, "You have to specify -L and -a\n");
-		fprintf(stderr, "%s -h for help\n", argv[0]);
-		exit(EXIT_FAILURE);
+		errx(EXIT_FAILURE, "You have to specify -L and -a\n"
+		    "%s -h for help", argv[0]);
 	}
 
 	if(digest + nomail + normal > 1) {
-		fprintf(stderr, "Specify at most one of -d, -n and -N\n");
-		fprintf(stderr, "%s -h for help\n", argv[0]);
-		exit(EXIT_FAILURE);
+		errx(EXIT_FAILURE, "Specify at most one of -d, -n and -N\n"
+		    "%s -h for help", argv[0]);
 	}
 
 	if(digest)
@@ -612,21 +610,18 @@ int main(int argc, char **argv)
 		typesub = SUB_NORMAL;
 
 	if(confirmunsub && unsubconfirm) {
-		fprintf(stderr, "Cannot specify both -C and -c\n");
-		fprintf(stderr, "%s -h for help\n", argv[0]);
-		exit(EXIT_FAILURE);
+		errx(EXIT_FAILURE, "Cannot specify both -C and -c\n"
+		    "%s -h for help", argv[0]);
 	}
 
 	if(reasonsub == SUB_CONFIRM && unsubconfirm) {
-		fprintf(stderr, "Cannot specify both -C and -R\n");
-		fprintf(stderr, "%s -h for help\n", argv[0]);
-		exit(EXIT_FAILURE);
+		errx(EXIT_FAILURE, "Cannot specify both -C and -R\n"
+		    "%s -h for help", argv[0]);
 	}
 
 	if(reasonsub == SUB_BOUNCING && unsubconfirm) {
-		fprintf(stderr, "Cannot specify both -C and -b\n");
-		fprintf(stderr, "%s -h for help\n", argv[0]);
-		exit(EXIT_FAILURE);
+		errx(EXIT_FAILURE, "Cannot specify both -C and -b\n"
+		    "%s -h for help", argv[0]);
 	}
 
 	/* Make the address lowercase */

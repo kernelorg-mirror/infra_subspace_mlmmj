@@ -42,6 +42,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <signal.h>
+#include <err.h>
 
 #include "mlmmj.h"
 #include "mlmmj-send.h"
@@ -887,9 +888,8 @@ int main(int argc, char **argv)
 	}
 
 	if(mailfilename == NULL || (listdir == NULL && listctrl == NULL)) {
-		fprintf(stderr, "You have to specify -m and -L or -l\n");
-		fprintf(stderr, "%s -h for help\n", argv[0]);
-		exit(EXIT_FAILURE);
+		errx(EXIT_FAILURE, "You have to specify -m and -L or -l\n"
+		    "%s -h for help", argv[0]);
 	}
 
 	/* Lets make sure no random user tries to send mail to the list */
@@ -900,10 +900,9 @@ int main(int argc, char **argv)
 				log_error(LOG_ARGS,
 					"Have to invoke either as root "
 					"or as the user owning listdir");
-				writen(STDERR_FILENO,
+				errx(EXIT_FAILURE,
 					"Have to invoke either as root "
-					"or as the user owning listdir\n", 60);
-				exit(EXIT_FAILURE);
+					"or as the user owning listdir");
 			}
 		} else {
 			log_error(LOG_ARGS, "Could not stat %s", listdir);
@@ -917,18 +916,15 @@ int main(int argc, char **argv)
 	
 	/* get the list address */
 	if(listctrl[0] == '1' && (bounceaddr == NULL || to_addr == NULL)) {
-		fprintf(stderr, "With -l 1 you need -F and -T\n");
-		exit(EXIT_FAILURE);
+		errx(EXIT_FAILURE, "With -l 1 you need -F and -T");
 	}
 
 	if((listctrl[0] == '2' && (listdir == NULL || bounceaddr == NULL))) {
-		fprintf(stderr, "With -l 2 you need -L and -F\n");
-		exit(EXIT_FAILURE);
+		errx(EXIT_FAILURE, "With -l 2 you need -L and -F");
 	}
 
 	if((listctrl[0] == '7' && listdir == NULL)) {
-		fprintf(stderr, "With -l 7 you need -L\n");
-		exit(EXIT_FAILURE);
+		errx(EXIT_FAILURE, "With -l 7 you need -L");
 	}
 
 	verp = ctrlvalue(listdir, "verp");
