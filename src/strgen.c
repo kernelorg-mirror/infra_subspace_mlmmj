@@ -245,12 +245,12 @@ char *cleanquotedp(const char *qpstr)
 
 char *genmsgid(const char *fqdn)
 {
-	char buf[256];
+	char *buf;
 
-	snprintf(buf, sizeof(buf), "Message-ID: <%ld-%d-mlmmj-%08x@%s>\n",
+	xasprintf(&buf, "Message-ID: <%ld-%d-mlmmj-%08x@%s>\n",
 			(long int)time(NULL), (int)getpid(), random_int(), fqdn);
 
-	return xstrdup(buf);
+	return (buf);
 }
 
 char *gendatestr()
