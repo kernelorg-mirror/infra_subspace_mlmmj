@@ -152,7 +152,15 @@ ATF_TC_BODY(mydirname, tc)
 {
 	char plop[] = "/path/to/a/file";
 
-	ATF_REQUIRE_STREQ(mydirname(plop), "/path/to/a");
+	char *t = mydirname(plop);
+	ATF_REQUIRE_STREQ(t, "/path/to/a");
+	free(t);
+	t = mydirname(NULL);
+	ATF_REQUIRE_STREQ(t, ".");
+	free(t);
+	t = mydirname("a");
+	ATF_REQUIRE_STREQ(t, ".");
+	free(t);
 }
 
 ATF_TC_BODY(mybasename, tc)

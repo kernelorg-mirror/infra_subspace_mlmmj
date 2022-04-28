@@ -169,17 +169,20 @@ char *hostnamestr()
 
 char *mydirname(const char *path)
 {
-	char *mypath, *dname, *ret;
+	char *allocated;
+	char *walk;
 
-	mypath = xstrdup(path);
-	dname = dirname(mypath);
-	ret = xstrdup(dname);
-
-	/* We don't free mypath until we have strdup()'ed dname, because
-	 * dirname() returns a pointer into mypath  -- mortenp 20040527 */
-	free(mypath);
-
-	return ret;
+	if (path == NULL)
+		return (xstrdup("."));
+	allocated = xstrdup(path);
+	walk = strrchr(allocated, '/');
+	if (walk == NULL) {
+		allocated[0] = '.';
+		allocated[1] = '\0';
+	} else {
+		*walk = '\0';
+	}
+	return (allocated);
 }
 
 const char *mybasename(const char *path)
