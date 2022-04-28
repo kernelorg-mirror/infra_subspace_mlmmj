@@ -48,6 +48,7 @@
 #include "xmalloc.h"
 #include "find_email_adr.h"
 #include "gethdrline.h"
+#include "utils.h"
 
 
 void do_probe(const char *listdir, const char *mlmmjsend, const char *addr)
@@ -187,10 +188,10 @@ static void print_help(const char *prg)
 
 int main(int argc, char **argv)
 {
-	int opt, fd, dsnbounce = 0, i = 0;
+	int opt, fd, dsnbounce = 0;
 	char *listdir = NULL, *address = NULL, *number = NULL;
 	char *bindir, *mlmmjsend, *savename;
-	char *mailname = NULL, *bfilename, *a, *buf, *lowcaseaddr;
+	char *mailname = NULL, *bfilename, *a, *buf;
 	size_t len;
 	time_t t;
 	int probe = 0;
@@ -273,13 +274,7 @@ int main(int argc, char **argv)
 	}
 
 	/* Make the address lowercase */
-	lowcaseaddr = xstrdup(address);
-	i = 0;
-	while(lowcaseaddr[i]) {
-		lowcaseaddr[i] = tolower(lowcaseaddr[i]);
-		i++;
-	}
-	address = lowcaseaddr;
+	address = lowercase(address);
 
 	if(number != NULL && probe != 0) {
 		errx(EXIT_FAILURE, "You can only specify one of -n or -p\n"

@@ -38,6 +38,7 @@
 #include "xmalloc.h"
 #include "wrappers.h"
 #include "chomp.h"
+#include "utils.h"
 #include "strgen.h"
 #include "mail-functions.h"
 #include "mygetline.h"
@@ -51,6 +52,7 @@ ATF_TC_WITHOUT_HEAD(mybasename);
 ATF_TC_WITHOUT_HEAD(mygetline);
 ATF_TC_WITHOUT_HEAD(init_sock);
 ATF_TC_WITHOUT_HEAD(genmsgid);
+ATF_TC_WITHOUT_HEAD(lowercase);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -196,6 +198,11 @@ ATF_TC_BODY(mygetline, tc)
 	close(fd);
 }
 
+ATF_TC_BODY(lowercase, tc)
+{
+	ATF_REQUIRE_STREQ(lowercase("MAR23anC"), "mar23anc");
+}
+
 ATF_TC_BODY(init_sock, tc)
 {
 	pid_t p = atf_utils_fork();
@@ -256,6 +263,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, mydirname);
 	ATF_TP_ADD_TC(tp, mybasename);
 	ATF_TP_ADD_TC(tp, mygetline);
+	ATF_TP_ADD_TC(tp, lowercase);
 	ATF_TP_ADD_TC(tp, init_sock);
 	ATF_TP_ADD_TC(tp, genmsgid);
 

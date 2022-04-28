@@ -50,6 +50,7 @@
 #include "prepstdreply.h"
 #include "ctrlvalues.h"
 #include "chomp.h"
+#include "utils.h"
 
 static void moderate_sub(const char *listdir, const char *listaddr,
 		const char *listdelim, const char *subaddr,
@@ -641,12 +642,12 @@ int main(int argc, char **argv)
 {
 	char *listaddr, *listdelim, *listdir = NULL;
 	char *mlmmjsend, *mlmmjunsub, *bindir;
-	char *address = NULL, *lowcaseaddr, *modstr = NULL;
+	char *address = NULL, *modstr = NULL;
 	const char *flag = NULL;
 	int opt, subconfirm = 0, confirmsub = 0, notifysub;
 	int changeuid = 1, status, digest = 0, nomail = 0, both = 0;
 	int nogensubscribed = 0;
-	int force = 0, quiet = 0, i = 0;
+	int force = 0, quiet = 0;
 	enum subtype subbed;
 	struct stat st;
 	pid_t pid, childpid = 0;
@@ -755,13 +756,7 @@ int main(int argc, char **argv)
 	}
 
 	/* Make the address lowercase */
-	lowcaseaddr = xstrdup(address);
-	i = 0;
-	while(lowcaseaddr[i]) {
-		lowcaseaddr[i] = tolower(lowcaseaddr[i]);
-		i++;
-	}
-	address = lowcaseaddr;
+	address = lowercase(address);
 
 	/* get the list address */
 	listaddr = getlistaddr(listdir);

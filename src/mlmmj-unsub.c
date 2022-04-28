@@ -48,6 +48,7 @@
 #include "log_error.h"
 #include "statctrl.h"
 #include "prepstdreply.h"
+#include "utils.h"
 
 void confirm_unsub(const char *listdir, const char *listaddr,
 		   const char *listdelim, const char *subaddr,
@@ -525,11 +526,10 @@ int main(int argc, char **argv)
 	int normal = 0, digest = 0, nomail = 0, subbed;
 	int confirmunsub = 0, unsubconfirm = 0, notifysub = 0;
 	int changeuid = 1, quiet = 0;
-	int nogennotsubscribed = 0, i = 0;
+	int nogennotsubscribed = 0;
 	int status;
 	char *listaddr, *listdelim, *listdir = NULL, *address = NULL;
 	char *mlmmjsend, *bindir, *subdir, *subddirname;
-	char *lowcaseaddr;
 	enum subtype typesub = SUB_ALL;
 	enum subreason reasonsub = SUB_ADMIN;
 	uid_t uid;
@@ -626,17 +626,7 @@ int main(int argc, char **argv)
 	}
 
 	/* Make the address lowercase */
-	lowcaseaddr = xstrdup(address);
-	i = 0;
-	while(lowcaseaddr[i]) {
-		lowcaseaddr[i] = tolower(lowcaseaddr[i]);
-		i++;
-	}
-	address = lowcaseaddr;
-
-	/* get the list address */
-	listaddr = getlistaddr(listdir);
-	listdelim = getlistdelim(listdir);
+	address = lowercase(address);
 
 	if(changeuid) {
 		uid = getuid();
