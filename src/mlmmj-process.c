@@ -137,7 +137,7 @@ static void newmoderated(const char *listdir, const char *mailfilename,
 	memory_lines_state *mls;
 	char *queuefilename = NULL;
 	const char *efromismod = NULL;
-	char *mailbasename = mybasename(mailfilename), *to, *reject;
+	const char *mailbasename = mybasename(mailfilename), *to, *reject;
 	int notifymod = 0, status;
 	pid_t childpid, pid;
 #if 0

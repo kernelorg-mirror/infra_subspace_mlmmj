@@ -182,19 +182,14 @@ char *mydirname(const char *path)
 	return ret;
 }
 
-char *mybasename(const char *path)
+const char *mybasename(const char *path)
 {
-	char *mypath, *bname, *ret;
+	const char *r;
 
-	mypath = xstrdup(path);
-	bname = basename(mypath);
-	ret = xstrdup(bname);
-
-	/* We don't free mypath until we have strdup()'ed bname, because
-	 * basename() returns a pointer into mypath  -- mortenp 20040527 */
-	free(mypath);
-	
-	return ret;
+	r = strrchr(path, '/');
+	if (r == NULL)
+		return (path);
+	return (++r);
 }
 
 char *cleanquotedp(const char *qpstr)

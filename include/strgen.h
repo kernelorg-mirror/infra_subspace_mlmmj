@@ -32,7 +32,7 @@ char *genlistfqdn(const char *listaddr);
 char *concatstr(int count, ...);
 char *hostnamestr(void);
 char *mydirname(const char *path);
-char *mybasename(const char *path);
+const char *mybasename(const char *path);
 char *cleanquotedp(const char *qpstr);
 char *genmsgid(const char *fqdn);
 char *gendatestr(void);
