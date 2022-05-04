@@ -30,6 +30,7 @@
 
 int random_int()
 {
+#ifndef HAVE_ARC4RANDOM_UNIFORM
 	static int init = 0;
 	unsigned int seed;
 	int devrandom;
@@ -59,6 +60,9 @@ int random_int()
 	init = 1;
 
 	return rand();
+#else
+	return arc4random_uniform(INT_MAX);
+#endif
 }
 #if 0
 int main(int argc, char **argv)
