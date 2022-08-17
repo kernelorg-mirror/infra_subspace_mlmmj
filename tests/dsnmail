@@ -1,0 +1,87 @@
+From @ Wed Aug 17 14:43:39 2022
+Return-Path: <>
+Delivered-To: bapt@plop.meh
+Received: from plop.meh
+	by plop.meh with LMTP
+	id 76qJDHvi/GL/tAAA5alX6Q
+	(envelope-from <>)
+	for <bapt@plop.meh>; Wed, 17 Aug 2022 14:43:39 +0200
+Received: by plop.meh (Postfix)
+	id 2C213EFE39; Wed, 17 Aug 2022 14:43:39 +0200 (CEST)
+Date: Wed, 17 Aug 2022 14:43:39 +0200 (CEST)
+From: Mail Delivery System <MAILER-DAEMON@plop.meh>
+Subject: Undelivered Mail Returned to Sender
+To: bapt@plop.meh
+Auto-Submitted: auto-replied
+MIME-Version: 1.0
+Content-Type: multipart/report; report-type=delivery-status;
+	boundary="C80F3EFBDB.1660740219/plop.meh"
+Content-Transfer-Encoding: 8bit
+Message-Id: <20220817124339.2C213EFE39@plop.meh>
+Status: RO
+Content-Length: 3136
+Lines: 78
+
+This is a MIME-encapsulated message.
+
+--C80F3EFBDB.1660740219/plop.meh
+Content-Description: Notification
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+This is the mail system at host plop.meh.
+
+I'm sorry to have to inform you that your message could not
+be delivered to one or more recipients. It's attached below.
+
+For further assistance, please send mail to postmaster.
+
+If you do so, please include this problem report. You can
+delete your own text from the attached returned message.
+
+                   The mail system
+
+<mgrmbl@oups.com>: host mx1.oups.com said:
+    550-5.1.1 <mgrmbl@oups.com>: Recipient address rejected: User unknown in
+    virtual alias table 550 5.1.1 in case of permanent delivery errors (e.g.
+    5XX SMTP errors)
+
+--C80F3EFBDB.1660740219/plop.meh
+Content-Description: Delivery report
+Content-Type: message/delivery-status
+
+Reporting-MTA: dns; plop.meh
+X-Postfix-Queue-ID: C80F3EFBDB
+X-Postfix-Sender: rfc822; bapt@plop.meh
+Arrival-Date: Wed, 17 Aug 2022 14:43:30 +0200 (CEST)
+
+Final-Recipient: rfc822; mgrmbl@oups.com
+Original-Recipient: rfc822;mgrmbl@oups.com
+Action: failed
+Status: 5.1.1
+Remote-MTA: dns; mx1.oups.com
+Diagnostic-Code: smtp; 550-5.1.1 <mgrmbl@oups.com>: Recipient address
+    rejected: User unknown in virtual alias table 550 5.1.1 in case of
+    permanent delivery errors (e.g. 5XX SMTP errors)
+
+--C80F3EFBDB.1660740219/plop.meh
+Content-Description: Undelivered Message
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+
+Return-Path: <bapt@plop.meh>
+Received: by plop.meh (Postfix, from userid 1001)
+	id C80F3EFBDB; Wed, 17 Aug 2022 14:43:30 +0200 (CEST)
+Date: Wed, 17 Aug 2022 14:43:30 +0200
+From: bapt <bapt@plop.meh>
+To: mgrmbl@oups.com
+Subject: plop
+Message-ID: <20220817124330.dzeob2kx23pbjk4h@plop.meh>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+this is a test
+
+--C80F3EFBDB.1660740219/plop.meh--
+

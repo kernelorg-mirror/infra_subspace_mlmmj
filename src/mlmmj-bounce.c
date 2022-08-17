@@ -33,11 +33,13 @@
 #include <dirent.h>
 #include <sys/mman.h>
 #include <string.h>
+#include <stdbool.h>
 #include <ctype.h>
 #include <err.h>
 
 #include "getlistaddr.h"
 #include "getlistdelim.h"
+#include "chomp.h"
 #include "mlmmj.h"
 #include "strgen.h"
 #include "wrappers.h"
@@ -123,8 +125,10 @@ void do_probe(const char *listdir, const char *mlmmjsend, const char *addr)
 
 char *dsnparseaddr(const char *mailname)
 {
-	int fd, indsn = 0, i;
-	char *line, *linedup, *search, *addr = NULL;
+	int fd, i;
+	char *line, *hdr, *walk, *addr = NULL, *boundary = NULL;
+	bool quoted = false;
+	bool indsn = false;
 	struct email_container emails = { 0, NULL };
 
 	fd = open(mailname, O_RDONLY);
@@ -135,36 +139,93 @@ char *dsnparseaddr(const char *mailname)
 	}
 
 	while((line = gethdrline(fd, NULL))) {
-		linedup = xstrdup(line);
-		for(i = 0; line[i]; i++)
-			linedup[i] = tolower(line[i]);
-		search = strstr(linedup, "message/delivery-status");
-		free(linedup);
-		if(search) {
-			indsn = 1;
+		if (strncasecmp(line, "content-type:", 13) != 0) {
 			free(line);
 			continue;
 		}
-		if(indsn) {
-			/* TODO: this parsing could be greatly improved */
-			if(strncasecmp(line, "Final-Recipient:", 16)) {
-				search = strstr(line, ";");
-				if (search) {
-					find_email_adr(search+1, &emails);
-					if(emails.emailcount > 0) {
-						addr = xstrdup(emails.emaillist[0]);
-						for(i = 0; i < emails.emailcount; i++)
-							free(emails.emaillist[i]);
-						free(emails.emaillist);
-					}
+		walk = line + 13;
+		while (isspace(*walk) && *walk != '\0')
+			walk++;
+		if (strncasecmp(walk, "multipart/report;", 17) != 0) {
+			free(line);
+			break;
+		}
+		walk += 17;
+		while (isspace(*walk) && *walk != '\0')
+			walk++;
+		if (strncasecmp(walk, "report-type=delivery-status;", 28) != 0) {
+			free(line);
+			break;
+		}
+		walk += 28;
+		while (isspace(*walk) && *walk != '\0')
+			walk++;
+		if (strncasecmp(walk, "boundary=", 9) != 0) {
+			free(line);
+			break;
+		}
+		walk += 9;
+
+		if (*walk == '"') {
+			walk++;
+			quoted = true;
+		}
+		xasprintf(&boundary, "--%s", walk);
+		boundary[strcspn(boundary, quoted ? " \t\"" : " \t")] = '\0';
+		free(line);
+		break;
+	}
+	/* this is not a miltipart/report mail see RFC1839 */
+	if (boundary == NULL)
+		return NULL;
+	while ((line = mygetline(fd))) {
+		chomp(line);
+		if (indsn) {
+			if (strncasecmp(line, "Final-Recipient:", 16) == 0) {
+				walk = strchr(line, ';');
+				if (walk == NULL) {
+					free(line);
+					break;
+				}
+				find_email_adr(walk+1, &emails);
+				if(emails.emailcount > 0) {
+					addr = xstrdup(emails.emaillist[0]);
+					for(i = 0; i < emails.emailcount; i++)
+						free(emails.emaillist[i]);
+					free(emails.emaillist);
 				}
 				free(line);
 				break;
 			}
 		}
-		free(line);
+		if (strcmp(line, boundary) == 0) {
+			if (indsn) {
+				free(line);
+				break;
+			}
+			/* check our content type is a valid one */
+			while ((hdr = gethdrline(fd, NULL))) {
+				if (indsn) {
+					/* skip the rest of the headers if any */
+					free(hdr);
+					continue;
+				}
+				if (strncasecmp(hdr, "content-type:", 13) != 0) {
+					free(line);
+					continue;
+				}
+				walk = hdr + 13;
+				while (isspace(*walk) && *walk != '\0')
+					walk++;
+				if (strncasecmp(walk, "message/delivery-status", 23) != 0) {
+					free(hdr);
+					break;
+				}
+				free(hdr);
+				indsn = true;
+			}
+		}
 	}
-
 	return addr;
 }
 
