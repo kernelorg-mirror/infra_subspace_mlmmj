@@ -477,6 +477,7 @@ int main(int argc, char **argv)
 	struct email_container rpemails = { 0, NULL };
 	struct email_container dtemails = { 0, NULL };
 	struct strlist *access_rules = NULL;
+	struct strlist *list_rules = NULL;
 	struct strlist *delheaders = NULL;
 	struct strlist allheaders;
 	struct strlist *listaddrs = NULL;
@@ -1020,6 +1021,16 @@ int main(int argc, char **argv)
 			send = 1;
 		} else if (accret == ALLOW) {
 			/* continue processing as normal */
+		}
+	}
+
+	list_rules = ctrlvalues(listdir, "send");
+	if (list_rules != NULL) {
+		for (i = 0; i < list_rules->count; i++) {
+			if (strcasecmp(posteraddr, list_rules->strs[i]) == 0) {
+				send = 1;
+				break;
+			}
 		}
 	}
 

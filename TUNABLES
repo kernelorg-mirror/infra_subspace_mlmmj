@@ -263,3 +263,10 @@ entire content is used as value, it's marked "text".
 
    When this file is present, mlmmj will stop issueing bounce probes. It is
    intended to temporary disable the bounce probe for debugging purpose.
+
+
+ · send			(list)
+
+   The file contains a list of email address for which the mail will be sent
+   unconditionally. It will not be moderated, nor subject to subonlypost, nor
+   modnonsubposts.
