@@ -60,7 +60,6 @@
 #include "wrappers.h"
 #include "statctrl.h"
 #include "ctrlvalue.h"
-#include "mylocking.h"
 #include "getaddrsfromfd.h"
 
 static int addtohdr = 0;
@@ -958,14 +957,8 @@ int main(int argc, char **argv)
 	
 	/* initialize file with mail to send */
 
-	if((mailfd = open(mailfilename, O_RDWR)) < 0) {
+	if((mailfd = open(mailfilename, O_RDWR|O_EXLOCK)) < 0) {
 	        log_error(LOG_ARGS, "Could not open '%s'", mailfilename);
-		exit(EXIT_FAILURE);
-	}
-
-	if(myexcllock(mailfd) < 0) {
-		log_error(LOG_ARGS, "Could not lock '%s'."
-				"Mail not sent!", mailfilename);
 		exit(EXIT_FAILURE);
 	}
 

@@ -31,7 +31,6 @@
 #include <string.h>
 
 #include "wrappers.h"
-#include "mylocking.h"
 #include "incindexfile.h"
 #include "log_error.h"
 #include "strgen.h"
@@ -47,20 +46,11 @@ int incindexfile(const char *listdir)
 	char *indexfilename;
 
 	indexfilename = concatstr(2, listdir, "/index");
-	fd = open(indexfilename, O_RDWR|O_CREAT, S_IRUSR|S_IWUSR);
+	fd = open(indexfilename, O_RDWR|O_CREAT|O_EXLOCK, S_IRUSR|S_IWUSR);
 
 	if(fd == -1) {
 		free(indexfilename);
 		log_error(LOG_ARGS, "Error opening index file");
-		return 0;
-	}
-
-	lock = myexcllock(fd);
-	
-	if(lock) {
-		free(indexfilename);
-		log_error(LOG_ARGS, "Error locking index file");
-		close(fd);
 		return 0;
 	}
 

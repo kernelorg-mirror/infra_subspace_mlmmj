@@ -36,7 +36,6 @@
 #include "log_error.h"
 #include "log_oper.h"
 #include "strgen.h"
-#include "mylocking.h"
 #include "wrappers.h"
 #include "memory.h"
 
@@ -66,7 +65,7 @@ int log_oper(const char *prefix, const char *basename, const char *fmt, ...)
 		free(tmp);
 	}
 	
-	fd = open(logfilename, O_RDWR|O_CREAT|O_APPEND, S_IRUSR|S_IWUSR);
+	fd = open(logfilename, O_RDWR|O_CREAT|O_APPEND|O_EXLOCK, S_IRUSR|S_IWUSR);
 	if(fd < 0) {
 		log_error(LOG_ARGS, "Could not open %s", logfilename);
 		free(logfilename);
@@ -77,12 +76,6 @@ int log_oper(const char *prefix, const char *basename, const char *fmt, ...)
 		strncpy(ct, "Unknown time", sizeof(ct));
 	else
 		ct[24] = '\0';
-
-	if(myexcllock(fd) < 0) {
-		log_error(LOG_ARGS, "Could not lock %s", logfilename);
-		free(logfilename);
-		return -1;
-	}
 
 	va_start(ap, fmt);
 	i = vsnprintf(log_msg, sizeof(log_msg), fmt, ap);

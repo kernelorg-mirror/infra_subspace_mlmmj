@@ -45,7 +45,6 @@
 #include "ctrlvalue.h"
 #include "statctrl.h"
 #include "send_digest.h"
-#include "mylocking.h"
 #include "log_oper.h"
 
 static void print_help(const char *prg)
@@ -170,14 +169,9 @@ int discardmail(const char *old, const char *new, time_t age)
 	time_t t;
 	int fd, ret = 0;
 
-	fd = open(old, O_RDWR);
+	fd = open(old, O_RDWR|O_EXLOCK);
 	if(fd < 0)
 		return 0;
-
-	if(myexcllock(fd) < 0) {
-		close(fd);
-		return 0;
-	}
 
 	stat(old, &st);
 	t = time(NULL);
@@ -804,7 +798,7 @@ int run_digests(const char *listdir, const char *mlmmjsend)
 	char *s1, *s2;
 	time_t digestinterval, t, lasttime;
 	long digestmaxmails, lastindex, index, lastissue;
-	int fd, indexfd, lock;
+	int fd, indexfd;
 
 	if (statctrl(listdir, "noarchive")) {
 		return 0;
@@ -827,18 +821,10 @@ int run_digests(const char *listdir, const char *mlmmjsend)
 	}
 
 	digestname = concatstr(2, listdir, "/lastdigest");
-	fd = open(digestname, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+	fd = open(digestname, O_RDWR|O_CREAT|O_EXLOCK, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
 		log_error(LOG_ARGS, "Could not open '%s'", digestname);
 		free(digestname);
-		return 1;
-	}
-	
-	lock = myexcllock(fd);
-	if(lock) {
-		log_error(LOG_ARGS, "Error locking lastdigest");
-		free(digestname);
-		close(fd);
 		return 1;
 	}
 

@@ -21,7 +21,7 @@ libmlmmj_a_SOURCES=	mail-functions.c chomp.c incindexfile.c \
 			listcontrol.c send_help.c prepstdreply.c \
 			do_all_the_voodoo_here.c log_oper.c send_list.c \
 			unistr.c gethdrline.c send_digest.c \
-			writen.c getlistaddr.c mylocking.c strgen.c statctrl.c \
+			writen.c getlistaddr.c strgen.c statctrl.c \
 			ctrlvalue.c readn.c getlistdelim.c ctrlvalues.c utils.c
 
 mlmmj_send_SOURCES = mlmmj-send.c

@@ -38,7 +38,6 @@
 #include "xmalloc.h"
 #include "mlmmj.h"
 #include "mlmmj-unsub.h"
-#include "mylocking.h"
 #include "wrappers.h"
 #include "mygetline.h"
 #include "getlistaddr.h"
@@ -357,10 +356,9 @@ static void generate_notsubscribed(const char *listdir, const char *subaddr,
 static void unsubscribe_type(char *listdir, char *listaddr, char *listdelim,
 		char *address, char *mlmmjsend,
 		enum subtype typesub, enum subreason reasonsub) {
-	char *subdir, *subddirname, *sublockname;
+	char *subdir, *subddirname;
 	char *subreadname = NULL, *subwritename;
-	int subread, subwrite, rlock, wlock;
-	int sublock, sublockfd;
+	int subread, subwrite;
 	int groupwritable = 0;
 	int unsubres;
 	struct stat st;
@@ -406,7 +404,7 @@ static void unsubscribe_type(char *listdir, char *listaddr, char *listdelim,
 		
 		subreadname = concatstr(3, listdir, subdir, dp->d_name);
 
-		subread = open(subreadname, O_RDWR);
+		subread = open(subreadname, O_RDWR|O_EXLOCK);
 		if(subread == -1) {
 			free(subreadname);
 			continue;
@@ -419,63 +417,16 @@ static void unsubscribe_type(char *listdir, char *listaddr, char *listdelim,
 			continue;
 		}
 
-		/* create a .name.lock file and aquire the lock */
-		sublockname = concatstr(5, listdir, subdir, ".", dp->d_name,
-					".lock");
-		sublockfd = open(sublockname, O_RDWR | O_CREAT,
-						S_IRUSR | S_IWUSR);
-		if(sublockfd < 0) {
-			log_error(LOG_ARGS, "Error opening lock file %s",
-					sublockname);
-			free(sublockname);
-			continue;
-		}
-
-		sublock = myexcllock(sublockfd);
-		if(sublock < 0) {
-			log_error(LOG_ARGS, "Error locking '%s' file",
-					sublockname);
-			free(sublockname);
-			close(sublockfd);
-			continue;
-		}
-		
-		rlock = myexcllock(subread);
-		if(rlock < 0) {
-			log_error(LOG_ARGS, "Error locking '%s' file",
-					subreadname);
-			close(subread);
-			close(sublockfd);
-			free(subreadname);
-			free(sublockname);
-			continue;
-		}
-
 		subwritename = concatstr(2, subreadname, ".new");
 
-		subwrite = open(subwritename, O_RDWR | O_CREAT | O_TRUNC,
+		subwrite = open(subwritename, O_RDWR|O_CREAT|O_TRUNC|O_EXLOCK,
 				S_IRUSR | S_IWUSR | groupwritable);
 		if(subwrite == -1){
 			log_error(LOG_ARGS, "Could not open '%s'",
 					subwritename);
 			close(subread);
-			close(sublockfd);
 			free(subreadname);
 			free(subwritename);
-			free(sublockname);
-			continue;
-		}
-
-		wlock = myexcllock(subwrite);
-		if(wlock < 0) {
-			log_error(LOG_ARGS, "Error locking '%s'",
-					subwritename);
-			close(subread);
-			close(subwrite);
-			close(sublockfd);
-			free(subreadname);
-			free(subwritename);
-			free(sublockname);
 			continue;
 		}
 
@@ -483,11 +434,9 @@ static void unsubscribe_type(char *listdir, char *listaddr, char *listdelim,
 		if(unsubres < 0) {
 			close(subread);
 			close(subwrite);
-			close(sublockfd);
 			unlink(subwritename);
 			free(subreadname);
 			free(subwritename);
-			free(sublockname);
 			continue;
 		}
 
@@ -509,11 +458,8 @@ static void unsubscribe_type(char *listdir, char *listaddr, char *listdelim,
 
 		close(subread);
 		close(subwrite);
-		close(sublockfd);
 		free(subreadname);
 		free(subwritename);
-		unlink(sublockname);
-		free(sublockname);
 
         }
 

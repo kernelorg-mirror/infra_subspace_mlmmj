@@ -38,7 +38,6 @@
 #include "xmalloc.h"
 #include "mlmmj.h"
 #include "mlmmj-sub.h"
-#include "mylocking.h"
 #include "wrappers.h"
 #include "getlistaddr.h"
 #include "getlistdelim.h"
@@ -565,8 +564,8 @@ static void subscribe_type(char *listdir, char *listaddr, char *listdelim,
 		enum subtype typesub, enum subreason reasonsub) {
 	char *subfilename = NULL;
 	char chstr[2], *subdir;
-	char *subddirname = NULL, *sublockname;
-	int groupwritable = 0, sublock, sublockfd, lock, subfilefd;
+	char *subddirname = NULL;
+	int groupwritable = 0, subfilefd;
 	struct stat st;
 
 	switch(typesub) {
@@ -596,46 +595,15 @@ static void subscribe_type(char *listdir, char *listaddr, char *listdelim,
 	
 	subfilename = concatstr(3, listdir, subdir, chstr);
 
-	sublockname = concatstr(5, listdir, subdir, ".", chstr, ".lock");
-	sublockfd = open(sublockname, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-	if(sublockfd < 0) {
-		log_error(LOG_ARGS, "Error opening lock file %s",
-				sublockname);
-		free(sublockname);
-		exit(EXIT_FAILURE);
-	}
-
-	sublock = myexcllock(sublockfd);
-	if(sublock < 0) {
-		log_error(LOG_ARGS, "Error locking '%s' file",
-				sublockname);
-		free(sublockname);
-		close(sublockfd);
-		exit(EXIT_FAILURE);
-	}
-
-	subfilefd = open(subfilename, O_RDWR|O_CREAT|O_APPEND,
+	subfilefd = open(subfilename, O_RDWR|O_CREAT|O_APPEND|O_EXLOCK,
 				S_IRUSR|S_IWUSR|groupwritable);
 	if(subfilefd == -1) {
 		log_error(LOG_ARGS, "Could not open '%s'", subfilename);
-		free(sublockname);
-		exit(EXIT_FAILURE);
-	}
-
-	lock = myexcllock(subfilefd);
-	if(lock) {
-		log_error(LOG_ARGS, "Error locking subscriber file");
-		close(subfilefd);
-		close(sublockfd);
-		free(sublockname);
 		exit(EXIT_FAILURE);
 	}
 
 	dprintf(subfilefd, "%s\n", address);
 	close(subfilefd);
-	close(sublockfd);
-	unlink(sublockname);
-	free(sublockname);
 }
 
 int main(int argc, char **argv)
