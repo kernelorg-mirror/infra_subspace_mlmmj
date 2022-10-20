@@ -50,6 +50,7 @@ ATF_TC_WITHOUT_HEAD(mydirname);
 ATF_TC_WITHOUT_HEAD(mybasename);
 ATF_TC_WITHOUT_HEAD(mygetline);
 ATF_TC_WITHOUT_HEAD(init_sock);
+ATF_TC_WITHOUT_HEAD(genmsgid);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -240,6 +241,14 @@ ATF_TC_BODY(init_sock, tc)
 	atf_utils_wait(p, 0, "", "");
 }
 
+ATF_TC_BODY(genmsgid, tc)
+{
+	char *test = genmsgid("test.net");
+
+	ATF_REQUIRE_MATCH_MSG("Message-ID: <[0-9]+-[0-9]+-mlmmj-........@test.net>\n", test, "Invalid msgid '%s'", test);
+	free(test);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -248,6 +257,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, mybasename);
 	ATF_TP_ADD_TC(tp, mygetline);
 	ATF_TP_ADD_TC(tp, init_sock);
+	ATF_TP_ADD_TC(tp, genmsgid);
 
 	return (atf_no_error());
 }
