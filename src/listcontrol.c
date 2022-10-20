@@ -191,7 +191,7 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 	if(fromemails->emailcount != 1 && ctrl != CTRL_BOUNCES) {
 		errno = 0;
 		log_error(LOG_ARGS, "Ignoring mail with invalid From: "
-				"which was not a bounce");
+				"which was not a bounce: %d", fromemails->emailcount);
 		return -1;
 	}
 
