@@ -41,10 +41,9 @@
 
 char *random_str()
 {
-	size_t len = 17; /* sixteen hex digits plus terminating zero */
-	char *dest = xmalloc(len);
+	char *dest;
 
-	snprintf(dest, len, "%08x%08x", random_int(), random_int());
+	xasprintf(&dest, "%08x%08x", random_int(), random_int());
 
 	return dest;
 }
