@@ -196,13 +196,9 @@ void send_list(const char *listdir, const char *emailaddr,
 	/* DEPRECATED */
 	/* Add lists manually if they weren't encountered in the list text */
 	if (!normalsls->used && !digestsls->used && !nomailsls->used) {
-		fd = open(queuefilename, O_WRONLY);
+		fd = open(queuefilename, O_WRONLY|O_APPEND);
 		if(fd < 0) {
 			log_error(LOG_ARGS, "Could not open sub list mail");
-			exit(EXIT_FAILURE);
-		}
-		if(lseek(fd, 0, SEEK_END) < 0) {
-			log_error(LOG_ARGS, "Could not seek to end of file");
 			exit(EXIT_FAILURE);
 		}
 		print_subs(fd, normalsls);

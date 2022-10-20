@@ -613,7 +613,7 @@ static void subscribe_type(char *listdir, char *listaddr, char *listdelim,
 		exit(EXIT_FAILURE);
 	}
 
-	subfilefd = open(subfilename, O_RDWR|O_CREAT,
+	subfilefd = open(subfilename, O_RDWR|O_CREAT|O_APPEND,
 				S_IRUSR|S_IWUSR|groupwritable);
 	if(subfilefd == -1) {
 		log_error(LOG_ARGS, "Could not open '%s'", subfilename);
@@ -630,7 +630,6 @@ static void subscribe_type(char *listdir, char *listaddr, char *listdelim,
 		exit(EXIT_FAILURE);
 	}
 
-	lseek(subfilefd, 0L, SEEK_END);
 	len = strlen(address);
 	address[len] = '\n';
 	writen(subfilefd, address, len + 1);
