@@ -50,39 +50,32 @@ char *random_str()
 
 char *headerstr(const char *headertoken, const char *str)
 {
-	size_t len = strlen(headertoken) + strlen(str) + 2;
-	char *dest = xmalloc(len);
+	char *dest;
 
-	snprintf(dest, len, "%s%s\n", headertoken, str);
+	xasprintf(&dest,  "%s%s\n", headertoken, str);
 
 	return dest;
 }
 
 char *genlistname(const char *listaddr)
 {
-	size_t len;
 	char *dest, *atsign;
 
 	atsign = strchr(listaddr, '@');
 	MY_ASSERT(atsign);
-	len = atsign - listaddr + 1;
-	dest = xmalloc(len);
 	
-	snprintf(dest, len, "%s", listaddr);
+	xasprintf(&dest, "%s", listaddr);
 
 	return dest;
 }
 
 char *genlistfqdn(const char *listaddr)
 {
-	size_t len;
 	char *dest, *atsign;
 
 	atsign = strchr(listaddr, '@');
 	MY_ASSERT(atsign);
-	len = strlen(listaddr) - (atsign - listaddr);
-	dest = xmalloc(len);
-	snprintf(dest, len, "%s", atsign + 1);
+	xasprintf(&dest, "%s", atsign + 1);
 
 	return dest;
 }

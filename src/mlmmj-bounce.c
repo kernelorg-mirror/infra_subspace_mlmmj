@@ -99,15 +99,12 @@ void do_probe(const char *listdir, const char *mlmmjsend, const char *addr)
 	probefile = concatstr(4, listdir, "/bounce/", addr, "-probe");
 	MY_ASSERT(probefile);
 	t = time(NULL);
-	a = xmalloc(32);
-	snprintf(a, 31, "%ld", (long int)t);
-	a[31] = '\0';
 	unlink(probefile);
 	fd = open(probefile, O_WRONLY|O_TRUNC|O_CREAT, S_IRUSR|S_IWUSR);
 	if(fd < 0)
 		log_error(LOG_ARGS, "Could not open %s", probefile);
 	else
-		if(dprintf(fd, "%s", a) < 0)
+		if (dprintf(fd, "%ld", (long int)t) < 0)
 			log_error(LOG_ARGS, "Could not write time in probe");
 
 	free(probefile);
@@ -191,8 +188,7 @@ int main(int argc, char **argv)
 	int opt, fd, dsnbounce = 0;
 	char *listdir = NULL, *address = NULL, *number = NULL;
 	char *bindir, *mlmmjsend, *savename;
-	char *mailname = NULL, *bfilename, *a, *buf;
-	size_t len;
+	char *mailname = NULL, *bfilename, *a, buf[26];
 	time_t t;
 	int probe = 0;
 	struct stat st;
@@ -363,20 +359,9 @@ int main(int argc, char **argv)
 
 	/* TODO check that the message is not already bounced */
 
-	/* XXX How long can the string representation of an integer be?
-	 * It is not a security issue (we use snprintf()), but it would be
-	 * bad mojo to cut the timestamp field  -- mortenp 20040427 */
-
-	/* int + ":" + int + " # Wed Jun 30 21:49:08 1993\n" + NUL */
-	len = 20 + 1 + 20 + 28 + 1;
-
-	buf = xmalloc(len);
-	if (!buf) exit(EXIT_FAILURE);
-
 	t = time(NULL);
-	snprintf(buf, len-26, "%s:%ld # ", number, (long int)t);
-	ctime_r(&t, buf+strlen(buf));
-	dprintf(fd, "%s", buf);
+	ctime_r(&t, buf);
+	dprintf(fd, "%s:%ld # %s", number, (long int)t, buf);
 	close(fd);
 
 	if(mailname) {

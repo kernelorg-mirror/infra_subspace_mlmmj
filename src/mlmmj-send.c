@@ -163,18 +163,8 @@ char *bounce_from_adr(const char *recipient, const char *listadr,
 		staticbounceaddr_domain = NULL;
 	}
 
-	bounceaddr = xmalloc(len);
-	if (!bounceaddr) {
-		free(staticbounceaddr);
-		free(staticbounceaddr_localpart);
-		free(staticbounceaddr_domain);
-		free(myrecipient);
-		free(mylistadr);
-		return NULL;
-	}
-
 	if (staticbounceaddr) {
-		snprintf(bounceaddr, len, "%s%s%s-bounces-%s-%s@%s", 
+		xasprintf(&bounceaddr, "%s%s%s-bounces-%s-%s@%s", 
 			staticbounceaddr_localpart, listdelim, mylistadr,
 			indexstr, myrecipient, staticbounceaddr_domain);
 
@@ -182,7 +172,7 @@ char *bounce_from_adr(const char *recipient, const char *listadr,
 		free(staticbounceaddr_localpart);
 		free(staticbounceaddr_domain);
 	} else {
-		snprintf(bounceaddr, len, "%s%sbounces-%s-%s@%s", mylistadr, listdelim,
+		xasprintf(&bounceaddr, "%s%sbounces-%s-%s@%s", mylistadr, listdelim,
 			indexstr, myrecipient, listdomain);
 	}
 
@@ -1395,16 +1385,15 @@ int main(int argc, char **argv)
 						archivefilename);
 			}
 		} else {
-			len = strlen(listdir) + 9 + 20 + 9;
-		  	requeuefilename = xmalloc(len);
-			snprintf(requeuefilename, len, "%s/requeue/%d",
+			xasprintf(&requeuefilename, "%s/requeue/%d",
 				listdir, mindex);
 			if(stat(requeuefilename, &st) < 0) {
 				/* Nothing was requeued and we don't keep
 				 * mail for a noarchive list. */
 				unlink(mailfilename);
 			} else {
-				snprintf(requeuefilename, len,
+				free(requeuefilename);
+				xasprintf(&requeuefilename,
 					"%s/requeue/%d/mailfile",
 					listdir, mindex);
 				if (rename(mailfilename, requeuefilename) < 0) {
