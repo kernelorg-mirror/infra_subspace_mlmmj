@@ -11,4 +11,4 @@ man1_MANS = man/mlmmj-bounce.1 man/mlmmj-make-ml.1 man/mlmmj-receive.1 \
 	    man/mlmmj-sub.1 man/mlmmj-maintd.1 man/mlmmj-process.1 \
 	    man/mlmmj-send.1 man/mlmmj-unsub.1 man/mlmmj-list.1
 
-SUBDIRS = src listtexts contrib
+SUBDIRS = src listtexts contrib tests

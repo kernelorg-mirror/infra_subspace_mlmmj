@@ -10,6 +10,7 @@ AM_CONFIG_HEADER([config.h])
 
 # Checks for programs.
 AC_PROG_CC
+AC_PROG_RANLIB
 
 # Checks for libraries.
 AC_CHECK_LIB(socket,socket)
@@ -45,6 +46,7 @@ AC_FUNC_MALLOC
 AC_CHECK_FUNCS([ftruncate memset socket strerror strncasecmp snprintf fcntl])
 AC_CHECK_FUNCS([nanosleep time strftime syslog regcomp regexec])
 AC_CHECK_FUNCS([arc4random_uniform])
+PKG_CHECK_MODULES([ATF], [atf-c])
 
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/Makefile])
@@ -52,4 +54,6 @@ AC_CONFIG_FILES([src/mlmmj-make-ml])
 AC_CONFIG_FILES([listtexts/Makefile])
 AC_CONFIG_FILES([contrib/Makefile])
 AC_CONFIG_FILES([contrib/receivestrip/Makefile])
+AC_CONFIG_FILES([tests/Makefile])
+AC_CONFIG_FILES([tests/Kyuafile])
 AC_OUTPUT

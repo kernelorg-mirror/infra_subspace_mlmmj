@@ -1,0 +1,4 @@
+syntax(2)
+test_suite("mlmmj")
+
+include("tests/Kyuafile")
