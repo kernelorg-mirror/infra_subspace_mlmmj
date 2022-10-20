@@ -405,6 +405,10 @@ int resend_requeue(const char *listdir, const char *mlmmjsend)
 	time_t t;
 	int status, fromrequeuedir;
 
+	if (statctrl(listdir, "nobounceprobe")) {
+		return 0;
+	}
+
 	if(chdir(dirname) < 0) {
 		log_error(LOG_ARGS, "Could not chdir(%s)", dirname);
 		myfree(dirname);
