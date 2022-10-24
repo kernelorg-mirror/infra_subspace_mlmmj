@@ -1,6 +1,6 @@
-/* Copyright (C) 2002, 2003 Mads Martin Joergensen <mmj at mmj.dk>
- *
- * $Id$
+/*
+ * Copyright (C) 2002, 2003 Mads Martin Joergensen <mmj at mmj.dk>
+ * Copyright (C) 2022 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -37,63 +37,44 @@
 #include "wrappers.h"
 #include "log_error.h"
 
-/* "EHLO \r\n" has length 7 */
-#define EXTRA_EHLO_LEN 7
+static int
+write_sock(int sockfd, const char *errstr, const char *fmt, ...) {
+	int bytes_written;
+	va_list ap;
+
+	va_start(ap, fmt);
+	bytes_written = vdprintf(sockfd, fmt, ap);
+	va_end(ap);
+	if(bytes_written < 0) {
+		log_error(LOG_ARGS, "Could not write %s", errstr);
+		return -1;
+	}
+	return 0;
+}
+
 int write_ehlo(int sockfd, const char *hostname)
 {
-	size_t bytes_written;
-	
-	bytes_written = dprintf(sockfd, "EHLO %s\r\n", hostname);
-	if(bytes_written < 0) {
-		log_error(LOG_ARGS, "Could not write EHLO");
-		return errno;
-	}
-	return 0;
+	return (write_sock(sockfd, "EHLO", "EHLO %s\r\n", hostname));
 }
-/* "HELO \r\n" has length 7 */
-#define EXTRA_HELO_LEN 7
+
 int write_helo(int sockfd, const char *hostname)
 {
-	size_t bytes_written;
-	
-	bytes_written = dprintf(sockfd, "HELO %s\r\n", hostname);
-	if(bytes_written < 0) {
-		log_error(LOG_ARGS, "Could not write HELO");
-		return errno;
-	}
-	return 0;
+	return (write_sock(sockfd, "HELO", "HELO %s\r\n", hostname));
 }
-/* "MAIL FROM:<> \r\n" has length 15 */
-#define EXTRA_FROM_LEN 15
+
 int write_mail_from(int sockfd, const char *from_addr, const char *extra)
 {
-	size_t bytes_written;
-
 	if(extra && extra[0] != '\0') {
 		if(extra[0] == ' ') extra++;
-		bytes_written = dprintf(sockfd, "MAIL FROM:<%s> %s\r\n", from_addr,
-				extra);
+		return (write_sock(sockfd, "FROM", "MAIL FROM:<%s> %s\r\n",
+		    from_addr, extra));
 	} else
-		bytes_written = dprintf(sockfd, "MAIL FROM:<%s>\r\n", from_addr);
-	if(bytes_written < 0) {
-		log_error(LOG_ARGS, "Could not write FROM");
-		return errno;
-	}
-	return 0;
+		return (write_sock(sockfd, "FROM", "MAIL FROM:<%s>\r\n", from_addr));
 }
 
-/* "RCPT TO:<>\r\n" has length 12 */
-#define EXTRA_RCPT_LEN 12
 int write_rcpt_to(int sockfd, const char *rcpt_addr)
 {
-	size_t bytes_written;
-	
-	bytes_written = dprintf(sockfd, "RCPT TO:<%s>\r\n", rcpt_addr);
-	if(bytes_written < 0) {
-		log_error(LOG_ARGS, "Could not write TO");
-		return errno;
-	}
-	return 0;
+	return (write_sock(sockfd, "TO", "RCPT TO:<%s>\r\n", rcpt_addr));
 }
 
 
@@ -102,20 +83,23 @@ int write_mailbody_from_map(int sockfd, char *mapstart, size_t size,
 {
 	char *cur, *next;
 	char newlinebuf[3];
+	size_t len;
 	int i = 1;
 
 	for(next = cur = mapstart; next < mapstart + size; next++) {
 		if(*next == '\n') {
-			if(writen(sockfd, cur, next - cur) < 0) {
+			if(dprintf(sockfd, "%.*s", (int)(next - cur), cur) < 0) {
 				log_error(LOG_ARGS, "Could not write mail");
 				return -1;
 			}
 			newlinebuf[0] = '\r';
 			newlinebuf[1] = '\n';
+			len = 2;
 			if(next < (mapstart + size - 1) && *(next+1) == '.') {
 				newlinebuf[2] = '.';
+				len++;
 			}
-			if(dprintf(sockfd, "%s", newlinebuf) < 0) {
+			if(dprintf(sockfd, "%.*s", (int)len, newlinebuf) < 0) {
 				log_error(LOG_ARGS, "Could not write mail");
 				return -1;
 			}
@@ -215,69 +199,25 @@ char *get_prepped_mailbody_from_map(char *mapstart, size_t size, size_t *blen)
 
 int write_dot(int sockfd)
 {
-	size_t bytes_written;
-
-	bytes_written = dprintf(sockfd, "\r\n.\r\n");	
-	if(bytes_written < 0)
-		return errno;
-
-	return 0;
+	return write_sock(sockfd, "", "\r\n.\r\n");
 }
 
-/* "\r\n" has length 2 */
-#define EXTRA_CUSTOM_LEN 2
-int write_custom_line(int sockfd, const char *line)
-{
-	size_t bytes_written;
-	
-	bytes_written = dprintf(sockfd, "%s\r\n", line);
-	if(bytes_written < 0) {
-		log_error(LOG_ARGS, "Could not write customline");
-		return errno;
-	}
-	return 0;
-}
-
-/* "Reply-To: \r\n" has length 12 */
-#define EXTRA_REPLYTO_LEN 12
 int write_replyto(int sockfd, const char *replyaddr)
 {
-	size_t bytes_written;
-	
-	bytes_written = dprintf(sockfd, "Reply-To: %s\r\n", replyaddr);
-	if(bytes_written < 0) {
-		log_error(LOG_ARGS, "Could not write Reply-To header");
-		return errno;
-	}
-	return 0;
+	return write_sock(sockfd, "Reply-To header", "Reply-To: %s\r\n", replyaddr);
 }
 
 int write_data(int sockfd)
 {
-	if(write_custom_line(sockfd, "DATA")) {
-		log_error(LOG_ARGS, "Could not write DATA");
-		return errno;
-	}
-
-	return 0;
+	return write_sock(sockfd, "DATA", "DATA\r\n");
 }
 
 int write_quit(int sockfd)
 {
-	if(write_custom_line(sockfd, "QUIT")) {
-		log_error(LOG_ARGS, "Could not write QUIT");
-		return errno;
-	}
-
-	return 0;
+	return write_sock(sockfd, "QUIT", "QUIT\r\n");
 }
 
 int write_rset(int sockfd)
 {
-	if(write_custom_line(sockfd, "RSET")) {
-		log_error(LOG_ARGS, "Could not write RSET");
-		return errno;
-	}
-
-	return 0;
+	return write_sock(sockfd, "RSET", "RSET\r\n");
 }

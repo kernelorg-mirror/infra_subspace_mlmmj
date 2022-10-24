@@ -23,6 +23,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <sys/mman.h>
 
 #include <atf-c.h>
 #include <inttypes.h>
@@ -58,6 +59,16 @@ ATF_TC_WITHOUT_HEAD(exec_or_die);
 ATF_TC_WITHOUT_HEAD(exec_and_wait);
 ATF_TC_WITHOUT_HEAD(find_email_adr);
 ATF_TC_WITHOUT_HEAD(strtoim);
+ATF_TC_WITHOUT_HEAD(write_ehlo);
+ATF_TC_WITHOUT_HEAD(write_helo);
+ATF_TC_WITHOUT_HEAD(write_dot);
+ATF_TC_WITHOUT_HEAD(write_data);
+ATF_TC_WITHOUT_HEAD(write_quit);
+ATF_TC_WITHOUT_HEAD(write_rset);
+ATF_TC_WITHOUT_HEAD(write_replyto);
+ATF_TC_WITHOUT_HEAD(write_rcpt_to);
+ATF_TC_WITHOUT_HEAD(write_mail_from);
+ATF_TC_WITHOUT_HEAD(write_mailbody_from_map);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -427,6 +438,242 @@ ATF_TC_BODY(strtoim, tc)
 	ATF_REQUIRE_STREQ(errp, "invalid");
 }
 
+ATF_TC_BODY(write_ehlo, tc)
+{
+	ATF_REQUIRE_EQ(write_ehlo(-1, "myname"), -1);
+	int fd = open("ehlo.txt", O_CREAT|O_WRONLY, 0644);
+	ATF_REQUIRE_EQ(write_ehlo(fd, "myname"), 0);
+	close(fd);
+	if (!atf_utils_compare_file("ehlo.txt", "EHLO myname\r\n"))
+		atf_tc_fail("Unexpected output");
+}
+
+ATF_TC_BODY(write_helo, tc)
+{
+	ATF_REQUIRE_EQ(write_helo(-1, "myname"), -1);
+	int fd = open("helo.txt", O_CREAT|O_WRONLY, 0644);
+	ATF_REQUIRE_EQ(write_helo(fd, "myname"), 0);
+	close(fd);
+	if (!atf_utils_compare_file("helo.txt", "HELO myname\r\n"))
+		atf_tc_fail("Unexpected output");
+}
+
+ATF_TC_BODY(write_dot, tc)
+{
+	ATF_REQUIRE_EQ(write_dot(-1), -1);
+	int fd = open("dot.txt", O_CREAT|O_WRONLY, 0644);
+	ATF_REQUIRE_EQ(write_dot(fd), 0);
+	close(fd);
+	if (!atf_utils_compare_file("dot.txt", "\r\n.\r\n"))
+		atf_tc_fail("Unexpected output");
+}
+
+ATF_TC_BODY(write_data, tc)
+{
+	ATF_REQUIRE_EQ(write_data(-1), -1);
+	int fd = open("data.txt", O_CREAT|O_WRONLY, 0644);
+	ATF_REQUIRE_EQ(write_data(fd), 0);
+	close(fd);
+	if (!atf_utils_compare_file("data.txt", "DATA\r\n"))
+		atf_tc_fail("Unexpected output");
+}
+
+ATF_TC_BODY(write_quit, tc)
+{
+	ATF_REQUIRE_EQ(write_quit(-1), -1);
+	int fd = open("quit.txt", O_CREAT|O_WRONLY, 0644);
+	ATF_REQUIRE_EQ(write_quit(fd), 0);
+	close(fd);
+	if (!atf_utils_compare_file("quit.txt", "QUIT\r\n"))
+		atf_tc_fail("Unexpected output");
+}
+
+ATF_TC_BODY(write_rset, tc)
+{
+	ATF_REQUIRE_EQ(write_rset(-1), -1);
+	int fd = open("rset.txt", O_CREAT|O_WRONLY, 0644);
+	ATF_REQUIRE_EQ(write_rset(fd), 0);
+	close(fd);
+	if (!atf_utils_compare_file("rset.txt", "RSET\r\n"))
+		atf_tc_fail("Unexpected output");
+}
+
+ATF_TC_BODY(write_replyto, tc)
+{
+	ATF_REQUIRE_EQ(write_replyto(-1, "toto"), -1);
+	int fd = open("replyto.txt", O_CREAT|O_WRONLY, 0644);
+	ATF_REQUIRE_EQ(write_replyto(fd, "toto"), 0);
+	close(fd);
+	if (!atf_utils_compare_file("replyto.txt", "Reply-To: toto\r\n"))
+		atf_tc_fail("Unexpected output");
+}
+
+ATF_TC_BODY(write_rcpt_to, tc)
+{
+	ATF_REQUIRE_EQ(write_rcpt_to(-1, "toto"), -1);
+	int fd = open("rcpt_to.txt", O_CREAT|O_WRONLY, 0644);
+	ATF_REQUIRE_EQ(write_rcpt_to(fd, "toto"), 0);
+	close(fd);
+	if (!atf_utils_compare_file("rcpt_to.txt", "RCPT TO:<toto>\r\n")) {
+		atf_utils_cat_file("rcpt_to.txt", "");
+		atf_tc_fail("Unexpected output");
+	}
+}
+
+ATF_TC_BODY(write_mail_from, tc)
+{
+	ATF_REQUIRE_EQ(write_mail_from(-1, "toto", NULL), -1);
+	int fd = open("mail_from.txt", O_CREAT|O_WRONLY, 0644);
+	ATF_REQUIRE_EQ(write_mail_from(fd, "toto", NULL), 0);
+	close(fd);
+	if (!atf_utils_compare_file("mail_from.txt", "MAIL FROM:<toto>\r\n")) {
+		atf_utils_cat_file("mail_from.txt", "");
+		atf_tc_fail("Unexpected output");
+	}
+	fd = open("mail_from.txt", O_CREAT|O_WRONLY, 0644);
+	ATF_REQUIRE_EQ(write_mail_from(fd, "toto", "meh"), 0);
+	close(fd);
+	if (!atf_utils_compare_file("mail_from.txt", "MAIL FROM:<toto> meh\r\n")) {
+		atf_utils_cat_file("mail_from.txt", "");
+		atf_tc_fail("Unexpected output");
+	}
+	fd = open("mail_from.txt", O_CREAT|O_WRONLY|O_TRUNC, 0644);
+	ATF_REQUIRE_EQ(write_mail_from(fd, "toto", ""), 0);
+	close(fd);
+	if (!atf_utils_compare_file("mail_from.txt", "MAIL FROM:<toto>\r\n")) {
+		atf_utils_cat_file("mail_from.txt", "");
+		atf_tc_fail("Unexpected output");
+	}
+	fd = open("mail_from.txt", O_CREAT|O_WRONLY|O_TRUNC, 0644);
+	ATF_REQUIRE_EQ(write_mail_from(fd, "toto", " "), 0);
+	close(fd);
+	if (!atf_utils_compare_file("mail_from.txt", "MAIL FROM:<toto> \r\n")) {
+		atf_utils_cat_file("mail_from.txt", "");
+		atf_tc_fail("Unexpected output");
+	}
+}
+
+ATF_TC_BODY(write_mailbody_from_map, tc)
+{
+	/* no new lines: ignore */
+	struct stat st;
+	char *start;
+	FILE *f = fopen("myemailbody.txt", "w");
+	fprintf(f, "line");
+	fclose(f);
+	int fd1 = open("myemailbody.txt", O_RDONLY);
+	fstat(fd1, &st);
+	ATF_REQUIRE((start = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd1, 0)) != NULL);
+	int fd = open("out.txt", O_CREAT|O_WRONLY, 0644);
+	ATF_REQUIRE_EQ(write_mailbody_from_map(fd, start, st.st_size, "test@plop.meh"), 0);
+	close(fd);
+	munmap(start, st.st_size);
+	close(fd1);
+	if (!atf_utils_compare_file("out.txt", "")) {
+		atf_utils_cat_file("out.txt", ">");
+		atf_tc_fail("Unexpected output");
+	}
+
+	/* With a single new line */
+	f = fopen("myemailbody.txt", "w");
+	fprintf(f, "line\n");
+	fclose(f);
+	fd1 = open("myemailbody.txt", O_RDONLY);
+	fstat(fd1, &st);
+	ATF_REQUIRE((start = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd1, 0)) != NULL);
+	fd = open("out.txt", O_CREAT|O_TRUNC|O_WRONLY, 0644);
+	ATF_REQUIRE_EQ(write_mailbody_from_map(fd, start, st.st_size, "test@plop.meh"), 0);
+	close(fd);
+	munmap(start, st.st_size);
+	close(fd1);
+	if (!atf_utils_compare_file("out.txt", "line\r\n")) {
+		atf_utils_cat_file("out.txt", ">");
+		atf_tc_fail("Unexpected output");
+	}
+
+	/* With a single new line with a . */
+	f = fopen("myemailbody.txt", "w");
+	fprintf(f, "line\n.");
+	fclose(f);
+	fd1 = open("myemailbody.txt", O_RDONLY);
+	fstat(fd1, &st);
+	ATF_REQUIRE((start = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd1, 0)) != NULL);
+	fd = open("out.txt", O_CREAT|O_TRUNC|O_WRONLY, 0644);
+	ATF_REQUIRE_EQ(write_mailbody_from_map(fd, start, st.st_size, "test@plop.meh"), 0);
+	close(fd);
+	munmap(start, st.st_size);
+	close(fd1);
+	if (!atf_utils_compare_file("out.txt", "line\r\n.")) {
+		atf_utils_cat_file("out.txt", ">");
+		atf_tc_fail("Unexpected output");
+	}
+
+	/* With a single new line, 2 new lines */
+	f = fopen("myemailbody.txt", "w");
+	fprintf(f, "line\n\n");
+	fclose(f);
+	fd1 = open("myemailbody.txt", O_RDONLY);
+	fstat(fd1, &st);
+	ATF_REQUIRE((start = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd1, 0)) != NULL);
+	fd = open("out.txt", O_CREAT|O_TRUNC|O_WRONLY, 0644);
+	ATF_REQUIRE_EQ(write_mailbody_from_map(fd, start, st.st_size, "test@plop.meh"), 0);
+	close(fd);
+	munmap(start, st.st_size);
+	close(fd1);
+	if (!atf_utils_compare_file("out.txt", "line\r\ntest@plop.meh\r\n")) {
+		atf_utils_cat_file("out.txt", ">");
+		atf_tc_fail("Unexpected output");
+	}
+
+
+	/* With a single 2 lines separated by 2 new lines*/
+	f = fopen("myemailbody.txt", "w");
+	fprintf(f, "line\n\nline2\n\n");
+	fclose(f);
+	fd1 = open("myemailbody.txt", O_RDONLY);
+	fstat(fd1, &st);
+	ATF_REQUIRE((start = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd1, 0)) != NULL);
+	fd = open("out.txt", O_CREAT|O_TRUNC|O_WRONLY, 0644);
+	ATF_REQUIRE_EQ(write_mailbody_from_map(fd, start, st.st_size, "test@plop.meh"), 0);
+	close(fd);
+	munmap(start, st.st_size);
+	close(fd1);
+	if (!atf_utils_compare_file("out.txt", "line\r\ntest@plop.meh\r\nline2\r\n\r\n")) {
+		atf_utils_cat_file("out.txt", ">");
+		atf_tc_fail("Unexpected output");
+	}
+
+
+	/* No to header */
+	f = fopen("myemailbody.txt", "w");
+	fprintf(f, "line\n\nline2\n\n");
+	fclose(f);
+	fd1 = open("myemailbody.txt", O_RDONLY);
+	fstat(fd1, &st);
+	ATF_REQUIRE((start = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd1, 0)) != NULL);
+	fd = open("out.txt", O_CREAT|O_TRUNC|O_WRONLY, 0644);
+	ATF_REQUIRE_EQ(write_mailbody_from_map(fd, start, st.st_size, NULL), 0);
+	close(fd);
+	munmap(start, st.st_size);
+	close(fd1);
+	if (!atf_utils_compare_file("out.txt", "line\r\n\r\nline2\r\n\r\n")) {
+		atf_utils_cat_file("out.txt", ">");
+		atf_tc_fail("Unexpected output");
+	}
+
+	/* With invalid socket */
+	f = fopen("myemailbody.txt", "w");
+	fprintf(f, "line\n");
+	fclose(f);
+	fd1 = open("myemailbody.txt", O_RDONLY);
+	fstat(fd1, &st);
+	ATF_REQUIRE((start = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd1, 0)) != NULL);
+	ATF_REQUIRE_EQ(write_mailbody_from_map(-1, start, st.st_size, "test@plop.meh"), -1);
+	munmap(start, st.st_size);
+	close(fd1);
+}
+
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -441,6 +688,16 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, exec_and_wait);
 	ATF_TP_ADD_TC(tp, find_email_adr);
 	ATF_TP_ADD_TC(tp, strtoim);
+	ATF_TP_ADD_TC(tp, write_ehlo);
+	ATF_TP_ADD_TC(tp, write_helo);
+	ATF_TP_ADD_TC(tp, write_dot);
+	ATF_TP_ADD_TC(tp, write_data);
+	ATF_TP_ADD_TC(tp, write_quit);
+	ATF_TP_ADD_TC(tp, write_rset);
+	ATF_TP_ADD_TC(tp, write_replyto);
+	ATF_TP_ADD_TC(tp, write_rcpt_to);
+	ATF_TP_ADD_TC(tp, write_mail_from);
+	ATF_TP_ADD_TC(tp, write_mailbody_from_map);
 
 	return (atf_no_error());
 }
