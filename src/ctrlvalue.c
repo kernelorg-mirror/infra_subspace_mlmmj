@@ -99,9 +99,11 @@ ctrlim(const char *listdir, const char *ctrlstr, intmax_t min, intmax_t max,
 		return (fallback);
 
 	ret = strtoim(val, min, max, &errstr);
-	if (errstr != NULL)
+	if (errstr != NULL) {
 		log_error(LOG_ARGS, "Invalid value for '%s': %s", ctrlstr,
 		    errstr);
+		ret = fallback;
+	}
 	free(val);
 	return (ret);
 }
@@ -118,9 +120,11 @@ ctrluim(const char *listdir, const char *ctrlstr, uintmax_t min, uintmax_t max,
 		return (fallback);
 
 	ret = strtouim(val, min, max, &errstr);
-	if (errstr != NULL)
+	if (errstr != NULL) {
 		log_error(LOG_ARGS, "Invalid value for '%s': %s", ctrlstr,
 		    errstr);
+		ret = fallback;
+	}
 	free(val);
 	return (ret);
 }
@@ -139,7 +143,7 @@ ctrltimet(const char *listdir, const char *ctrlstr, time_t fallback)
 	if (errstr != NULL) {
 		log_error(LOG_ARGS, "Invalid value for '%s': %s", ctrlstr,
 		    errstr);
-		return (fallback);
+		ret = fallback;
 	}
 	free(val);
 	return (ret);
