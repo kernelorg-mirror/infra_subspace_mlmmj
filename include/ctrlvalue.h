@@ -44,5 +44,10 @@ ctrlsizet(const char *listdir, const char *ctrlstr, uintmax_t fallback)
 {
 	return (ctrluim(listdir, ctrlstr, 0, SIZE_MAX, fallback));
 }
+static inline unsigned short
+ctrlushort(const char *listdir, const char *ctrlstr, unsigned short fallback)
+{
+	return (ctrluim(listdir, ctrlstr, 0, USHRT_MAX, fallback));
+}
 
 #endif /* CTRLVALUE_H */

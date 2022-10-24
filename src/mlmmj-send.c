@@ -930,14 +930,8 @@ int main(int argc, char **argv)
 		if(statctrl(listdir, "verp") == 1)
 			verp = xstrdup("");
 
-	maxverprecipsstr = ctrlvalue(listdir, "maxverprecips");
-	if(verp && maxverprecipsstr) {
-		maxverprecips = atol(maxverprecipsstr);
-		free(maxverprecipsstr);
-	}
-
-	if(maxverprecips <= 0)
-		maxverprecips = MAXVERPRECIPS;
+	if(verp && statctrl(listdir, "maxverprecips"))
+		maxverprecips = ctrlint(listdir, "maxverprecips", MAXVERPRECIPS);
 
 	stl.strs = NULL;
 	stl.count = 0;
