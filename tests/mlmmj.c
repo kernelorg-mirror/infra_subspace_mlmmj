@@ -44,6 +44,7 @@
 #include "mygetline.h"
 #include "init_sockfd.h"
 #include "checkwait_smtpreply.h"
+#include "find_email_adr.h"
 
 ATF_TC_WITHOUT_HEAD(random_int);
 ATF_TC_WITHOUT_HEAD(chomp);
@@ -55,6 +56,7 @@ ATF_TC_WITHOUT_HEAD(genmsgid);
 ATF_TC_WITHOUT_HEAD(lowercase);
 ATF_TC_WITHOUT_HEAD(exec_or_die);
 ATF_TC_WITHOUT_HEAD(exec_and_wait);
+ATF_TC_WITHOUT_HEAD(find_email_adr);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -287,6 +289,96 @@ ATF_TC_BODY(exec_and_wait, tc)
 	ATF_REQUIRE_EQ(val, 1);
 }
 
+ATF_TC_BODY(find_email_adr, tc)
+{
+	struct email_container c = {0, NULL};
+	struct email_container c1 = {0, NULL};
+	struct email_container c2 = {0, NULL};
+	struct email_container c3 = {0, NULL};
+	struct email_container c4 = {0, NULL};
+	struct email_container c5 = {0, NULL};
+	struct email_container c6 = {0, NULL};
+	struct email_container c7 = {0, NULL};
+	find_email_adr("test@foo.bar", &c);
+	ATF_REQUIRE_EQ(c.emailcount, 1);
+	find_email_adr("test@foo.bar, meh@bar", &c1);
+	ATF_REQUIRE_EQ(c1.emailcount, 2);
+	find_email_adr("test@foo.bar, meh@bar, nope", &c2);
+	ATF_REQUIRE_EQ(c2.emailcount, 3);
+	find_email_adr("name <test@foo.com>", &c3);
+	ATF_REQUIRE_EQ(c3.emailcount, 1);
+	ATF_REQUIRE_STREQ(c3.emaillist[0], "test@foo.com");
+	find_email_adr("(name <test@foo.com>) test@foo.com", &c4);
+	ATF_REQUIRE_EQ(c4.emailcount, 1);
+	ATF_REQUIRE_STREQ(c4.emaillist[0], " test@foo.com");
+	find_email_adr("\"name <test@foo.com>\" test@foo.com", &c5);
+	ATF_REQUIRE_EQ(c5.emailcount, 1);
+	ATF_REQUIRE_STREQ(c5.emaillist[0], "name <test@foo.com> test@foo.com");
+	find_email_adr("\"name <test@foo.com> test@foo.com", &c6);
+	ATF_REQUIRE_EQ(c6.emailcount, 1);
+	ATF_REQUIRE_STREQ(c6.emaillist[0], "name <test@foo.com> test@foo.com");
+	find_email_adr("\"name <test@foo.com>\\ test@foo.com", &c7);
+	ATF_REQUIRE_EQ(c7.emailcount, 1);
+	ATF_REQUIRE_STREQ(c7.emaillist[0], "name <test@foo.com> test@foo.com");
+	find_email_adr("\"name <test@foo.com> test@foo.com\\", &c7);
+	ATF_REQUIRE_EQ(c7.emailcount, 2);
+	ATF_REQUIRE_STREQ(c7.emaillist[1], "name <test@foo.com> test@foo.com");
+	find_email_adr("test at foo.com", &c7);
+	ATF_REQUIRE_EQ(c7.emailcount, 3);
+	ATF_REQUIRE_STREQ(c7.emaillist[2], "test@foo.com");
+	find_email_adr("test atfoo.com", &c7);
+	ATF_REQUIRE_EQ(c7.emailcount, 4);
+	ATF_REQUIRE_STREQ(c7.emaillist[3], "test atfoo.com");
+	find_email_adr("test a t foo.com", &c7);
+	ATF_REQUIRE_EQ(c7.emailcount, 5);
+	ATF_REQUIRE_STREQ(c7.emaillist[4], "test a t foo.com");
+	find_email_adr("test@foo.com, \"meh\"", &c7);
+	ATF_REQUIRE_EQ(c7.emailcount, 7);
+	ATF_REQUIRE_STREQ(c7.emaillist[6], "\"meh\"");
+	find_email_adr("test@foo.com, \"meh\\\"", &c7);
+	ATF_REQUIRE_EQ(c7.emailcount, 9);
+	ATF_REQUIRE_STREQ(c7.emaillist[8], "meh ");
+	find_email_adr("", &c7);
+	ATF_REQUIRE_EQ(c7.emailcount, 9);
+	find_email_adr("\"meh\" , ", &c7);
+	ATF_REQUIRE_EQ(c7.emailcount, 10);
+	ATF_REQUIRE_STREQ(c7.emaillist[9], "meh");
+	find_email_adr("\"meh , ", &c7);
+	ATF_REQUIRE_EQ(c7.emailcount, 11);
+	ATF_REQUIRE_STREQ(c7.emaillist[10], "meh   ");
+	find_email_adr("\t,", &c7);
+	ATF_REQUIRE_EQ(c7.emailcount, 11);
+	find_email_adr("\r,", &c7);
+	ATF_REQUIRE_EQ(c7.emailcount, 11);
+	find_email_adr("\n,", &c7);
+	ATF_REQUIRE_EQ(c7.emailcount, 11);
+	find_email_adr(", m", &c7);
+	ATF_REQUIRE_EQ(c7.emailcount, 12);
+	find_email_adr(", \"m", &c7);
+	ATF_REQUIRE_EQ(c7.emailcount, 13);
+	find_email_adr("bob @ foo.net", &c7);
+	ATF_REQUIRE_EQ(c7.emailcount, 14);
+	ATF_REQUIRE_STREQ(c7.emaillist[13], "bob@foo.net");
+	find_email_adr("bob @foo.net", &c7);
+	ATF_REQUIRE_EQ(c7.emailcount, 15);
+	ATF_REQUIRE_STREQ(c7.emaillist[14], "bob @foo.net");
+	find_email_adr("bob @foo.net>", &c7);
+	ATF_REQUIRE_EQ(c7.emailcount, 16);
+	ATF_REQUIRE_STREQ(c7.emaillist[15], "bob @foo.net>");
+	find_email_adr("<bob @foo.net> garbage,", &c7);
+	ATF_REQUIRE_EQ(c7.emailcount, 17);
+	ATF_REQUIRE_STREQ(c7.emaillist[16], "bob @foo.net");
+	find_email_adr("<bob @foo.net> garbage (more garbage) ,", &c7);
+	ATF_REQUIRE_EQ(c7.emailcount, 18);
+	ATF_REQUIRE_STREQ(c7.emaillist[17], "bob @foo.net");
+	find_email_adr("<bob @foo.net> garbage \"more garbage\" ,", &c7);
+	ATF_REQUIRE_EQ(c7.emailcount, 19);
+	ATF_REQUIRE_STREQ(c7.emaillist[18], "bob @foo.net");
+	find_email_adr("<bob @foo.net> garbage \"more garbage \\ ,", &c7);
+	ATF_REQUIRE_EQ(c7.emailcount, 20);
+	ATF_REQUIRE_STREQ(c7.emaillist[19], "bob @foo.net");
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -299,6 +391,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, genmsgid);
 	ATF_TP_ADD_TC(tp, exec_or_die);
 	ATF_TP_ADD_TC(tp, exec_and_wait);
+	ATF_TP_ADD_TC(tp, find_email_adr);
 
 	return (atf_no_error());
 }
