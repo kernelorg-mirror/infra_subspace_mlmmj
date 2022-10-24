@@ -1,3 +1,18 @@
+1.4.0-a1
+ o Add a test suite
+ o Modernize code (dprintf, posix_spawn, asprintf, getline, daemon, ...)
+ o Supporting passing email to a mta over ipv6
+ o Fix relaying in IPV6-only systems
+ o Fix decode quoted printable subject
+ o Fix parsing RFC1891
+ o Fix a crash if no owner has been defined
+ o Validate ranges of all integers conversion
+ o New 'nobounceprobe' tunable for debugging purpose
+ o New 'send' tunable to allow email passthrough
+ o Add support for 'X-Original-From'
+ o Reduce subscription confirmation address length to fit RFC 5321
+ o Use arc4random is available
+ o Reduce memory manipulation
 1.3.0
  o Czech translation (Jiří Šolc)
  o Don't use address extensions from non-list addresses
