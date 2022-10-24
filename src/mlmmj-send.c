@@ -109,7 +109,6 @@ char *bounce_from_adr(const char *recipient, const char *listadr,
 	char *indexstr, *listdomain, *a = NULL, *mymailfilename;
 	char *staticbounceaddr, *staticbounceaddr_localpart;
 	char *staticbounceaddr_domain;
-	size_t len;
 
 	mymailfilename = xstrdup(mailfilename);
 	if (!mymailfilename) {
@@ -147,18 +146,10 @@ char *bounce_from_adr(const char *recipient, const char *listadr,
 	}
 	*listdomain++ = '\0';
 
-	/* 11 = "bounces-" + "-" + "@" + NUL */
-	len = strlen(mylistadr) + strlen(listdelim) + strlen(myrecipient)
-		   + strlen(indexstr) + strlen(listdomain) + 11;
-
 	staticbounceaddr = ctrlvalue(listdir, "staticbounceaddr");
 	if (staticbounceaddr) {
 		staticbounceaddr_localpart = genlistname(staticbounceaddr);
 		staticbounceaddr_domain = genlistfqdn(staticbounceaddr);
-
-		/* localpart + "-" + domain */
-		len += strlen(staticbounceaddr_localpart) + 1
-				+ strlen(staticbounceaddr_domain);
 	} else {
 		staticbounceaddr_localpart = NULL;
 		staticbounceaddr_domain = NULL;
