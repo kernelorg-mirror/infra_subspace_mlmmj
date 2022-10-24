@@ -42,6 +42,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include "find_email_adr.h"
 #include "xmalloc.h"
@@ -221,10 +222,7 @@ oncemore:
 			}
 		}
 
-		while(cur && ((' ' == *cur) ||
-			    ('\t' == *cur) ||
-			    ('\r' == *cur) ||
-			    ('\n' == *cur))) {
+		while(cur && isspace(*cur)) {
 			cur += 1;
 		}
 		if ('\0' == *cur) {
