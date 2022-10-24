@@ -20,13 +20,15 @@
  * IN THE SOFTWARE.
  */
 
+#include <inttypes.h>
 #include <ctype.h>
+#include <errno.h>
 
 #include "xmalloc.h"
 #include "utils.h"
 
 intmax_t
-strtoim(const char *np, intmax_t minval, intmax_t maxval, const char **errp)
+strtoim(const char *np, intmax_t minval, intmax_t maxval, const char **errpp)
 {
 	char *endp;
 	intmax_t ret;
@@ -46,7 +48,7 @@ strtoim(const char *np, intmax_t minval, intmax_t maxval, const char **errp)
 	}
 	if (ret < minval) {
 		errno = ERANGE;
-		*errnp = "too small";
+		*errpp = "too small";
 		return (0);
 	}
 	if (errno == ERANGE || ret > maxval) {

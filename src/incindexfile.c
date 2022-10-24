@@ -1,6 +1,6 @@
-/* Copyright (C) 2002, 2003 Mads Martin Joergensen <mmj at mmj.dk>
- *
- * $Id$
+/*
+ * Copyright (C) 2002, 2003 Mads Martin Joergensen <mmj at mmj.dk>
+ * Copyright (C) 2022 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -21,11 +21,13 @@
  * IN THE SOFTWARE.
  */
 
+#include <sys/param.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
@@ -34,38 +36,48 @@
 #include "incindexfile.h"
 #include "log_error.h"
 #include "strgen.h"
-
-#define INTBUF_SIZE 32
+#include "xmalloc.h"
+#include "utils.h"
 
 int incindexfile(const char *listdir)
 {
-	int fd, lock;
-	long int index = 0;
-	char intbuf[INTBUF_SIZE] = "uninitialized";
-	size_t i;
+	int fd, index = 0;
+	FILE *fp;
+	char *line = NULL;
+	size_t linecap = 0;
 	char *indexfilename;
+	const char *errstr;
 
-	indexfilename = concatstr(2, listdir, "/index");
+	xasprintf(&indexfilename, "%s/index", listdir);
 	fd = open(indexfilename, O_RDWR|O_CREAT|O_EXLOCK, S_IRUSR|S_IWUSR);
-
 	if(fd == -1) {
 		free(indexfilename);
 		log_error(LOG_ARGS, "Error opening index file");
 		return 0;
 	}
 
-	readn(fd, intbuf, INTBUF_SIZE);
-	for(i=0; i<sizeof(intbuf); i++) {
-		if(intbuf[i] < '0' || intbuf[i] > '9') {
-			intbuf[i] = '\0';
-			break;
+	fp = fdopen(fd, "r");
+	if (fp == NULL) {
+		log_error(LOG_ARGS, "Error fdopening index file");
+		close(fd);
+		return (0);
+	}
+	index = 0;
+	if (getline(&line, &linecap, fp) > 0) {
+		/* eliminate everything which is not a number */
+		line[strspn(line, "0123456789")] = '\0';
+		index = strtoim(line, 0, INT_MAX, &errstr);
+		free(line);
+		if (errstr != NULL) {
+			log_error(LOG_ARGS, "Error reading index file: invalid "
+			    "line: %s", line);
+			return (0);
 		}
 	}
-	index = atol(intbuf);
 	index++;
 	lseek(fd, 0, SEEK_SET);
-	dprintf(fd, "%ld", index);
-
+	fdclose(fp, NULL);
+	dprintf(fd, "%d", index);
 	close(fd); /* Lock is also released */
 	free(indexfilename);
 
