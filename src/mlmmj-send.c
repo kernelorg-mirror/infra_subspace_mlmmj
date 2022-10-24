@@ -62,6 +62,7 @@
 #include "ctrlvalue.h"
 #include "stdbool.h"
 #include "getaddrsfromfd.h"
+#include "utils.h"
 
 static int addtohdr = 0;
 static int prepmailinmem = 0;
@@ -73,16 +74,14 @@ void catch_sig_term(int sig)
 	gotsigterm = 1;
 }
 
-char *get_index_from_filename(const char *filename)
+int
+get_index_from_filename(const char *filename)
 {
-	char *myfilename, *indexstr, *ret;
+	char *myfilename, *indexstr;
+	int ret;
 	size_t len;
 
 	myfilename = xstrdup(filename);
-	if (!myfilename) {
-		return NULL;
-	}
-
 	len = strlen(myfilename);
 	if (len > 9 && (strcmp(myfilename + len - 9, "/mailfile") == 0)) {
 		myfilename[len - 9] = '\0';
@@ -95,7 +94,7 @@ char *get_index_from_filename(const char *filename)
 		indexstr = myfilename;
 	}
 
-	ret = xstrdup(indexstr);
+	ret = strtoim(indexstr, 0, INT_MAX, NULL);
 	free(myfilename);
 
 	return ret;
@@ -106,20 +105,17 @@ char *bounce_from_adr(const char *recipient, const char *listadr,
 		      const char *listdir)
 {
 	char *bounceaddr, *myrecipient, *mylistadr;
-	char *indexstr, *listdomain, *a = NULL, *mymailfilename;
+	char *listdomain, *a = NULL, *mymailfilename;
 	char *staticbounceaddr, *staticbounceaddr_localpart;
 	char *staticbounceaddr_domain;
+	int index;
 
 	mymailfilename = xstrdup(mailfilename);
 	if (!mymailfilename) {
 		return NULL;
 	}
 
-	indexstr = get_index_from_filename(mymailfilename);
-	if (!indexstr) {
-		free(mymailfilename);
-		return NULL;
-	}
+	index = get_index_from_filename(mymailfilename);
 
 	myrecipient = xstrdup(recipient);
 	if (!myrecipient) {
@@ -156,21 +152,20 @@ char *bounce_from_adr(const char *recipient, const char *listadr,
 	}
 
 	if (staticbounceaddr) {
-		xasprintf(&bounceaddr, "%s%s%s-bounces-%s-%s@%s", 
+		xasprintf(&bounceaddr, "%s%s%s-bounces-%d-%s@%s",
 			staticbounceaddr_localpart, listdelim, mylistadr,
-			indexstr, myrecipient, staticbounceaddr_domain);
+			index, myrecipient, staticbounceaddr_domain);
 
 		free(staticbounceaddr);
 		free(staticbounceaddr_localpart);
 		free(staticbounceaddr_domain);
 	} else {
-		xasprintf(&bounceaddr, "%s%sbounces-%s-%s@%s", mylistadr, listdelim,
-			indexstr, myrecipient, listdomain);
+		xasprintf(&bounceaddr, "%s%sbounces-%d-%s@%s", mylistadr, listdelim,
+			index, myrecipient, listdomain);
 	}
 
 	free(myrecipient);
 	free(mylistadr);
-	free(indexstr);
 	free(mymailfilename);
 
 	return bounceaddr;
@@ -658,13 +653,13 @@ int send_mail_many_fd(int sockfd, const char *from, const char *replyto,
 	return 0;
 }
 
-int requeuemail(const char *listdir, const char *index, struct strlist *addrs,
+int requeuemail(const char *listdir, int index, struct strlist *addrs,
 		int addrcount)
 {
 	int addrfd, i;
 	char *dirname, *addrfilename;
 	
-	dirname = concatstr(3, listdir, "/requeue/", index);
+	xasprintf(&dirname, "%s/requeue/%d", listdir, index);
 	if(mkdir(dirname, 0750) < 0 && errno != EEXIST) {
 		log_error(LOG_ARGS, "Could not mkdir(%s) for "
 				"requeueing. Mail cannot "
@@ -712,8 +707,8 @@ int send_mail_many_list(int sockfd, const char *from, const char *replyto,
 		   const char *mlmmjbounce, const char *hdrs, size_t hdrslen,
 		   const char *body, size_t bodylen)
 {
-	int res = 0, i, status;
-	char *bounceaddr, *addr, *index;
+	int res = 0, i, status, index;
+	char *bounceaddr, *addr;
 
 	for(i = 0; i < addrs->count; i++) {
 		addr = addrs->strs[i];
@@ -729,7 +724,6 @@ int send_mail_many_list(int sockfd, const char *from, const char *replyto,
 						"shutting down.");
 			index = get_index_from_filename(archivefilename);
 			status = requeuemail(listdir, index, addrs, i);
-			free(index);
 			return status;
 		}
 		if(from) {
@@ -748,7 +742,6 @@ int send_mail_many_list(int sockfd, const char *from, const char *replyto,
 			/* we failed, so save the addresses and bail */
 			index = get_index_from_filename(archivefilename);
 			status = requeuemail(listdir, index, addrs, i);
-			free(index);
 			return status;
 		}
 	}
@@ -800,7 +793,7 @@ int main(int argc, char **argv)
 	char *mlmmjbounce = NULL, *bindir, *mailmap, *probefile, *a;
 	char *body = NULL, *hdrs = NULL, *verp = NULL;
 	char *listname, *listfqdn, *verpfrom;
-	char strindex[32], *reply, *smtphelo, *requeuefilename;
+	char *reply, *smtphelo, *requeuefilename;
 	ssize_t memmailsize = 0;
 	DIR *subddir;
 	struct dirent *dp;
@@ -1022,8 +1015,6 @@ int main(int argc, char **argv)
 			 mindex);
 	}
 
-	snprintf(strindex, sizeof(strindex), "%d", mindex);
-
 	if(!relayhost)
 		relayhost = ctrlvalue(listdir, "relayhost");
 	if(!relayhost)
@@ -1172,8 +1163,8 @@ int main(int argc, char **argv)
 		listdelim = getlistdelim(listdir);
 		listname = genlistname(listaddr);	
 		listfqdn = genlistfqdn(listaddr);	
-		verpfrom = concatstr(6, listname, listdelim, "bounces-",
-				strindex, "@", listfqdn);
+		xasprintf(&verpfrom, "%s%sbounces-%d@%s", listname, listdelim,
+		    mindex, listfqdn);
 		free(listname);
 		free(listfqdn);
 
@@ -1269,7 +1260,7 @@ int main(int argc, char **argv)
 								bodylen, verp);
 						if(sendres)
 							requeuemail(listdir,
-								strindex,
+								mindex,
 								&stl, 0);
 					} else {
 						sendres = send_mail_many_list(
@@ -1308,7 +1299,7 @@ int main(int argc, char **argv)
 						hdrs, hdrslen, body, bodylen,
 						verp);
 				if(sendres)
-					requeuemail(listdir, strindex, &stl,
+					requeuemail(listdir, mindex, &stl,
 							0);
 			} else {
 				sendres = send_mail_many_list(sockfd, NULL,
