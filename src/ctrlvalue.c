@@ -1,6 +1,6 @@
-/* Copyright (C) 2004 Mads Martin Joergensen <mmj at mmj.dk>
- *
- * $Id$
+/*
+ * Copyright (C) 2004 Mads Martin Joergensen <mmj at mmj.dk>
+ * Copyright (C) 2022 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -33,6 +33,8 @@
 #include "mygetline.h"
 #include "chomp.h"
 #include "memory.h"
+#include "utils.h"
+#include "log_error.h"
 
 static char *ctrlval(const char *listdir, const char *subdir,
 		const char *ctrlstr, int oneline)
@@ -85,3 +87,40 @@ char *textcontent(const char *listdir, const char *ctrlstr)
 	return ctrlval(listdir, "text", ctrlstr, 0);
 }
 
+intmax_t
+ctrlim(const char *listdir, const char *ctrlstr, intmax_t min, intmax_t max,
+    intmax_t fallback)
+{
+	const char *errstr;
+	char *val = ctrlvalue(listdir, ctrlstr);
+	intmax_t ret;
+
+	if (val == NULL)
+		return (fallback);
+
+	ret = strtoim(val, min, max, &errstr);
+	if (errstr != NULL)
+		log_error(LOG_ARGS, "Invalid value for '%s': %s", ctrlstr,
+		    errstr);
+	free(val);
+	return (ret);
+}
+
+uintmax_t
+ctrluim(const char *listdir, const char *ctrlstr, uintmax_t min, uintmax_t max,
+    uintmax_t fallback)
+{
+	const char *errstr;
+	char *val = ctrlvalue(listdir, ctrlstr);
+	uintmax_t ret;
+
+	if (val == NULL)
+		return (fallback);
+
+	ret = strtouim(val, min, max, &errstr);
+	if (errstr != NULL)
+		log_error(LOG_ARGS, "Invalid value for '%s': %s", ctrlstr,
+		    errstr);
+	free(val);
+	return (ret);
+}

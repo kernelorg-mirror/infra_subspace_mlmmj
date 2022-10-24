@@ -1,6 +1,6 @@
-/* Copyright (C) 2004 Mads Martin Joergensen <mmj at mmj.dk>
- *
- * $Id$
+/*
+ * Copyright (C) 2004 Mads Martin Joergensen <mmj at mmj.dk>
+ * Copyright (C) 2022 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -24,8 +24,25 @@
 #ifndef CTRLVALUE_H
 #define CTRLVALUE_H
 
+#include <sys/limits.h>
+#include <stdint.h>
+
 char *ctrlvalue(const char *listdir, const char *ctrlstr);
 char *ctrlcontent(const char *listdir, const char *ctrlstr);
 char *textcontent(const char *listdir, const char *ctrlstr);
+intmax_t ctrlim(const char *listdir, const char *ctrlstr, intmax_t min,
+    intmax_t max, intmax_t fallback);
+uintmax_t ctrluim(const char *listdir, const char *ctrlstr, uintmax_t min,
+    uintmax_t max, uintmax_t fallback);
+static inline int
+ctrlint(const char *listdir, const char *ctrlstr, int fallback)
+{
+	return (ctrlim(listdir, ctrlstr, INT_MIN, INT_MAX, fallback));
+}
+static inline size_t
+ctrlsizet(const char *listdir, const char *ctrlstr, uintmax_t fallback)
+{
+	return (ctrluim(listdir, ctrlstr, 0, SIZE_MAX, fallback));
+}
 
 #endif /* CTRLVALUE_H */

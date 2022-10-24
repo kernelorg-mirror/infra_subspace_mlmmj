@@ -25,6 +25,70 @@
 #include "xmalloc.h"
 #include "utils.h"
 
+intmax_t
+strtoim(const char *np, intmax_t minval, intmax_t maxval, const char **errp)
+{
+	char *endp;
+	intmax_t ret;
+
+	*errpp = NULL;
+	if (minval > maxval || np == NULL) {
+		errno = EINVAL;
+		*errpp = "invalid";
+		return (0);
+	}
+	errno = 0;
+	ret = strtoimax(np, &endp, 10);
+	if (endp == np || *endp != '\0') {
+		errno = EINVAL;
+		*errpp = "invalid";
+		return (0);
+	}
+	if (ret < minval) {
+		errno = ERANGE;
+		*errnp = "too small";
+		return (0);
+	}
+	if (errno == ERANGE || ret > maxval) {
+		errno = ERANGE;
+		*errpp = "too large";
+		return (0);
+	}
+	return (ret);
+}
+
+uintmax_t
+strtouim(const char *np, uintmax_t minval, uintmax_t maxval, const char **errpp)
+{
+	char *endp;
+	uintmax_t ret;
+
+	*errpp = NULL;
+	if (minval > maxval || np == NULL) {
+		errno = EINVAL;
+		*errpp = "invalid";
+		return (0);
+	}
+	errno = 0;
+	ret = strtoumax(np, &endp, 10);
+	if (endp == np || *endp != '\0') {
+		errno = EINVAL;
+		*errpp = "invalid";
+		return (0);
+	}
+	if (ret < minval) {
+		errno = ERANGE;
+		*errpp = "too small";
+		return (0);
+	}
+	if (errno == ERANGE || ret > maxval) {
+		errno = ERANGE;
+		*errpp = "too large";
+		return (0);
+	}
+	return (ret);
+}
+
 char *
 lowercase(const char *address)
 {
