@@ -801,7 +801,8 @@ int main(int argc, char **argv)
 	char *mailfilename = NULL, *subfilename = NULL, *omit = NULL;
 	char *replyto = NULL, *bounceaddr = NULL, *to_addr = NULL;
 	char *relayhost = NULL, *archivefilename = NULL, *tmpstr;
-	char *listctrl = NULL, *subddirname = NULL, *listdir = NULL;
+	char *subddirname = NULL, *listdir = NULL;
+	char listctrl = 0;
 	char *mlmmjbounce = NULL, *bindir, *mailmap, *probefile, *a;
 	char *body = NULL, *hdrs = NULL, *memmailsizestr = NULL, *verp = NULL;
 	char *listname, *listfqdn, *verpfrom, *maxverprecipsstr;
@@ -849,7 +850,7 @@ int main(int argc, char **argv)
 				errx(EXIT_FAILURE, "-l only accept the "
 				    "following arguments: 1, 2, 3, 4, 5, 6 or"
 				    " 7");
-			listctrl = optarg;
+			listctrl = *optarg;
 			archive = false;
 			break;
 		case 'L':
@@ -879,7 +880,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if(mailfilename == NULL || (listdir == NULL && listctrl == NULL)) {
+	if(mailfilename == NULL || (listdir == NULL && listctrl == '0')) {
 		errx(EXIT_FAILURE, "You have to specify -m and -L or -l\n"
 		    "%s -h for help", argv[0]);
 	}
@@ -902,20 +903,16 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if(!listctrl)
-		listctrl = xstrdup("0");
-
-	
 	/* get the list address */
-	if(listctrl[0] == '1' && (bounceaddr == NULL || to_addr == NULL)) {
+	if(listctrl == '1' && (bounceaddr == NULL || to_addr == NULL)) {
 		errx(EXIT_FAILURE, "With -l 1 you need -F and -T");
 	}
 
-	if((listctrl[0] == '2' && (listdir == NULL || bounceaddr == NULL))) {
+	if((listctrl == '2' && (listdir == NULL || bounceaddr == NULL))) {
 		errx(EXIT_FAILURE, "With -l 2 you need -L and -F");
 	}
 
-	if((listctrl[0] == '7' && listdir == NULL)) {
+	if((listctrl == '7' && listdir == NULL)) {
 		errx(EXIT_FAILURE, "With -l 7 you need -L");
 	}
 
@@ -936,7 +933,7 @@ int main(int argc, char **argv)
 	stl.strs = NULL;
 	stl.count = 0;
 
-	if(listdir && listctrl[0] != '5')
+	if(listdir && listctrl != '5')
 		listaddr = getlistaddr(listdir);
 	
 	/* initialize file with mail to send */
@@ -993,7 +990,7 @@ int main(int argc, char **argv)
 	if(listdir)
 		listdelim = getlistdelim(listdir);
 
-	switch(listctrl[0]) {
+	switch(listctrl) {
 	case '1': /* A single mail is to be sent, do nothing */
 	case '5':
 		break;
@@ -1025,7 +1022,6 @@ int main(int argc, char **argv)
 		}
 		break;
 	case '6':
-		archive = false;
 		deletewhensent = 0;
 		archivefilename = xstrdup(mailfilename);
 		bounceaddr = bounce_from_adr(to_addr, listaddr, listdelim,
@@ -1060,7 +1056,7 @@ int main(int argc, char **argv)
 		smtphelo = hostnamestr();
 	}
 
-	switch(listctrl[0]) {
+	switch(listctrl) {
 	case '1': /* A single mail is to be sent */
 	case '6':
 		initsmtp(&sockfd, relayhost, smtpport, smtphelo);
