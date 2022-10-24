@@ -60,6 +60,7 @@
 #include "wrappers.h"
 #include "statctrl.h"
 #include "ctrlvalue.h"
+#include "stdbool.h"
 #include "getaddrsfromfd.h"
 
 static int addtohdr = 0;
@@ -793,7 +794,8 @@ int main(int argc, char **argv)
 {
 	size_t len = 0, hdrslen, bodylen;
 	int sockfd = -1, mailfd = 0, opt, mindex = 0, subfd = 0, tmpfd, i;
-	int deletewhensent = 1, sendres = 0, archive = 1, digest = 0;
+	int deletewhensent = 1, sendres = 0, digest = 0;
+	bool archive = true;
 	int ctrlarchive, res;
 	char *listaddr = NULL, *listdelim = NULL;
 	char *mailfilename = NULL, *subfilename = NULL, *omit = NULL;
@@ -831,7 +833,7 @@ int main(int argc, char **argv)
 	while ((opt = getopt(argc, argv, "aVDhm:l:L:R:F:T:r:s:o:")) != -1){
 		switch(opt) {
 		case 'a':
-			archive = 0;
+			archive = false;
 			break;
 		case 'D':
 			deletewhensent = 0;
@@ -843,7 +845,12 @@ int main(int argc, char **argv)
 			print_help(argv[0]);
 			break;
 		case 'l':
+			if (*optarg <= '0' || *optarg > '7')
+				errx(EXIT_FAILURE, "-l only accept the "
+				    "following arguments: 1, 2, 3, 4, 5, 6 or"
+				    " 7");
 			listctrl = optarg;
+			archive = false;
 			break;
 		case 'L':
 			listdir = optarg;
@@ -928,19 +935,6 @@ int main(int argc, char **argv)
 
 	stl.strs = NULL;
 	stl.count = 0;
-
-	switch(listctrl[0]) {
-		case '1':
-		case '2':
-		case '3':
-		case '4':
-		case '5':
-		case '6':
-		case '7':
-			archive = 0;
-		default:
-			break;
-	}
 
 	if(listdir && listctrl[0] != '5')
 		listaddr = getlistaddr(listdir);
@@ -1031,7 +1025,7 @@ int main(int argc, char **argv)
 		}
 		break;
 	case '6':
-		archive = 0;
+		archive = false;
 		deletewhensent = 0;
 		archivefilename = xstrdup(mailfilename);
 		bounceaddr = bounce_from_adr(to_addr, listaddr, listdelim,

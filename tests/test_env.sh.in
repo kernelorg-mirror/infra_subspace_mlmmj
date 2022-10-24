@@ -1,0 +1,37 @@
+srcdir="$(atf_get_srcdir)"
+export PATH="$srcdir/../src:${PATH}"
+
+selfdir="@abs_top_srcdir@/tests"
+LIBRARY_PATH_ENV="LIBRARY_PATH"
+SYSROOT_DIR="${selfdir}"
+
+prefix="@prefix@"
+exec_prefix="@exec_prefix@"
+datarootdir="@datarootdir@"
+pcpath="@PKG_DEFAULT_PATH@"
+
+tests_init()
+{
+	TESTS="$@"
+	export TESTS
+	for t ; do
+		atf_test_case $t
+	done
+}
+
+atf_init_test_cases() {
+	for t in ${TESTS}; do
+		atf_add_test_case $t
+	done
+}
+
+init_ml()
+{
+	local ml="$1"
+	mkdir "$ml"
+	for d in incoming queue queue/discarded archive text subconf unsubconf \
+		bounce control moderation subscribers.d digesters.d requeue \
+		nomailsubs.d; do
+		mkdir $ml/$d
+	done
+}

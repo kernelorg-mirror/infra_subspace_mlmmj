@@ -1,0 +1,6 @@
+syntax(2)
+
+test_suite('mlmmj')
+
+atf_test_program{name='mlmmj'}
+atf_test_program{name='mlmmj-send'}

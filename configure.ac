@@ -56,4 +56,5 @@ AC_CONFIG_FILES([contrib/Makefile])
 AC_CONFIG_FILES([contrib/receivestrip/Makefile])
 AC_CONFIG_FILES([tests/Makefile])
 AC_CONFIG_FILES([tests/Kyuafile])
+AC_CONFIG_FILES([tests/test_env.sh])
 AC_OUTPUT

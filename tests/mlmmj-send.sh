@@ -1,0 +1,44 @@
+#!/usr/bin/env atf-sh
+
+. $(atf_get_srcdir)/test_env.sh
+
+tests_init \
+	basics
+
+basics_body()
+{
+
+	mlmmjsend=$(command -v mlmmj-send)
+	helptxt="Usage: $mlmmjsend [-L /path/to/list -m /path/to/mail | -l listctrl]
+       [-a] [-D] [-F sender@example.org] [-h] [-o address@example.org]
+       [-r 127.0.0.1] [-R reply@example.org] [-s /path/to/subscribers]
+       [-T recipient@example.org] [-V]
+ -a: Don't archive the mail
+ -D: Don't delete the mail after it's sent
+ -F: What to use as MAIL FROM:
+ -h: This help
+ -l: List control variable:
+    '1' means 'send a single mail'
+    '2' means 'mail to moderators'
+    '3' means 'resend failed list mail'
+    '4' means 'send to file with recipients'
+    '5' means 'bounceprobe'
+    '6' means 'single listmail to single recipient'
+    '7' means 'digest'
+ -L: Full path to list directory
+ -m: Full path to mail file
+ -o: Address to omit from distribution (normal mail only)
+ -r: Relayhost IP address (defaults to 127.0.0.1)
+ -R: What to use as Reply-To: header
+ -s: Subscribers file name
+ -T: What to use as RCPT TO:
+ -V: Print version
+"
+	init_ml ml
+
+	atf_check -s exit:1 -e "inline:mlmmj-send: You have to specify -m and -L or -l\n$mlmmjsend -h for help\n" $mlmmjsend
+	atf_check -s exit:0 -o "inline:mlmmj-send version 1.3.0\n" $mlmmjsend -V
+	atf_check -s exit:0 -o "inline:$helptxt" $mlmmjsend -h
+	atf_check -s exit:1 -e "inline:mlmmj-send: -l only accept the following arguments: 1, 2, 3, 4, 5, 6 or 7\n" $mlmmjsend -l 8
+	atf_check -s exit:1 -e "inline:mlmmj-send: -l only accept the following arguments: 1, 2, 3, 4, 5, 6 or 7\n" $mlmmjsend -l 0
+}
