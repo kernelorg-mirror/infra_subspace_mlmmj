@@ -20,12 +20,19 @@
  * IN THE SOFTWARE.
  */
 
-#include <inttypes.h>
+#include <sys/wait.h>
+
 #include <ctype.h>
+#include <err.h>
 #include <errno.h>
+#include <inttypes.h>
+#include <spawn.h>
+#include <unistd.h>
 
 #include "xmalloc.h"
 #include "utils.h"
+
+extern char **environ;
 
 intmax_t
 strtoim(const char *np, intmax_t minval, intmax_t maxval, const char **errpp)
@@ -103,4 +110,63 @@ lowercase(const char *address)
 		i++;
 	}
 	return (loweraddress);
+}
+
+void
+exec_or_die(const char *arg, ...)
+{
+	va_list ap;
+	const char **argv;
+	int n;
+
+	va_start(ap, arg);
+	n = 1;
+	while (va_arg(ap, char *) != NULL)
+		n++;
+	va_end(ap);
+	argv = xmalloc((n +1) * sizeof(argv));
+	va_start(ap, arg);
+	argv[0] = arg;
+	n = 1;
+	while ((argv[n] = va_arg(ap, char *)) != NULL)
+		n++;
+	va_end(ap);
+	execvp(argv[0], (char *const *)argv);
+	err(EXIT_FAILURE, "Execution failed for '%s'", argv[0]);
+}
+
+int
+exec_and_wait(const char *arg, ...)
+{
+	va_list ap;
+	const char **argv;
+	int n;
+	pid_t p;
+	int pstat;
+
+	va_start(ap, arg);
+	n = 1;
+	while (va_arg(ap, char *) != NULL)
+		n++;
+	va_end(ap);
+	argv = xmalloc((n +1) * sizeof(argv));
+	va_start(ap, arg);
+	argv[0] = arg;
+	n = 1;
+	while ((argv[n] = va_arg(ap, char *)) != NULL)
+		n++;
+	va_end(ap);
+
+	if (0 != posix_spawnp(&p, argv[0], NULL, NULL,
+				(char *const *) argv, environ)) {
+		warn("Execution failed for '%s'", argv[0]);
+		return (-1);
+	}
+	while (waitpid(p, &pstat, 0) == -1) {
+		if (errno != EINTR)
+			warn("Could not wait for the execution of '%s'", argv[0]);
+		return (-1);
+	}
+
+	return (WEXITSTATUS(pstat));
 }

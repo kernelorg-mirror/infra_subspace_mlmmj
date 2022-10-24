@@ -53,6 +53,8 @@ ATF_TC_WITHOUT_HEAD(mygetline);
 ATF_TC_WITHOUT_HEAD(init_sock);
 ATF_TC_WITHOUT_HEAD(genmsgid);
 ATF_TC_WITHOUT_HEAD(lowercase);
+ATF_TC_WITHOUT_HEAD(exec_or_die);
+ATF_TC_WITHOUT_HEAD(exec_and_wait);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -256,6 +258,35 @@ ATF_TC_BODY(genmsgid, tc)
 	free(test);
 }
 
+ATF_TC_BODY(exec_or_die, tc)
+{
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		exec_or_die("/usr/bin/nopenope", NULL);
+	}
+	atf_utils_wait(p, 1, "", "mlmmj: Execution failed for '/usr/bin/nopenope': No such file or directory\n");
+	p = atf_utils_fork();
+	if (p == 0) {
+		exec_or_die("/usr/bin/true", (char *)NULL);
+	}
+	atf_utils_wait(p, 0, "", "");
+	p = atf_utils_fork();
+	if (p == 0) {
+		exec_or_die("/bin/echo", "a", (char *)NULL);
+	}
+	atf_utils_wait(p, 0, "a\n", "");
+}
+
+ATF_TC_BODY(exec_and_wait, tc)
+{
+	int val = exec_and_wait("/usr/bin/nopenope", NULL);
+	ATF_REQUIRE_EQ(val, -1);
+	val = exec_and_wait("/usr/bin/true", NULL);
+	ATF_REQUIRE_EQ(val, 0);
+	val = exec_and_wait("/usr/bin/false", NULL);
+	ATF_REQUIRE_EQ(val, 1);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -266,6 +297,8 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, lowercase);
 	ATF_TP_ADD_TC(tp, init_sock);
 	ATF_TP_ADD_TC(tp, genmsgid);
+	ATF_TP_ADD_TC(tp, exec_or_die);
+	ATF_TP_ADD_TC(tp, exec_and_wait);
 
 	return (atf_no_error());
 }

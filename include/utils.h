@@ -26,3 +26,5 @@ char *lowercase(const char *);
 intmax_t strtoim(const char *np, intmax_t minval, intmax_t maxval,
     const char **errpp);
 uintmax_t strtouim(const char *, uintmax_t, uintmax_t, const char **);
+void exec_or_die(const char *arg, ...);
+int exec_and_wait(const char *arg, ...);
