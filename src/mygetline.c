@@ -74,8 +74,3 @@ char *mygetline(int fd)
 {
 	return mygetuntil(fd, '\n');
 }
-
-char *mygetcontent(int fd)
-{
-	return mygetuntil(fd, EOF);
-}
