@@ -187,12 +187,13 @@ char *bounce_from_adr(const char *recipient, const char *listadr,
 
 int bouncemail(const char *listdir, const char *mlmmjbounce, const char *from)
 {
+	char *tofree;
 	char *myfrom = xstrdup(from);
 	char *listdelim = getlistdelim(listdir);
 	char *addr, *num, *c;
-	size_t len;
 	pid_t pid = 0;
 
+	tofree = myfrom;
 	if((c = strchr(myfrom, '@')) == NULL) {
 		free(myfrom);
 		free(listdelim);
@@ -200,15 +201,23 @@ int bouncemail(const char *listdir, const char *mlmmjbounce, const char *from)
 	}
 	*c = '\0';
 	num = strrchr(myfrom, '-');
+	if (num == NULL) {
+		free(tofree);
+		return (0); /* Success when malformed 'from' */
+	}
 	num++;
 	c = strstr(myfrom, listdelim);
-	myfrom = strchr(c, '-');
+	if (c == NULL) {
+		free(tofree);
+		return (0); /* Success when malformed 'from' */
+	}
+	myfrom = strchr(c, '-'); /* always true we checked earlier */
 	myfrom++;
-	len = num - myfrom - 1;
-	addr = xmalloc(len + 1);
-	addr[len] = '\0';
-	strncpy(addr, myfrom, len);
-
+	if (num <= myfrom) {
+		free(tofree);
+		return (0); /* Success when malformed 'from' */
+	}
+	addr = xstrndup(myfrom, num - myfrom - 1);
 	free(listdelim);
 
 	pid = fork();
