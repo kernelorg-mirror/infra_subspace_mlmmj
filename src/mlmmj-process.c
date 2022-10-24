@@ -29,7 +29,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <sys/wait.h>
 #include <libgen.h>
 #include <regex.h>
 #include <err.h>
@@ -55,6 +54,7 @@
 #include "log_oper.h"
 #include "unistr.h"
 #include "chomp.h"
+#include "utils.h"
 
 enum action {
 	ALLOW,
@@ -138,8 +138,7 @@ static void newmoderated(const char *listdir, const char *mailfilename,
 	char *queuefilename = NULL;
 	const char *efromismod = NULL;
 	const char *mailbasename = mybasename(mailfilename), *to, *reject;
-	int notifymod = 0, status;
-	pid_t childpid, pid;
+	int notifymod = 0;
 #if 0
 	printf("mailfilename = [%s], mailbasename = [%s]\n", mailfilename,
 			                                     mailbasename);
@@ -190,69 +189,35 @@ static void newmoderated(const char *listdir, const char *mailfilename,
 	/* we might need to exec more than one mlmmj-send */
 	
 	notifymod = !efromismod && statctrl(listdir,"notifymod");
-	
-	if (notifymod) {
-		childpid = fork();
-		if(childpid < 0)
-			log_error(LOG_ARGS, "Could not fork; poster not notified");
-	} else
-		childpid = -1;
 
-	if(childpid != 0) {
-		if(childpid > 0) {
-			do /* Parent waits for the child */
-				pid = waitpid(childpid, &status, 0);
-			while(pid == -1 && errno == EINTR);
-		}
+	if (notifymod) {
+		free(queuefilename);
+		/* send mail to poster that the list is moderated */
+		txt = open_text(listdir, "wait", "post",
+				modreason_strs[modreason], NULL, "moderation-poster");
+		MY_ASSERT(txt);
+		register_unformatted(txt, "subject", subject);
+		register_unformatted(txt, "posteraddr", posteraddr);
+		register_unformatted(txt, "moderators", "%moderators%"); /* DEPRECATED */
+		register_formatted(txt, "moderators",
+				rewind_memory_lines, get_memory_line, mls);
+		register_originalmail(txt, mailfilename);
+		queuefilename = prepstdreply(txt, listdir,
+				"$listowner$", efromsender, NULL);
+		MY_ASSERT(queuefilename);
+		close_text(txt);
 
 		finish_memory_lines(mls);
 
-		if(efromismod)
-			execlp(mlmmjsend, mlmmjsend,
-					"-l", "1",
-					"-L", listdir,
-					"-F", from,
-					"-m", queuefilename,
-					"-T", efromsender, (char *)NULL);
-		else
-			execlp(mlmmjsend, mlmmjsend,
-					"-l", "2",
-					"-L", listdir,
-					"-F", from,
-					"-m", queuefilename, (char *)NULL);
-		log_error(LOG_ARGS, "execlp() of '%s' failed", mlmmjsend);
-		exit(EXIT_FAILURE);
+		exec_and_wait(mlmmjsend, "-l", "1", "-L", listdir, "-F", from,
+		    "-m", queuefilename, "-T", efromsender, NULL);
 	}
 
-	free(queuefilename);
-
-	/* send mail to poster that the list is moderated */
-
-	txt = open_text(listdir, "wait", "post",
-			modreason_strs[modreason], NULL, "moderation-poster");
-	MY_ASSERT(txt);
-	register_unformatted(txt, "subject", subject);
-	register_unformatted(txt, "posteraddr", posteraddr);
-	register_unformatted(txt, "moderators", "%moderators%"); /* DEPRECATED */
-	register_formatted(txt, "moderators",
-			rewind_memory_lines, get_memory_line, mls);
-	register_originalmail(txt, mailfilename);
-	queuefilename = prepstdreply(txt, listdir,
-			"$listowner$", efromsender, NULL);
-	MY_ASSERT(queuefilename);
-	close_text(txt);
-
-	finish_memory_lines(mls);
-
-	execlp(mlmmjsend, mlmmjsend,
-			"-l", "1",
-			"-L", listdir,
-			"-F", from,
-			"-m", queuefilename,
-			"-T", efromsender, (char *)NULL);
-
-	log_error(LOG_ARGS, "execlp() of '%s' failed", mlmmjsend);
-	exit(EXIT_FAILURE);
+	if (efromismod)
+		exec_or_die(mlmmjsend, "-l", "1", "-L", listdir, "-F", from,
+		    "-m", queuefilename, "-T", efromsender, NULL);
+	exec_or_die(mlmmjsend, "-l", "2", "-L", listdir, "-F", from,
+	    "-m", queuefilename, NULL);
 }
 
 
@@ -803,16 +768,8 @@ int main(int argc, char **argv)
 			log_oper(listdir, OPLOGFNAME, "mlmmj-process: sending"
 					" mail from %s to owner",
 					efrom);
-			execlp(mlmmjsend, mlmmjsend,
-					"-l", "4",
-					"-L", listdir,
-					"-F", efrom,
-					"-s", owner,
-					"-a",
-					"-m", donemailname, (char *)NULL);
-			log_error(LOG_ARGS, "execlp() of '%s' failed",
-					mlmmjsend);
-			exit(EXIT_FAILURE);
+			exec_or_die(mlmmjsend, "-l", "4", "-L", listdir, "-F",
+			    efrom, "-s", owner, "-a", "-m", donemailname, NULL);
 		}
 #if 0
 		log_error(LOG_ARGS, "listcontrol(from, %s, %s, %s, %s, %s, %s, %s)\n", listdir, toemails.emaillist[0], mlmmjsub, mlmmjunsub, mlmmjsend, mlmmjbounce, donemailname);
@@ -877,15 +834,9 @@ int main(int argc, char **argv)
 			unlink(mailfile);
 			free(donemailname);
 			free(maxmailsizestr);
-			execlp(mlmmjsend, mlmmjsend,
-					"-l", "1",
-					"-L", listdir,
-					"-T", posteraddr,
-					"-F", fromaddr,
-					"-m", queuefilename, (char *)NULL);
-
-			log_error(LOG_ARGS, "execlp() of '%s' failed", mlmmjsend);
-			exit(EXIT_FAILURE);
+			exec_or_die(mlmmjsend, "-l", "1", "-L", listdir, "-T",
+			    posteraddr, "-F", fromaddr, "-m", queuefilename,
+			    NULL);
 		}
 	}
 
@@ -946,15 +897,8 @@ int main(int argc, char **argv)
 		free(listfqdn);
 		unlink(donemailname);
 		free(donemailname);
-		execlp(mlmmjsend, mlmmjsend,
-				"-l", "1",
-				"-L", listdir,
-				"-T", posteraddr,
-				"-F", fromaddr,
-				"-m", queuefilename, (char *)NULL);
-
-		log_error(LOG_ARGS, "execlp() of '%s' failed", mlmmjsend);
-		exit(EXIT_FAILURE);
+		exec_or_die(mlmmjsend, "-l", "1", "-L", listdir, "-T",
+		    posteraddr, "-F", fromaddr, "-m", queuefilename, NULL);
 	}
 
 	access_rules = ctrlvalues(listdir, "access");
@@ -1000,16 +944,9 @@ int main(int argc, char **argv)
 			unlink(donemailname);
 			free(donemailname);
 			free(randomstr);
-			execlp(mlmmjsend, mlmmjsend,
-					"-l", "1",
-					"-L", listdir,
-					"-T", posteraddr,
-					"-F", fromaddr,
-					"-m", queuefilename, (char *)NULL);
-
-			log_error(LOG_ARGS, "execlp() of '%s' failed",
-					mlmmjsend);
-			exit(EXIT_FAILURE);
+			exec_or_die(mlmmjsend, "-l", "1", "-L", listdir, "-T",
+			    posteraddr, "-F", fromaddr, "-m", queuefilename,
+			    NULL);
 		} else if (accret == MODERATE) {
 			moderated = 1;
 			modreason = ACCESS;
@@ -1118,15 +1055,9 @@ int main(int argc, char **argv)
 			    free(listfqdn);
 			    unlink(donemailname);
 			    free(donemailname);
-			    execlp(mlmmjsend, mlmmjsend,
-				    "-L", listdir,
-				    "-l", "1",
-				    "-T", testaddr,
-				    "-F", fromaddr,
-				    "-m", queuefilename, (char *)NULL);
-
-			    log_error(LOG_ARGS, "execlp() of '%s' failed", mlmmjsend);
-			    exit(EXIT_FAILURE);
+				exec_or_die(mlmmjsend, "-L", listdir, "-l", "1",
+				    "-T", testaddr, "-F", fromaddr, "-m",
+				    queuefilename, NULL);
 			}
 		}
 	}
@@ -1187,15 +1118,7 @@ int main(int argc, char **argv)
 	}
 
 	if (notmetoo)
-		execlp(mlmmjsend, mlmmjsend,
-				"-L", listdir,
-				"-o", posteraddr,
-				"-m", donemailname, (char *)NULL);
-	else
-		execlp(mlmmjsend, mlmmjsend,
-				"-L", listdir,
-				"-m", donemailname, (char *)NULL);
-	log_error(LOG_ARGS, "execlp() of '%s' failed", mlmmjsend);
-
-	return EXIT_FAILURE;
+		exec_or_die(mlmmjsend, "-L", listdir, "-o", posteraddr,
+		    "-m", donemailname, NULL);
+	exec_or_die(mlmmjsend, "-L", listdir, "-m", donemailname, NULL);
 }

@@ -41,6 +41,7 @@
 #include "wrappers.h"
 #include "mygetline.h"
 #include "prepstdreply.h"
+#include "utils.h"
 
 
 struct subs_list_state;
@@ -217,13 +218,6 @@ void send_list(const char *listdir, const char *emailaddr,
 	free(listname);
 	free(listfqdn);
 
-	execlp(mlmmjsend, mlmmjsend,
-				"-l", "1",
-				"-L", listdir,
-				"-T", emailaddr,
-				"-F", fromaddr,
-				"-m", queuefilename, (char *)NULL);
-
-	log_error(LOG_ARGS, "execlp() of '%s' failed", mlmmjsend);
-	exit(EXIT_FAILURE);
+	exec_or_die(mlmmjsend, "-l", "1", "-L", listdir, "-T", emailaddr, "-F",
+	    fromaddr, "-m", queuefilename, NULL);
 }

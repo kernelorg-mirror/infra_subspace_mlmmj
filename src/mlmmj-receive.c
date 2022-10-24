@@ -38,6 +38,7 @@
 #include "strgen.h"
 #include "log_error.h"
 #include "memory.h"
+#include "utils.h"
 
 extern char *optarg;
 
@@ -175,10 +176,5 @@ int main(int argc, char **argv)
 		close(2);
 	}
 
-	execlp(mlmmjprocess, mlmmjprocess,
-				"-L", listdir,
-				"-m", infilename, (char *)NULL);
-	log_error(LOG_ARGS, "execlp() of '%s' failed", mlmmjprocess);
-
-	exit(EXIT_FAILURE);
+	exec_or_die(mlmmjprocess, "-L", listdir, "-m", infilename, NULL);
 }

@@ -111,16 +111,8 @@ void do_probe(const char *listdir, const char *mlmmjsend, const char *addr)
 
 	free(probefile);
 
-	execlp(mlmmjsend, mlmmjsend,
-				"-l", "5",
-				"-L", listdir,
-				"-T", myaddr,
-				"-F", from,
-				"-m", queuefilename, (char *)NULL);
-
-	log_error(LOG_ARGS, "execlp() of '%s' failed", mlmmjsend);
-
-	exit(EXIT_FAILURE);
+	exec_or_die(mlmmjsend, "-l", "5", "-L", listdir, "-T", myaddr,
+	    "-F", from, "-m", queuefilename, NULL);
 }
 
 char *dsnparseaddr(const char *mailname)

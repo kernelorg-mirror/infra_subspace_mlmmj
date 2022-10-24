@@ -46,6 +46,7 @@
 #include "log_oper.h"
 #include "ctrlvalues.h"
 #include "subscriberfuncs.h"
+#include "utils.h"
 
 enum ctrl_e {
 	CTRL_SUBSCRIBE_DIGEST,
@@ -238,16 +239,9 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 		log_oper(listdir, OPLOGFNAME, "mlmmj-sub: request for digest"
 					" subscription from %s",
 					fromemails->emaillist[0]);
-		execlp(mlmmjsub, mlmmjsub,
-				"-L", listdir,
-				"-a", fromemails->emaillist[0],
-				"-d",
-				"-r", "-c",
-				(nosubconfirm ? (char *)NULL : "-C"),
-				(char *)NULL);
-		log_error(LOG_ARGS, "execlp() of '%s' failed",
-					mlmmjsub);
-		exit(EXIT_FAILURE);
+		exec_or_die(mlmmjsub, "-L", listdir, "-a",
+		    fromemails->emaillist[0], "-d", "-r", "-c",
+		    (nosubconfirm ? NULL : "-C"), NULL);
 		break;
 
 	/* listname+subscribe-nomail@domain.tld */
@@ -287,16 +281,9 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 		log_oper(listdir, OPLOGFNAME, "mlmmj-sub: request for nomail"
 					" subscription from %s",
 					fromemails->emaillist[0]);
-		execlp(mlmmjsub, mlmmjsub,
-				"-L", listdir,
-				"-a", fromemails->emaillist[0],
-				"-n",
-				"-r", "-c",
-				(nosubconfirm ? (char *)NULL : "-C"),
-				(char *)NULL);
-		log_error(LOG_ARGS, "execlp() of '%s' failed",
-					mlmmjsub);
-		exit(EXIT_FAILURE);
+		exec_or_die(mlmmjsub, "-L", listdir, "-a",
+		    fromemails->emaillist[0], "-n", "-r", "-c",
+		    (nosubconfirm ? NULL : "-C"), NULL);
 		break;
 
 	/* listname+subscribe-both@domain.tld */
@@ -336,16 +323,9 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 		log_oper(listdir, OPLOGFNAME, "mlmmj-sub: request for both"
 					" subscription from %s",
 					fromemails->emaillist[0]);
-		execlp(mlmmjsub, mlmmjsub,
-				"-L", listdir,
-				"-a", fromemails->emaillist[0],
-				"-b",
-				"-r", "-c",
-				(nosubconfirm ? (char *)NULL : "-C"),
-				(char *)NULL);
-		log_error(LOG_ARGS, "execlp() of '%s' failed",
-					mlmmjsub);
-		exit(EXIT_FAILURE);
+		exec_or_die(mlmmjsub, "-L", listdir, "-a",
+		    fromemails->emaillist[0], "-b", "-r", "-c",
+		    (nosubconfirm ? NULL : "-C"), NULL);
 		break;
 
 	/* listname+subscribe@domain.tld */
@@ -367,15 +347,9 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 		log_oper(listdir, OPLOGFNAME, "mlmmj-sub: request for regular"
 					" subscription from %s",
 					fromemails->emaillist[0]);
-		execlp(mlmmjsub, mlmmjsub,
-				"-L", listdir,
-				"-a", fromemails->emaillist[0],
-				"-r", "-c",
-				(nosubconfirm ? (char *)NULL : "-C"),
-				(char *)NULL);
-		log_error(LOG_ARGS, "execlp() of '%s' failed",
-					mlmmjsub);
-		exit(EXIT_FAILURE);
+		exec_or_die(mlmmjsub, "-L", listdir, "-a",
+		    fromemails->emaillist[0], "-r", "-c",
+		    (nosubconfirm ? NULL : "-C"), NULL);
 		break;
 
 	/* listname+subconf-digest-COOKIE@domain.tld */
@@ -396,14 +370,8 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 		unlink(conffilename);
 		log_oper(listdir, OPLOGFNAME, "mlmmj-sub: %s confirmed"
 					" subscription to digest", tmpstr);
-		execlp(mlmmjsub, mlmmjsub,
-				"-L", listdir,
-				"-a", tmpstr,
-				"-d",
-				"-R", "-c", (char *)NULL);
-		log_error(LOG_ARGS, "execlp() of '%s' failed",
-				mlmmjsub);
-		exit(EXIT_FAILURE);
+		exec_or_die(mlmmjsub, "-L", listdir, "-a", tmpstr, "-d",
+		    "-R", "-c", NULL);
 		break;
 
 	/* listname+subconf-nomail-COOKIE@domain.tld */
@@ -424,14 +392,8 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 		unlink(conffilename);
 		log_oper(listdir, OPLOGFNAME, "mlmmj-sub: %s confirmed"
 					" subscription to nomail", tmpstr);
-		execlp(mlmmjsub, mlmmjsub,
-				"-L", listdir,
-				"-a", tmpstr,
-				"-n",
-				"-R", "-c", (char *)NULL);
-		log_error(LOG_ARGS, "execlp() of '%s' failed",
-				mlmmjsub);
-		exit(EXIT_FAILURE);
+		exec_or_die(mlmmjsub, "-L", listdir, "-a", tmpstr, "-n",
+		    "-R", "-c", NULL);
 		break;
 
 	/* listname+subconf-both-COOKIE@domain.tld */
@@ -452,14 +414,8 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 		unlink(conffilename);
 		log_oper(listdir, OPLOGFNAME, "mlmmj-sub: %s confirmed"
 					" subscription to both", tmpstr);
-		execlp(mlmmjsub, mlmmjsub,
-				"-L", listdir,
-				"-a", tmpstr,
-				"-b",
-				"-R", "-c", (char *)NULL);
-		log_error(LOG_ARGS, "execlp() of '%s' failed",
-				mlmmjsub);
-		exit(EXIT_FAILURE);
+		exec_or_die(mlmmjsub, "-L", listdir, "-a", tmpstr, "-b",
+		    "-R", "-c", NULL);
 		break;
 
 	/* listname+subconf-COOKIE@domain.tld */
@@ -481,13 +437,8 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 		log_oper(listdir, OPLOGFNAME, "mlmmj-sub: %s confirmed"
 					" subscription to regular list",
 					tmpstr);
-		execlp(mlmmjsub, mlmmjsub,
-				"-L", listdir,
-				"-a", tmpstr,
-				"-R", "-c", (char *)NULL);
-		log_error(LOG_ARGS, "execlp() of '%s' failed",
-				mlmmjsub);
-		exit(EXIT_FAILURE);
+		exec_or_die(mlmmjsub, "-L", listdir, "-a", tmpstr,
+		    "-R", "-c", NULL);
 		break;
 
 	/* DEPRECATED: listname+unsubscribe-digest@domain.tld */
@@ -513,14 +464,9 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 		log_oper(listdir, OPLOGFNAME, "mlmmj-unsub: %s requests"
 					" unsubscribe",
 					fromemails->emaillist[0]);
-		execlp(mlmmjunsub, mlmmjunsub,
-				"-L", listdir,
-				"-a", fromemails->emaillist[0],
-				"-r", (nosubconfirm ? "-c" : "-C"),
-				(char *)NULL);
-		log_error(LOG_ARGS, "execlp() of '%s' failed",
-				mlmmjunsub);
-		exit(EXIT_FAILURE);
+		exec_or_die(mlmmjunsub, "-L", listdir, "-a",
+		    fromemails->emaillist[0], "-r",
+		    (nosubconfirm ? "-c" : "-C"), NULL);
 		break;
 
 	/* listname+unsubconf-digest-COOKIE@domain.tld */
@@ -547,14 +493,8 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 		unlink(conffilename);
 		log_oper(listdir, OPLOGFNAME, "mlmmj-unsub: %s confirmed"
 					" unsubscribe from digest", tmpstr);
-		execlp(mlmmjunsub, mlmmjunsub,
-				"-L", listdir,
-				"-a", tmpstr,
-				"-d",
-				"-R", "-c", (char *)NULL);
-		log_error(LOG_ARGS, "execlp() of '%s' failed",
-				mlmmjunsub);
-		exit(EXIT_FAILURE);
+		exec_or_die(mlmmjunsub, "-L", listdir, "-a", tmpstr, "-d",
+		    "-R", "-c", NULL);
 		break;
 
 	/* listname+unsubconf-nomail-COOKIE@domain.tld */
@@ -581,14 +521,8 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 		unlink(conffilename);
 		log_oper(listdir, OPLOGFNAME, "mlmmj-unsub: %s confirmed"
 					" unsubscribe from nomail", tmpstr);
-		execlp(mlmmjunsub, mlmmjunsub,
-				"-L", listdir,
-				"-a", tmpstr,
-				"-n",
-				"-R", "-c", (char *)NULL);
-		log_error(LOG_ARGS, "execlp() of '%s' failed",
-				mlmmjunsub);
-		exit(EXIT_FAILURE);
+		exec_or_die(mlmmjunsub, "-L", listdir, "-a", tmpstr, "-n",
+		    "-R", "-c", NULL);
 		break;
 
 	/* listname+unsubconf-COOKIE@domain.tld */
@@ -616,13 +550,8 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 		log_oper(listdir, OPLOGFNAME, "mlmmj-unsub: %s confirmed"
 					" unsubscribe from regular list",
 					tmpstr);
-		execlp(mlmmjunsub, mlmmjunsub,
-				"-L", listdir,
-				"-a", tmpstr,
-				"-R", "-c", (char *)NULL);
-		log_error(LOG_ARGS, "execlp() of '%s' failed",
-				mlmmjunsub);
-		exit(EXIT_FAILURE);
+		exec_or_die(mlmmjunsub, "-L", listdir, "-a", tmpstr, "-R", "-c",
+		    NULL);
 		break;
 
 	/* listname+bounces-INDEX-user=example.tld@domain.tld */
@@ -630,23 +559,12 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 		bouncenr = param;
 		c = strchr(param, '-');
 		if (!c) { /* Exec with dsn parsing, since the addr is missing */
-			execlp(mlmmjbounce, mlmmjbounce,
-					"-L", listdir,
-					"-m", mailname,
-					"-n", bouncenr,
-					"-d", (char *)NULL);
-			log_error(LOG_ARGS, "execlp() of '%s' failed",
-					mlmmjbounce);
-			exit(EXIT_FAILURE);
+			exec_or_die(mlmmjbounce, "-L", listdir, "-m", mailname,
+			    "-n", bouncenr, "-d", NULL);
 		}
 		*c++ = '\0';
-		execlp(mlmmjbounce, mlmmjbounce,
-				"-L", listdir,
-				"-a", c,
-				"-m", mailname,
-				"-n", bouncenr, (char *)NULL);
-		log_error(LOG_ARGS, "execlp() of '%s' failed", mlmmjbounce);
-		exit(EXIT_FAILURE);
+		exec_or_die(mlmmjbounce, "-L", listdir, "-a", c, "-m", mailname,
+		    "-n", bouncenr, NULL);
 		break;
 
 	/* listname+release-COOKIE@domain.tld */
@@ -701,17 +619,9 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 				fromemails->emaillist[0], param);
 
 		if (omit != NULL)
-			execlp(mlmmjsend, mlmmjsend,
-					"-L", listdir,
-					"-o", omit,
-					"-m", sendfilename, (char *)NULL);
-		else
-			execlp(mlmmjsend, mlmmjsend,
-					"-L", listdir,
-					"-m", sendfilename, (char *)NULL);
-		log_error(LOG_ARGS, "execlp() of '%s' failed",
-					mlmmjsend);
-		exit(EXIT_FAILURE);
+			exec_or_die(mlmmjsend, "-L", listdir, "-o", omit,
+			    "-m", sendfilename, NULL);
+		exec_or_die(mlmmjsend, "-L", listdir, "-m", sendfilename, NULL);
 		break;
 
 	/* listname+reject-COOKIE@domain.tld */
@@ -754,13 +664,7 @@ permit:
 		}
 		log_oper(listdir, OPLOGFNAME, "%s permitted %s",
 			fromemails->emaillist[0], param);
-		execlp(mlmmjsub, mlmmjsub,
-				"-L", listdir,
-				"-m", param,
-				"-c", (char *)NULL);
-		log_error(LOG_ARGS, "execlp() of '%s' failed",
-					mlmmjsub);
-		exit(EXIT_FAILURE);
+		exec_or_die(mlmmjsub, "-L", listdir, "-m", param, "-c", NULL);
 		break;
 
 	/* listname+obstruct-COOKIE@domain.tld */
@@ -870,15 +774,9 @@ permit:
 		}
 		log_oper(listdir, OPLOGFNAME, "%s got archive/%s",
 				fromemails->emaillist[0], archivefilename);
-		execlp(mlmmjsend, mlmmjsend,
-				"-T", fromemails->emaillist[0],
-				"-L", listdir,
-				"-l", "6",
-				"-m", archivefilename,
-				"-a", "-D", (char *)NULL);
-		log_error(LOG_ARGS, "execlp() of '%s' failed",
-					mlmmjsend);
-		exit(EXIT_FAILURE);
+		exec_or_die(mlmmjsend, "-T", fromemails->emaillist[0], "-L",
+		    listdir, "-l", "6", "-m", archivefilename, "-a", "-D",
+		    NULL);
 		break;
 
 	/* listname+list@domain.tld */

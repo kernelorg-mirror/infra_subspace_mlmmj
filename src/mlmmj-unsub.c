@@ -89,15 +89,8 @@ void confirm_unsub(const char *listdir, const char *listaddr,
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
-	execlp(mlmmjsend, mlmmjsend,
-				"-l", "1",
-				"-L", listdir,
-				"-T", subaddr,
-				"-F", fromaddr,
-				"-m", queuefilename, (char *)NULL);
-
-	log_error(LOG_ARGS, "execlp() of '%s' failed", mlmmjsend);
-	exit(EXIT_FAILURE);
+	exec_or_die(mlmmjsend, "-l", "1", "-L", listdir, "-T", subaddr, "-F",
+	    fromaddr, "-m", queuefilename, NULL);
 }
 
 void notify_unsub(const char *listdir, const char *listaddr,
@@ -143,15 +136,8 @@ void notify_unsub(const char *listdir, const char *listaddr,
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
-	execlp(mlmmjsend, mlmmjsend,
-			"-l", "1",
-			"-L", listdir,
-			"-T", tostr,
-			"-F", fromaddr,
-			"-m", queuefilename, (char *)NULL);
-
-        log_error(LOG_ARGS, "execlp() of '%s' failed", mlmmjsend);
-        exit(EXIT_FAILURE);
+	exec_or_die(mlmmjsend, "-l", "1", "-L", listdir, "-T", tostr, "-F",
+	    fromaddr, "-m", queuefilename, NULL);
 }
 
 
@@ -240,14 +226,8 @@ void generate_unsubconfirm(const char *listdir, const char *listaddr,
 	free(listname);
 	free(listfqdn);
 
-	execlp(mlmmjsend, mlmmjsend,
-				"-l", "1",
-				"-L", listdir,
-				"-T", subaddr,
-				"-F", fromaddr,
-				"-m", queuefilename, (char *)NULL);
-	log_error(LOG_ARGS, "execlp() of '%s' failed", mlmmjsend);
-	exit(EXIT_FAILURE);
+	exec_or_die(mlmmjsend, "-l", "1", "-L", listdir, "-T", subaddr,
+	    "-F", fromaddr, "-m", queuefilename, NULL);
 }
 
 ssize_t unsubscribe(int subreadfd, int subwritefd, const char *address)
@@ -342,15 +322,8 @@ static void generate_notsubscribed(const char *listdir, const char *subaddr,
 	free(listname);
 	free(listfqdn);
 
-	execlp(mlmmjsend, mlmmjsend,
-				"-l", "1",
-				"-L", listdir,
-				"-T", subaddr,
-				"-F", fromaddr,
-				"-m", queuefilename, (char *)NULL);
-
-	log_error(LOG_ARGS, "execlp() of '%s' failed", mlmmjsend);
-	exit(EXIT_FAILURE);
+	exec_or_die(mlmmjsend, "-l", "1", "-L", listdir, "-T", subaddr,
+	    "-F", fromaddr, "-m", queuefilename, NULL);
 }
 
 static void unsubscribe_type(char *listdir, char *listaddr, char *listdelim,

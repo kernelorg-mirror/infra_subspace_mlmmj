@@ -230,13 +230,7 @@ int bouncemail(const char *listdir, const char *mlmmjbounce, const char *from)
 	if(pid > 0)
 		return 0;
 	
-	execlp(mlmmjbounce, mlmmjbounce,
-			"-L", listdir,
-			"-a", num,
-			"-n", addr, (char *)NULL);
-
-	log_error(LOG_ARGS, "execlp() of '%s' failed", mlmmjbounce);
-
+	exec_or_die(mlmmjbounce, "-L", listdir, "-a", num, "-n", addr, NULL);
 	return 1;
 }
 

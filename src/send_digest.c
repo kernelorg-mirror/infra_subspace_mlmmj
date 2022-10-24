@@ -26,9 +26,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdlib.h>
-#include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/wait.h>
 #include <ctype.h>
 
 #include "mlmmj.h"
@@ -44,6 +42,7 @@
 #include "gethdrline.h"
 #include "statctrl.h"
 #include "unistr.h"
+#include "utils.h"
 
 
 struct mail {
@@ -239,13 +238,12 @@ static void finish_thread_list(thread_list_state * s)
 int send_digest(const char *listdir, int firstindex, int lastindex,
 		int issue, const char *addr, const char *mlmmjsend)
 {
-	int i, fd, archivefd, status, hdrfd;
+	int i, fd, archivefd, hdrfd;
 	size_t len;
 	text * txt;
 	char buf[100];
 	char *tmp, *queuename = NULL, *archivename, *subject = NULL, *line = NULL;
 	char *boundary, *listaddr, *listdelim, *listname, *listfqdn;
-	pid_t childpid, pid;
 	thread_list_state * tls;
 
 	if (addr) {
@@ -514,28 +512,8 @@ errdighdrs:
 	free(boundary);
 	free(listname);
 
-	childpid = fork();
-
-	if(childpid < 0) {
-		log_error(LOG_ARGS, "Could not fork");
-		free(queuename);
-		return -1;
-	}
-
-	if(childpid > 0) {
-		do /* Parent waits for the child */
-		      pid = waitpid(childpid, &status, 0);
-		while(pid == -1 && errno == EINTR);
-	} else {
-		execlp(mlmmjsend, mlmmjsend,
-				"-l", "7",
-				"-L", listdir,
-				"-m", queuename,
-				(char *)NULL);
-		log_error(LOG_ARGS, "execlp() of '%s' failed", mlmmjsend);
-		exit(EXIT_FAILURE);  /* It is OK to exit, as this is a child */
-	}
-
+	exec_and_wait(mlmmjsend, "-l", "7", "-L", listdir, "-m", queuename,
+	    NULL);
 	free(queuename);
 
 	return 0;

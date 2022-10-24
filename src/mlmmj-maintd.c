@@ -30,8 +30,6 @@
 #include <dirent.h>
 #include <time.h>
 #include <fcntl.h>
-#include <sys/wait.h>
-#include <signal.h>
 #include <err.h>
 
 #include "mlmmj-maintd.h"
@@ -46,6 +44,7 @@
 #include "statctrl.h"
 #include "send_digest.h"
 #include "log_oper.h"
+#include "utils.h"
 
 static void print_help(const char *prg)
 {
@@ -194,9 +193,8 @@ int resend_queue(const char *listdir, const char *mlmmjsend)
 	char *mailname, *fromname, *toname, *reptoname, *from, *to, *repto;
 	char *ch, *dirname = concatstr(2, listdir, "/queue/");
 	char *bouncelifestr;
-	pid_t childpid, pid;
 	struct stat st;
-	int fromfd, tofd, fd, status, err = 0;
+	int fromfd, tofd, fd, err = 0;
 	time_t t, bouncelife = 0;
 
 	if(chdir(dirname) < 0) {
@@ -313,49 +311,13 @@ int resend_queue(const char *listdir, const char *mlmmjsend)
 			continue;
 		}
 
-		childpid = fork();
-
-		if(childpid < 0) {
-			free(mailname);
-			free(from);
-			free(to);
-			free(repto);
-			log_error(LOG_ARGS, "Could not fork");
-			continue;
-		}
-
-		if(childpid > 0) {
-			free(mailname);
-			free(from);
-			free(to);
-			free(repto);
-			do /* Parent waits for the child */
-			      pid = waitpid(childpid, &status, 0);
-			while(pid == -1 && errno == EINTR);
-		} else {
-			if(repto) {
-				execlp(mlmmjsend, mlmmjsend,
-						"-l", "1",
-						"-L", listdir,
-						"-m", mailname,
-						"-F", from,
-						"-T", to,
-						"-R", repto,
-						"-a", (char *)NULL);
-			} else {
-				execlp(mlmmjsend, mlmmjsend,
-						"-l", "1",
-						"-L", listdir,
-						"-m", mailname,
-						"-F", from,
-						"-T", to,
-						"-a", (char *)NULL);
-			}
-			log_error(LOG_ARGS, "Could not execlp %s",
-						mlmmjsend);
-			/* This is the child. Exit on failure. */
-			exit(EXIT_FAILURE);
-		}
+		if(repto)
+			exec_and_wait(mlmmjsend, "-l", "1", "-L", listdir, "-m",
+			    mailname, "-F", from, "-T", to, "-R", repto, "-a",
+			    NULL);
+		else
+			exec_and_wait(mlmmjsend, "-l", "1", "-L", listdir, "-m",
+			    mailname, "-F", from, "-T", to, "-a", NULL);
 	}
 
 	closedir(queuedir);
@@ -370,9 +332,8 @@ int resend_requeue(const char *listdir, const char *mlmmjsend)
 	char *dirname = concatstr(2, listdir, "/requeue/");
 	char *archivefilename, *subfilename, *subnewname;
 	struct stat st;
-	pid_t childpid, pid;
 	time_t t;
-	int status, fromrequeuedir;
+	int fromrequeuedir;
 
 	if (statctrl(listdir, "nobounceprobe")) {
 		return 0;
@@ -453,35 +414,9 @@ int resend_requeue(const char *listdir, const char *mlmmjsend)
 			continue;
 		}
 		free(subfilename);
-		
-		childpid = fork();
 
-		if(childpid < 0) {
-			free(archivefilename);
-			free(subnewname);
-			log_error(LOG_ARGS, "Could not fork");
-			continue;
-		}
-
-		if(childpid > 0) {
-			free(archivefilename);
-			free(subnewname);
-			do /* Parent waits for the child */
-			      pid = waitpid(childpid, &status, 0);
-			while(pid == -1 && errno == EINTR);
-		} else {
-			execlp(mlmmjsend, mlmmjsend,
-					"-l", "3",
-					"-L", listdir,
-					"-m", archivefilename,
-					"-s", subnewname,
-					"-a",
-					"-D", (char *)NULL);
-			log_error(LOG_ARGS, "Could not execlp %s",
-						mlmmjsend);
-			/* This is the child. Exit on failure. */
-			exit(EXIT_FAILURE);
-		}
+		exec_and_wait(mlmmjsend, "-l", "3", "-L", listdir, "-m",
+		    archivefilename, "-s", subnewname, "-a", "-D", NULL);
 	}
 
 	closedir(queuedir);
@@ -571,8 +506,6 @@ int probe_bouncers(const char *listdir, const char *mlmmjbounce)
 	char *probefile, *s;
 	struct dirent *dp;
 	struct stat st;
-	pid_t pid, childpid;
-	int status;
 	
 	if(chdir(dirname) < 0) {
 		log_error(LOG_ARGS, "Could not chdir(%s)", dirname);
@@ -615,28 +548,8 @@ int probe_bouncers(const char *listdir, const char *mlmmjbounce)
 		}
 		free(probefile);
 
-		childpid = fork();
-		
-		if(childpid < 0) {
-			log_error(LOG_ARGS, "Could not fork");
-			continue;
-		}
-
-		if(childpid > 0) {
-			do /* Parent waits for the child */
-				pid = waitpid(childpid, &status, 0);
-			while(pid == -1 && errno == EINTR);
-		} else {
-			probefile = xstrdup(dp->d_name);
-			execlp(mlmmjbounce, mlmmjbounce,
-					"-L", listdir,
-					"-a", probefile,
-					"-p", (char *)NULL);
-			log_error(LOG_ARGS, "Could not execlp %s",
-						mlmmjbounce);
-			/* This is the child. Exit on failure. */
-			exit(EXIT_FAILURE);
-		}
+		exec_and_wait(mlmmjbounce, "-L", listdir, "-a", dp->d_name,
+		    "-p", NULL);
 	}
 	closedir(bouncedir);
 
@@ -651,8 +564,7 @@ int unsub_bouncers(const char *listdir, const char *mlmmjunsub)
 	char *bouncelifestr;
 	struct dirent *dp;
 	struct stat st;
-	pid_t pid, childpid;
-	int status, fd;
+	int fd;
 	time_t bouncetime, t, bouncelife = 0;
 	
 	if(chdir(dirname) < 0) {
@@ -753,37 +665,12 @@ int unsub_bouncers(const char *listdir, const char *mlmmjunsub)
 		}
 		*a = '@';
 
-		childpid = fork();
-		
-		if(childpid < 0) {
-			log_error(LOG_ARGS, "Could not fork");
-			free(address);
-			free(bouncedata);
-			continue;
-		}
-
-		if(childpid > 0) {
-			log_oper(listdir, OPLOGFNAME, "mlmmj-maintd: %s"
-					" unsubscribed due to bouncing since"
-					" %s", address, bouncedata);
-			free(address);
-			free(bouncedata);
-			do /* Parent waits for the child */
-				pid = waitpid(childpid, &status, 0);
-			while(pid == -1 && errno == EINTR);
-			unlink(dp->d_name);
-			a = concatstr(2, dp->d_name, ".lastmsg");
-			unlink(a);
-			free(a);
-		} else {
-			execlp(mlmmjunsub, mlmmjunsub,
-					"-L", listdir,
-					"-b", "-a", address, (char *)NULL);
-			log_error(LOG_ARGS, "Could not execlp %s",
-						mlmmjunsub);
-			/* This is the child. Exit on failure. */
-			exit(EXIT_FAILURE);
-		}
+		exec_and_wait(mlmmjunsub, "-L", listdir, "-b", "-a", address,
+		    NULL);
+		unlink(dp->d_name);
+		a = concatstr(2, dp->d_name, ".lastmsg");
+		unlink(a);
+		free(a);
 	}
 	closedir(bouncedir);
 

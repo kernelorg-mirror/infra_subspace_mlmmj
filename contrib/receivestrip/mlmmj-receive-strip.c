@@ -50,6 +50,7 @@
 #include "log_error.h"
 #include "wrappers.h"
 #include "xmalloc.h"
+#include "utils.h"
 
 #define UNWANTED_MIME_HDR "X-ThisMailContainsUnwantedMimeParts: N\n"
 
@@ -404,7 +405,6 @@ int main(int argc, char **argv)
 	int fd, opt, noprocess = 0, nofork = 0;
 	struct stat st;
 	uid_t uid;
-	pid_t childpid;
 
 	CHECKFULLPATH(argv[0]);
 
@@ -510,11 +510,6 @@ int main(int argc, char **argv)
 		close(2);
 	}
 
-	execlp(mlmmjprocess, mlmmjprocess,
-				"-L", listdir,
-				"-m", infilename, NULL);
-	log_error(LOG_ARGS, "execlp() of '%s' failed", mlmmjprocess);
-
-	exit(EXIT_FAILURE);
+	exec_or_die(mlmmjprocess, "-L", listdir, "-m", infilename, NULL);
 }
 

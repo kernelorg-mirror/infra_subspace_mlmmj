@@ -331,14 +331,8 @@ void confirm_sub(const char *listdir, const char *listaddr,
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
-	execlp(mlmmjsend, mlmmjsend,
-				"-l", "1",
-				"-L", listdir,
-				"-T", subaddr,
-				"-F", fromaddr,
-				"-m", queuefilename, (char *)NULL);
-	log_error(LOG_ARGS, "execlp() of '%s' failed", mlmmjsend);
-	exit(EXIT_FAILURE);
+	exec_or_die(mlmmjsend, "-l", "1", "-L", listdir, "-T", subaddr, "-F",
+	    fromaddr, "-m", queuefilename, NULL);
 }
 
 void notify_sub(const char *listdir, const char *listaddr,
@@ -387,15 +381,8 @@ void notify_sub(const char *listdir, const char *listaddr,
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
-	execlp(mlmmjsend, mlmmjsend,
-			"-l", "1",
-			"-L", listdir,
-			"-T", tostr,
-			"-F", fromaddr,
-			"-m", queuefilename, (char *)NULL);
-
-	log_error(LOG_ARGS, "execlp() of '%s' failed", mlmmjsend);
-	exit(EXIT_FAILURE);
+	exec_or_die(mlmmjsend, "-l", "1", "-L", listdir, "-T", tostr,
+	    "-F", fromaddr, "-m", queuefilename, NULL);
 }
 
 void generate_subconfirm(const char *listdir, const char *listaddr,
@@ -487,14 +474,8 @@ void generate_subconfirm(const char *listdir, const char *listaddr,
 	free(listname);
 	free(listfqdn);
 
-	execlp(mlmmjsend, mlmmjsend,
-				"-l", "1",
-				"-L", listdir,
-				"-T", subaddr,
-				"-F", fromaddr,
-				"-m", queuefilename, (char *)NULL);
-	log_error(LOG_ARGS, "execlp() of '%s' failed", mlmmjsend);
-	exit(EXIT_FAILURE);
+	exec_or_die(mlmmjsend, "-l", "1", "-L", listdir, "-T", subaddr, "-F",
+	    fromaddr, "-m", queuefilename, NULL);
 }
 
 static void print_help(const char *prg)
@@ -547,16 +528,9 @@ void generate_subscribed(const char *listdir, const char *subaddr,
 	free(listaddr);
 	free(listname);
 	free(listfqdn);
-	
-	execlp(mlmmjsend, mlmmjsend,
-				"-l", "1",
-				"-L", listdir,
-				"-T", subaddr,
-				"-F", fromaddr,
-				"-m", queuefilename, (char *)NULL);
-	log_error(LOG_ARGS, "execlp() of '%s' failed", mlmmjsend);
 
-	exit(EXIT_FAILURE);
+	exec_or_die(mlmmjsend, "-l", "1", "-L", listdir, "-T", subaddr, "-F",
+	    fromaddr, "-m", queuefilename, NULL);
 }
 
 static void subscribe_type(char *listdir, char *listaddr, char *listdelim,
@@ -759,31 +733,15 @@ int main(int argc, char **argv)
 		 * missing version, so don't unsub. */
 		if (!(typesub == SUB_BOTH &&
 				subbed != SUB_NOMAIL)) {
-			childpid = fork();
-			if(childpid < 0) {
-				log_error(LOG_ARGS, "Could not fork; "
-				"not unsubscribed from current version");
+			if (subbed == SUB_BOTH) {
+				if (typesub == SUB_NORMAL) flag = "-d";
+				if (typesub == SUB_DIGEST) flag = "-N";
 			}
-			if (childpid == 0) {
-				if (subbed == SUB_BOTH) {
-					if (typesub == SUB_NORMAL) flag = "-d";
-					if (typesub == SUB_DIGEST) flag = "-N";
-				}
-				execlp(mlmmjunsub, mlmmjunsub,
-						"-L", listdir, "-q",
-						"-a", address, flag,
-						(char *)NULL);
-				log_error(LOG_ARGS, "execlp() of '%s' failed",
-						mlmmjunsub);
-				exit(EXIT_FAILURE);
-			}
+			if (exec_and_wait(mlmmjunsub, "-L", listdir, "-q", "-a",
+			    address, flag, NULL) != 0)
+				log_error(LOG_ARGS, "not unsubscribed from "
+				    "current version");
 		}
-	}
-
-	if(childpid > 0) {
-		do /* Parent waits for the child */
-			pid = waitpid(childpid, &status, 0);
-		while(pid == -1 && errno == EINTR);
 	}
 
 	listdelim = getlistdelim(listdir);
