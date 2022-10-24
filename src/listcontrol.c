@@ -887,14 +887,16 @@ permit:
 			return -1;
 		owner_idx = -1;
 		owners = ctrlvalues(listdir, "owner");
-		for(i = 0; i < owners->count; i++) {
-			if(strcasecmp(fromemails->emaillist[0],
-						owners->strs[i]) == 0) {
-				log_oper(listdir, OPLOGFNAME,
-						"%s requested sub list",
-				fromemails->emaillist[0]);
-				owner_idx = i;
-				break;
+		if (owners != NULL) {
+			for(i = 0; i < owners->count; i++) {
+				if(strcasecmp(fromemails->emaillist[0],
+							owners->strs[i]) == 0) {
+					log_oper(listdir, OPLOGFNAME,
+							"%s requested sub list",
+					fromemails->emaillist[0]);
+					owner_idx = i;
+					break;
+				}
 			}
 		}
 		if (owner_idx == -1) {
