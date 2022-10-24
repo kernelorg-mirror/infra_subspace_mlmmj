@@ -85,13 +85,12 @@ static char *skin(char *name)
 		return (NULL);
 
 	/* We assume that length(input) <= length(output) */
-	nbuf = xmalloc(strlen(name) + 1);
 
 	if (strchr(name, '(') == NULL && strchr(name, '<') == NULL
 	    && strchr(name, ' ') == NULL) {
-		strcpy(nbuf, name);
-		return (nbuf);
+		return (xstrdup(name));
 	}
+	nbuf = xmalloc(strlen(name) +1);
 
 	gotlt = 0;
 	lastsp = 0;
@@ -188,8 +187,7 @@ struct email_container *find_email_adr(const char *str,
 	char *p;
 	char *s;
 
-	s = (char *)xmalloc(strlen(str) + 1);
-	strcpy(s, str);
+	s = xstrdup(str);
 
 	p = s;
 	while(p) {
