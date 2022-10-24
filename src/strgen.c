@@ -1,6 +1,6 @@
-/* Copyright (C) 2003 Mads Martin Joergensen <mmj at mmj.dk>
- *
- * $Id$
+/*
+ * Copyright (C) 2003 Mads Martin Joergensen <mmj at mmj.dk>
+ * Copyright (C) 2022 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -188,52 +188,6 @@ const char *mybasename(const char *path)
 	return (++r);
 }
 
-char *cleanquotedp(const char *qpstr)
-{
-	char *retstr;
-	char qc[3];
-	const char *c = qpstr;
-	long qcval;
-	int i = 0;
-	size_t len;
-
-	/* XXX: We only use this function for checking whether the subject
-	 * prefix is only present, so the recoding is neither guaranteed
-	 * complete nor correct */
-
-	len = strlen(qpstr);
-	retstr = xmalloc(len + 1);
-	retstr[len] = '\0';
-	qc[2] = '\0';
-	while(c < qpstr+len) {
-		switch(*c) {
-			case '=':
-				c++;
-				if (!isxdigit(*c))
-					break;
-				qc[0] = *(c++);
-				if (!isxdigit(*c))
-					break;
-				qc[1] = *(c++);
-				qcval = strtol(qc, NULL, 16);
-				if(qcval)
-					retstr[i++] = (char)qcval;
-				break;
-			case '_':
-				retstr[i++] = ' ';
-				c++;
-				break;
-			default:
-				retstr[i++] = *(c++);
-				break;
-		}
-	}
-	
-	retstr[i] = '\0';
-
-	return retstr;
-}
-
 char *genmsgid(const char *fqdn)
 {
 	char *buf;
@@ -261,4 +215,64 @@ char *gendatestr()
 	freelocale(l);
 
 	return timestr;
+}
+
+static int
+hexval(int c)
+{
+	if ('0' <= c && c <= '9')
+		return (c - '0');
+	return (10 + c - 'A');
+}
+
+static int
+decode_char(const char *s)
+{
+	return (16 * hexval(toupper(s[1])) + hexval(toupper(s[2])));
+}
+
+char *
+decode_qp(const char *qpstr)
+{
+	char *buffer = NULL;
+	size_t size = 0;
+	FILE *bufp;
+
+	bufp = open_memstream(&buffer, &size);
+
+	while (*qpstr) {
+		switch (*qpstr) {
+		case '=':
+			if (strlen(qpstr) < 2) {
+				fputc(*qpstr, bufp);
+				break;
+			}
+			if (qpstr[1] == '\r' && qpstr[2] == '\n') {
+				qpstr += 2;
+				break;
+			}
+			if (qpstr[1] == '\n') {
+				qpstr++;
+				break;
+			}
+			if (strchr("0123456789ABCDEFabcdef", qpstr[1]) == NULL) {
+				fputc(*qpstr, bufp);
+				break;
+			}
+			if (strchr("0123456789ABCDEFabcdef", qpstr[2]) == NULL) {
+				fputc(*qpstr, bufp);
+				break;
+			}
+			fputc(decode_char(qpstr), bufp);
+			qpstr += 2;
+			break;
+		default:
+			fputc(*qpstr, bufp);
+			break;
+		}
+		qpstr++;
+	}
+	fclose(bufp);
+
+	return (buffer);
 }

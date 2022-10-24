@@ -33,8 +33,8 @@ char *concatstr(int count, ...);
 char *hostnamestr(void);
 char *mydirname(const char *path);
 const char *mybasename(const char *path);
-char *cleanquotedp(const char *qpstr);
 char *genmsgid(const char *fqdn);
 char *gendatestr(void);
+char *decode_qp(const char *qpstr);
 
 #endif /* STRGEN_H */

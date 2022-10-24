@@ -138,7 +138,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 		if(prefix) {
 			if(strncasecmp(hdrline, "Subject:", 8) == 0) {
 				subject_present = 1;
-				unqp = cleanquotedp(hdrline + 8);
+				unqp = decode_qp(hdrline + 8);
 				if(strstr(hdrline + 8, prefix) == NULL &&
 				   strstr(unqp, prefix) == NULL) {
 					dprintf(outfd, "Subject: %s%s\n", prefix, hdrline + 8);

@@ -70,6 +70,7 @@ ATF_TC_WITHOUT_HEAD(write_rcpt_to);
 ATF_TC_WITHOUT_HEAD(write_mail_from);
 ATF_TC_WITHOUT_HEAD(write_mailbody_from_map);
 ATF_TC_WITHOUT_HEAD(strtotimet);
+ATF_TC_WITHOUT_HEAD(decode_qp);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -687,6 +688,20 @@ ATF_TC_BODY(strtotimet, tc)
 	ATF_REQUIRE_STREQ(errp, "too large");
 }
 
+ATF_TC_BODY(decode_qp, tc)
+{
+	ATF_REQUIRE_STREQ(decode_qp("="), "=");
+	ATF_REQUIRE_STREQ(decode_qp("=\ra"), "=\ra");
+	ATF_REQUIRE_STREQ(decode_qp("=\r\na"), "a");
+	ATF_REQUIRE_STREQ(decode_qp("=\na"), "a");
+	ATF_REQUIRE_STREQ(decode_qp("This is a subject"), "This is a subject");
+	ATF_REQUIRE_STREQ(decode_qp("This= is a subject"), "This= is a subject");
+	ATF_REQUIRE_STREQ(decode_qp("This=2 is a subject"), "This=2 is a subject");
+	ATF_REQUIRE_STREQ(decode_qp("This=23 is a subject"), "This# is a subject");
+	ATF_REQUIRE_STREQ(decode_qp("This=3D is a subject"), "This= is a subject");
+	ATF_REQUIRE_STREQ(decode_qp("This_ is a subject"), "This_ is a subject");
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -712,6 +727,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, write_mail_from);
 	ATF_TP_ADD_TC(tp, write_mailbody_from_map);
 	ATF_TP_ADD_TC(tp, strtotimet);
+	ATF_TP_ADD_TC(tp, decode_qp);
 
 	return (atf_no_error());
 }
