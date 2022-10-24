@@ -69,6 +69,7 @@ ATF_TC_WITHOUT_HEAD(write_replyto);
 ATF_TC_WITHOUT_HEAD(write_rcpt_to);
 ATF_TC_WITHOUT_HEAD(write_mail_from);
 ATF_TC_WITHOUT_HEAD(write_mailbody_from_map);
+ATF_TC_WITHOUT_HEAD(strtotimet);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -673,6 +674,18 @@ ATF_TC_BODY(write_mailbody_from_map, tc)
 	close(fd1);
 }
 
+ATF_TC_BODY(strtotimet, tc)
+{
+	const char *errp;
+	char *str;
+	ATF_REQUIRE_EQ(strtotimet("10", &errp), 10);
+	ATF_CHECK(errp == NULL);
+	asprintf(&str, "1%"PRIdMAX, INTMAX_MAX);
+	ATF_REQUIRE_EQ(strtotimet(str, &errp), 0);
+	free(str);
+	ATF_REQUIRE(errp != NULL);
+	ATF_REQUIRE_STREQ(errp, "too large");
+}
 
 ATF_TP_ADD_TCS(tp)
 {
@@ -698,6 +711,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, write_rcpt_to);
 	ATF_TP_ADD_TC(tp, write_mail_from);
 	ATF_TP_ADD_TC(tp, write_mailbody_from_map);
+	ATF_TP_ADD_TC(tp, strtotimet);
 
 	return (atf_no_error());
 }

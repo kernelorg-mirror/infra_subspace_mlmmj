@@ -111,19 +111,11 @@ int delolder(const char *dirname, time_t than)
 int clean_moderation(const char *listdir)
 {
 
-	time_t modreqlife = 0;
-	char *modreqlifestr;
+	time_t modreqlife;
 	char *moddirname;
 	int ret;
 
-	modreqlifestr = ctrlvalue(listdir, "modreqlife");
-	if(modreqlifestr) {
-		modreqlife = atol(modreqlifestr);
-		free(modreqlifestr);
-	}
-	if(modreqlife == 0)
-		modreqlife = MODREQLIFE;
-
+	modreqlife = ctrltimet(listdir, "modreqlife", MODREQLIFE);
 	moddirname = concatstr(2, listdir, "/moderation");
 	ret = delolder(moddirname, modreqlife);
 		
@@ -192,10 +184,9 @@ int resend_queue(const char *listdir, const char *mlmmjsend)
 	struct dirent *dp;
 	char *mailname, *fromname, *toname, *reptoname, *from, *to, *repto;
 	char *ch, *dirname = concatstr(2, listdir, "/queue/");
-	char *bouncelifestr;
 	struct stat st;
 	int fromfd, tofd, fd, err = 0;
-	time_t t, bouncelife = 0;
+	time_t t, bouncelife;
 
 	if(chdir(dirname) < 0) {
 		log_error(LOG_ARGS, "Could not chdir(%s)", dirname);
@@ -293,14 +284,7 @@ int resend_queue(const char *listdir, const char *mlmmjsend)
 		}
 
 		/* before we try again, check and see if it's old */
-		bouncelifestr = ctrlvalue(listdir, "bouncelife");
-		if(bouncelifestr) {
-			bouncelife = atol(bouncelifestr);
-			free(bouncelifestr);
-		}
-		if(bouncelife == 0)
-			bouncelife = BOUNCELIFE;
-
+		bouncelife = ctrltimet(listdir, "bouncelife", BOUNCELIFE);
 		t = time(NULL);
 		if(t - st.st_mtime > bouncelife) {
 			unlink(mailname);
@@ -561,11 +545,10 @@ int unsub_bouncers(const char *listdir, const char *mlmmjunsub)
 	DIR *bouncedir;
 	char *dirname = concatstr(2, listdir, "/bounce/");
 	char *probefile, *address, *a, *firstbounce, *bouncedata;
-	char *bouncelifestr;
 	struct dirent *dp;
 	struct stat st;
 	int fd;
-	time_t bouncetime, t, bouncelife = 0;
+	time_t bouncetime, t, bouncelife;
 	
 	if(chdir(dirname) < 0) {
 		log_error(LOG_ARGS, "Could not chdir(%s)", dirname);
@@ -581,14 +564,7 @@ int unsub_bouncers(const char *listdir, const char *mlmmjunsub)
 
 	free(dirname);
 
-	bouncelifestr = ctrlvalue(listdir, "bouncelife");
-	if(bouncelifestr) {
-		bouncelife = atol(bouncelifestr);
-		free(bouncelifestr);
-	}
-	
-	if(bouncelife == 0)
-		bouncelife = BOUNCELIFE;
+	bouncelife = ctrltimet(listdir, "bouncelife", BOUNCELIFE);
 
 	while((dp = readdir(bouncedir)) != NULL) {
 		if((strcmp(dp->d_name, "..") == 0) ||

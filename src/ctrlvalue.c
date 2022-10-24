@@ -124,3 +124,23 @@ ctrluim(const char *listdir, const char *ctrlstr, uintmax_t min, uintmax_t max,
 	free(val);
 	return (ret);
 }
+
+time_t
+ctrltimet(const char *listdir, const char *ctrlstr, time_t fallback)
+{
+	const char *errstr;
+	char *val = ctrlvalue(listdir, ctrlstr);
+	time_t ret;
+
+	if (val == NULL)
+		return (fallback);
+
+	ret = strtotimet(val, &errstr);
+	if (errstr != NULL) {
+		log_error(LOG_ARGS, "Invalid value for '%s': %s", ctrlstr,
+		    errstr);
+		return (fallback);
+	}
+	free(val);
+	return (ret);
+}

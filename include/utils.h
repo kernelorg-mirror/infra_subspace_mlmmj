@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Baptiste Daroussin <bapt@FreeBSD.org>
+ * Copyright (C) 2022 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -22,9 +22,12 @@
 
 #pragma once
 
+#include <time.h>
+
 char *lowercase(const char *);
 intmax_t strtoim(const char *np, intmax_t minval, intmax_t maxval,
     const char **errpp);
 uintmax_t strtouim(const char *, uintmax_t, uintmax_t, const char **);
 void exec_or_die(const char *arg, ...);
 int exec_and_wait(const char *arg, ...);
+time_t strtotimet(const char *np, const char **errpp);

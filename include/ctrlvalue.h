@@ -26,6 +26,7 @@
 
 #include <sys/limits.h>
 #include <stdint.h>
+#include <time.h>
 
 char *ctrlvalue(const char *listdir, const char *ctrlstr);
 char *ctrlcontent(const char *listdir, const char *ctrlstr);
@@ -49,5 +50,6 @@ ctrlushort(const char *listdir, const char *ctrlstr, unsigned short fallback)
 {
 	return (ctrluim(listdir, ctrlstr, 0, USHRT_MAX, fallback));
 }
+time_t ctrltimet(const char *listdir, const char *ctrlstr, time_t fallback);
 
 #endif /* CTRLVALUE_H */

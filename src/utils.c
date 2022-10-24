@@ -21,6 +21,7 @@
  */
 
 #include <sys/wait.h>
+#include <sys/param.h>
 
 #include <ctype.h>
 #include <err.h>
@@ -64,6 +65,14 @@ strtoim(const char *np, intmax_t minval, intmax_t maxval, const char **errpp)
 		return (0);
 	}
 	return (ret);
+}
+
+time_t
+strtotimet(const char *np, const char **errpp)
+{
+	if (sizeof(time_t) == 4)
+		return ((time_t)strtoim(np, INT_MIN, INT_MAX, errpp));
+	return ((time_t)strtoim(np, LLONG_MIN, LLONG_MAX, errpp));
 }
 
 uintmax_t
