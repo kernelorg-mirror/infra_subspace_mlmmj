@@ -813,16 +813,16 @@ int main(int argc, char **argv)
 	char *subddirname = NULL, *listdir = NULL;
 	char listctrl = 0;
 	char *mlmmjbounce = NULL, *bindir, *mailmap, *probefile, *a;
-	char *body = NULL, *hdrs = NULL, *memmailsizestr = NULL, *verp = NULL;
-	char *listname, *listfqdn, *verpfrom, *maxverprecipsstr;
-	char strindex[32], *reply, *strport, *smtphelo, *requeuefilename;
+	char *body = NULL, *hdrs = NULL, *verp = NULL;
+	char *listname, *listfqdn, *verpfrom;
+	char strindex[32], *reply, *smtphelo, *requeuefilename;
 	ssize_t memmailsize = 0;
 	DIR *subddir;
 	struct dirent *dp;
 	struct stat st;
 	uid_t uid;
 	struct strlist stl;
-	unsigned short smtpport = 25;
+	unsigned short smtpport;
 	struct sigaction sigact;
 
 	CHECKFULLPATH(argv[0]);
@@ -951,15 +951,8 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	memmailsizestr = ctrlvalue(listdir, "memorymailsize");
+	memmailsize = ctrlsizet(listdir, "memorymailsize", MEMORYMAILSIZE);
 	ctrlarchive = statctrl(listdir, "noarchive");
-	if(memmailsizestr) {
-		memmailsize = strtol(memmailsizestr, NULL, 10);
-		free(memmailsizestr);
-	}
-
-	if(memmailsize == 0)
-		memmailsize = MEMORYMAILSIZE;
 
 	if(st.st_size > memmailsize) {
 		prepmailinmem = 0;
@@ -1051,10 +1044,7 @@ int main(int argc, char **argv)
 	if(!relayhost)
 		relayhost = xstrdup(RELAYHOST);
 
-	strport = ctrlvalue(listdir, "smtpport");
-	if(strport)
-		smtpport = (unsigned short)atol(strport);
-
+	smtpport = ctrlushort(listdir, "smtpport", 25);
 	if ((smtphelo = ctrlvalue(listdir, "smtphelo")) == NULL) {
 		smtphelo = hostnamestr();
 	}
