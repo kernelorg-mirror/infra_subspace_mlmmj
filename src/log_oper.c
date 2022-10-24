@@ -37,7 +37,6 @@
 #include "log_oper.h"
 #include "strgen.h"
 #include "wrappers.h"
-#include "memory.h"
 
 int log_oper(const char *prefix, const char *basename, const char *fmt, ...)
 {

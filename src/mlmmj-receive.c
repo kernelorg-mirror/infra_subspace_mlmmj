@@ -37,7 +37,6 @@
 #include "mygetline.h"
 #include "strgen.h"
 #include "log_error.h"
-#include "memory.h"
 #include "utils.h"
 
 extern char *optarg;
