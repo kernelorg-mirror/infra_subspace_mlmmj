@@ -23,7 +23,9 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+
 #include <stdlib.h>
+#include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
@@ -32,44 +34,45 @@
 #include "ctrlvalue.h"
 #include "mygetline.h"
 #include "chomp.h"
-#include "memory.h"
 #include "utils.h"
 #include "log_error.h"
+#include "xmalloc.h"
 
 static char *ctrlval(const char *listdir, const char *subdir,
 		const char *ctrlstr, int oneline)
 {
-	char *filename, *value = NULL;
-	int ctrlfd, i;
+	char *filename, *buf = NULL;
+	int ctrlfd;
+	size_t bufcap = 0;
+	ssize_t buflen;
+	FILE *fp;
 
 	if(listdir == NULL)
 		return NULL;
 
-	filename = concatstr(5, listdir, "/", subdir, "/", ctrlstr);
-	ctrlfd = open(filename, O_RDONLY);
+	xasprintf(&filename, "%s/%s/%s", listdir, subdir, ctrlstr);
+	ctrlfd = open(filename, O_RDONLY|O_CLOEXEC);
 	free(filename);
 
 	if(ctrlfd < 0)
 		return NULL;
 
-	if (oneline) {
-		value = mygetline(ctrlfd);
-		chomp(value);
-	} else {
-		value = mygetcontent(ctrlfd);
-		i = strlen(value) - 1;
-		if (i >= 0 && value[i] == '\n') {
-			value[i] = '\0';
-			i--;
-		}
-		if (i >= 0 && value[i] == '\r') {
-			value[i] = '\0';
-			i--;
-		}
+	fp = fdopen(ctrlfd, "r");
+	if (fp == NULL) {
+		close(ctrlfd);
+		return (NULL);
 	}
-	close(ctrlfd);
 
-	return value;
+	if (oneline) {
+		buflen = getline(&buf, &bufcap, fp);
+		if (buflen > 0)
+			chomp(buf);
+	} else {
+		buflen = getdelim(&buf, &bufcap, EOF, fp);
+	}
+	fclose(fp);
+
+	return (buf);
 }
 
 char *ctrlvalue(const char *listdir, const char *ctrlstr)
