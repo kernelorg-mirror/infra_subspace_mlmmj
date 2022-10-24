@@ -57,6 +57,7 @@ ATF_TC_WITHOUT_HEAD(lowercase);
 ATF_TC_WITHOUT_HEAD(exec_or_die);
 ATF_TC_WITHOUT_HEAD(exec_and_wait);
 ATF_TC_WITHOUT_HEAD(find_email_adr);
+ATF_TC_WITHOUT_HEAD(strtoim);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -379,6 +380,53 @@ ATF_TC_BODY(find_email_adr, tc)
 	ATF_REQUIRE_STREQ(c7.emaillist[19], "bob @foo.net");
 }
 
+ATF_TC_BODY(strtoim, tc)
+{
+	const char *errp;
+
+	ATF_REQUIRE_EQ(strtoim(NULL, 0, 10, &errp), 0);
+	ATF_REQUIRE(errp != NULL);
+	ATF_REQUIRE_STREQ(errp, "invalid");
+	ATF_REQUIRE_EQ(strtoim("10", 0, 10, &errp), 10);
+	ATF_CHECK(errp == NULL);
+	ATF_REQUIRE_EQ(strtoim("10", 0, 9, &errp), 0);
+	ATF_REQUIRE(errp != NULL);
+	ATF_REQUIRE_STREQ(errp, "too large");
+	ATF_REQUIRE_EQ(strtoim("-1", 0, 9, &errp), 0);
+	ATF_REQUIRE(errp != NULL);
+	ATF_REQUIRE_STREQ(errp, "too small");
+	ATF_REQUIRE_EQ(strtoim("-1", 10, 9, &errp), 0);
+	ATF_REQUIRE(errp != NULL);
+	ATF_REQUIRE_STREQ(errp, "invalid");
+	ATF_REQUIRE_EQ(strtoim("ba12", 0, 9, &errp), 0);
+	ATF_REQUIRE_EQ(errno, EINVAL);
+	ATF_REQUIRE(errp != NULL);
+	ATF_REQUIRE_STREQ(errp, "invalid");
+
+
+	ATF_REQUIRE_EQ(strtouim(NULL, 0, 10, &errp), 0);
+	ATF_REQUIRE(errp != NULL);
+	ATF_REQUIRE_STREQ(errp, "invalid");
+	ATF_REQUIRE_EQ(strtouim("10", 0, 10, &errp), 10);
+	ATF_CHECK(errp == NULL);
+	ATF_REQUIRE_EQ(strtouim("10", 0, 9, &errp), 0);
+	ATF_REQUIRE(errp != NULL);
+	ATF_REQUIRE_STREQ(errp, "too large");
+	ATF_REQUIRE_EQ(strtouim("1", 2, 9, &errp), 0);
+	ATF_REQUIRE(errp != NULL);
+	ATF_REQUIRE_STREQ(errp, "too small");
+	ATF_REQUIRE_EQ(strtouim("-1", 0, 9, &errp), 0);
+	ATF_REQUIRE(errp != NULL);
+	ATF_REQUIRE_STREQ(errp, "too large");
+	ATF_REQUIRE_EQ(strtouim("-1", 10, 9, &errp), 0);
+	ATF_REQUIRE(errp != NULL);
+	ATF_REQUIRE_STREQ(errp, "invalid");
+	ATF_REQUIRE_EQ(strtouim("ba12", 0, 9, &errp), 0);
+	ATF_REQUIRE_EQ(errno, EINVAL);
+	ATF_REQUIRE(errp != NULL);
+	ATF_REQUIRE_STREQ(errp, "invalid");
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -392,6 +440,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, exec_or_die);
 	ATF_TP_ADD_TC(tp, exec_and_wait);
 	ATF_TP_ADD_TC(tp, find_email_adr);
+	ATF_TP_ADD_TC(tp, strtoim);
 
 	return (atf_no_error());
 }
