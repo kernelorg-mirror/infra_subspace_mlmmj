@@ -46,6 +46,7 @@
 #include "chomp.h"
 #include "ctrlvalue.h"
 #include "ctrlvalues.h"
+#include "utils.h"
 
 #include "log_error.h"
 #include "wrappers.h"
@@ -405,6 +406,7 @@ int main(int argc, char **argv)
 	int fd, opt, noprocess = 0, nofork = 0;
 	struct stat st;
 	uid_t uid;
+	pid_t childpid;
 
 	CHECKFULLPATH(argv[0]);
 

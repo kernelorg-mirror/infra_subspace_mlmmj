@@ -14,6 +14,7 @@ MLMMJ_SOURCES = mlmmj_src/mygetline.c mlmmj_src/readn.c  \
 		mlmmj_src/ctrlvalues.c mlmmj_src/chomp.c
 
 mlmmj_receive_strip_SOURCES = mlmmj-receive-strip.c $(MLMMJ_SOURCES)
+mlmmj_receive_strip_LDADD =  $(top_builddir)/src/libmlmmj.a
 
 mlmmj_src/%.c:
 	ln -s ../../../src/$*.c $@
