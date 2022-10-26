@@ -36,6 +36,11 @@ exec_prefix=$savex
 
 AC_SUBST(textlibdir)
 
+AC_ARG_ENABLE([coverage],
+  AS_HELP_STRING([--enable-coverage],
+		 [build with coverage flags activated (default is no)]))
+AM_CONDITIONAL(WANT_COVERAGE, test x"$enable_coverage" = xyes)
+
 AC_ARG_ENABLE([receive-strip],
   AS_HELP_STRING([--enable-receive-strip],
                  [build mlmmj-receive-strip (default is no)]))
