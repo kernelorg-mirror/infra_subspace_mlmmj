@@ -36,12 +36,29 @@
 #include <syslog.h>
 #endif
 
-char *log_name = NULL;
+static char *log_name = NULL;
 
 void log_set_name(const char* name)
 {
-	if (log_name) free(log_name);
+	free(log_name);
 	log_name = xstrdup(name);
+}
+
+void
+log_set_namef(const char *fmt, ...)
+{
+	char *buf;
+	va_list ap;
+	int i;
+
+	va_start(ap, fmt);
+	i = vasprintf(&buf, fmt, ap);
+	va_end(ap);
+	if (i < 0 || buf == NULL)
+		abort();
+
+	free(log_name);
+	log_name = buf;
 }
 
 void log_free_name()
