@@ -13,7 +13,8 @@ AM_LDFLAGS += -fprofile-instr-generate
 endif
 
 test_scripts =	mlmmj-send.sh \
-		functional-tests.sh
+		functional-tests.sh \
+		mlmmj-maintd.sh
 check_SCRIPTS=	$(test_scripts:.sh=)
 SUFFIXES=	.sh
 

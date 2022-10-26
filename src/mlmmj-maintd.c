@@ -759,22 +759,22 @@ void do_maintenance(int listfd, const char *listdir, const char *mlmmjsend,
 	dprintf(maintdlogfd, "clean_unsubconf\n");
 	clean_unsubconf(listfd);
 
-	dprintf(maintdlogfd, "resend_queue(%s);\n", mlmmjsend);
+	dprintf(maintdlogfd, "resend_queue\n");
 	resend_queue(listfd, mlmmjsend, listdir);
 
-	dprintf(maintdlogfd, "resend_requeue(%s);\n", mlmmjsend);
+	dprintf(maintdlogfd, "resend_requeue\n");
 	resend_requeue(listfd, mlmmjsend, listdir);
 
 	dprintf(maintdlogfd, "clean_nolongerbouncing\n");
 	clean_nolongerbouncing(listfd);
 
-	dprintf(maintdlogfd, "unsub_bouncers(%s);\n", mlmmjunsub);
+	dprintf(maintdlogfd, "unsub_bouncers\n");
 	unsub_bouncers(listfd, mlmmjunsub, listdir);
 
-	dprintf(maintdlogfd, "probe_bouncers(%s);\n", mlmmjbounce);
+	dprintf(maintdlogfd, "probe_bouncers\n");
 	probe_bouncers(listfd, mlmmjbounce, listdir);
 
-	dprintf(maintdlogfd, "run_digests(%s);\n", mlmmjsend);
+	dprintf(maintdlogfd, "run_digests\n");
 	run_digests(listfd, mlmmjsend, listdir);
 
 	close(maintdlogfd);

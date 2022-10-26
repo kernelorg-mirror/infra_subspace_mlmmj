@@ -5,3 +5,4 @@ test_suite('mlmmj')
 atf_test_program{name='mlmmj'}
 atf_test_program{name='mlmmj-send'}
 atf_test_program{name='functional-tests'}
+atf_test_program{name='mlmmj-maintd'}
