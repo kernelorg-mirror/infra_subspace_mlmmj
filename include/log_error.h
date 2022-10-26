@@ -35,5 +35,6 @@ void log_activate_stderr(void);
 void log_free_name(void);
 void log_error(const char *file, int line, const char *errstr,
 		const char *fmt, ...);
+void log_err(const char *fmt, ...);
 
 #endif /* LOG_ERROR_H */

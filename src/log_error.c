@@ -99,6 +99,24 @@ void log_free_name()
 	free(log_name);
 }
 
+void
+log_err(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+#ifdef HAVE_SYSLOG
+	_openlog(false);
+	vsyslog(LOG_ERR, fmt, ap);
+#else
+	char *buf;
+	i = vasprintf(&buf, fmt, ap);
+	fprintf(stderr, "%s[%d]: %s\n", log_name, (int) getpid(), buf);
+	free(buf);
+#endif
+	va_end(ap);
+}
+
 void log_error(const char *file, int line, const char *errstr,
 	const char *fmt, ...)
 {
