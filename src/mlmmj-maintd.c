@@ -33,7 +33,6 @@
 #include <err.h>
 #include <stdbool.h>
 
-#include "mlmmj-maintd.h"
 #include "mlmmj.h"
 #include "strgen.h"
 #include "chomp.h"
@@ -46,6 +45,17 @@
 #include "send_digest.h"
 #include "log_oper.h"
 #include "utils.h"
+
+#define log(...) dprintf(logfd, __VA_ARGS__);
+#define opendirat(_dirfd, _fd, _dirent, _path) \
+	do { \
+		_fd = openat(_dirfd, _path, O_DIRECTORY|O_CLOEXEC); \
+		if (_fd == -1 || (_dirent = fdopendir(_fd)) == NULL) { \
+			log(" - Could not open '%s': %s\n", _path, \
+			    strerror(errno)); \
+			return (false); \
+		} \
+	} while (0);
 
 static void print_help(const char *prg)
 {
@@ -73,68 +83,71 @@ static int mydaemon()
 	return 0;
 }
 
-int delolder(int dfd, const char *dirname, time_t than)
+static bool
+delolder(int dfd, const char *dirname, time_t than, int logfd)
 {
 	DIR *dir;
 	struct dirent *dp;
 	struct stat st;
 	time_t t;
 	int fd;
+	bool ret = true;
 
-	fd = openat(dfd, dirname, O_DIRECTORY|O_CLOEXEC);
-	if (fd == -1) {
-		log_error(LOG_ARGS, "Could not open(%s)", dirname);
-		return -1;
-	}
-
-	if((dir = fdopendir(fd)) == NULL) {
-		log_error(LOG_ARGS, "Could not fdopendir(%s)", dirname);
-		return -1;
-	}
-
+	opendirat(dfd, fd, dir, dirname);
 	while((dp = readdir(dir)) != NULL) {
 		if(fstatat(fd, dp->d_name, &st, 0) < 0) {
-			log_error(LOG_ARGS, "Could not stat(%s/%s)",
-			    dirname, dp->d_name);
+			log(" - Could not stat(%s/%s): %s\n",
+			    dirname, dp->d_name, strerror(errno));
+			ret = false;
 			continue;
 		}
 		if(!S_ISREG(st.st_mode))
 			continue;
 		t = time(NULL);
-		if(t - st.st_mtime > than)
-			unlinkat(fd, dp->d_name, 0);
+		if(t - st.st_mtime > than) {
+			if (unlinkat(fd, dp->d_name, 0) == -1) {
+				log("- Could not remove ('%s/%s'): %s\n",
+				    dirname, dp->d_name, strerror(errno));
+				ret = false;
+			}
+		}
 	}
 	closedir(dir);
 
-	return 0;
+	return (ret);
 }
 
 
-int clean_moderation(int dfd)
+static bool
+clean_moderation(int dfd, int logfd)
 {
 
 	time_t modreqlife;
 
 	modreqlife = ctrltimet(dfd, "modreqlife", MODREQLIFE);
-	return (delolder(dfd, "moderation", modreqlife));
+	return (delolder(dfd, "moderation", modreqlife, logfd));
 }
 
-int clean_discarded(int dfd)
+static bool
+clean_discarded(int dfd, int logfd)
 {
-	return (delolder(dfd, "queue/discarded", DISCARDEDLIFE));
+	return (delolder(dfd, "queue/discarded", DISCARDEDLIFE, logfd));
 }
 
-int clean_subconf(int dfd)
+static bool
+clean_subconf(int dfd, int logfd)
 {
-	return (delolder(dfd, "subconf", CONFIRMLIFE));
+	return (delolder(dfd, "subconf", CONFIRMLIFE, logfd));
 }
 
-int clean_unsubconf(int dfd)
+static bool
+clean_unsubconf(int dfd, int logfd)
 {
-	return (delolder(dfd, "unsubconf", CONFIRMLIFE));
+	return (delolder(dfd, "unsubconf", CONFIRMLIFE, logfd));
 }
 
-int resend_queue(int dfd, const char *mlmmjsend, const char *listdir)
+static bool
+resend_queue(int dfd, const char *mlmmjsend, const char *listdir, int logfd)
 {
 	DIR *queuedir;
 	struct dirent *dp;
@@ -143,22 +156,15 @@ int resend_queue(int dfd, const char *mlmmjsend, const char *listdir)
 	struct stat st;
 	int fromfd, tofd, err = 0, qfd;
 	time_t t, bouncelife;
+	bool ret = true;
 
-	qfd = openat(dfd, "queue", O_DIRECTORY|O_CLOEXEC);
-	if (qfd == -1) {
-		log_error(LOG_ARGS, "Could not open(queue)");
-		return 1;
-	}
-
-	if((queuedir = fdopendir(qfd)) == NULL) {
-		log_error(LOG_ARGS, "Could not fdopendir(queue)");
-		return 1;
-	}
+	opendirat(dfd, qfd, queuedir, "queue");
 
 	while((dp = readdir(queuedir)) != NULL) {
 		if(fstatat(qfd, dp->d_name, &st, 0) < 0) {
-			log_error(LOG_ARGS, "Could not stat(queue/%s)",
-			    dp->d_name);
+			log(" - Could not stat(queue/%s): %s",
+			    dp->d_name, strerror(errno));
+			ret = false;
 			continue;
 		}
 
@@ -174,7 +180,11 @@ int resend_queue(int dfd, const char *mlmmjsend, const char *listdir)
 			if(fstatat(qfd, mailname, &st, 0) < 0) {
 				if(errno == ENOENT) {
 					*ch = '.';
-					unlinkat(qfd, mailname, 0);
+					if (unlinkat(qfd, mailname, 0) == -1) {
+						log(" - Could not remove %s: %s\n",
+						    mailname, strerror(errno));
+						ret = false;
+					}
 				}
 			}
 			free(mailname);
@@ -238,7 +248,11 @@ int resend_queue(int dfd, const char *mlmmjsend, const char *listdir)
 		bouncelife = ctrltimet(dfd, "bouncelife", BOUNCELIFE);
 		t = time(NULL);
 		if(t - st.st_mtime > bouncelife) {
-			unlinkat(qfd, dp->d_name, 0);
+			if (unlinkat(qfd, dp->d_name, 0) == -1) {
+				log(" - Could not remove queue/%s: %s\n",
+				    dp->d_name, strerror(errno));
+				ret = false;
+			}
 			free(mailname);
 			free(from);
 			free(to);
@@ -257,10 +271,11 @@ int resend_queue(int dfd, const char *mlmmjsend, const char *listdir)
 
 	closedir(queuedir);
 
-	return 0;
+	return (ret);
 }
 
-int resend_requeue(int dfd, const char *mlmmjsend, const char *listdir)
+static bool
+resend_requeue(int dfd, const char *mlmmjsend, const char *listdir, int logfd)
 {
 	DIR *queuedir;
 	struct dirent *dp;
@@ -268,20 +283,18 @@ int resend_requeue(int dfd, const char *mlmmjsend, const char *listdir)
 	struct stat st;
 	time_t t;
 	bool fromrequeuedir;
+	int fd;
+	bool ret = true;
 
-	int fd = openat(dfd, "requeue", O_DIRECTORY|O_CLOEXEC);
-	if (fd == -1 || (queuedir = fdopendir(fd)) == NULL) {
-		log_error(LOG_ARGS, "Could not opendir(requeue)");
-		return 1;
-	}
-	
+	opendirat(dfd, fd, queuedir, "requeue");
 	while((dp = readdir(queuedir)) != NULL) {
 		if((strcmp(dp->d_name, "..") == 0) ||
 			(strcmp(dp->d_name, ".") == 0))
 				continue;
 
 		if(fstatat(fd, dp->d_name, &st, 0) < 0) {
-			log_error(LOG_ARGS, "Could not stat(%s)",dp->d_name);
+			log(" - Could not stat(requeue/%s): %s\n", dp->d_name,
+			    strerror(errno));
 			continue;
 		}
 
@@ -291,8 +304,9 @@ int resend_requeue(int dfd, const char *mlmmjsend, const char *listdir)
 		/* Remove old empty directories */
 		t = time(NULL);
 		if(t - st.st_mtime > (time_t)3600)
-			if (unlinkat(fd, dp->d_name, AT_REMOVEDIR) == 0)
+			if (unlinkat(fd, dp->d_name, AT_REMOVEDIR) == 0) {
 				continue;
+			}
 
 		xasprintf(&archivefilename, "archive/%s", dp->d_name);
 
@@ -319,8 +333,13 @@ int resend_requeue(int dfd, const char *mlmmjsend, const char *listdir)
 		}
 		xasprintf(&subfilename, "%s/subscribers", dp->d_name);
 		if(fstatat(fd, subfilename, &st, 0) < 0) {
-			if (fromrequeuedir)
-				unlinkat(dfd, archivefilename, 0);
+			if (fromrequeuedir) {
+				if (unlinkat(dfd, archivefilename, 0) == -1) {
+					log(" - Cound not remove %s: %s\n",
+					    archivefilename, strerror(errno));
+					ret = false;
+				}
+			}
 			free(archivefilename);
 			free(subfilename);
 			continue;
@@ -328,9 +347,10 @@ int resend_requeue(int dfd, const char *mlmmjsend, const char *listdir)
 
 		xasprintf(&subnewname, "%s.resending", subfilename);
 
-		if(renameat(fd, subfilename, fd, subnewname) < 0) {
-			log_error(LOG_ARGS, "Could not rename(requeue/%s, requeue/%s)",
-			    subfilename, subnewname);
+		if(renameat(fd, subfilename, fd, subnewname) == -1) {
+			log(" - Could not rename(requeue/%s, requeue/%s): %s\n",
+			    subfilename, subnewname, strerror(errno));
+			ret = false;
 			free(archivefilename);
 			free(subfilename);
 			free(subnewname);
@@ -344,10 +364,11 @@ int resend_requeue(int dfd, const char *mlmmjsend, const char *listdir)
 
 	closedir(queuedir);
 
-	return 0;
+	return ret;
 }
 
-int clean_nolongerbouncing(int dfd)
+static bool
+clean_nolongerbouncing(int dfd, int logfd)
 {
 	DIR *bouncedir;
 	char *filename, *probetimestr, *s;
@@ -357,13 +378,9 @@ int clean_nolongerbouncing(int dfd)
 	struct stat st;
 	int fd;
 	const char *errstr;
+	bool ret = true;
 
-	fd = openat(dfd, "bounce", O_DIRECTORY|O_CLOEXEC);
-	if (fd == -1 || (bouncedir = fdopendir(fd)) == NULL) {
-		log_error(LOG_ARGS, "Could not opendir(bounce)");
-		return 1;
-	}
-
+	opendirat(dfd, fd, bouncedir, "bounce");
 	while((dp = readdir(bouncedir)) != NULL) {
 		if((strcmp(dp->d_name, "..") == 0) ||
 		   (strcmp(dp->d_name, ".") == 0))
@@ -374,9 +391,10 @@ int clean_nolongerbouncing(int dfd)
 		s = strrchr(filename, '-');
 		if(s && (strcmp(s, "-probe") == 0)) {
 			if(fstatat(fd, filename, &st, 0) < 0) {
-				log_error(LOG_ARGS, "Could not stat(%s)",
+				log(" - Could not stat(bounce/%s)",
 					  filename);
 				free(filename);
+				ret = false;
 				continue;
 			}
 
@@ -401,7 +419,12 @@ int clean_nolongerbouncing(int dfd)
 			}
 			t = time(NULL);
 			if(t - probetime > WAITPROBE) {
-				unlinkat(fd, filename, 0);
+				if (unlinkat(fd, filename, 0) == -1) {
+					log(" - Could not remove bounce/%s: "
+					    "%s\n", filename,
+					    strerror(errno));
+					ret = false;
+				}
 				/* remove -probe onwards from filename */
 				*s = '\0';
 				unlinkat(fd, filename, 0);
@@ -415,23 +438,20 @@ int clean_nolongerbouncing(int dfd)
 
 	closedir(bouncedir);
 
-	return 0;
+	return (ret);
 }
 
-int probe_bouncers(int dfd, const char *mlmmjbounce, const char *listdir)
+static bool
+probe_bouncers(int dfd, const char *mlmmjbounce, const char *listdir, int logfd)
 {
 	DIR *bouncedir;
 	char *probefile, *s;
 	struct dirent *dp;
 	struct stat st;
 	int fd;
+	bool ret = true;
 
-	fd = openat(dfd, "bounce", O_DIRECTORY|O_CLOEXEC);
-	if (fd == -1 || (bouncedir = fdopendir(fd)) == NULL) {
-		log_error(LOG_ARGS, "Could not opendif(bounce)");
-		return 1;
-	}
-
+	opendirat(dfd, fd, bouncedir, "bounce");
 	while((dp = readdir(bouncedir)) != NULL) {
 		if((strcmp(dp->d_name, "..") == 0) ||
 		   (strcmp(dp->d_name, ".") == 0))
@@ -446,7 +466,9 @@ int probe_bouncers(int dfd, const char *mlmmjbounce, const char *listdir)
 			continue;
 
 		if(fstatat(fd, dp->d_name, &st, 0) < 0) {
-			log_error(LOG_ARGS, "Could not stat(%s)", dp->d_name);
+			log(" - Could not stat(bounce/%s): %s\n", dp->d_name,
+			    strerror(errno));
+			ret = false;
 			continue;
 		}
 
@@ -464,10 +486,11 @@ int probe_bouncers(int dfd, const char *mlmmjbounce, const char *listdir)
 	}
 	closedir(bouncedir);
 
-	return 0;
+	return (ret);
 }
 
-int unsub_bouncers(int dfd, const char *mlmmjunsub, const char *listdir)
+static bool
+unsub_bouncers(int dfd, const char *mlmmjunsub, const char *listdir, int logfd)
 {
 	DIR *bouncedir;
 	char *probefile, *address, *a, *firstbounce, *bouncedata;
@@ -476,12 +499,9 @@ int unsub_bouncers(int dfd, const char *mlmmjunsub, const char *listdir)
 	int bfd;
 	time_t bouncetime, t, bouncelife;
 	const char *errstr;
+	bool ret = true;
 
-	bfd = openat(dfd, "bounce", O_DIRECTORY|O_CLOEXEC);
-	if (bfd == -1 || (bouncedir = fdopendir(bfd)) == NULL) {
-		log_error(LOG_ARGS, "Could not opendir(bounce)");
-		return 1;
-	}
+	opendirat(dfd, bfd, bouncedir, "bounce");
 
 	bouncelife = ctrltimet(dfd, "bouncelife", BOUNCELIFE);
 
@@ -499,7 +519,9 @@ int unsub_bouncers(int dfd, const char *mlmmjunsub, const char *listdir)
 			continue;
 
 		if(fstatat(bfd, dp->d_name, &st, 0) < 0) {
-			log_error(LOG_ARGS, "Could not stat(%s)", dp->d_name);
+			log(" - Could not stat(bounce/%s): %s\n",
+			    dp->d_name, strerror(errno));
+			ret = false;
 			continue;
 		}
 
@@ -517,7 +539,9 @@ int unsub_bouncers(int dfd, const char *mlmmjunsub, const char *listdir)
 		 */
 		int fd = openat(bfd, dp->d_name, O_RDONLY|O_CLOEXEC);
 		if(fd == -1) {
-			log_error(LOG_ARGS, "Could not open bounce/%s", dp->d_name);
+			log(" - Could not open bounce/%s: %s", dp->d_name,
+			    strerror(errno));
+			ret = false;
 			continue;
 		}
 		firstbounce = mygetline(fd);
@@ -528,6 +552,9 @@ int unsub_bouncers(int dfd, const char *mlmmjunsub, const char *listdir)
 		/* End the string at the comment */
 		a = strchr(firstbounce, '#');
 		if(a == NULL) {
+			log("- Error parsing the first line of bounce/%s",
+			    dp->d_name);
+			ret = false;
 			free(firstbounce);
 			continue;
 		}
@@ -536,6 +563,9 @@ int unsub_bouncers(int dfd, const char *mlmmjunsub, const char *listdir)
 		chomp(bouncedata);
 		a = strchr(firstbounce, ':');
 		if(a == NULL) {
+			log("- Error parsing the first line of bounce/%s",
+			    dp->d_name);
+			ret = false;
 			free(firstbounce);
 			free(bouncedata);
 			continue;
@@ -545,6 +575,9 @@ int unsub_bouncers(int dfd, const char *mlmmjunsub, const char *listdir)
 		bouncetime = strtotimet(a, &errstr);
 		free(firstbounce);
 		if (errstr != NULL) {
+			log("- Error parsing the first line of bounce/%s",
+			    dp->d_name);
+			ret = false;
 			free(bouncedata);
 			continue;
 		}
@@ -573,10 +606,11 @@ int unsub_bouncers(int dfd, const char *mlmmjunsub, const char *listdir)
 	}
 	closedir(bouncedir);
 
-	return 0;
+	return (ret);
 }
 
-int run_digests(int dfd, const char *mlmmjsend, const char *listdir)
+static bool
+run_digests(int dfd, const char *mlmmjsend, const char *listdir, int logfd)
 {
 	char *lasttimestr, *lastindexstr, *lastissuestr;
 	char *s1, *s2;
@@ -584,9 +618,15 @@ int run_digests(int dfd, const char *mlmmjsend, const char *listdir)
 	long digestmaxmails, lastindex, index, lastissue;
 	int fd, indexfd;
 	const char *errstr = NULL;
+	bool ret = false;
 
 	if (statctrl(listdir, "noarchive")) {
-		return 0;
+		log(" - noarchive tunable: skipping digest\n");
+		return (true);
+	}
+	if (faccessat(dfd, "index", R_OK, 0) == -1) {
+		log(" - No readable index file: no digest\n");
+		return (true);
 	}
 
 	digestinterval = ctrltimet(dfd, "digestinterval", DIGESTINTERVAL);
@@ -594,8 +634,9 @@ int run_digests(int dfd, const char *mlmmjsend, const char *listdir)
 
 	fd = openat(dfd, "lastdigest", O_RDWR|O_CREAT|O_EXLOCK, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
-		log_error(LOG_ARGS, "Could not open 'lastdigest'");
-		return 1;
+		log(" - Could not open or create 'lastdigest': %s\n",
+		    strerror(errno));
+		return (false);
 	}
 
 	s1 = mygetline(fd);
@@ -608,36 +649,35 @@ int run_digests(int dfd, const char *mlmmjsend, const char *listdir)
 			lastissue = strtoim(lastissuestr, LONG_MIN, LONG_MAX,
 			    &errstr);
 			if (errstr != NULL) {
-				log_error(LOG_ARGS, "'lastdigests' contains "
-				    "malformed data: Impossible to parse "
-				    "lastissue: '%s': %s",
-				    lastissuestr, errstr);
-				return (1);
+				log(" - 'lastdigests' contains malformed "
+				    "data: Impossible to parse lastissue: '%s':"
+				    " %s", lastissuestr, errstr);
+				close(fd);
+				return (false);
 			}
 		} else {
 			lastissue = 0;
 		}
 		lasttime = strtotimet(lasttimestr, &errstr);
 		if (errstr) {
-			log_error(LOG_ARGS, "'lastdigest' invalid lasttimestr "
+			log(" - 'lastdigest' invalid last time string: "
 			    "'%s': %s", lasttimestr, errstr);
-			return (1);
+			close(fd);
+			return (false);
 		}
 		lastindexstr = s1;
 		lastindex = strtoim(lastindexstr, LONG_MIN, LONG_MAX, &errstr);
 		if (errstr != NULL) {
-			log_error(LOG_ARGS, "'lastdigests' contains malformed "
-			    "data: Impossible to parse lastindex: '%s': %s",
+			log("'lastdigests' invalid last index: '%s': %s\n",
 			    lastindexstr, errstr);
-			return (1);
+			return (false);
 		}
 	} else {
 		if (s1 && (strlen(s1) > 0)) {
-			log_error(LOG_ARGS, "'lastdigest' contains malformed "
-			    "data");
+			log_error(LOG_ARGS, "'lastdigest' invalid first line");
 			free(s1);
 			close(fd);
-			return 1;
+			return (false);
 		}
 		/* If lastdigest is empty, we start from scratch */
 		lasttime = 0;
@@ -647,10 +687,10 @@ int run_digests(int dfd, const char *mlmmjsend, const char *listdir)
 
 	indexfd = openat(dfd, "index", O_RDONLY);
 	if (indexfd < 0) {
-		log_error(LOG_ARGS, "Could not open 'index'");
+		log("Could not open'index': %s", strerror(errno));
 		free(s1);
 		close(fd);
-		return 1;
+		return (false);
 	}
 	s2 = mygetline(indexfd);
 	close(indexfd);
@@ -659,16 +699,16 @@ int run_digests(int dfd, const char *mlmmjsend, const char *listdir)
 		 * list, and therefore we don't need to send a digest */
 		free(s1);
 		close(fd);
-		return 1;
+		return (true);
 	}
-
+	chomp(s2);
 	index = strtoim(s2, 0, LONG_MAX, &errstr);
-	if (errstr == NULL) {
-		log_error(LOG_ARGS, "Invalid index content '%s'", s2);
+	if (errstr != NULL) {
+		log(" - Invalid index content '%s': %s\n", s2, errstr);
 		free(s1);
 		free(s2);
 		close(fd);
-		return 1;
+		return (false);
 	}
 	t = time(NULL);
 
@@ -684,20 +724,24 @@ int run_digests(int dfd, const char *mlmmjsend, const char *listdir)
 		}
 
 		if (lseek(fd, 0, SEEK_SET) < 0) {
-			log_error(LOG_ARGS, "Could not seek 'lastdigest'");
+			log(" - Could not seek 'lastdigest': %s\n", strerror(errno));
+			goto out;
 		} else {
 			if (dprintf(fd, "%ld:%ld:%ld\n", index, (long)t, lastissue) < 0 ) {
-				log_error(LOG_ARGS, "Could not write new "
-				    "'lastdigest'");
+				log("Could not write new 'lastdigest': %s\n",
+				    strerror(errno));
+				goto out;
 			}
 		}
 	}
 
+	ret = true;
+out:
 	free(s1);
 	free(s2);
 	close(fd);
 
-	return 0;
+	return (ret);
 }
 
 void do_maintenance(int listfd, const char *listdir, const char *mlmmjsend,
@@ -706,7 +750,7 @@ void do_maintenance(int listfd, const char *listdir, const char *mlmmjsend,
 	char *random, *logname;
 	char timenow[64];
 	struct stat st;
-	int maintdlogfd;
+	int logfd;
 	uid_t uid = getuid();
 	time_t t;
 
@@ -735,8 +779,8 @@ void do_maintenance(int listfd, const char *listdir, const char *mlmmjsend,
 	xasprintf(&logname, "maintdlog-%s", random);
 	free(random);
 
-	maintdlogfd = openat(listfd, logname, O_WRONLY|O_EXCL|O_CREAT, S_IRUSR|S_IWUSR);
-	if(maintdlogfd == -1) {
+	logfd = openat(listfd, logname, O_WRONLY|O_EXCL|O_CREAT, S_IRUSR|S_IWUSR);
+	if(logfd == -1) {
 		log_error(LOG_ARGS, "Could not open %s", logname);
 		free(logname);
 		return;
@@ -744,40 +788,60 @@ void do_maintenance(int listfd, const char *listdir, const char *mlmmjsend,
 
 	t = time(NULL);
 	if(ctime_r(&t, timenow))
-		dprintf(maintdlogfd, "Starting maintenance run at %s\n",
+		log("Starting maintenance run at %s\n",
 		    timenow);
 
-	dprintf(maintdlogfd, "clean_moderation\n");
-	clean_moderation(listfd);
+	log("clean_moderation\n");
+	if (!clean_moderation(listfd, logfd))
+		log_err("An error occured while cleaning moderation, see %s",
+		    MAINTD_LOGFILE);
 
-	dprintf(maintdlogfd, "clean_discarded\n");
-	clean_discarded(listfd);
+	log("clean_discarded\n");
+	if (!clean_discarded(listfd, logfd))
+		log_err("An error occured while cleaning discarded mails, see "
+		    "%s", MAINTD_LOGFILE);
 
-	dprintf(maintdlogfd, "clean_subconf\n");
-	clean_subconf(listfd);
+	log("clean_subconf\n");
+	if (!clean_subconf(listfd, logfd))
+		log_err("An error occured while cleaning subscribtion "
+		    "confirmations, mails, see %s", MAINTD_LOGFILE);
 
-	dprintf(maintdlogfd, "clean_unsubconf\n");
-	clean_unsubconf(listfd);
+	log("clean_unsubconf\n");
+	if (!clean_unsubconf(listfd, logfd))
+		log_err("An error occured while cleaning unsubscribtion "
+		    "confirmations, mails, see %s", MAINTD_LOGFILE);
 
-	dprintf(maintdlogfd, "resend_queue\n");
-	resend_queue(listfd, mlmmjsend, listdir);
+	log("resend_queue\n");
+	if (!resend_queue(listfd, mlmmjsend, listdir, logfd))
+		log_err("An error occured while resending queued mails, see %s",
+		    MAINTD_LOGFILE);
 
-	dprintf(maintdlogfd, "resend_requeue\n");
-	resend_requeue(listfd, mlmmjsend, listdir);
+	log("resend_requeue\n");
+	if (!resend_requeue(listfd, mlmmjsend, listdir, logfd))
+		log_err("An error occured while resending requeued mails, see "
+		    "%s", MAINTD_LOGFILE);
 
-	dprintf(maintdlogfd, "clean_nolongerbouncing\n");
-	clean_nolongerbouncing(listfd);
+	log("clean_nolongerbouncing\n");
+	if (!clean_nolongerbouncing(listfd, logfd))
+		log_err("An error occured while cleaning no longer bouncing "
+		   "traces, see %s", MAINTD_LOGFILE);
 
-	dprintf(maintdlogfd, "unsub_bouncers\n");
-	unsub_bouncers(listfd, mlmmjunsub, listdir);
+	log("unsub_bouncers\n");
+	if (!unsub_bouncers(listfd, mlmmjunsub, listdir, logfd))
+		log_err("An error occured while unsubscribing bouncing emails, "
+		    "see %s", MAINTD_LOGFILE);
 
-	dprintf(maintdlogfd, "probe_bouncers\n");
-	probe_bouncers(listfd, mlmmjbounce, listdir);
+	log("probe_bouncers\n");
+	if (!probe_bouncers(listfd, mlmmjbounce, listdir, logfd))
+		log_err("An error occured while sending probes for bouncers, "
+		    "see %s", MAINTD_LOGFILE);
 
-	dprintf(maintdlogfd, "run_digests\n");
-	run_digests(listfd, mlmmjsend, listdir);
+	log("run_digests\n");
+	if (!run_digests(listfd, mlmmjsend, listdir, logfd))
+		log_err("An error occured while running digests, see %s",
+		   MAINTD_LOGFILE);
 
-	close(maintdlogfd);
+	close(logfd);
 
 	if (renameat(listfd, logname, listfd, MAINTD_LOGFILE) < 0)
 		log_error(LOG_ARGS, "Could not rename(%s,%s)",
