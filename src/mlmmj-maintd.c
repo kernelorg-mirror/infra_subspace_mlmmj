@@ -1,6 +1,6 @@
-/* Copyright (C) 2004 Mads Martin Joergensen <mmj at mmj.dk>
- *
- * $Id$
+/*
+ * Copyright (C) 2004 Mads Martin Joergensen <mmj at mmj.dk>
+ * Copyright (C) 2022 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -31,6 +31,7 @@
 #include <time.h>
 #include <fcntl.h>
 #include <err.h>
+#include <stdbool.h>
 
 #include "mlmmj-maintd.h"
 #include "mlmmj.h"
@@ -60,47 +61,48 @@ static void print_help(const char *prg)
 	exit(EXIT_SUCCESS);
 }
 
-static int mydaemon(const char *rootdir)
+static int mydaemon()
 {
 	if (daemon(1, 0) != 0) {
 		log_error(LOG_ARGS, "Unable to become a daemon");
 		err(EXIT_FAILURE, "Unable to become a daemon");
 	}
 
-	if(chdir(rootdir) < 0)
-		log_error(LOG_ARGS, "Could not chdir(%s)", rootdir);
-
 	closefrom(3);
-	
+
 	return 0;
 }
 
-int delolder(const char *dirname, time_t than)
+int delolder(int dfd, const char *dirname, time_t than)
 {
 	DIR *dir;
 	struct dirent *dp;
 	struct stat st;
 	time_t t;
+	int fd;
 
-	if(chdir(dirname) < 0) {
-		log_error(LOG_ARGS, "Could not chdir(%s)", dirname);
+	fd = openat(dfd, dirname, O_DIRECTORY|O_CLOEXEC);
+	if (fd == -1) {
+		log_error(LOG_ARGS, "Could not open(%s)", dirname);
 		return -1;
 	}
-	if((dir = opendir(dirname)) == NULL) {
-		log_error(LOG_ARGS, "Could not opendir(%s)", dirname);
+
+	if((dir = fdopendir(fd)) == NULL) {
+		log_error(LOG_ARGS, "Could not fdopendir(%s)", dirname);
 		return -1;
 	}
 
 	while((dp = readdir(dir)) != NULL) {
-		if(stat(dp->d_name, &st) < 0) {
-			log_error(LOG_ARGS, "Could not stat(%s)", dp->d_name);
+		if(fstatat(fd, dp->d_name, &st, 0) < 0) {
+			log_error(LOG_ARGS, "Could not stat(%s/%s)",
+			    dirname, dp->d_name);
 			continue;
 		}
 		if(!S_ISREG(st.st_mode))
 			continue;
 		t = time(NULL);
 		if(t - st.st_mtime > than)
-			unlink(dp->d_name);
+			unlinkat(fd, dp->d_name, 0);
 	}
 	closedir(dir);
 
@@ -108,134 +110,107 @@ int delolder(const char *dirname, time_t than)
 }
 
 
-int clean_moderation(const char *listdir)
+int clean_moderation(int dfd)
 {
 
 	time_t modreqlife;
-	char *moddirname;
-	int ret;
 
-	modreqlife = ctrltimet(listdir, "modreqlife", MODREQLIFE);
-	moddirname = concatstr(2, listdir, "/moderation");
-	ret = delolder(moddirname, modreqlife);
-		
-	free(moddirname);
-
-	return ret;
+	modreqlife = ctrltimet(dfd, "modreqlife", MODREQLIFE);
+	return (delolder(dfd, "moderation", modreqlife));
 }
 
-int clean_discarded(const char *listdir)
+int clean_discarded(int dfd)
 {
-	char *discardeddirname = concatstr(2, listdir, "/queue/discarded");
-	int ret = delolder(discardeddirname, DISCARDEDLIFE);
-
-	free(discardeddirname);
-
-	return ret;
+	return (delolder(dfd, "queue/discarded", DISCARDEDLIFE));
 }
 
-int clean_subconf(const char *listdir)
+int clean_subconf(int dfd)
 {
-	char *subconfdirname = concatstr(2, listdir, "/subconf");
-	int ret = delolder(subconfdirname, CONFIRMLIFE);
-
-	free(subconfdirname);
-
-	return ret;
+	return (delolder(dfd, "subconf", CONFIRMLIFE));
 }
 
-int clean_unsubconf(const char *listdir)
+int clean_unsubconf(int dfd)
 {
-	char *unsubconfdirname = concatstr(2, listdir, "/unsubconf");
-	int ret = delolder(unsubconfdirname, CONFIRMLIFE);
-
-	free(unsubconfdirname);
-
-	return ret;
+	return (delolder(dfd, "unsubconf", CONFIRMLIFE));
 }
 
-int resend_queue(const char *listdir, const char *mlmmjsend)
+int resend_queue(int dfd, const char *mlmmjsend, const char *listdir)
 {
 	DIR *queuedir;
 	struct dirent *dp;
 	char *mailname, *fromname, *toname, *reptoname, *from, *to, *repto;
-	char *ch, *dirname = concatstr(2, listdir, "/queue/");
+	char *ch;
 	struct stat st;
-	int fromfd, tofd, fd, err = 0;
+	int fromfd, tofd, err = 0, qfd;
 	time_t t, bouncelife;
 
-	if(chdir(dirname) < 0) {
-		log_error(LOG_ARGS, "Could not chdir(%s)", dirname);
-		free(dirname);
+	qfd = openat(dfd, "queue", O_DIRECTORY|O_CLOEXEC);
+	if (qfd == -1) {
+		log_error(LOG_ARGS, "Could not open(queue)");
 		return 1;
 	}
-		
-	if((queuedir = opendir(dirname)) == NULL) {
-		log_error(LOG_ARGS, "Could not opendir(%s)", dirname);
-		free(dirname);
+
+	if((queuedir = fdopendir(qfd)) == NULL) {
+		log_error(LOG_ARGS, "Could not fdopendir(queue)");
 		return 1;
 	}
-	free(dirname);
 
 	while((dp = readdir(queuedir)) != NULL) {
-		mailname = concatstr(3, listdir, "/queue/", dp->d_name);
-
-		if(stat(mailname, &st) < 0) {
-			log_error(LOG_ARGS, "Could not stat(%s)", mailname);
-			free(mailname);
+		if(fstatat(qfd, dp->d_name, &st, 0) < 0) {
+			log_error(LOG_ARGS, "Could not stat(queue/%s)",
+			    dp->d_name);
 			continue;
 		}
 
-		if(!S_ISREG(st.st_mode)) {
-			free(mailname);
+		if(!S_ISREG(st.st_mode))
 			continue;
-		}
 
 		if(strchr(dp->d_name, '.')) {
+			mailname = xstrdup(dp->d_name);
 			ch = strrchr(mailname, '.');
 			MY_ASSERT(ch);
 			*ch = '\0';
 			/* delete orphaned sidecar files */
-			if(stat(mailname, &st) < 0) {
+			if(fstatat(qfd, mailname, &st, 0) < 0) {
 				if(errno == ENOENT) {
 					*ch = '.';
-					unlink(mailname);
+					unlinkat(qfd, mailname, 0);
 				}
 			}
 			free(mailname);
 			continue;
 		}
 
-		fromname = concatstr(2, mailname, ".mailfrom");
-		toname = concatstr(2, mailname, ".reciptto");
-		reptoname = concatstr(2, mailname, ".reply-to");
+		xasprintf(&fromname, "%s.mailfrom", dp->d_name);
+		xasprintf(&toname, "%s.reciptto", dp->d_name);
+		xasprintf(&reptoname, "%s.reply-to", dp->d_name);
 
-		fromfd = open(fromname, O_RDONLY);
+		fromfd = openat(qfd, fromname, O_RDONLY);
 		if(fromfd < 0)
 			err = errno;
-		tofd = open(toname, O_RDONLY);
+		tofd = openat(qfd, toname, O_RDONLY);
 
 		if((fromfd < 0 && err == ENOENT) ||
 				(tofd < 0 && errno == ENOENT)) {
 			/* only delete old files to avoid deleting
 			   mail currently being sent */
 			t = time(NULL);
-			if(stat(mailname, &st) == 0) {
+			if(fstatat(qfd, dp->d_name, &st, 0) == 0) {
 				if(t - st.st_mtime > (time_t)36000) {
-					unlink(mailname);
+					unlinkat(qfd, dp->d_name, 0);
 					/* avoid leaving orphans */
-					unlink(fromname);
-					unlink(toname);
-					unlink(reptoname);
+					unlinkat(qfd, fromname, 0);
+					unlinkat(qfd, toname, 0);
+					unlinkat(qfd, reptoname, 0);
 				}
 			}
 			free(mailname);
 			free(fromname);
 			free(toname);
 			free(reptoname);
-			if(fromfd >= 0)
+			if(fromfd != -1)
 				close(fromfd);
-			if(tofd >= 0)
+			if(tofd != -1)
 				close(tofd);
 			continue;
 		}
@@ -248,22 +223,22 @@ int resend_queue(const char *listdir, const char *mlmmjsend)
 		chomp(to);
 		close(tofd);
 		free(toname);
-		fd = open(reptoname, O_RDONLY);
-		if(fd < 0) {
+		int rtfd = openat(qfd, reptoname, O_RDONLY);
+		if(rtfd == -1) {
 			free(reptoname);
 			repto = NULL;
 		} else {
-			repto = mygetline(fd);
+			repto = mygetline(rtfd);
 			chomp(repto);
-			close(fd);
+			close(rtfd);
 			free(reptoname);
 		}
 
 		/* before we try again, check and see if it's old */
-		bouncelife = ctrltimet(listdir, "bouncelife", BOUNCELIFE);
+		bouncelife = ctrltimet(dfd, "bouncelife", BOUNCELIFE);
 		t = time(NULL);
 		if(t - st.st_mtime > bouncelife) {
-			unlink(mailname);
+			unlinkat(qfd, dp->d_name, 0);
 			free(mailname);
 			free(from);
 			free(to);
@@ -285,29 +260,18 @@ int resend_queue(const char *listdir, const char *mlmmjsend)
 	return 0;
 }
 
-int resend_requeue(const char *listdir, const char *mlmmjsend)
+int resend_requeue(int dfd, const char *mlmmjsend, const char *listdir)
 {
 	DIR *queuedir;
 	struct dirent *dp;
-	char *dirname = concatstr(2, listdir, "/requeue/");
 	char *archivefilename, *subfilename, *subnewname;
 	struct stat st;
 	time_t t;
-	int fromrequeuedir;
+	bool fromrequeuedir;
 
-	if (statctrl(listdir, "nobounceprobe")) {
-		return 0;
-	}
-
-	if(chdir(dirname) < 0) {
-		log_error(LOG_ARGS, "Could not chdir(%s)", dirname);
-		free(dirname);
-		return 1;
-	}
-		
-	if((queuedir = opendir(dirname)) == NULL) {
-		log_error(LOG_ARGS, "Could not opendir(%s)", dirname);
-		free(dirname);
+	int fd = openat(dfd, "requeue", O_DIRECTORY|O_CLOEXEC);
+	if (fd == -1 || (queuedir = fdopendir(fd)) == NULL) {
+		log_error(LOG_ARGS, "Could not opendir(requeue)");
 		return 1;
 	}
 	
@@ -316,7 +280,7 @@ int resend_requeue(const char *listdir, const char *mlmmjsend)
 			(strcmp(dp->d_name, ".") == 0))
 				continue;
 
-		if(stat(dp->d_name, &st) < 0) {
+		if(fstatat(fd, dp->d_name, &st, 0) < 0) {
 			log_error(LOG_ARGS, "Could not stat(%s)",dp->d_name);
 			continue;
 		}
@@ -327,16 +291,15 @@ int resend_requeue(const char *listdir, const char *mlmmjsend)
 		/* Remove old empty directories */
 		t = time(NULL);
 		if(t - st.st_mtime > (time_t)3600)
-			if(rmdir(dp->d_name) == 0)
+			if (unlinkat(fd, dp->d_name, AT_REMOVEDIR) == 0)
 				continue;
 
-		archivefilename = concatstr(3, listdir, "/archive/",
-						dp->d_name);
+		xasprintf(&archivefilename, "archive/%s", dp->d_name);
 
 		/* Explicitly initialize for each mail we examine */
-		fromrequeuedir = 0;
+		fromrequeuedir = false;
 
-		if(stat(archivefilename, &st) < 0) {
+		if(fstatat(dfd, archivefilename, &st, 0) < 0) {
 			/* Might be it's just not moved to the archive
 			 * yet because it's still getting sent, so just
 			 * continue
@@ -346,28 +309,28 @@ int resend_requeue(const char *listdir, const char *mlmmjsend)
 			/* If the list is set not to archive we want to look
 			 * in /requeue/ for a mailfile
 			 */
-			archivefilename = concatstr(4, listdir, "/requeue/",
-							dp->d_name, "/mailfile");
-			if(stat(archivefilename, &st) < 0) {
+			xasprintf(&archivefilename, "requeue/%s/mailfile",
+			    dp->d_name);
+			if(fstatat(dfd, archivefilename, &st, 0) < 0) {
 				free(archivefilename);
 				continue;
 			}
-			fromrequeuedir = 1;
+			fromrequeuedir = true;
 		}
-		subfilename = concatstr(3, dirname, dp->d_name, "/subscribers");
-		if(stat(subfilename, &st) < 0) {
+		xasprintf(&subfilename, "%s/subscribers", dp->d_name);
+		if(fstatat(fd, subfilename, &st, 0) < 0) {
 			if (fromrequeuedir)
-				unlink(archivefilename);
+				unlinkat(dfd, archivefilename, 0);
 			free(archivefilename);
 			free(subfilename);
 			continue;
 		}
 
-		subnewname = concatstr(2, subfilename, ".resending");
+		xasprintf(&subnewname, "%s.resending", subfilename);
 
-		if(rename(subfilename, subnewname) < 0) {
-			log_error(LOG_ARGS, "Could not rename(%s, %s)",
-						subfilename, subnewname);
+		if(renameat(fd, subfilename, fd, subnewname) < 0) {
+			log_error(LOG_ARGS, "Could not rename(requeue/%s, requeue/%s)",
+			    subfilename, subnewname);
 			free(archivefilename);
 			free(subfilename);
 			free(subnewname);
@@ -381,34 +344,25 @@ int resend_requeue(const char *listdir, const char *mlmmjsend)
 
 	closedir(queuedir);
 
-	free(dirname);
-
 	return 0;
 }
 
-int clean_nolongerbouncing(const char *listdir)
+int clean_nolongerbouncing(int dfd)
 {
 	DIR *bouncedir;
-	char *dirname = concatstr(2, listdir, "/bounce/");
 	char *filename, *probetimestr, *s;
 	int probefd;
 	time_t probetime, t;
 	struct dirent *dp;
 	struct stat st;
-	
-	if(chdir(dirname) < 0) {
-		log_error(LOG_ARGS, "Could not chdir(%s)", dirname);
-		free(dirname);
-		return 1;
-	}
-		
-	if((bouncedir = opendir(dirname)) == NULL) {
-		log_error(LOG_ARGS, "Could not opendir(%s)", dirname);
-		free(dirname);
-		return 1;
-	}
+	int fd;
+	const char *errstr;
 
-	free(dirname);
+	fd = openat(dfd, "bounce", O_DIRECTORY|O_CLOEXEC);
+	if (fd == -1 || (bouncedir = fdopendir(fd)) == NULL) {
+		log_error(LOG_ARGS, "Could not opendir(bounce)");
+		return 1;
+	}
 
 	while((dp = readdir(bouncedir)) != NULL) {
 		if((strcmp(dp->d_name, "..") == 0) ||
@@ -419,14 +373,14 @@ int clean_nolongerbouncing(const char *listdir)
 
 		s = strrchr(filename, '-');
 		if(s && (strcmp(s, "-probe") == 0)) {
-			if(stat(filename, &st) < 0) {
+			if(fstatat(fd, filename, &st, 0) < 0) {
 				log_error(LOG_ARGS, "Could not stat(%s)",
 					  filename);
 				free(filename);
 				continue;
 			}
 
-			probefd = open(filename, O_RDONLY);
+			probefd = openat(fd, filename, O_RDONLY|O_CLOEXEC);
 			if(probefd < 0) {
 				free(filename);
 				continue;
@@ -438,16 +392,21 @@ int clean_nolongerbouncing(const char *listdir)
 			}
 			close(probefd);
 			chomp(probetimestr);
-			probetime = (time_t)strtol(probetimestr, NULL, 10);
+			probetime = strtotimet(probetimestr, &errstr);
 			free(probetimestr);
+			if (errstr != NULL) {
+				free(filename);
+				free(probetimestr);
+				continue;
+			}
 			t = time(NULL);
 			if(t - probetime > WAITPROBE) {
-				unlink(filename);
+				unlinkat(fd, filename, 0);
 				/* remove -probe onwards from filename */
 				*s = '\0';
-				unlink(filename);
-				s = concatstr(2, filename, ".lastmsg");
-				unlink(s);
+				unlinkat(fd, filename, 0);
+				xasprintf(&s, "%s.lastmsg", filename);
+				unlinkat(fd, s, 0);
 				free(s);
 			}
 		}
@@ -459,27 +418,19 @@ int clean_nolongerbouncing(const char *listdir)
 	return 0;
 }
 
-int probe_bouncers(const char *listdir, const char *mlmmjbounce)
+int probe_bouncers(int dfd, const char *mlmmjbounce, const char *listdir)
 {
 	DIR *bouncedir;
-	char *dirname = concatstr(2, listdir, "/bounce/");
 	char *probefile, *s;
 	struct dirent *dp;
 	struct stat st;
-	
-	if(chdir(dirname) < 0) {
-		log_error(LOG_ARGS, "Could not chdir(%s)", dirname);
-		free(dirname);
-		return 1;
-	}
-		
-	if((bouncedir = opendir(dirname)) == NULL) {
-		log_error(LOG_ARGS, "Could not opendir(%s)", dirname);
-		free(dirname);
-		return 1;
-	}
+	int fd;
 
-	free(dirname);
+	fd = openat(dfd, "bounce", O_DIRECTORY|O_CLOEXEC);
+	if (fd == -1 || (bouncedir = fdopendir(fd)) == NULL) {
+		log_error(LOG_ARGS, "Could not opendif(bounce)");
+		return 1;
+	}
 
 	while((dp = readdir(bouncedir)) != NULL) {
 		if((strcmp(dp->d_name, "..") == 0) ||
@@ -493,16 +444,16 @@ int probe_bouncers(const char *listdir, const char *mlmmjbounce)
 		s = strrchr(dp->d_name, '.');
 		if(s && (strcmp(s, ".lastmsg") == 0))
 			continue;
-			
-		if(stat(dp->d_name, &st) < 0) {
+
+		if(fstatat(fd, dp->d_name, &st, 0) < 0) {
 			log_error(LOG_ARGS, "Could not stat(%s)", dp->d_name);
 			continue;
 		}
-		
-		probefile = concatstr(2, dp->d_name, "-probe");
-		
+
+		xasprintf(&probefile, "%s-probe", dp->d_name);
+
 		/* Skip files which already have a probe out */
-		if(stat(probefile, &st) == 0) {
+		if(fstatat(fd, probefile, &st, 0) == 0) {
 			free(probefile);
 			continue;
 		}
@@ -516,31 +467,23 @@ int probe_bouncers(const char *listdir, const char *mlmmjbounce)
 	return 0;
 }
 
-int unsub_bouncers(const char *listdir, const char *mlmmjunsub)
+int unsub_bouncers(int dfd, const char *mlmmjunsub, const char *listdir)
 {
 	DIR *bouncedir;
-	char *dirname = concatstr(2, listdir, "/bounce/");
 	char *probefile, *address, *a, *firstbounce, *bouncedata;
 	struct dirent *dp;
 	struct stat st;
-	int fd;
+	int bfd;
 	time_t bouncetime, t, bouncelife;
-	
-	if(chdir(dirname) < 0) {
-		log_error(LOG_ARGS, "Could not chdir(%s)", dirname);
-		free(dirname);
-		return 1;
-	}
-		
-	if((bouncedir = opendir(dirname)) == NULL) {
-		log_error(LOG_ARGS, "Could not opendir(%s)", dirname);
-		free(dirname);
+	const char *errstr;
+
+	bfd = openat(dfd, "bounce", O_DIRECTORY|O_CLOEXEC);
+	if (bfd == -1 || (bouncedir = fdopendir(bfd)) == NULL) {
+		log_error(LOG_ARGS, "Could not opendir(bounce)");
 		return 1;
 	}
 
-	free(dirname);
-
-	bouncelife = ctrltimet(listdir, "bouncelife", BOUNCELIFE);
+	bouncelife = ctrltimet(dfd, "bouncelife", BOUNCELIFE);
 
 	while((dp = readdir(bouncedir)) != NULL) {
 		if((strcmp(dp->d_name, "..") == 0) ||
@@ -554,16 +497,16 @@ int unsub_bouncers(const char *listdir, const char *mlmmjunsub)
 		a = strrchr(dp->d_name, '.');
 		if(a && (strcmp(a, ".lastmsg") == 0))
 			continue;
-		
-		if(stat(dp->d_name, &st) < 0) {
+
+		if(fstatat(bfd, dp->d_name, &st, 0) < 0) {
 			log_error(LOG_ARGS, "Could not stat(%s)", dp->d_name);
 			continue;
 		}
-		
-		probefile = concatstr(2, dp->d_name, "-probe");
-		
+
+		xasprintf(&probefile, "%s-probe", dp->d_name);
+
 		/* Skip files which already have a probe out */
-		if(stat(probefile, &st) == 0) {
+		if(fstatat(bfd, probefile, &st, 0) == 0) {
 			free(probefile);
 			continue;
 		}
@@ -572,9 +515,9 @@ int unsub_bouncers(const char *listdir, const char *mlmmjunsub)
 		/* Get the first line of the bounce file to check if it's
 		 * been bouncing for long enough
 		 */
-		fd = open(dp->d_name, O_RDONLY);
-		if(fd < 0) {
-			log_error(LOG_ARGS, "Could not open %s", dp->d_name);
+		int fd = openat(bfd, dp->d_name, O_RDONLY|O_CLOEXEC);
+		if(fd == -1) {
+			log_error(LOG_ARGS, "Could not open bounce/%s", dp->d_name);
 			continue;
 		}
 		firstbounce = mygetline(fd);
@@ -599,8 +542,12 @@ int unsub_bouncers(const char *listdir, const char *mlmmjunsub)
 		}
 
 		a++; /* Increase to first digit */
-		bouncetime = (time_t)strtol(a, NULL, 10);
+		bouncetime = strtotimet(a, &errstr);
 		free(firstbounce);
+		if (errstr != NULL) {
+			free(bouncedata);
+			continue;
+		}
 		t = time(NULL);
 		if(t - bouncetime < bouncelife + WAITPROBE) {
 			free(bouncedata);
@@ -619,9 +566,9 @@ int unsub_bouncers(const char *listdir, const char *mlmmjunsub)
 
 		exec_and_wait(mlmmjunsub, "-L", listdir, "-b", "-a", address,
 		    NULL);
-		unlink(dp->d_name);
-		a = concatstr(2, dp->d_name, ".lastmsg");
-		unlink(a);
+		unlinkat(bfd, dp->d_name, 0);
+		xasprintf(&a, "%s.lastmsg",  dp->d_name);
+		unlinkat(bfd, a, 0);
 		free(a);
 	}
 	closedir(bouncedir);
@@ -629,41 +576,25 @@ int unsub_bouncers(const char *listdir, const char *mlmmjunsub)
 	return 0;
 }
 
-int run_digests(const char *listdir, const char *mlmmjsend)
+int run_digests(int dfd, const char *mlmmjsend, const char *listdir)
 {
 	char *lasttimestr, *lastindexstr, *lastissuestr;
-	char *digestname, *indexname;
-	char *digestintervalstr, *digestmaxmailsstr;
 	char *s1, *s2;
 	time_t digestinterval, t, lasttime;
 	long digestmaxmails, lastindex, index, lastissue;
 	int fd, indexfd;
+	const char *errstr = NULL;
 
 	if (statctrl(listdir, "noarchive")) {
 		return 0;
 	}
-	
-	digestintervalstr = ctrlvalue(listdir, "digestinterval");
-	if (digestintervalstr) {
-		digestinterval = (time_t)atol(digestintervalstr);
-		free(digestintervalstr);
-	} else {
-		digestinterval = (time_t)DIGESTINTERVAL;
-	}
 
-	digestmaxmailsstr = ctrlvalue(listdir, "digestmaxmails");
-	if (digestmaxmailsstr) {
-		digestmaxmails = atol(digestmaxmailsstr);
-		free(digestmaxmailsstr);
-	} else {
-		digestmaxmails = DIGESTMAXMAILS;
-	}
+	digestinterval = ctrltimet(dfd, "digestinterval", DIGESTINTERVAL);
+	digestmaxmails = ctrllong(listdir, "digestmaxmail", DIGESTMAXMAILS);
 
-	digestname = concatstr(2, listdir, "/lastdigest");
-	fd = open(digestname, O_RDWR|O_CREAT|O_EXLOCK, S_IRUSR | S_IWUSR);
+	fd = openat(dfd, "lastdigest", O_RDWR|O_CREAT|O_EXLOCK, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
-		log_error(LOG_ARGS, "Could not open '%s'", digestname);
-		free(digestname);
+		log_error(LOG_ARGS, "Could not open 'lastdigest'");
 		return 1;
 	}
 
@@ -674,18 +605,36 @@ int run_digests(const char *listdir, const char *mlmmjsend)
 		*(lasttimestr++) = '\0';
 		if ((lastissuestr = strchr(lasttimestr, ':'))) {
 			*(lastissuestr++) = '\0';
-			lastissue = atol(lastissuestr);
+			lastissue = strtoim(lastissuestr, LONG_MIN, LONG_MAX,
+			    &errstr);
+			if (errstr != NULL) {
+				log_error(LOG_ARGS, "'lastdigests' contains "
+				    "malformed data: Impossible to parse "
+				    "lastissue: '%s': %s",
+				    lastissuestr, errstr);
+				return (1);
+			}
 		} else {
 			lastissue = 0;
 		}
-		lasttime = atol(lasttimestr);
+		lasttime = strtotimet(lasttimestr, &errstr);
+		if (errstr) {
+			log_error(LOG_ARGS, "'lastdigest' invalid lasttimestr "
+			    "'%s': %s", lasttimestr, errstr);
+			return (1);
+		}
 		lastindexstr = s1;
-		lastindex = atol(lastindexstr);
+		lastindex = strtoim(lastindexstr, LONG_MIN, LONG_MAX, &errstr);
+		if (errstr != NULL) {
+			log_error(LOG_ARGS, "'lastdigests' contains malformed "
+			    "data: Impossible to parse lastindex: '%s': %s",
+			    lastindexstr, errstr);
+			return (1);
+		}
 	} else {
 		if (s1 && (strlen(s1) > 0)) {
-			log_error(LOG_ARGS, "'%s' contains malformed data",
-					digestname);
-			free(digestname);
+			log_error(LOG_ARGS, "'lastdigest' contains malformed "
+			    "data");
 			free(s1);
 			close(fd);
 			return 1;
@@ -695,13 +644,10 @@ int run_digests(const char *listdir, const char *mlmmjsend)
 		lastindex = 0;
 		lastissue = 0;
 	}
-	
-	indexname = concatstr(2, listdir, "/index");
-	indexfd = open(indexname, O_RDONLY);
+
+	indexfd = openat(dfd, "index", O_RDONLY);
 	if (indexfd < 0) {
-		log_error(LOG_ARGS, "Could not open '%s'", indexname);
-		free(digestname);
-		free(indexname);
+		log_error(LOG_ARGS, "Could not open 'index'");
 		free(s1);
 		close(fd);
 		return 1;
@@ -711,14 +657,19 @@ int run_digests(const char *listdir, const char *mlmmjsend)
 	if (!s2) {
 		/* If we don't have an index, no mails have been sent to the
 		 * list, and therefore we don't need to send a digest */
-		free(digestname);
-		free(indexname);
 		free(s1);
 		close(fd);
 		return 1;
 	}
 
-	index = atol(s2);
+	index = strtoim(s2, 0, LONG_MAX, &errstr);
+	if (errstr == NULL) {
+		log_error(LOG_ARGS, "Invalid index content '%s'", s2);
+		free(s1);
+		free(s2);
+		close(fd);
+		return 1;
+	}
 	t = time(NULL);
 
 	if ((t - lasttime >= digestinterval) ||
@@ -733,43 +684,41 @@ int run_digests(const char *listdir, const char *mlmmjsend)
 		}
 
 		if (lseek(fd, 0, SEEK_SET) < 0) {
-			log_error(LOG_ARGS, "Could not seek '%s'", digestname);
+			log_error(LOG_ARGS, "Could not seek 'lastdigest'");
 		} else {
 			if (dprintf(fd, "%ld:%ld:%ld\n", index, (long)t, lastissue) < 0 ) {
-				log_error(LOG_ARGS, "Could not write new '%s'",
-						digestname);
+				log_error(LOG_ARGS, "Could not write new "
+				    "'lastdigest'");
 			}
 		}
 	}
 
-	free(digestname);
-	free(indexname);
 	free(s1);
 	free(s2);
 	close(fd);
-	
+
 	return 0;
 }
 
-void do_maintenance(const char *listdir, const char *mlmmjsend,
+void do_maintenance(int listfd, const char *listdir, const char *mlmmjsend,
 		    const char *mlmmjbounce, const char *mlmmjunsub)
 {
-	char *random, *logname, *logstr;
+	char *random, *logname;
 	char timenow[64];
 	struct stat st;
 	int maintdlogfd;
 	uid_t uid = getuid();
 	time_t t;
 
-	if(!listdir)
+	if (listfd == -1)
 		return;
-	
-	if(stat(listdir, &st) < 0) {
-		log_error(LOG_ARGS, "Could not stat(%s) "
-				    "No maintenance run performed.", listdir);
+
+	if (fstat(listfd, &st) < 0) {
+		log_error(LOG_ARGS, "Could not stat "
+		    "No maintenance run performed.");
 		return;
 	}
-	
+
 	if(uid == 0) { /* We're root. Do something about it.*/
 		if(setuid(st.st_uid) < 0) {
 			log_error(LOG_ARGS, "Could not setuid listdir owner.");
@@ -782,18 +731,12 @@ void do_maintenance(const char *listdir, const char *mlmmjsend,
 		return;
 	}
 
-	if(chdir(listdir) < 0) {
-		log_error(LOG_ARGS, "Could not chdir(%s). "
-				    "No maintenance run performed.", listdir);
-		return;
-	}
-
 	random = random_str();
-	logname = concatstr(3, listdir, "/maintdlog-", random);
+	xasprintf(&logname, "maintdlog-%s", random);
 	free(random);
 
-	maintdlogfd = open(logname, O_WRONLY|O_EXCL|O_CREAT, S_IRUSR|S_IWUSR);
-	if(maintdlogfd < 0) {
+	maintdlogfd = openat(listfd, logname, O_WRONLY|O_EXCL|O_CREAT, S_IRUSR|S_IWUSR);
+	if(maintdlogfd == -1) {
 		log_error(LOG_ARGS, "Could not open %s", logname);
 		free(logname);
 		return;
@@ -801,62 +744,53 @@ void do_maintenance(const char *listdir, const char *mlmmjsend,
 
 	t = time(NULL);
 	if(ctime_r(&t, timenow))
-		WRITEMAINTLOG4(3, "Starting maintenance run at ",
-				timenow, "\n");
+		dprintf(maintdlogfd, "Starting maintenance run at %s\n",
+		    timenow);
 
+	dprintf(maintdlogfd, "clean_moderation\n");
+	clean_moderation(listfd);
 
-	WRITEMAINTLOG4(3, "clean_moderation(", listdir, ");\n");
-	clean_moderation(listdir);
+	dprintf(maintdlogfd, "clean_discarded\n");
+	clean_discarded(listfd);
 
-	WRITEMAINTLOG4(3, "clean_discarded(", listdir, ");\n");
-	clean_discarded(listdir);
+	dprintf(maintdlogfd, "clean_subconf\n");
+	clean_subconf(listfd);
 
-	WRITEMAINTLOG4(3, "clean_subconf(", listdir, ");\n");
-	clean_subconf(listdir);
+	dprintf(maintdlogfd, "clean_unsubconf\n");
+	clean_unsubconf(listfd);
 
-	WRITEMAINTLOG4(3, "clean_unsubconf(", listdir, ");\n");
-	clean_unsubconf(listdir);
+	dprintf(maintdlogfd, "resend_queue(%s);\n", mlmmjsend);
+	resend_queue(listfd, mlmmjsend, listdir);
 
-	WRITEMAINTLOG6(5, "resend_queue(", listdir, ", ", mlmmjsend,
-			");\n");
-	resend_queue(listdir, mlmmjsend);
+	dprintf(maintdlogfd, "resend_requeue(%s);\n", mlmmjsend);
+	resend_requeue(listfd, mlmmjsend, listdir);
 
-	WRITEMAINTLOG6(5, "resend_requeue(", listdir, ", ", mlmmjsend,
-			");\n");
-	resend_requeue(listdir, mlmmjsend);
+	dprintf(maintdlogfd, "clean_nolongerbouncing\n");
+	clean_nolongerbouncing(listfd);
 
-	WRITEMAINTLOG4(3, "clean_nolongerbouncing(", listdir, ");\n");
-	clean_nolongerbouncing(listdir);
+	dprintf(maintdlogfd, "unsub_bouncers(%s);\n", mlmmjunsub);
+	unsub_bouncers(listfd, mlmmjunsub, listdir);
 
-	WRITEMAINTLOG6(5, "unsub_bouncers(", listdir, ", ",
-			mlmmjunsub, ");\n");
-	unsub_bouncers(listdir, mlmmjunsub);
+	dprintf(maintdlogfd, "probe_bouncers(%s);\n", mlmmjbounce);
+	probe_bouncers(listfd, mlmmjbounce, listdir);
 
-	WRITEMAINTLOG6(5, "probe_bouncers(", listdir, ", ",
-			mlmmjbounce, ");\n");
-	probe_bouncers(listdir, mlmmjbounce);
-
-	WRITEMAINTLOG6(5, "run_digests(", listdir, ", ", mlmmjsend,
-			");\n");
-	run_digests(listdir, mlmmjsend);
+	dprintf(maintdlogfd, "run_digests(%s);\n", mlmmjsend);
+	run_digests(listfd, mlmmjsend, listdir);
 
 	close(maintdlogfd);
 
-	logstr = concatstr(3, listdir, "/", MAINTD_LOGFILE);
-
-	if(rename(logname, logstr) < 0)
+	if (renameat(listfd, logname, listfd, MAINTD_LOGFILE) < 0)
 		log_error(LOG_ARGS, "Could not rename(%s,%s)",
-				logname, logstr);
+				logname, MAINTD_LOGFILE);
 
 	free(logname);
-	free(logstr);
 }
 
 int main(int argc, char **argv)
 {
 	int opt, daemonize = 1, ret = 0;
 	char *bindir, *listdir = NULL, *mlmmjsend, *mlmmjbounce, *mlmmjunsub;
-	char *dirlists = NULL, *s, *listiter;
+	char *dirlists = NULL;
 	struct stat st;
 	struct dirent *dp;
 	DIR *dirp;
@@ -889,24 +823,20 @@ int main(int argc, char **argv)
 		errx(EXIT_FAILURE, "You have to specify -d or -L\n"
 		    "%s -h for help", argv[0]);
 	}
-	
+
 	if(listdir && dirlists) {
 		errx(EXIT_FAILURE, "You have to specify either -d or -L\n"
 		    "%s -h for help", argv[0]);
 	}
 
 	bindir = mydirname(argv[0]);
-	mlmmjsend = concatstr(2, bindir, "/mlmmj-send");
-	mlmmjbounce = concatstr(2, bindir, "/mlmmj-bounce");
-	mlmmjunsub = concatstr(2, bindir, "/mlmmj-unsub");
+	xasprintf(&mlmmjsend, "%s/mlmmj-send", bindir);
+	xasprintf(&mlmmjbounce, "%s/mlmmj-bounce", bindir);
+	xasprintf(&mlmmjunsub, "%s/mlmmj-unsub", bindir);
 	free(bindir);
 
-	if(daemonize) {
-		if(dirlists)
-			ret = mydaemon(dirlists);
-		else
-			ret = mydaemon(listdir);
-	}
+	if(daemonize)
+		ret = mydaemon();
 
 	if(daemonize && ret < 0) {
 		log_error(LOG_ARGS, "Could not daemonize. Only one "
@@ -916,13 +846,15 @@ int main(int argc, char **argv)
 
 	while(1) {
 		if(listdir) {
-			do_maintenance(listdir, mlmmjsend, mlmmjbounce,
+			int fd = open(listdir, O_DIRECTORY);
+			do_maintenance(fd, listdir, mlmmjsend, mlmmjbounce,
 					mlmmjunsub);
 			goto mainsleep;
 		}
 
-		if(chdir(dirlists) < 0) {
-			log_error(LOG_ARGS, "Could not chdir(%s).",
+		int dfd = open(dirlists, O_DIRECTORY);
+		if(dfd == -1) {
+			log_error(LOG_ARGS, "Could not open directory(%s).",
 					dirlists);
 			free(mlmmjbounce);
 			free(mlmmjsend);
@@ -930,7 +862,7 @@ int main(int argc, char **argv)
 			exit(EXIT_FAILURE);
 		}
 
-		if((dirp = opendir(dirlists)) == NULL) {
+		if((dirp = fdopendir(dfd)) == NULL) {
 			log_error(LOG_ARGS, "Could not opendir(%s).",
 					dirlists);
 			free(mlmmjbounce);
@@ -943,34 +875,26 @@ int main(int argc, char **argv)
 			if((strcmp(dp->d_name, "..") == 0) ||
 					(strcmp(dp->d_name, ".") == 0))
 				continue;
-			
-			listiter = concatstr(3, dirlists, "/", dp->d_name);
 
-			if(stat(listiter, &st) < 0) {
-				log_error(LOG_ARGS, "Could not stat(%s)",
-						listiter);
-				free(listiter);
+			if (fstatat(dfd, dp->d_name, &st, 0) <0) {
+				log_error(LOG_ARGS, "Could not stat(%s/%s)",
+				    dirlists, dp->d_name);
 				continue;
 			}
 
-			if(!S_ISDIR(st.st_mode)) {
-				free(listiter);
+			int fd = openat(dfd, dp->d_name,  O_DIRECTORY);
+			if (fd == -1)
 				continue;
-			}
 
-			s = concatstr(2, listiter, "/control/listaddress");
-			ret = stat(s, &st);
-			free(s);
-
-			if(ret < 0) { /* If ret < 0 it's not a listiter */
-				free(listiter);
+			if (fstatat(fd, "control/listaddress", &st, 0) <0)
 				continue;
-			}
 
-			do_maintenance(listiter, mlmmjsend, mlmmjbounce,
+			char *l;
+			xasprintf(&l, "%s/%s", dirlists, dp->d_name);
+			do_maintenance(fd, l, mlmmjsend, mlmmjbounce,
 					mlmmjunsub);
-
-			free(listiter);
+			free(l);
+			close(fd);
 		}
 
 		closedir(dirp);

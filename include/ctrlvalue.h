@@ -50,6 +50,11 @@ ctrlushort(const char *listdir, const char *ctrlstr, unsigned short fallback)
 {
 	return (ctrluim(listdir, ctrlstr, 0, USHRT_MAX, fallback));
 }
-time_t ctrltimet(const char *listdir, const char *ctrlstr, time_t fallback);
+time_t ctrltimet(int dfd, const char *ctrlstr, time_t fallback);
+static inline long
+ctrllong(const char *listdir, const char *ctrlstr, unsigned short fallback)
+{
+	return (ctrlim(listdir, ctrlstr, LONG_MIN, LONG_MAX, fallback));
+}
 
 #endif /* CTRLVALUE_H */

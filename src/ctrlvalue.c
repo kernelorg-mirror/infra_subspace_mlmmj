@@ -38,7 +38,7 @@
 #include "log_error.h"
 #include "xmalloc.h"
 
-static char *ctrlval(const char *listdir, const char *subdir,
+static char *ctrlvalat(int dfd, const char *subdir,
 		const char *ctrlstr, int oneline)
 {
 	char *filename, *buf = NULL;
@@ -47,11 +47,11 @@ static char *ctrlval(const char *listdir, const char *subdir,
 	ssize_t buflen;
 	FILE *fp;
 
-	if(listdir == NULL)
+	if (dfd == -1)
 		return NULL;
 
-	xasprintf(&filename, "%s/%s/%s", listdir, subdir, ctrlstr);
-	ctrlfd = open(filename, O_RDONLY|O_CLOEXEC);
+	xasprintf(&filename, "%s/%s", subdir, ctrlstr);
+	ctrlfd = openat(dfd, filename, O_RDONLY|O_CLOEXEC);
 	free(filename);
 
 	if(ctrlfd < 0)
@@ -73,6 +73,15 @@ static char *ctrlval(const char *listdir, const char *subdir,
 	fclose(fp);
 
 	return (buf);
+}
+static char *ctrlval(const char *listdir, const char *subdir,
+		const char *ctrlstr, int oneline)
+{
+	int dfd = open(listdir, O_DIRECTORY|O_CLOEXEC);
+	char *ret = ctrlvalat(dfd, subdir, ctrlstr, oneline);
+	if (dfd != -1)
+		close(dfd);
+	return (ret);
 }
 
 char *ctrlvalue(const char *listdir, const char *ctrlstr)
@@ -133,10 +142,10 @@ ctrluim(const char *listdir, const char *ctrlstr, uintmax_t min, uintmax_t max,
 }
 
 time_t
-ctrltimet(const char *listdir, const char *ctrlstr, time_t fallback)
+ctrltimet(int dfd, const char *ctrlstr, time_t fallback)
 {
 	const char *errstr;
-	char *val = ctrlvalue(listdir, ctrlstr);
+	char *val = ctrlvalat(dfd, "control", ctrlstr, 1);
 	time_t ret;
 
 	if (val == NULL)
