@@ -846,6 +846,7 @@ int main(int argc, char **argv)
 
 	while(1) {
 		if(listdir) {
+			log_set_namef("%s(%s)", argv[0], listdir);
 			int fd = open(listdir, O_DIRECTORY);
 			do_maintenance(fd, listdir, mlmmjsend, mlmmjbounce,
 					mlmmjunsub);
@@ -891,6 +892,7 @@ int main(int argc, char **argv)
 
 			char *l;
 			xasprintf(&l, "%s/%s", dirlists, dp->d_name);
+			log_set_namef("%s(%s)", argv[0], l);
 			do_maintenance(fd, l, mlmmjsend, mlmmjbounce,
 					mlmmjunsub);
 			free(l);
