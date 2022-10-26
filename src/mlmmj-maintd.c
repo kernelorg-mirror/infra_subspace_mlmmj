@@ -788,12 +788,13 @@ void do_maintenance(int listfd, const char *listdir, const char *mlmmjsend,
 
 int main(int argc, char **argv)
 {
-	int opt, daemonize = 1, ret = 0;
+	int opt;
 	char *bindir, *listdir = NULL, *mlmmjsend, *mlmmjbounce, *mlmmjunsub;
 	char *dirlists = NULL;
 	struct stat st;
 	struct dirent *dp;
 	DIR *dirp;
+	bool daemonize = true;
 
 	CHECKFULLPATH(argv[0]);
 
@@ -805,7 +806,7 @@ int main(int argc, char **argv)
 			dirlists = optarg;
 			break;
 		case 'F':
-			daemonize = 0;
+			daemonize = false;
 			break;
 		case 'L':
 			listdir = optarg;
@@ -835,13 +836,10 @@ int main(int argc, char **argv)
 	xasprintf(&mlmmjunsub, "%s/mlmmj-unsub", bindir);
 	free(bindir);
 
-	if(daemonize)
-		ret = mydaemon();
-
-	if(daemonize && ret < 0) {
+	if(daemonize && mydaemon() < 0) {
 		log_error(LOG_ARGS, "Could not daemonize. Only one "
 				"maintenance run will be done.");
-		daemonize = 0;
+		daemonize = false;
 	}
 
 	while(1) {
