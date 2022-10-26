@@ -842,6 +842,9 @@ int main(int argc, char **argv)
 		daemonize = false;
 	}
 
+	if (!daemonize)
+		log_activate_stderr();
+
 	while(1) {
 		if(listdir) {
 			log_set_namef("%s(%s)", argv[0], listdir);

@@ -18,10 +18,10 @@ bla
 EOF
 	atf_check -o inline:"bla\n" cat list/queue/discarded/*
 	# the discarded file is too new, do not drop it yet
-	atf_check -s exit:0 $mlmmjmaint -F -L ${here}/list
+	atf_check -s exit:0 -e ignore $mlmmjmaint -F -L ${here}/list
 	atf_check -o inline:"bla\n" cat list/queue/discarded/*
 	atf_check touch -m -t 197001010101 list/queue/discarded/*
-	atf_check -s exit:0 $mlmmjmaint -F -L ${here}/list
+	atf_check -s exit:0 -e ignore $mlmmjmaint -F -L ${here}/list
 	atf_check -o inline:"list/queue/discarded\n" find list/queue/discarded  -type d -empty
 
 	#now with relative path
@@ -29,9 +29,9 @@ EOF
 bla
 EOF
 	atf_check -o inline:"bla\n" cat list/queue/discarded/*
-	atf_check -s exit:0 $mlmmjmaint -F -L list
+	atf_check -s exit:0 -e ignore $mlmmjmaint -F -L list
 	atf_check -o inline:"bla\n" cat list/queue/discarded/*
 	atf_check touch -m -t 197001010101 list/queue/discarded/*
-	atf_check -s exit:0 $mlmmjmaint -F -L list
+	atf_check -s exit:0 -e ignore $mlmmjmaint -F -L list
 	atf_check -o inline:"list/queue/discarded\n" find list/queue/discarded  -type d -empty
 }

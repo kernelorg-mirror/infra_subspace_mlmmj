@@ -31,6 +31,7 @@
 
 void log_set_name(const char *name);
 void log_set_namef(const char *fmt, ...);
+void log_activate_stderr(void);
 void log_free_name(void);
 void log_error(const char *file, int line, const char *errstr,
 		const char *fmt, ...);

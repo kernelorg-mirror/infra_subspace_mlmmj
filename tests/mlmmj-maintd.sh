@@ -25,7 +25,7 @@ nolongerbouncing_body()
 	echo "$now" > ${f2}-probe
 	touch ${f2}
 	touch ${f2}.lastmsg
-	atf_check -s exit:0 -o empty -e empty $mlmmjmaintd -L lists/ml -F
+	atf_check -s exit:0 -o empty -e ignore $mlmmjmaintd -L lists/ml -F
 	atf_check -s exit:1 -o empty -e empty test -f $f1
 	atf_check -s exit:1 -o empty -e empty test -f $f1-probe
 	atf_check -s exit:1 -o empty -e empty test -f $f1.lastmsg
@@ -46,7 +46,7 @@ discarded_body()
 	f2=lists/ml/queue/discarded/notsoold
 	atf_check touch -t "197001020000"  $f1
 	atf_check touch $f2
-	atf_check -s exit:0 -o empty -e empty $mlmmjmaintd -L lists/ml -F
+	atf_check -s exit:0 -o empty -e ignore $mlmmjmaintd -L lists/ml -F
 	atf_check -s exit:1 -o empty -e empty test -f $f1
 	atf_check -s exit:0 -o empty -e empty test -f $f2
 }
@@ -72,7 +72,7 @@ basics_body()
 	atf_check -s exit:0 -o "inline:mlmmj-maintd version 1.3.0\n" $mlmmjmaintd -V
 	atf_check -s exit:0 -o "inline:$helptxt" $mlmmjmaintd -h
 	echo test@mlmmjtest > lists/ml/control/listaddress
-	atf_check -s exit:0 -o empty -e empty $mlmmjmaintd -L lists/ml -F
+	atf_check -s exit:0 -o empty -e ignore $mlmmjmaintd -L lists/ml -F
 	output="Starting maintenance run at
 
 clean_moderation

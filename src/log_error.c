@@ -1,6 +1,6 @@
-/* Copyright (C) 2004 Morten K. Poulsen <morten at afdelingp.dk>
- *
- * $Id$
+/*
+ * Copyright (C) 2004 Morten K. Poulsen <morten at afdelingp.dk>
+ * Copyright (C) 2022 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -21,6 +21,7 @@
  * IN THE SOFTWARE.
  */
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -37,11 +38,41 @@
 #endif
 
 static char *log_name = NULL;
+static bool syslog_is_open = false;
+#ifdef HAVE_SYSLOG
+static int syslog_logopt = LOG_PID|LOG_CONS;
+#endif
+
+static void
+_openlog(bool reopen)
+{
+#ifdef HAVE_SYSLOG
+	if (!reopen) {
+		if (syslog_is_open)
+			return;
+	} else {
+		if (!syslog_is_open)
+			closelog();
+	}
+	openlog(log_name, syslog_logopt, LOG_MAIL);
+	syslog_is_open = true;
+#endif
+}
 
 void log_set_name(const char* name)
 {
 	free(log_name);
 	log_name = xstrdup(name);
+
+	_openlog(true);
+}
+
+void
+log_activate_stderr(void)
+{
+#ifdef HAVE_SYSLOG
+	syslog_logopt |= LOG_PERROR;
+#endif
 }
 
 void
@@ -59,6 +90,8 @@ log_set_namef(const char *fmt, ...)
 
 	free(log_name);
 	log_name = buf;
+
+	_openlog(true);
 }
 
 void log_free_name()
@@ -69,24 +102,25 @@ void log_free_name()
 void log_error(const char *file, int line, const char *errstr,
 	const char *fmt, ...)
 {
-	static int syslog_is_open = 0;
-	char buf[1024];
+	char *buf;
 	va_list ap;
+	int i;
 
 	va_start(ap, fmt);
-	vsnprintf(buf, sizeof(buf), fmt, ap);
+	i = vasprintf(&buf, fmt, ap);
 	va_end(ap);
+
+	if (i < 0 || buf == NULL)
+		abort();
 
 	if (!log_name) log_name = "mlmmj-UNKNOWN";
 
 #ifdef HAVE_SYSLOG
-	if(!syslog_is_open) {
-		openlog(log_name, LOG_PID|LOG_CONS, LOG_MAIL);
-		syslog_is_open = 1;
-	}
+	_openlog(true);
 	syslog(LOG_ERR, "%s:%d: %s: %s", file, line, buf, errstr);
 #else
 	fprintf(stderr, "%s[%d]: %s:%d: %s: %s\n", log_name, (int)getpid(),
 			file, line, buf, errstr);
 #endif
+	free(buf);
 }
