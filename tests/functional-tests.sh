@@ -23,4 +23,15 @@ EOF
 	atf_check touch -m -t 197001010101 list/queue/discarded/*
 	atf_check -s exit:0 $mlmmjmaint -F -L ${here}/list
 	atf_check -o inline:"list/queue/discarded\n" find list/queue/discarded  -type d -empty
+
+	#now with relative path
+	atf_check -s exit:0 $mlmmjrecv -L list -F <<-EOF
+bla
+EOF
+	atf_check -o inline:"bla\n" cat list/queue/discarded/*
+	atf_check -s exit:0 $mlmmjmaint -F -L list
+	atf_check -o inline:"bla\n" cat list/queue/discarded/*
+	atf_check touch -m -t 197001010101 list/queue/discarded/*
+	atf_check -s exit:0 $mlmmjmaint -F -L list
+	atf_check -o inline:"list/queue/discarded\n" find list/queue/discarded  -type d -empty
 }
