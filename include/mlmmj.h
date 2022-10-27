@@ -25,6 +25,8 @@
 #define MLMMJ_GENERIC_INCLUDES
 
 #include "config.h"
+#include <stdbool.h>
+#include <time.h>
 
 #define RELAYHOST "127.0.0.1"
 #define READ_BUFSIZE 2048
@@ -95,6 +97,8 @@ enum subreason {
 extern char * subreason_strs[6]; /* count matches enum above; defined in subscriberfuncs.c */
 
 void print_version(const char *prg);
+bool parse_lastdigest(char *line, long *lastindex, time_t *lasttime,
+    long *lastissue, const char **errstr);
 
 #define MY_ASSERT(expression) if (!(expression)) { \
 			errno = 0; \

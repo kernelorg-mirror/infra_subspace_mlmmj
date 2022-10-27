@@ -609,7 +609,6 @@ unsub_bouncers(int dfd, const char *mlmmjunsub, const char *listdir, int logfd)
 static bool
 run_digests(int dfd, const char *mlmmjsend, const char *listdir, int logfd)
 {
-	char *lasttimestr, *lastindexstr, *lastissuestr;
 	char *s1, *s2;
 	time_t digestinterval, t, lasttime;
 	long digestmaxmails, lastindex, index, lastissue;
@@ -639,47 +638,9 @@ run_digests(int dfd, const char *mlmmjsend, const char *listdir, int logfd)
 	s1 = mygetline(fd);
 
 	/* Syntax is lastindex:lasttime or lastindex:lasttime:lastissue */
-	if (s1 && (lasttimestr = strchr(s1, ':'))) {
-		*(lasttimestr++) = '\0';
-		if ((lastissuestr = strchr(lasttimestr, ':'))) {
-			*(lastissuestr++) = '\0';
-			lastissue = strtoim(lastissuestr, LONG_MIN, LONG_MAX,
-			    &errstr);
-			if (errstr != NULL) {
-				log(" - 'lastdigests' contains malformed "
-				    "data: Impossible to parse lastissue: '%s':"
-				    " %s", lastissuestr, errstr);
-				close(fd);
-				return (false);
-			}
-		} else {
-			lastissue = 0;
-		}
-		lasttime = strtotimet(lasttimestr, &errstr);
-		if (errstr) {
-			log(" - 'lastdigest' invalid last time string: "
-			    "'%s': %s", lasttimestr, errstr);
-			close(fd);
-			return (false);
-		}
-		lastindexstr = s1;
-		lastindex = strtoim(lastindexstr, LONG_MIN, LONG_MAX, &errstr);
-		if (errstr != NULL) {
-			log("'lastdigests' invalid last index: '%s': %s\n",
-			    lastindexstr, errstr);
-			return (false);
-		}
-	} else {
-		if (s1 && (strlen(s1) > 0)) {
-			log_error(LOG_ARGS, "'lastdigest' invalid first line");
-			free(s1);
-			close(fd);
-			return (false);
-		}
-		/* If lastdigest is empty, we start from scratch */
-		lasttime = 0;
-		lastindex = 0;
-		lastissue = 0;
+	if (!parse_lastdigest(s1, &lastindex, &lasttime, &lastissue, &errstr)) {
+		log(" - malformerd lastdigest '%s': %s", s1, errstr);
+		return (false);
 	}
 
 	indexfd = openat(dfd, "index", O_RDONLY);

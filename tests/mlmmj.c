@@ -71,6 +71,7 @@ ATF_TC_WITHOUT_HEAD(write_mail_from);
 ATF_TC_WITHOUT_HEAD(write_mailbody_from_map);
 ATF_TC_WITHOUT_HEAD(strtotimet);
 ATF_TC_WITHOUT_HEAD(decode_qp);
+ATF_TC_WITHOUT_HEAD(parse_lastdigest);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -702,6 +703,88 @@ ATF_TC_BODY(decode_qp, tc)
 	ATF_REQUIRE_STREQ(decode_qp("This_ is a subject"), "This_ is a subject");
 }
 
+ATF_TC_BODY(parse_lastdigest, tc)
+{
+	time_t lasttime;
+	long lastissue;
+	long lastindex;
+	const char *errstr;
+	char *line;
+
+	line = xstrdup("1:2:3");
+	ATF_REQUIRE(parse_lastdigest(line, &lastindex, &lasttime, &lastissue,
+	    &errstr));
+	ATF_REQUIRE(errstr == NULL);
+	ATF_REQUIRE(lastindex == 1);
+	ATF_REQUIRE(lasttime == 2);
+	ATF_REQUIRE(lastissue == 3);
+	free(line);
+
+	line = xstrdup("1");
+	ATF_REQUIRE(!parse_lastdigest(line, &lastindex, &lasttime, &lastissue,
+	    &errstr));
+	ATF_REQUIRE_STREQ(errstr, "Invalid format, expecting 2 or 3 fields");
+	free(line);
+
+	line = xstrdup("1:2:3:4");
+	ATF_REQUIRE(!parse_lastdigest(line, &lastindex, &lasttime, &lastissue,
+	    &errstr));
+	ATF_REQUIRE_STREQ(errstr, "Invalid format, expecting 2 or 3 fields");
+	free(line);
+
+	ATF_REQUIRE(parse_lastdigest(NULL, &lastindex, &lasttime, &lastissue,
+	    &errstr));
+	ATF_REQUIRE(errstr == NULL);
+	ATF_REQUIRE(lastindex == 0);
+	ATF_REQUIRE(lasttime == 0);
+	ATF_REQUIRE(lastissue == 0);
+
+	line = xstrdup("1:2");
+	ATF_REQUIRE(parse_lastdigest(line, &lastindex, &lasttime, &lastissue,
+	    &errstr));
+	ATF_REQUIRE(errstr == NULL);
+	ATF_REQUIRE(lastindex == 1);
+	ATF_REQUIRE(lasttime == 2);
+	ATF_REQUIRE(lastissue == 0);
+	free(line);
+
+	line = xstrdup("a:2");
+	ATF_REQUIRE(!parse_lastdigest(line, &lastindex, &lasttime, &lastissue,
+	    &errstr));
+	ATF_REQUIRE_STREQ(errstr, "Invalid value for lastindex");
+	free(line);
+
+	line = xstrdup("-1:2");
+	ATF_REQUIRE(!parse_lastdigest(line, &lastindex, &lasttime, &lastissue,
+	    &errstr));
+	ATF_REQUIRE_STREQ(errstr, "Invalid value for lastindex");
+	free(line);
+
+	line = xstrdup("1:");
+	ATF_REQUIRE(!parse_lastdigest(line, &lastindex, &lasttime, &lastissue,
+	    &errstr));
+	ATF_REQUIRE_STREQ(errstr, "Invalid value for lasttime");
+	free(line);
+
+	line = xstrdup("1:a");
+	ATF_REQUIRE(!parse_lastdigest(line, &lastindex, &lasttime, &lastissue,
+	    &errstr));
+	ATF_REQUIRE_STREQ(errstr, "Invalid value for lasttime");
+	free(line);
+
+	line = xstrdup("1:1:");
+	ATF_REQUIRE(!parse_lastdigest(line, &lastindex, &lasttime, &lastissue,
+	    &errstr));
+	ATF_REQUIRE_STREQ(errstr, "Invalid value for lastissue");
+	free(line);
+
+	line = xstrdup("1:1:a");
+	ATF_REQUIRE(!parse_lastdigest(line, &lastindex, &lasttime, &lastissue,
+	    &errstr));
+	ATF_REQUIRE_STREQ(errstr, "Invalid value for lastissue");
+	free(line);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -728,6 +811,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, write_mailbody_from_map);
 	ATF_TP_ADD_TC(tp, strtotimet);
 	ATF_TP_ADD_TC(tp, decode_qp);
+	ATF_TP_ADD_TC(tp, parse_lastdigest);
 
 	return (atf_no_error());
 }
