@@ -72,6 +72,7 @@ log_activate_stderr(void)
 {
 #ifdef HAVE_SYSLOG
 	syslog_logopt |= LOG_PERROR;
+	_openlog(true);
 #endif
 }
 
