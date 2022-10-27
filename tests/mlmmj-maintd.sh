@@ -6,6 +6,7 @@ tests_init \
 	nolongerbouncing \
 	discarded \
 	digests \
+	unsub_bouncers \
 	basics
 
 nolongerbouncing_body()
@@ -339,4 +340,114 @@ run_digests
  - Could not open or create 'lastdigest': Permission denied
 "
 	atf_check -o "inline:$output" sed -e "s/at .*/at/" lists/ml/mlmmj-maintd.lastrun.log
+}
+
+unsub_bouncers_body()
+{
+	mlmmjmaintd=$(command -v mlmmj-maintd)
+	mkdir lists
+	init_ml list
+
+	# empty file, it should be ignored
+	touch list/bounce/plop
+	atf_check -s exit:0 $mlmmjmaintd -L list -F
+	atf_check -s exit:0 test -f list/bounce/plop
+	rm list/bounce/plop
+
+	# ignore probe files
+	touch list/bounce/plop-probe
+	atf_check -s exit:0 $mlmmjmaintd -L list -F
+	atf_check -s exit:0 test -f list/bounce/plop-probe
+	rm list/bounce/plop-probe
+
+	# ignore lastmsg files
+	touch list/bounce/plop.lastmsg
+	atf_check -s exit:0 $mlmmjmaintd -L list -F
+	atf_check -s exit:0 test -f list/bounce/plop.lastmsg
+	rm list/bounce/plop.lastmsg
+
+	# ignore files with a probe out already
+	echo "a:1234 # plop" > list/bounce/plop
+	touch list/bounce/plop-probe
+	atf_check -s exit:0 $mlmmjmaintd -L list -F
+	atf_check -s exit:0 test -f list/bounce/plop
+	atf_check -s exit:0 test -f list/bounce/plop-probe
+	rm list/bounce/*
+
+	# filename should contain a = to be properly treated
+	echo "a:1234 # plop" > list/bounce/plop
+	atf_check -s exit:0 $mlmmjmaintd -L list -F
+	atf_check -s exit:0 test -f list/bounce/plop
+	rm list/bounce/plop
+
+	# Log if invalid format
+	echo "a:a #plop" > list/bounce/plop=meh
+	atf_check -s exit:0 -e match:"An error occured while unsubscribing bouncing emails, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L list -F
+	atf_check -s exit:0 test -f list/bounce/plop=meh
+	output="Starting maintenance run at
+
+clean_moderation
+clean_discarded
+clean_subconf
+clean_unsubconf
+resend_queue
+resend_requeue
+clean_nolongerbouncing
+unsub_bouncers
+ - Error parsing the first line of bounce/plop=meh: invalid
+probe_bouncers
+run_digests
+ - No readable index file: no digest
+"
+	atf_check -o "inline:$output" sed -e "s/at .*/at/" list/mlmmj-maintd.lastrun.log
+
+	# Log unreabable bouncefile
+	echo "a:1234 #plop" > list/bounce/plop=meh
+	chmod -r list/bounce/plop=meh
+	atf_check -s exit:0 -e match:"An error occured while unsubscribing bouncing emails, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L list -F
+	atf_check -s exit:0 test -f list/bounce/plop=meh
+	output="Starting maintenance run at
+
+clean_moderation
+clean_discarded
+clean_subconf
+clean_unsubconf
+resend_queue
+resend_requeue
+clean_nolongerbouncing
+unsub_bouncers
+ - Could not open bounce/plop=meh: Permission denied
+probe_bouncers
+run_digests
+ - No readable index file: no digest
+"
+	atf_check -o "inline:$output" sed -e "s/at .*/at/" list/mlmmj-maintd.lastrun.log
+	rm list/bounce/plop=meh
+
+	# keep if recent enough
+	echo "a:$(date +%s) # plop" > list/bounce/plop=meh
+	atf_check -s exit:0 $mlmmjmaintd -L list -F
+	atf_check -s exit:0 test -f list/bounce/plop=meh
+
+	echo "a:1234 # plop" > list/bounce/plop=meh
+	atf_check -s exit:0 $mlmmjmaintd -L list -F
+	atf_check -s exit:1 test -f list/bounce/plop=meh
+
+	# last message properly cleaned out
+	echo "a:1234 # plop" > list/bounce/plop=meh
+	echo plop > list/bounce/plop=meh.lastmsg
+	atf_check -s exit:0 $mlmmjmaintd -L list -F
+	atf_check -s exit:1 test -f list/bounce/plop=meh
+	atf_check -s exit:1 test -f list/bounce/plop=meh.lastmsg
+
+	# has been unsubscribe from regular
+	echo "a:1234 # plop" > list/bounce/plop=meh
+	echo "plop@meh" > list/subscribers.d/p
+	echo "plop@meh" > list/digesters.d/p
+	echo "plop@meh" > list/nomailsubs.d/p
+	atf_check -s exit:0 $mlmmjmaintd -L list -F
+	atf_check -s exit:1 test -f list/bounce/plop=meh
+	atf_check -s exit:1 test -f list/subscribers.d/p
+	atf_check -s exit:1 test -f list/digesters.d/p
+	atf_check -s exit:1 test -f list/nomailsubs.d/p
 }

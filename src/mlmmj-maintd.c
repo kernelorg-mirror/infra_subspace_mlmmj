@@ -535,7 +535,7 @@ unsub_bouncers(int dfd, const char *mlmmjunsub, const char *listdir, int logfd)
 		 */
 		int fd = openat(bfd, dp->d_name, O_RDONLY|O_CLOEXEC);
 		if(fd == -1) {
-			log(" - Could not open bounce/%s: %s", dp->d_name,
+			log(" - Could not open bounce/%s: %s\n", dp->d_name,
 			    strerror(errno));
 			ret = false;
 			continue;
@@ -548,7 +548,7 @@ unsub_bouncers(int dfd, const char *mlmmjunsub, const char *listdir, int logfd)
 		bouncetime = extract_bouncetime(firstbounce, &errstr);
 		free(firstbounce);
 		if (errstr != NULL) {
-			log("- Error parsing the first line of bounce/%s : %s\n",
+			log(" - Error parsing the first line of bounce/%s: %s\n",
 			    dp->d_name, errstr);
 			ret = false;
 			continue;
