@@ -944,7 +944,7 @@ int main(int argc, char **argv)
 			if (fd == -1)
 				continue;
 
-			if (fstatat(fd, "control/listaddress", &st, 0) <0)
+			if (faccessat(fd, "control/listaddress", F_OK, 0) <0)
 				continue;
 
 			char *l;
