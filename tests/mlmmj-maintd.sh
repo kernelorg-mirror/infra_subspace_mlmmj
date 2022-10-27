@@ -220,6 +220,26 @@ run_digests
 "
 	atf_check -o "inline:$output" sed -e "s/at .*/at/" lists/ml/mlmmj-maintd.lastrun.log
 	mkdir -p lists/ml/unsubconf
+
+	rm -rf lists/ml/moderation
+	atf_check -s exit:0 -e match:"An error occured while cleaning moderation, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L lists/ml -F
+	output="Starting maintenance run at
+
+clean_moderation
+ - Could not open 'moderation': No such file or directory
+clean_discarded
+clean_subconf
+clean_unsubconf
+resend_queue
+resend_requeue
+clean_nolongerbouncing
+unsub_bouncers
+probe_bouncers
+run_digests
+ - No readable index file: no digest
+"
+	atf_check -o "inline:$output" sed -e "s/at .*/at/" lists/ml/mlmmj-maintd.lastrun.log
+	mkdir -p lists/ml/moderation
 }
 
 digests_body()
