@@ -177,7 +177,7 @@ resend_queue(int dfd, const char *mlmmjsend, const char *listdir, int logfd)
 			MY_ASSERT(ch);
 			*ch = '\0';
 			/* delete orphaned sidecar files */
-			if(fstatat(qfd, mailname, &st, 0) < 0) {
+			if(faccessat(qfd, mailname, F_OK, 0) < 0) {
 				if(errno == ENOENT) {
 					*ch = '.';
 					if (unlinkat(qfd, mailname, 0) == -1) {
@@ -313,7 +313,7 @@ resend_requeue(int dfd, const char *mlmmjsend, const char *listdir, int logfd)
 		/* Explicitly initialize for each mail we examine */
 		fromrequeuedir = false;
 
-		if(fstatat(dfd, archivefilename, &st, 0) < 0) {
+		if(faccessat(dfd, archivefilename, F_OK, 0) < 0) {
 			/* Might be it's just not moved to the archive
 			 * yet because it's still getting sent, so just
 			 * continue
@@ -325,14 +325,14 @@ resend_requeue(int dfd, const char *mlmmjsend, const char *listdir, int logfd)
 			 */
 			xasprintf(&archivefilename, "requeue/%s/mailfile",
 			    dp->d_name);
-			if(fstatat(dfd, archivefilename, &st, 0) < 0) {
+			if(faccessat(dfd, archivefilename, F_OK, 0) < 0) {
 				free(archivefilename);
 				continue;
 			}
 			fromrequeuedir = true;
 		}
 		xasprintf(&subfilename, "%s/subscribers", dp->d_name);
-		if(fstatat(fd, subfilename, &st, 0) < 0) {
+		if(faccessat(fd, subfilename, F_OK, 0) < 0) {
 			if (fromrequeuedir) {
 				if (unlinkat(dfd, archivefilename, 0) == -1) {
 					log(" - Cound not remove %s: %s\n",
@@ -375,7 +375,6 @@ clean_nolongerbouncing(int dfd, int logfd)
 	int probefd;
 	time_t probetime, t;
 	struct dirent *dp;
-	struct stat st;
 	int fd;
 	const char *errstr;
 	bool ret = true;
@@ -390,9 +389,9 @@ clean_nolongerbouncing(int dfd, int logfd)
 
 		s = strrchr(filename, '-');
 		if(s && (strcmp(s, "-probe") == 0)) {
-			if(fstatat(fd, filename, &st, 0) < 0) {
-				log(" - Could not stat(bounce/%s)",
-					  filename);
+			if (faccessat(fd, filename, F_OK, 0) < 0) {
+				log(" - Could not access(bounce/%s)",
+				    filename);
 				free(filename);
 				ret = false;
 				continue;
@@ -447,7 +446,6 @@ probe_bouncers(int dfd, const char *mlmmjbounce, const char *listdir, int logfd)
 	DIR *bouncedir;
 	char *probefile, *s;
 	struct dirent *dp;
-	struct stat st;
 	int fd;
 	bool ret = true;
 
@@ -465,7 +463,7 @@ probe_bouncers(int dfd, const char *mlmmjbounce, const char *listdir, int logfd)
 		if(s && (strcmp(s, ".lastmsg") == 0))
 			continue;
 
-		if(fstatat(fd, dp->d_name, &st, 0) < 0) {
+		if(faccessat(fd, dp->d_name, F_OK, 0) < 0) {
 			log(" - Could not stat(bounce/%s): %s\n", dp->d_name,
 			    strerror(errno));
 			ret = false;
@@ -475,7 +473,7 @@ probe_bouncers(int dfd, const char *mlmmjbounce, const char *listdir, int logfd)
 		xasprintf(&probefile, "%s-probe", dp->d_name);
 
 		/* Skip files which already have a probe out */
-		if(fstatat(fd, probefile, &st, 0) == 0) {
+		if(faccessat(fd, probefile, F_OK, 0) == 0) {
 			free(probefile);
 			continue;
 		}
@@ -495,7 +493,6 @@ unsub_bouncers(int dfd, const char *mlmmjunsub, const char *listdir, int logfd)
 	DIR *bouncedir;
 	char *probefile, *address, *a, *firstbounce, *bouncedata;
 	struct dirent *dp;
-	struct stat st;
 	int bfd;
 	time_t bouncetime, t, bouncelife;
 	const char *errstr;
@@ -518,7 +515,7 @@ unsub_bouncers(int dfd, const char *mlmmjunsub, const char *listdir, int logfd)
 		if(a && (strcmp(a, ".lastmsg") == 0))
 			continue;
 
-		if(fstatat(bfd, dp->d_name, &st, 0) < 0) {
+		if(faccessat(bfd, dp->d_name, F_OK, 0) < 0) {
 			log(" - Could not stat(bounce/%s): %s\n",
 			    dp->d_name, strerror(errno));
 			ret = false;
@@ -528,7 +525,7 @@ unsub_bouncers(int dfd, const char *mlmmjunsub, const char *listdir, int logfd)
 		xasprintf(&probefile, "%s-probe", dp->d_name);
 
 		/* Skip files which already have a probe out */
-		if(fstatat(bfd, probefile, &st, 0) == 0) {
+		if(faccessat(bfd, probefile, F_OK, 0) == 0) {
 			free(probefile);
 			continue;
 		}
