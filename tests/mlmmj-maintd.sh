@@ -70,9 +70,10 @@ basics_body()
 
 	atf_check -s exit:1 -e "inline:mlmmj-maintd: You have to specify -d or -L\n$mlmmjmaintd -h for help\n" $mlmmjmaintd
 	atf_check -s exit:1 -e "inline:mlmmj-maintd: You have to specify either -d or -L\n$mlmmjmaintd -h for help\n" $mlmmjmaintd -L lists/ml -d .
-	atf_check -s exit:0 -o "inline:mlmmj-maintd version 1.3.0\n" $mlmmjmaintd -V
+	atf_check -s exit:0 -o "match:mlmmj-maintd version" $mlmmjmaintd -V
 	atf_check -s exit:0 -o "inline:$helptxt" $mlmmjmaintd -h
 	echo test@mlmmjtest > lists/ml/control/listaddress
+	atf_check -s exit:1 -e match:"Could not open the directory containing mailing lists.*: No such file or directory" $mlmmjmaintd -F -d nonexisting
 	atf_check -s exit:0 $mlmmjmaintd -L lists/ml -F
 	output="Starting maintenance run at
 

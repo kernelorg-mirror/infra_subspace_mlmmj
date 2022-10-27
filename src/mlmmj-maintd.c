@@ -919,18 +919,10 @@ int main(int argc, char **argv)
 		}
 
 		int dfd = open(dirlists, O_DIRECTORY);
-		if(dfd == -1) {
-			log_error(LOG_ARGS, "Could not open directory(%s).",
-					dirlists);
-			free(mlmmjbounce);
-			free(mlmmjsend);
-			free(mlmmjunsub);
-			exit(EXIT_FAILURE);
-		}
-
-		if((dirp = fdopendir(dfd)) == NULL) {
-			log_error(LOG_ARGS, "Could not opendir(%s).",
-					dirlists);
+		if (dfd == -1 || (dirp = fdopendir(dfd)) == NULL) {
+			log_err("Could not open the directory containing "
+			    "mailing lists (%s): %s", dirlists,
+			    strerror(errno));
 			free(mlmmjbounce);
 			free(mlmmjsend);
 			free(mlmmjunsub);
