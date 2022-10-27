@@ -303,10 +303,9 @@ resend_requeue(int dfd, const char *mlmmjsend, const char *listdir, int logfd)
 
 		/* Remove old empty directories */
 		t = time(NULL);
-		if(t - st.st_mtime > (time_t)3600)
-			if (unlinkat(fd, dp->d_name, AT_REMOVEDIR) == 0) {
-				continue;
-			}
+		if(t - st.st_mtime > (time_t)3600 &&
+		    unlinkat(fd, dp->d_name, AT_REMOVEDIR) == 0)
+			continue;
 
 		xasprintf(&archivefilename, "archive/%s", dp->d_name);
 
