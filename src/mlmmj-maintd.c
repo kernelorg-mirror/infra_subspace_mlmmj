@@ -855,7 +855,6 @@ int main(int argc, char **argv)
 	int opt;
 	char *bindir, *listdir = NULL, *mlmmjsend, *mlmmjbounce, *mlmmjunsub;
 	char *dirlists = NULL;
-	struct stat st;
 	struct dirent *dp;
 	DIR *dirp;
 	bool daemonize = true;
@@ -933,12 +932,6 @@ int main(int argc, char **argv)
 			if((strcmp(dp->d_name, "..") == 0) ||
 					(strcmp(dp->d_name, ".") == 0))
 				continue;
-
-			if (fstatat(dfd, dp->d_name, &st, 0) <0) {
-				log_error(LOG_ARGS, "Could not stat(%s/%s)",
-				    dirlists, dp->d_name);
-				continue;
-			}
 
 			int fd = openat(dfd, dp->d_name,  O_DIRECTORY);
 			if (fd == -1)
