@@ -99,6 +99,7 @@ extern char * subreason_strs[6]; /* count matches enum above; defined in subscri
 void print_version(const char *prg);
 bool parse_lastdigest(char *line, long *lastindex, time_t *lasttime,
     long *lastissue, const char **errstr);
+time_t extract_bouncetime(char *line, const char **errstr);
 
 #define MY_ASSERT(expression) if (!(expression)) { \
 			errno = 0; \

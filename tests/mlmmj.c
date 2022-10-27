@@ -72,6 +72,7 @@ ATF_TC_WITHOUT_HEAD(write_mailbody_from_map);
 ATF_TC_WITHOUT_HEAD(strtotimet);
 ATF_TC_WITHOUT_HEAD(decode_qp);
 ATF_TC_WITHOUT_HEAD(parse_lastdigest);
+ATF_TC_WITHOUT_HEAD(extract_bouncetime);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -785,6 +786,42 @@ ATF_TC_BODY(parse_lastdigest, tc)
 	free(line);
 }
 
+ATF_TC_BODY(extract_bouncetime, tc)
+{
+	char *line;
+	const char *errstr;
+
+	line = xstrdup("any:1234 # comment");
+	ATF_REQUIRE_EQ(extract_bouncetime(line, &errstr), 1234);
+	ATF_REQUIRE(errstr == NULL);
+	free(line);
+
+	line = xstrdup("any:meh # comment");
+	ATF_REQUIRE_EQ(extract_bouncetime(line, &errstr), 0);
+	ATF_REQUIRE_STREQ(errstr, "invalid");
+	free(line);
+
+	line = xstrdup("any:meh ");
+	ATF_REQUIRE_EQ(extract_bouncetime(line, &errstr), 0);
+	ATF_REQUIRE_STREQ(errstr, "comment is missing");
+	free(line);
+
+	line = xstrdup("any:1234    # comment");
+	ATF_REQUIRE_EQ(extract_bouncetime(line, &errstr), 1234);
+	ATF_REQUIRE(errstr == NULL);
+	free(line);
+
+	line = xstrdup("    # comment");
+	ATF_REQUIRE_EQ(extract_bouncetime(line, &errstr), 0);
+	ATF_REQUIRE_STREQ(errstr, "':' missing");
+	free(line);
+
+	line = xstrdup("a    # comment");
+	ATF_REQUIRE_EQ(extract_bouncetime(line, &errstr), 0);
+	ATF_REQUIRE_STREQ(errstr, "':' missing");
+	free(line);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -812,6 +849,8 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, strtotimet);
 	ATF_TP_ADD_TC(tp, decode_qp);
 	ATF_TP_ADD_TC(tp, parse_lastdigest);
+	ATF_TP_ADD_TC(tp, extract_bouncetime);
+
 
 	return (atf_no_error());
 }

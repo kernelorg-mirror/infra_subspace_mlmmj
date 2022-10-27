@@ -83,3 +83,32 @@ parse_lastdigest(char *line, long *lastindex, time_t *lasttime,
 	}
 	return (true);
 }
+
+time_t
+extract_bouncetime(char *line, const char **errstr)
+{
+	char *walk;
+	*errstr = NULL;
+
+	walk = strrchr(line, '#');
+	if (walk == NULL) {
+		*errstr = "comment is missing";
+		return (0);
+	}
+
+	*walk = '\0';
+	walk--;
+	while (walk > line && isspace(*walk)) {
+		*walk = '\0';
+		walk--;
+	}
+
+	walk = strchr(line, ':');
+	if (walk == NULL) {
+		*errstr = "':' missing";
+		return (0);
+	}
+	walk++;
+
+	return (strtotimet(walk, errstr));
+}
