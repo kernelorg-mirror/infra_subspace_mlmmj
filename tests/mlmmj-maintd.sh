@@ -74,6 +74,9 @@ basics_body()
 	atf_check -s exit:0 -o "inline:$helptxt" $mlmmjmaintd -h
 	echo test@mlmmjtest > lists/ml/control/listaddress
 	atf_check -s exit:1 -e match:"Could not open the directory containing mailing lists.*: No such file or directory" $mlmmjmaintd -F -d nonexisting
+	chmod -w lists/ml
+	atf_check -s exit:0 -e match:"Could not open maintdlog.* Permission denied" $mlmmjmaintd -F -L lists/ml
+	chmod +w lists/ml
 	atf_check -s exit:0 $mlmmjmaintd -L lists/ml -F
 	output="Starting maintenance run at
 

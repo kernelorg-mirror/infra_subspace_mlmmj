@@ -781,7 +781,7 @@ void do_maintenance(int listfd, const char *listdir, const char *mlmmjsend,
 
 	logfd = openat(listfd, logname, O_WRONLY|O_EXCL|O_CREAT, S_IRUSR|S_IWUSR);
 	if(logfd == -1) {
-		log_error(LOG_ARGS, "Could not open %s", logname);
+		log_err("Could not open %s: %s", logname, strerror(errno));
 		free(logname);
 		return;
 	}
