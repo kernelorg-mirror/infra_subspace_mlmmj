@@ -490,7 +490,7 @@ static bool
 unsub_bouncers(int dfd, const char *mlmmjunsub, const char *listdir, int logfd)
 {
 	DIR *bouncedir;
-	char *probefile, *address, *a, *firstbounce, *bouncedata;
+	char *probefile, *address, *a, *firstbounce;
 	struct dirent *dp;
 	int bfd;
 	time_t bouncetime, t, bouncelife;
@@ -545,50 +545,23 @@ unsub_bouncers(int dfd, const char *mlmmjunsub, const char *listdir, int logfd)
 		if(firstbounce == NULL)
 			continue;
 
-		/* End the string at the comment */
-		a = strchr(firstbounce, '#');
-		if(a == NULL) {
-			log("- Error parsing the first line of bounce/%s",
-			    dp->d_name);
-			ret = false;
-			free(firstbounce);
-			continue;
-		}
-		*a = '\0';
-		bouncedata = xstrdup(a+1); /* Save for the log */
-		chomp(bouncedata);
-		a = strchr(firstbounce, ':');
-		if(a == NULL) {
-			log("- Error parsing the first line of bounce/%s",
-			    dp->d_name);
-			ret = false;
-			free(firstbounce);
-			free(bouncedata);
-			continue;
-		}
-
-		a++; /* Increase to first digit */
-		bouncetime = strtotimet(a, &errstr);
+		bouncetime = extract_bouncetime(firstbounce, &errstr);
 		free(firstbounce);
 		if (errstr != NULL) {
-			log("- Error parsing the first line of bounce/%s",
-			    dp->d_name);
+			log("- Error parsing the first line of bounce/%s : %s\n",
+			    dp->d_name, errstr);
 			ret = false;
-			free(bouncedata);
 			continue;
 		}
 		t = time(NULL);
-		if(t - bouncetime < bouncelife + WAITPROBE) {
-			free(bouncedata);
+		if(t - bouncetime < bouncelife + WAITPROBE)
 			continue; /* ok, don't unsub this one */
-		}
 		
 		/* Ok, go ahead and unsubscribe the address */
 		address = xstrdup(dp->d_name);
 		a = strchr(address, '=');
 		if(a == NULL) { /* skip malformed */
 			free(address);
-			free(bouncedata);
 			continue;
 		}
 		*a = '@';
