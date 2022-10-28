@@ -274,9 +274,8 @@ ssize_t unsubscribe(int subreadfd, int subwritefd, const char *address)
 static void print_help(const char *prg)
 {
 	printf("Usage: %s -L /path/to/list -a john@doe.org\n"
-	       "       [-b] [-c | -C] [-h] [-L] [-d | -n | -N] [-q] [-r | -R] [-s] [-V]\n"
+	       "       [-c | -C] [-h] [-L] [-d | -n | -N] [-q] [-r | -R] [-s] [-V]\n"
 	       " -a: Email address to unsubscribe \n"
-	       " -b: Behave as if unsubscription is due to bouncing (internal use)\n"
 	       " -c: Send goodbye mail\n"
 	       " -C: Request mail confirmation\n"
 	       " -d: Unsubscribe from digest of list\n"
@@ -463,16 +462,13 @@ int main(int argc, char **argv)
 	mlmmjsend = concatstr(2, bindir, "/mlmmj-send");
 	free(bindir);
 
-	while ((opt = getopt(argc, argv, "hcCdenNVUL:a:sbqrR")) != -1) {
+	while ((opt = getopt(argc, argv, "hcCdenNVUL:a:sqrR")) != -1) {
 		switch(opt) {
 		case 'L':
 			listdir = optarg;
 			break;
 		case 'a':
 			address = optarg;
-			break;
-		case 'b':
-			reasonsub = SUB_BOUNCING;
 			break;
 		case 'c':
 			confirmunsub = 1;
@@ -536,11 +532,6 @@ int main(int argc, char **argv)
 
 	if(reasonsub == SUB_CONFIRM && unsubconfirm) {
 		errx(EXIT_FAILURE, "Cannot specify both -C and -R\n"
-		    "%s -h for help", argv[0]);
-	}
-
-	if(reasonsub == SUB_BOUNCING && unsubconfirm) {
-		errx(EXIT_FAILURE, "Cannot specify both -C and -b\n"
 		    "%s -h for help", argv[0]);
 	}
 
