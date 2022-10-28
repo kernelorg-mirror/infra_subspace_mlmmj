@@ -441,7 +441,7 @@ int main(int argc, char **argv)
 		generate_unsubconfirm(listdir, listaddr, listdelim, address,
 				mlmmjsend, typesub, reasonsub);
 
-	do_unsubscribe(listfd, address, typesub);
+	unsubscribe(listfd, address, typesub);
 	close(listfd);
 
 	if(confirmunsub) {

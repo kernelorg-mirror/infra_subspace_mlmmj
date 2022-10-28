@@ -566,7 +566,7 @@ unsub_bouncers(int dfd, int logfd)
 		}
 		*a = '@';
 
-		if (!do_unsubscribe(dfd, address, SUB_ALL)) {
+		if (!unsubscribe(dfd, address, SUB_ALL)) {
 			log(" - Some errors during unsubscription of %s\n",
 			    address);
 			ret = false;

@@ -136,7 +136,7 @@ open_subscriber_directory(int listfd, enum subtype typesub, const char **subdir)
 }
 
 bool
-do_unsubscribe(int listfd, const char *address, enum subtype typesub)
+unsubscribe(int listfd, const char *address, enum subtype typesub)
 {
 	struct dirent *dp;
 	DIR *dir;
@@ -149,11 +149,11 @@ do_unsubscribe(int listfd, const char *address, enum subtype typesub)
 
 	switch (typesub) {
 	case SUB_ALL:
-		if (!do_unsubscribe(listfd, address, SUB_NORMAL))
+		if (!unsubscribe(listfd, address, SUB_NORMAL))
 			ret = false;
-		if (!do_unsubscribe(listfd, address, SUB_DIGEST))
+		if (!unsubscribe(listfd, address, SUB_DIGEST))
 			ret = false;
-		if (!do_unsubscribe(listfd, address, SUB_NOMAIL))
+		if (!unsubscribe(listfd, address, SUB_NOMAIL))
 			ret = false;
 		return (ret);
 	case SUB_NORMAL:

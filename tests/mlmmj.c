@@ -886,7 +886,7 @@ ATF_TC_BODY(unsubscribe, tc)
 	fputs("john@doe.org\n", f);
 	fclose(f);
 
-	ATF_REQUIRE(do_unsubscribe(listfd, "john@doe.org", SUB_ALL));
+	ATF_REQUIRE(unsubscribe(listfd, "john@doe.org", SUB_ALL));
 	ATF_REQUIRE_EQ_MSG(access("list/subscribers.d/j", F_OK), -1, "Not unsubscribed");
 	ATF_REQUIRE_EQ_MSG(access("list/digesters.d/j", F_OK), -1, "Not unsubscribed from digest");
 	if (!atf_utils_compare_file("list/nomailsubs.d/j", "jane@doe.org\n")) {
@@ -894,28 +894,28 @@ ATF_TC_BODY(unsubscribe, tc)
 		atf_tc_fail("Not unsubscribed from nomail");
 	}
 
-	ATF_REQUIRE(do_unsubscribe(listfd, "jane@doe.org", SUB_NOMAIL));
+	ATF_REQUIRE(unsubscribe(listfd, "jane@doe.org", SUB_NOMAIL));
 	ATF_REQUIRE_EQ_MSG(access("list/nomailsubs.d/j", F_OK), -1, "Not unsubscribed from nomail");
 
-	ATF_REQUIRE(!do_unsubscribe(listfd, "plop@meh", SUB_BOTH));
+	ATF_REQUIRE(!unsubscribe(listfd, "plop@meh", SUB_BOTH));
 	rmdir("list/subscribers.d");
-	ATF_REQUIRE(!do_unsubscribe(listfd, "plop@meh", SUB_NORMAL));
+	ATF_REQUIRE(!unsubscribe(listfd, "plop@meh", SUB_NORMAL));
 	mkdir("list/subscribers.d", 0755);
 
 	f = fopen("list/nomailsubs.d/j", "w");
 	fclose(f);
 	chmod("list/nomailsubs.d/j", 0111);
-	ATF_REQUIRE(do_unsubscribe(listfd, "plop@meh", SUB_NOMAIL));
+	ATF_REQUIRE(unsubscribe(listfd, "plop@meh", SUB_NOMAIL));
 	chmod("list/nomailsubs.d/j", 0644);
-	ATF_REQUIRE(do_unsubscribe(listfd, "plop@meh", SUB_NOMAIL));
+	ATF_REQUIRE(unsubscribe(listfd, "plop@meh", SUB_NOMAIL));
 	unlink("list/nomailsubs.d/j");
 
 	f = fopen("list/nomailsubs.d/j", "w");
 	fputs("john@doe.org\n", f);
 	fputs("jane@doe.org\n", f);
 	fclose(f);
-	ATF_REQUIRE(do_unsubscribe(listfd, "plop@meh", SUB_NOMAIL));
-	ATF_REQUIRE(!do_unsubscribe(-1, "plop@meh", SUB_ALL));
+	ATF_REQUIRE(unsubscribe(listfd, "plop@meh", SUB_NOMAIL));
+	ATF_REQUIRE(!unsubscribe(-1, "plop@meh", SUB_ALL));
 
 }
 
