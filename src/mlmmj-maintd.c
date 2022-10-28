@@ -787,7 +787,7 @@ void do_maintenance(int listfd, const char *listdir, const char *mlmmjsend,
 int main(int argc, char **argv)
 {
 	int opt;
-	char *bindir, *listdir = NULL, *mlmmjsend, *mlmmjbounce, *mlmmjunsub;
+	char *bindir, *listdir = NULL, *mlmmjsend, *mlmmjbounce;
 	char *dirlists = NULL;
 	struct dirent *dp;
 	DIR *dirp;
@@ -830,7 +830,6 @@ int main(int argc, char **argv)
 	bindir = mydirname(argv[0]);
 	xasprintf(&mlmmjsend, "%s/mlmmj-send", bindir);
 	xasprintf(&mlmmjbounce, "%s/mlmmj-bounce", bindir);
-	xasprintf(&mlmmjunsub, "%s/mlmmj-unsub", bindir);
 	free(bindir);
 
 	if(daemonize && mydaemon() < 0) {
@@ -857,7 +856,6 @@ int main(int argc, char **argv)
 			    strerror(errno));
 			free(mlmmjbounce);
 			free(mlmmjsend);
-			free(mlmmjunsub);
 			exit(EXIT_FAILURE);
 		}
 
@@ -892,7 +890,6 @@ mainsleep:
 
 	free(mlmmjbounce);
 	free(mlmmjsend);
-	free(mlmmjunsub);
 
 	log_free_name();
 		
