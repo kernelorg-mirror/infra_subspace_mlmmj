@@ -112,3 +112,173 @@ extract_bouncetime(char *line, const char **errstr)
 
 	return (strtotimet(walk, errstr));
 }
+
+static const char *subtype_dirs[] = {
+	"subscribers.d",
+	"digesters.d",
+	"nomailsubs.d",
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+};
+
+int
+open_subscriber_directory(int listfd, enum subtype typesub, const char **subdir)
+{
+	const char *dir = subtype_dirs[typesub];
+
+	if (subdir != NULL)
+		*subdir = dir;
+	if (dir == NULL)
+		return (-1);
+	return (openat(listfd, dir, O_DIRECTORY|O_CLOEXEC));
+}
+
+bool
+do_unsubscribe(int listfd, const char *address, enum subtype typesub)
+{
+	struct dirent *dp;
+	DIR *dir;
+	bool ret = true;
+	struct stat st;
+	int fd;
+	int groupwritable = 0;
+	const char *subdir;
+	size_t alen, len;
+
+	switch (typesub) {
+	case SUB_ALL:
+		if (!do_unsubscribe(listfd, address, SUB_NORMAL))
+			ret = false;
+		if (!do_unsubscribe(listfd, address, SUB_DIGEST))
+			ret = false;
+		if (!do_unsubscribe(listfd, address, SUB_NOMAIL))
+			ret = false;
+		return (ret);
+	case SUB_NORMAL:
+	case SUB_DIGEST:
+	case SUB_NOMAIL:
+		break;
+	default:
+		return (false);
+	}
+
+	fd = open_subscriber_directory(listfd, typesub, &subdir);
+	if (fd == -1 || (dir = fdopendir(fd)) == NULL) {
+		log_err("Could not opendir(%s)", subdir);
+		return (false);
+	}
+
+	if (fstat(fd, &st) == 0) {
+		if (st.st_mode & S_IWGRP) {
+			groupwritable = S_IRGRP|S_IWGRP;
+			umask(S_IWOTH);
+		}
+	}
+
+	alen = strlen(address);
+	while ((dp = readdir(dir)) != NULL) {
+		struct stat st;
+		int rfd, wfd;
+		char *wrname, *start, *cur, *next, *end, *pos, *posend;
+
+		if (strcmp(dp->d_name, ".") == 0 ||
+		    strcmp(dp->d_name, "..") == 0)
+			continue;
+
+		rfd = openat(fd, dp->d_name, O_RDONLY|O_EXLOCK);
+		if (rfd == -1)
+			continue;
+
+		if (fstat(rfd, &st) == -1) {
+			log_err("Impossible to determine the size of %s/%s: %s",
+			    subdir, dp->d_name, strerror(errno));
+			close(rfd);
+			ret = false;
+			continue;
+		}
+
+		if (st.st_size == 0)
+			continue;
+		if (!S_ISREG(st.st_mode)) {
+			log_err("Non regular files in subscribers.d");
+			continue;
+		}
+
+		start = mmap(0, st.st_size, PROT_READ, MAP_SHARED, rfd, 0);
+		if (start == MAP_FAILED) {
+			log_err("Unable to mmap %s/%s: %s", subdir, dp->d_name,
+			    strerror(errno));
+			close(rfd);
+			ret = false;
+			continue;
+		}
+
+		end = start + st.st_size;
+
+		pos = NULL;
+		for (next = cur = start; next < end; next++) {
+			if (*next != '\n')
+				continue;
+			len = next - cur;
+			if (strncasecmp(address, cur, len) == 0) {
+				pos = cur;
+				break;
+			}
+			cur = next + 1;
+		}
+
+		if (pos == NULL && next > cur) {
+			len = next - cur;
+			if (strncasecmp(address, cur, len) == 0)
+				pos = cur;
+		}
+
+		/* not found */
+		if (pos == NULL) {
+			munmap(start, st.st_size);
+			close(rfd);
+			continue;
+		}
+
+		/*
+		 * if the file only contains the email to unsubscribe, just
+		 * remove it
+		 */
+		posend = pos + alen;
+		while (posend < end && *posend == '\n')
+			posend++;
+		if (pos == start && posend == end) {
+			unlinkat(fd, dp->d_name, 0);
+			continue;
+		}
+
+		xasprintf(&wrname, "%s.new", dp->d_name);
+		wfd = openat(fd, wrname, O_RDWR|O_CREAT|O_TRUNC|O_EXLOCK,
+		    S_IRUSR|S_IWUSR|groupwritable);
+		if (wfd == -1) {
+			log_err("Could not open '%s/%s': %s", subdir, wrname,
+			    strerror(errno));
+			munmap(start, st.st_size);
+			close(rfd);
+			free(wrname);
+			ret = false;
+			continue;
+		}
+
+		dprintf(wfd, "%.*s", (int)(pos - start), start);
+		dprintf(wfd, "%.*s", (int) (end - posend), posend);
+		if (renameat(fd, wrname, fd, dp->d_name) == -1) {
+			log_err("Could not rename '%s', to '%s'",
+			    wrname, dp->d_name);
+			ret = false;
+		}
+		close(wfd);
+		munmap(start, st.st_size);
+		close(rfd);
+		free(wrname);
+	}
+	closedir(dir);
+	return (ret);
+}

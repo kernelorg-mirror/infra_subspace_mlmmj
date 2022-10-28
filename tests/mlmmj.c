@@ -73,6 +73,8 @@ ATF_TC_WITHOUT_HEAD(strtotimet);
 ATF_TC_WITHOUT_HEAD(decode_qp);
 ATF_TC_WITHOUT_HEAD(parse_lastdigest);
 ATF_TC_WITHOUT_HEAD(extract_bouncetime);
+ATF_TC_WITHOUT_HEAD(open_subscriber_directory);
+ATF_TC_WITHOUT_HEAD(unsubscribe);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -822,6 +824,101 @@ ATF_TC_BODY(extract_bouncetime, tc)
 	free(line);
 }
 
+ATF_TC_BODY(open_subscriber_directory, tc)
+{
+	int fd;
+	const char *dir;
+
+	init_ml(true);
+
+	int dfd = open("list", O_DIRECTORY);
+	rmdir("list/subscribers.d");
+	fd = open_subscriber_directory(dfd, SUB_NORMAL, &dir);
+	ATF_REQUIRE(fd == -1);
+	ATF_REQUIRE_STREQ(dir, "subscribers.d");
+	mkdir("list/subscribers.d", 0755);
+	fd = open_subscriber_directory(dfd, SUB_NORMAL, NULL);
+	ATF_REQUIRE(fd != -1);
+	close(fd);
+
+	rmdir("list/digesters.d");
+	fd = open_subscriber_directory(dfd, SUB_DIGEST, &dir);
+	ATF_REQUIRE(fd == -1);
+	ATF_REQUIRE_STREQ(dir, "digesters.d");
+	mkdir("list/digesters.d", 0755);
+	fd = open_subscriber_directory(dfd, SUB_DIGEST, NULL);
+	ATF_REQUIRE(fd != -1);
+	close(fd);
+
+	rmdir("list/nomailsubs.d");
+	fd = open_subscriber_directory(dfd, SUB_NOMAIL, &dir);
+	ATF_REQUIRE(fd == -1);
+	ATF_REQUIRE_STREQ(dir, "nomailsubs.d");
+	mkdir("list/nomailsubs.d", 0755);
+	fd = open_subscriber_directory(dfd, SUB_NOMAIL, NULL);
+	ATF_REQUIRE(fd != -1);
+	close(fd);
+
+	fd = open_subscriber_directory(dfd, SUB_ALL, &dir);
+	ATF_REQUIRE_EQ(fd, -1);
+	ATF_REQUIRE(dir == NULL);
+	close(dfd);
+}
+
+ATF_TC_BODY(unsubscribe, tc)
+{
+	int listfd;
+	FILE *f;
+	init_ml(true);
+
+	listfd = open("list", O_DIRECTORY);
+
+	f = fopen("list/subscribers.d/j", "w");
+	fputs("john@doe.org", f);
+	fclose(f);
+
+	f = fopen("list/nomailsubs.d/j", "w");
+	fputs("john@doe.org\n", f);
+	fputs("jane@doe.org\n", f);
+	fclose(f);
+
+	f = fopen("list/digesters.d/j", "w");
+	fputs("john@doe.org\n", f);
+	fclose(f);
+
+	ATF_REQUIRE(do_unsubscribe(listfd, "john@doe.org", SUB_ALL));
+	ATF_REQUIRE_EQ_MSG(access("list/subscribers.d/j", F_OK), -1, "Not unsubscribed");
+	ATF_REQUIRE_EQ_MSG(access("list/digesters.d/j", F_OK), -1, "Not unsubscribed from digest");
+	if (!atf_utils_compare_file("list/nomailsubs.d/j", "jane@doe.org\n")) {
+		atf_utils_cat_file("list/nomailsubs.d/j", ">");
+		atf_tc_fail("Not unsubscribed from nomail");
+	}
+
+	ATF_REQUIRE(do_unsubscribe(listfd, "jane@doe.org", SUB_NOMAIL));
+	ATF_REQUIRE_EQ_MSG(access("list/nomailsubs.d/j", F_OK), -1, "Not unsubscribed from nomail");
+
+	ATF_REQUIRE(!do_unsubscribe(listfd, "plop@meh", SUB_BOTH));
+	rmdir("list/subscribers.d");
+	ATF_REQUIRE(!do_unsubscribe(listfd, "plop@meh", SUB_NORMAL));
+	mkdir("list/subscribers.d", 0755);
+
+	f = fopen("list/nomailsubs.d/j", "w");
+	fclose(f);
+	chmod("list/nomailsubs.d/j", 0111);
+	ATF_REQUIRE(do_unsubscribe(listfd, "plop@meh", SUB_NOMAIL));
+	chmod("list/nomailsubs.d/j", 0644);
+	ATF_REQUIRE(do_unsubscribe(listfd, "plop@meh", SUB_NOMAIL));
+	unlink("list/nomailsubs.d/j");
+
+	f = fopen("list/nomailsubs.d/j", "w");
+	fputs("john@doe.org\n", f);
+	fputs("jane@doe.org\n", f);
+	fclose(f);
+	ATF_REQUIRE(do_unsubscribe(listfd, "plop@meh", SUB_NOMAIL));
+	ATF_REQUIRE(!do_unsubscribe(-1, "plop@meh", SUB_ALL));
+
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -850,7 +947,8 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, decode_qp);
 	ATF_TP_ADD_TC(tp, parse_lastdigest);
 	ATF_TP_ADD_TC(tp, extract_bouncetime);
-
+	ATF_TP_ADD_TC(tp, open_subscriber_directory);
+	ATF_TP_ADD_TC(tp, unsubscribe);
 
 	return (atf_no_error());
 }

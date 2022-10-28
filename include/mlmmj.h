@@ -74,7 +74,7 @@ struct mailhdr {
 /* Has to go here, since it's used in many places */
 
 enum subtype {
-	SUB_NORMAL,
+	SUB_NORMAL = 0,
 	SUB_DIGEST,
 	SUB_NOMAIL,
 	SUB_FILE, /* For single files (moderator, owner etc.) */
@@ -100,6 +100,8 @@ void print_version(const char *prg);
 bool parse_lastdigest(char *line, long *lastindex, time_t *lasttime,
     long *lastissue, const char **errstr);
 time_t extract_bouncetime(char *line, const char **errstr);
+int open_subscriber_directory(int listfd, enum subtype typesub, const char **dir);
+bool do_unsubscribe(int listfd, const char *address, enum subtype typesub);
 
 #define MY_ASSERT(expression) if (!(expression)) { \
 			errno = 0; \
