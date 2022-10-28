@@ -694,12 +694,6 @@ int main(int argc, char **argv)
 		reasonsub = SUB_PERMIT;
 	}
 
-	if(strchr(address, '@') == NULL) {
-		log_error(LOG_ARGS, "No '@' sign in '%s', not subscribing",
-				address);
-		exit(EXIT_SUCCESS);
-	}
-
 	/* Make the address lowercase */
 	address = lowercase(address);
 
