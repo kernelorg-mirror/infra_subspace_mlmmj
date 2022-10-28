@@ -37,7 +37,7 @@ basics_body()
 	init_ml ml
 
 	atf_check -s exit:1 -e "inline:mlmmj-send: You have to specify -m and -L or -l\n$mlmmjsend -h for help\n" $mlmmjsend
-	atf_check -s exit:0 -o "inline:mlmmj-send version 1.3.0\n" $mlmmjsend -V
+	atf_check -s exit:0 -o "match:mlmmj-send version " $mlmmjsend -V
 	atf_check -s exit:0 -o "inline:$helptxt" $mlmmjsend -h
 	atf_check -s exit:1 -e "inline:mlmmj-send: -l only accept the following arguments: 1, 2, 3, 4, 5, 6 or 7\n" $mlmmjsend -l 8
 	atf_check -s exit:1 -e "inline:mlmmj-send: -l only accept the following arguments: 1, 2, 3, 4, 5, 6 or 7\n" $mlmmjsend -l 0
