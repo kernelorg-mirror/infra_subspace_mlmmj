@@ -468,6 +468,9 @@ int main(int argc, char **argv)
 			listdir = optarg;
 			break;
 		case 'a':
+			if (strchr(optarg, '@') == NULL)
+				errx(EXIT_FAILURE, "No '@' in the provided email address '%s'",
+				    optarg);
 			address = optarg;
 			break;
 		case 'c':

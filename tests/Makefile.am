@@ -14,7 +14,8 @@ endif
 
 test_scripts =	mlmmj-send.sh \
 		functional-tests.sh \
-		mlmmj-maintd.sh
+		mlmmj-maintd.sh \
+		mlmmj-sub.sh
 check_SCRIPTS=	$(test_scripts:.sh=)
 SUFFIXES=	.sh
 

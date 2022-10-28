@@ -609,6 +609,9 @@ int main(int argc, char **argv)
 	while ((opt = getopt(argc, argv, "hbcCdfm:nsVUL:a:qrR")) != -1) {
 		switch(opt) {
 		case 'a':
+			if (strchr(optarg, '@') == NULL)
+				errx(EXIT_FAILURE, "No '@' in the provided email address '%s'",
+				    optarg);
 			address = optarg;
 			break;
 		case 'b':
@@ -702,10 +705,8 @@ int main(int argc, char **argv)
 
 	/* get the list address */
 	listaddr = getlistaddr(listdir);
-	if(strncasecmp(listaddr, address, strlen(listaddr)) == 0) {
-		printf("Cannot subscribe the list address to the list\n");
-		exit(EXIT_SUCCESS);  /* XXX is this success? */
-	}
+	if(strncasecmp(listaddr, address, strlen(listaddr)) == 0)
+		errx(EXIT_FAILURE, "Cannot subscribe the list address to the list");
 
 	if(changeuid) {
 		uid = getuid();
