@@ -13,6 +13,8 @@
  o Reduce subscription confirmation address length to fit RFC 5321
  o Use arc4random is available
  o Reduce memory manipulation
+ o When unsubscribing bouncers, keep the bounce file if something went
+   wrong and report in syslog what went wrong
 1.3.0
  o Czech translation (Jiří Šolc)
  o Don't use address extensions from non-list addresses

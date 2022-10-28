@@ -487,7 +487,7 @@ probe_bouncers(int dfd, const char *mlmmjbounce, const char *listdir, int logfd)
 }
 
 static bool
-unsub_bouncers(int dfd, const char *mlmmjunsub, const char *listdir, int logfd)
+unsub_bouncers(int dfd, int logfd)
 {
 	DIR *bouncedir;
 	char *probefile, *address, *a, *firstbounce;
@@ -566,8 +566,12 @@ unsub_bouncers(int dfd, const char *mlmmjunsub, const char *listdir, int logfd)
 		}
 		*a = '@';
 
-		exec_and_wait(mlmmjunsub, "-L", listdir, "-b", "-a", address,
-		    NULL);
+		if (!do_unsubscribe(dfd, address, SUB_ALL)) {
+			log(" - Some errors during unsubscription of %s\n",
+			    address);
+			ret = false;
+			continue;
+		}
 		unlinkat(bfd, dp->d_name, 0);
 		xasprintf(&a, "%s.lastmsg",  dp->d_name);
 		unlinkat(bfd, a, 0);
@@ -675,7 +679,7 @@ out:
 }
 
 void do_maintenance(int listfd, const char *listdir, const char *mlmmjsend,
-		    const char *mlmmjbounce, const char *mlmmjunsub)
+		    const char *mlmmjbounce)
 {
 	char *random, *logname;
 	char timenow[64];
@@ -757,7 +761,7 @@ void do_maintenance(int listfd, const char *listdir, const char *mlmmjsend,
 		   "traces, see %s", MAINTD_LOGFILE);
 
 	log("unsub_bouncers\n");
-	if (!unsub_bouncers(listfd, mlmmjunsub, listdir, logfd))
+	if (!unsub_bouncers(listfd, logfd))
 		log_err("An error occured while unsubscribing bouncing emails, "
 		    "see %s", MAINTD_LOGFILE);
 
@@ -842,8 +846,7 @@ int main(int argc, char **argv)
 		if(listdir) {
 			log_set_namef("%s(%s)", argv[0], listdir);
 			int fd = open(listdir, O_DIRECTORY);
-			do_maintenance(fd, listdir, mlmmjsend, mlmmjbounce,
-					mlmmjunsub);
+			do_maintenance(fd, listdir, mlmmjsend, mlmmjbounce);
 			goto mainsleep;
 		}
 
@@ -873,8 +876,7 @@ int main(int argc, char **argv)
 			char *l;
 			xasprintf(&l, "%s/%s", dirlists, dp->d_name);
 			log_set_namef("%s(%s)", argv[0], l);
-			do_maintenance(fd, l, mlmmjsend, mlmmjbounce,
-					mlmmjunsub);
+			do_maintenance(fd, l, mlmmjsend, mlmmjbounce);
 			free(l);
 			close(fd);
 		}

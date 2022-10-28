@@ -450,4 +450,27 @@ run_digests
 	atf_check -s exit:1 test -f list/subscribers.d/p
 	atf_check -s exit:1 test -f list/digesters.d/p
 	atf_check -s exit:1 test -f list/nomailsubs.d/p
+
+	echo "a:1234 # plop" > list/bounce/plop=meh
+	echo "plop@meh" > list/digesters.d/p
+	rm -rf list/nomailsubs.d
+	atf_check -s exit:0 -e match:"An error occured while unsubscribing bouncing emails, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L list -F
+	atf_check -s exit:0 test -f list/bounce/plop=meh
+	atf_check -s exit:1 test -f list/digesters.d/p
+	output="Starting maintenance run at
+
+clean_moderation
+clean_discarded
+clean_subconf
+clean_unsubconf
+resend_queue
+resend_requeue
+clean_nolongerbouncing
+unsub_bouncers
+ - Some errors during unsubscription of plop@meh
+probe_bouncers
+run_digests
+ - No readable index file: no digest
+"
+	atf_check -o "inline:$output" sed -e "s/at .*/at/" list/mlmmj-maintd.lastrun.log
 }
