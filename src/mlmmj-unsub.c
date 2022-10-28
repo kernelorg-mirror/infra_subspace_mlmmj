@@ -230,47 +230,6 @@ void generate_unsubconfirm(const char *listdir, const char *listaddr,
 	    "-F", fromaddr, "-m", queuefilename, NULL);
 }
 
-ssize_t unsubscribe(int subreadfd, int subwritefd, const char *address)
-{
-	off_t suboff = find_subscriber(subreadfd, address);
-	struct stat st;
-	char *inmap;
-	size_t len = strlen(address) + 1; /* + 1 for the '\n' */
-	ssize_t writeres = 0, written = 0;
-	
-	if(suboff == -1)
-		return -1; /* Did not find subscriber */
-
-	if(fstat(subreadfd, &st) < 0) {
-		log_error(LOG_ARGS, "Could not stat subreadfd");
-		return -1;
-	}
-
-	if((inmap = mmap(0, st.st_size, PROT_READ, MAP_SHARED,
-		       subreadfd, 0)) == MAP_FAILED) {
-		log_error(LOG_ARGS, "Could not mmap subreadfd");
-		return -1;
-	}
-
-	if(suboff > 0) {
-		writeres = writen(subwritefd, inmap, suboff);
-		if(writeres < 0)
-			return -1;
-	}
-	written += writeres;
-	
-	writeres = writen(subwritefd, inmap + len + suboff,
-				st.st_size - len - suboff);
-	if(writeres < 0)
-		return -1;
-
-	written += writeres;
-
-	munmap(inmap, st.st_size);
-
-	return written;
-}
-
 static void print_help(const char *prg)
 {
 	printf("Usage: %s -L /path/to/list -a john@doe.org\n"
@@ -325,119 +284,6 @@ static void generate_notsubscribed(const char *listdir, const char *subaddr,
 	    "-F", fromaddr, "-m", queuefilename, NULL);
 }
 
-static void unsubscribe_type(char *listdir, char *listaddr, char *listdelim,
-		char *address, char *mlmmjsend,
-		enum subtype typesub, enum subreason reasonsub) {
-	char *subdir, *subddirname;
-	char *subreadname = NULL, *subwritename;
-	int subread, subwrite;
-	int groupwritable = 0;
-	int unsubres;
-	struct stat st;
-	DIR *subddir;
-	struct dirent *dp;
-	off_t suboff;
-
-	switch(typesub) {
-		default:
-		case SUB_NORMAL:
-			subdir = "/subscribers.d/";
-			break;
-		case SUB_DIGEST:
-			subdir = "/digesters.d/";
-			break;
-		case SUB_NOMAIL:
-			subdir = "/nomailsubs.d/";
-			break;
-	}
-
-	subddirname = concatstr(2, listdir, subdir);
-	if (stat(subddirname, &st) == 0) {
-		if(st.st_mode & S_IWGRP) {
-			groupwritable = S_IRGRP|S_IWGRP;
-			umask(S_IWOTH);
-		}
-	}
-
-	if((subddir = opendir(subddirname)) == NULL) {
-		log_error(LOG_ARGS, "Could not opendir(%s)",
-				    subddirname);
-		free(subddirname);
-		exit(EXIT_FAILURE);
-	}
-
-	free(subddirname);
-
-	while((dp = readdir(subddir)) != NULL) {
-		if(!strcmp(dp->d_name, "."))
-			continue;
-		if(!strcmp(dp->d_name, ".."))
-			continue;
-		
-		subreadname = concatstr(3, listdir, subdir, dp->d_name);
-
-		subread = open(subreadname, O_RDWR|O_EXLOCK);
-		if(subread == -1) {
-			free(subreadname);
-			continue;
-		}
-
-		suboff = find_subscriber(subread, address);
-		if(suboff == -1) {
-			close(subread);
-			free(subreadname);
-			continue;
-		}
-
-		subwritename = concatstr(2, subreadname, ".new");
-
-		subwrite = open(subwritename, O_RDWR|O_CREAT|O_TRUNC|O_EXLOCK,
-				S_IRUSR | S_IWUSR | groupwritable);
-		if(subwrite == -1){
-			log_error(LOG_ARGS, "Could not open '%s'",
-					subwritename);
-			close(subread);
-			free(subreadname);
-			free(subwritename);
-			continue;
-		}
-
-		unsubres = unsubscribe(subread, subwrite, address);
-		if(unsubres < 0) {
-			close(subread);
-			close(subwrite);
-			unlink(subwritename);
-			free(subreadname);
-			free(subwritename);
-			continue;
-		}
-
-		if(unsubres > 0) {
-			if(rename(subwritename, subreadname) < 0) {
-				log_error(LOG_ARGS,
-					"Could not rename '%s' to '%s'",
-					subwritename, subreadname);
-				close(subread);
-				close(subwrite);
-				free(subreadname);
-				free(subwritename);
-				continue;
-			}
-		} else { /* unsubres == 0, no subscribers left */
-			unlink(subwritename);
-			unlink(subreadname);
-		}
-
-		close(subread);
-		close(subwrite);
-		free(subreadname);
-		free(subwritename);
-
-        }
-
-	closedir(subddir);
-}
-
 int main(int argc, char **argv)
 {
 	int opt;
@@ -453,6 +299,7 @@ int main(int argc, char **argv)
 	uid_t uid;
 	struct stat st;
 	pid_t pid, childpid;
+	int listfd;
 
 	CHECKFULLPATH(argv[0]);
 	
@@ -515,6 +362,9 @@ int main(int argc, char **argv)
 		errx(EXIT_FAILURE, "You have to specify -L and -a\n"
 		    "%s -h for help", argv[0]);
 	}
+	if ((listfd = open(listdir, O_DIRECTORY|O_CLOEXEC)) == -1)
+		err(EXIT_FAILURE, "Impossible to open the mailing list %s",
+		    listdir);
 
 	if(digest + nomail + normal > 1) {
 		errx(EXIT_FAILURE, "Specify at most one of -d, -n and -N\n"
@@ -591,17 +441,8 @@ int main(int argc, char **argv)
 		generate_unsubconfirm(listdir, listaddr, listdelim, address,
 				mlmmjsend, typesub, reasonsub);
 
-	if (typesub == SUB_ALL) {
-		unsubscribe_type(listdir, listaddr, listdelim, address,
-				mlmmjsend, SUB_NORMAL, reasonsub);
-		unsubscribe_type(listdir, listaddr, listdelim, address,
-				mlmmjsend, SUB_DIGEST, reasonsub);
-		unsubscribe_type(listdir, listaddr, listdelim, address,
-				mlmmjsend, SUB_NOMAIL, reasonsub);
-	} else {
-		unsubscribe_type(listdir, listaddr, listdelim, address,
-				mlmmjsend, typesub, reasonsub);
-	}
+	do_unsubscribe(listfd, address, typesub);
+	close(listfd);
 
 	if(confirmunsub) {
 		childpid = fork();
