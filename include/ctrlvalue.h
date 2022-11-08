@@ -24,9 +24,9 @@
 #ifndef CTRLVALUE_H
 #define CTRLVALUE_H
 
-#include <sys/limits.h>
 #include <stdint.h>
 #include <time.h>
+#include <limits.h>
 
 char *ctrlvalue(const char *listdir, const char *ctrlstr);
 char *ctrlcontent(const char *listdir, const char *ctrlstr);

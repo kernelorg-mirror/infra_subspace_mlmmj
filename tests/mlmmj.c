@@ -27,13 +27,13 @@
 
 #include <atf-c.h>
 #include <inttypes.h>
-#include <sys/limits.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdbool.h>
 #include <err.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 #include <errno.h>
 
 #include "xmalloc.h"
