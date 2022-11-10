@@ -78,8 +78,6 @@ static int mydaemon()
 		err(EXIT_FAILURE, "Unable to become a daemon");
 	}
 
-	closefrom(3);
-
 	return 0;
 }
 
