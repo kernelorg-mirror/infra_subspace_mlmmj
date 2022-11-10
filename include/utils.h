@@ -23,6 +23,7 @@
 #pragma once
 
 #include <sys/file.h>
+#include <stdint.h>
 
 #include <time.h>
 #include <fcntl.h>
