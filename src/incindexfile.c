@@ -75,10 +75,9 @@ int incindexfile(const char *listdir)
 		}
 	}
 	index++;
-	lseek(fd, 0, SEEK_SET);
-	fdclose(fp, NULL);
-	dprintf(fd, "%d", index);
-	close(fd); /* Lock is also released */
+	rewind(fp);
+	fprintf(fd, "%d", index);
+	fclose(fp); /* Lock is also released */
 	free(indexfilename);
 
 	return index;
