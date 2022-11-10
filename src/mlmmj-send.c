@@ -919,7 +919,7 @@ int main(int argc, char **argv)
 	
 	/* initialize file with mail to send */
 
-	if((mailfd = open(mailfilename, O_RDWR|O_EXLOCK)) < 0) {
+	if((mailfd = open_locked(mailfilename, O_RDWR, 0644)) < 0) {
 	        log_error(LOG_ARGS, "Could not open '%s'", mailfilename);
 		exit(EXIT_FAILURE);
 	}

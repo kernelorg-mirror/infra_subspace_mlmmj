@@ -37,6 +37,7 @@
 #include "log_oper.h"
 #include "strgen.h"
 #include "wrappers.h"
+#include "utils.h"
 
 int log_oper(const char *prefix, const char *basename, const char *fmt, ...)
 {
@@ -64,7 +65,7 @@ int log_oper(const char *prefix, const char *basename, const char *fmt, ...)
 		free(tmp);
 	}
 	
-	fd = open(logfilename, O_RDWR|O_CREAT|O_APPEND|O_EXLOCK, S_IRUSR|S_IWUSR);
+	fd = open_locked(logfilename, O_RDWR|O_CREAT|O_APPEND, S_IRUSR|S_IWUSR);
 	if(fd < 0) {
 		log_error(LOG_ARGS, "Could not open %s", logfilename);
 		free(logfilename);
