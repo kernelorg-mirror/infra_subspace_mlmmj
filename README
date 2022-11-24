@@ -22,6 +22,9 @@ The functionality:
 
 To use mlmmj, do the following:
 
+ -1) If you're building from source you must make sure you've checked out
+    $ git clone https://codeberg.org/mlmmj/listtexts
+
  0) Compile it if you're not using a binary package such as dpkg, rpm or
     a ports collection from a BSD or Gentoo. To compile, untar the tar-ball
     and do:
