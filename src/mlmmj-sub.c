@@ -533,9 +533,7 @@ void generate_subscribed(const char *listdir, const char *subaddr,
 	    fromaddr, "-m", queuefilename, NULL);
 }
 
-static void subscribe_type(char *listdir, char *listaddr, char *listdelim,
-		char *address, char *mlmmjsend,
-		enum subtype typesub, enum subreason reasonsub) {
+static void subscribe_type(char *listdir, char *address, enum subtype typesub) {
 	char *subfilename = NULL;
 	char chstr[2], *subdir;
 	char *subddirname = NULL;
@@ -753,16 +751,13 @@ int main(int argc, char **argv)
 
 	if (typesub == SUB_BOTH) {
 		if (subbed != SUB_NORMAL) {
-			subscribe_type(listdir, listaddr, listdelim, address,
-					mlmmjsend, SUB_NORMAL, reasonsub);
+			subscribe_type(listdir, address, SUB_NORMAL);
 		}
 		if (subbed != SUB_DIGEST) {
-			subscribe_type(listdir, listaddr, listdelim, address,
-					mlmmjsend, SUB_DIGEST, reasonsub);
+			subscribe_type(listdir, address, SUB_DIGEST);
 		}
 	} else if (!(subbed == SUB_BOTH && typesub != SUB_NOMAIL)) {
-		subscribe_type(listdir, listaddr, listdelim, address,
-				mlmmjsend, typesub, reasonsub);
+		subscribe_type(listdir, address, typesub);
 	}
 
 	if(confirmsub) {

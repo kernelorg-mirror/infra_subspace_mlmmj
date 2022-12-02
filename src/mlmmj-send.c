@@ -223,8 +223,7 @@ int bouncemail(const char *listdir, const char *mlmmjbounce, const char *from)
 int send_mail(int sockfd, const char *from, const char *to,
 	      const char *replyto, char *mailmap, size_t mailsize,
 	      const char *listdir, const char *mlmmjbounce,
-	      const char *hdrs, size_t hdrslen, const char *body,
-	      size_t bodylen)
+	      const char *hdrs, const char *body)
 {
 	int retval = 0;
 	char *reply, *reply2, *tohdr;
@@ -501,9 +500,8 @@ int endsmtp(int *sockfd)
 }
 
 int send_mail_verp(int sockfd, struct strlist *addrs, char *mailmap,
-		   size_t mailsize, const char *from, const char *listdir,
-		   const char *hdrs, size_t hdrslen, const char *body,
-		   size_t bodylen, const char *verpextra)
+		   size_t mailsize, const char *from,
+		   const char *hdrs, const char *body, const char *verpextra)
 {
 	int retval, i;
 	char *reply, *reply2;
@@ -614,8 +612,8 @@ int send_mail_many_fd(int sockfd, const char *from, const char *replyto,
 		      char *mailmap, size_t mailsize, int subfd,
 		      const char *listaddr, const char *listdelim,
 		      const char *archivefilename, const char *listdir,
-		      const char *mlmmjbounce, const char *hdrs, size_t hdrslen,
-		      const char *body, size_t bodylen)
+		      const char *mlmmjbounce, const char *hdrs,
+		      const char *body)
 {
 	int res, ret, i;
 	struct strlist stl;
@@ -629,8 +627,7 @@ int send_mail_many_fd(int sockfd, const char *from, const char *replyto,
 			ret = send_mail_many_list(sockfd, from, replyto,
 					mailmap, mailsize, &stl, listaddr,
 					listdelim, archivefilename, listdir,
-					mlmmjbounce, hdrs, hdrslen,
-					body, bodylen);
+					mlmmjbounce, hdrs, body);
 			for(i = 0; i < stl.count; i++)
 				free(stl.strs[i]);
 			if(ret < 0)
@@ -643,7 +640,7 @@ int send_mail_many_fd(int sockfd, const char *from, const char *replyto,
 		ret = send_mail_many_list(sockfd, from, replyto, mailmap,
 				mailsize, &stl, listaddr, listdelim,
 				archivefilename, listdir, mlmmjbounce,
-				hdrs, hdrslen, body, bodylen);
+				hdrs, body);
 		for(i = 0; i < stl.count; i++)
 			free(stl.strs[i]);
 		stl.count = 0;
@@ -704,8 +701,7 @@ int send_mail_many_list(int sockfd, const char *from, const char *replyto,
 		   char *mailmap, size_t mailsize, struct strlist *addrs,
 		   const char *listaddr, const char *listdelim,
 		   const char *archivefilename, const char *listdir,
-		   const char *mlmmjbounce, const char *hdrs, size_t hdrslen,
-		   const char *body, size_t bodylen)
+		   const char *mlmmjbounce, const char *hdrs, const char *body)
 {
 	int res = 0, i, status, index;
 	char *bounceaddr, *addr;
@@ -729,13 +725,13 @@ int send_mail_many_list(int sockfd, const char *from, const char *replyto,
 		if(from) {
 			res = send_mail(sockfd, from, addr, replyto,
 					    mailmap, mailsize, listdir, NULL,
-					    hdrs, hdrslen, body, bodylen);
+					    hdrs, body);
 		} else {
 			bounceaddr = bounce_from_adr(addr, listaddr, listdelim,
 						     archivefilename, listdir);
 			res = send_mail(sockfd, bounceaddr, addr, replyto,
 				  mailmap, mailsize, listdir, mlmmjbounce,
-				  hdrs, hdrslen, body, bodylen);
+				  hdrs, body);
 			free(bounceaddr);
 		}
 		if(res && listaddr && archivefilename) {
@@ -1032,7 +1028,7 @@ int main(int argc, char **argv)
 		initsmtp(&sockfd, relayhost, smtpport, smtphelo);
 		if(send_mail(sockfd, bounceaddr, to_addr, replyto,
 				mailmap, st.st_size, listdir, NULL,
-				hdrs, hdrslen, body, bodylen)) {
+				hdrs, body)) {
 			close(sockfd);
 			sockfd = -1;
 			/* error, so keep it in the queue */
@@ -1086,8 +1082,7 @@ int main(int argc, char **argv)
 		initsmtp(&sockfd, relayhost, smtpport, smtphelo);
 		if(send_mail_many_fd(sockfd, bounceaddr, NULL, mailmap,
 				     st.st_size, subfd, NULL, NULL, NULL,
-				     listdir, NULL, hdrs, hdrslen,
-				     body, bodylen)) {
+				     listdir, NULL, hdrs, body)) {
 			close(sockfd);
 			sockfd = -1;
 		} else {
@@ -1098,8 +1093,7 @@ int main(int argc, char **argv)
 		initsmtp(&sockfd, relayhost, smtpport, smtphelo);
 		if(send_mail_many_fd(sockfd, NULL, NULL, mailmap, st.st_size,
 				subfd, listaddr, listdelim, mailfilename,
-				listdir, mlmmjbounce, hdrs, hdrslen,
-				body, bodylen)) {
+				listdir, mlmmjbounce, hdrs, body)) {
 			close(sockfd);
 			sockfd = -1;
 		} else {
@@ -1112,7 +1106,7 @@ int main(int argc, char **argv)
 		if(send_mail_many_fd(sockfd, bounceaddr, NULL, mailmap,
 				st.st_size, subfd, listaddr, listdelim,
 				mailfilename, listdir, mlmmjbounce,
-				hdrs, hdrslen, body, bodylen)) {
+				hdrs, body)) {
 			close(sockfd);
 			sockfd = -1;
 		} else {
@@ -1123,7 +1117,7 @@ int main(int argc, char **argv)
 		initsmtp(&sockfd, relayhost, smtpport, smtphelo);
 		if(send_mail(sockfd, bounceaddr, to_addr, replyto,
 				mailmap, st.st_size, listdir, NULL,
-				hdrs, hdrslen, body, bodylen)) {
+				hdrs, body)) {
 			close(sockfd);
 			sockfd = -1;
 			/* error, so remove the probefile */
@@ -1256,9 +1250,8 @@ int main(int argc, char **argv)
 								mailmap,
 								st.st_size,
 								verpfrom,
-								listdir, hdrs,
-								hdrslen, body,
-								bodylen, verp);
+								hdrs,
+								body, verp);
 						if(sendres)
 							requeuemail(listdir,
 								mindex,
@@ -1274,8 +1267,7 @@ int main(int argc, char **argv)
 								archivefilename,
 								listdir,
 								mlmmjbounce,
-								hdrs, hdrslen,
-								body, bodylen);
+								hdrs, body);
 					}
 				    	if (sendres) {
 					    	close(sockfd);
@@ -1296,9 +1288,8 @@ int main(int argc, char **argv)
 			initsmtp(&sockfd, relayhost, smtpport, smtphelo);
 			if(verp) {
 				sendres = send_mail_verp(sockfd, &stl, mailmap,
-						st.st_size, verpfrom, listdir,
-						hdrs, hdrslen, body, bodylen,
-						verp);
+						st.st_size, verpfrom,
+						hdrs, body, verp);
 				if(sendres)
 					requeuemail(listdir, mindex, &stl,
 							0);
@@ -1307,8 +1298,7 @@ int main(int argc, char **argv)
 						NULL, mailmap, st.st_size,
 						&stl, listaddr, listdelim,
 						archivefilename, listdir,
-						mlmmjbounce, hdrs, hdrslen,
-						body, bodylen);
+						mlmmjbounce, hdrs, body);
 			}
 			if (sendres) {
 				close(sockfd);
