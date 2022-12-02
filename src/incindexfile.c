@@ -76,7 +76,7 @@ int incindexfile(const char *listdir)
 	}
 	index++;
 	rewind(fp);
-	fprintf(fd, "%d", index);
+	fprintf(fp, "%d", index);
 	fclose(fp); /* Lock is also released */
 	free(indexfilename);
 
