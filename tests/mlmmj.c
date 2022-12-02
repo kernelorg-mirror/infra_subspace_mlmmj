@@ -253,7 +253,7 @@ ATF_TC_BODY(init_sock, tc)
 		c = accept(s, (struct sockaddr *) &cl,
 				&clsize);
 		if (c == -1)
-			exit(5);
+			err(5, "accept()");
 		exit(0);
 	}
 	sleep(1);
@@ -287,7 +287,7 @@ ATF_TC_BODY(exec_or_die, tc)
 	atf_utils_wait(p, 1, "", "mlmmj: Execution failed for '/usr/bin/nopenope': No such file or directory\n");
 	p = atf_utils_fork();
 	if (p == 0) {
-		exec_or_die("/usr/bin/true", (char *)NULL);
+		exec_or_die("true", (char *)NULL);
 	}
 	atf_utils_wait(p, 0, "", "");
 	p = atf_utils_fork();
@@ -301,9 +301,9 @@ ATF_TC_BODY(exec_and_wait, tc)
 {
 	int val = exec_and_wait("/usr/bin/nopenope", NULL);
 	ATF_REQUIRE_EQ(val, -1);
-	val = exec_and_wait("/usr/bin/true", NULL);
+	val = exec_and_wait("true", NULL);
 	ATF_REQUIRE_EQ(val, 0);
-	val = exec_and_wait("/usr/bin/false", NULL);
+	val = exec_and_wait("false", NULL);
 	ATF_REQUIRE_EQ(val, 1);
 }
 
