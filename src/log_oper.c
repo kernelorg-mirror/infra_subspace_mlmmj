@@ -65,8 +65,8 @@ int log_oper(const char *prefix, const char *basename, const char *fmt, ...)
 		free(tmp);
 	}
 	
-	fd = open_locked(logfilename, O_RDWR|O_CREAT|O_APPEND, S_IRUSR|S_IWUSR);
-	if(fd < 0) {
+	fd = open(logfilename, O_RDWR|O_CREAT|O_APPEND, S_IRUSR|S_IWUSR);
+	if(fd < 0 && !lock(fd, true)) {
 		log_error(LOG_ARGS, "Could not open %s", logfilename);
 		free(logfilename);
 		return -1;

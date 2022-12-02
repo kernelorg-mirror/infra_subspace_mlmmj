@@ -24,6 +24,7 @@
 
 #include <sys/file.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #include <time.h>
 #include <fcntl.h>
@@ -35,36 +36,4 @@ uintmax_t strtouim(const char *, uintmax_t, uintmax_t, const char **);
 void exec_or_die(const char *arg, ...);
 int exec_and_wait(const char *arg, ...);
 time_t strtotimet(const char *np, const char **errpp);
-
-static inline int open_locked(const char *path, int flags, mode_t mode) {
-#ifdef O_EXLOCK
-	flags |= O_EXLOCK;
-	return (open(path, flags, mode));
-#else
-	int fd = open(path, flags, mode);
-	if (fd != -1) {
-		if (flock(fd, LOCK_EX) == -1) {
-			close(fd);
-			fd = -1;
-		}
-	}
-	return (fd);
-#endif
-}
-
-static inline int openat_locked(int dfd, const char *path, int flags, mode_t mode) {
-#ifdef O_EXLOCK
-	flags |= O_EXLOCK;
-	return (openat(dfd, path, flags, mode));
-#else
-	int fd = openat(dfd, path, flags, mode);
-	if (fd != -1) {
-		if (flock(fd, LOCK_EX) == -1) {
-			close(fd);
-			fd = -1;
-		}
-	}
-	return (fd);
-#endif
-}
-
+bool lock(int fd, bool write);

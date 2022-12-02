@@ -187,8 +187,10 @@ unsubscribe(int listfd, const char *address, enum subtype typesub)
 		    strcmp(dp->d_name, "..") == 0)
 			continue;
 
-		rfd = openat_locked(fd, dp->d_name, O_RDONLY, 0644);
+		rfd = openat(fd, dp->d_name, O_RDONLY, 0644);
 		if (rfd == -1)
+			continue;
+		if (!lock(rfd, false))
 			continue;
 
 		if (fstat(rfd, &st) == -1) {
@@ -255,9 +257,9 @@ unsubscribe(int listfd, const char *address, enum subtype typesub)
 		}
 
 		xasprintf(&wrname, "%s.new", dp->d_name);
-		wfd = openat_locked(fd, wrname, O_RDWR|O_CREAT|O_TRUNC,
+		wfd = openat(fd, wrname, O_RDWR|O_CREAT|O_TRUNC,
 		    S_IRUSR|S_IWUSR|groupwritable);
-		if (wfd == -1) {
+		if (wfd == -1 && !lock(wfd, true)) {
 			log_err("Could not open '%s/%s': %s", subdir, wrname,
 			    strerror(errno));
 			munmap(start, st.st_size);

@@ -569,9 +569,9 @@ static void subscribe_type(char *listdir, char *listaddr, char *listdelim,
 	
 	subfilename = concatstr(3, listdir, subdir, chstr);
 
-	subfilefd = open_locked(subfilename, O_RDWR|O_CREAT|O_APPEND,
+	subfilefd = open(subfilename, O_RDWR|O_CREAT|O_APPEND,
 				S_IRUSR|S_IWUSR|groupwritable);
-	if(subfilefd == -1) {
+	if(subfilefd == -1 && !lock(subfilefd, true)) {
 		log_error(LOG_ARGS, "Could not open '%s'", subfilename);
 		exit(EXIT_FAILURE);
 	}

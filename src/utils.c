@@ -20,6 +20,7 @@
  * IN THE SOFTWARE.
  */
 
+#include <fcntl.h>
 #include <sys/wait.h>
 #include <sys/param.h>
 
@@ -28,6 +29,7 @@
 #include <errno.h>
 #include <inttypes.h>
 #include <spawn.h>
+#include <stdbool.h>
 #include <unistd.h>
 
 #include "xmalloc.h"
@@ -178,4 +180,26 @@ exec_and_wait(const char *arg, ...)
 	}
 
 	return (WEXITSTATUS(pstat));
+}
+
+bool
+lock(int fd, bool wr)
+{
+	struct flock lck;
+	int r;
+
+	if (fd == -1)
+		return (false);
+	lck.l_type = wr ? F_WRLCK : F_RDLCK;
+	lck.l_whence = SEEK_SET;
+	lck.l_start = 0;
+	lck.l_len = 0;
+	do {
+		r = fcntl(fd, F_SETLKW, &lck);
+	} while (r < 0 && errno != EINTR);
+	if (r == -1) {
+		close(fd);
+		return (false);
+	}
+	return (true);
 }

@@ -49,8 +49,8 @@ int incindexfile(const char *listdir)
 	const char *errstr;
 
 	xasprintf(&indexfilename, "%s/index", listdir);
-	fd = open_locked(indexfilename, O_RDWR|O_CREAT, S_IRUSR|S_IWUSR);
-	if(fd == -1) {
+	fd = open(indexfilename, O_RDWR|O_CREAT, S_IRUSR|S_IWUSR);
+	if(fd == -1 && !lock(fd, true)) {
 		free(indexfilename);
 		log_error(LOG_ARGS, "Error opening index file");
 		return 0;

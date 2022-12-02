@@ -602,8 +602,8 @@ run_digests(int dfd, const char *mlmmjsend, const char *listdir, int logfd)
 	digestinterval = ctrltimet(dfd, "digestinterval", DIGESTINTERVAL);
 	digestmaxmails = ctrllong(listdir, "digestmaxmail", DIGESTMAXMAILS);
 
-	fd = openat_locked(dfd, "lastdigest", O_RDWR|O_CREAT, S_IRUSR | S_IWUSR);
-	if (fd < 0) {
+	fd = openat(dfd, "lastdigest", O_RDWR|O_CREAT, S_IRUSR | S_IWUSR);
+	if (fd < 0 && !lock(fd, true)) {
 		log(" - Could not open or create 'lastdigest': %s\n",
 		    strerror(errno));
 		return (false);
