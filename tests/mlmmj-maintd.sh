@@ -57,7 +57,7 @@ basics_body()
 {
 
 	mlmmjmaintd=$(command -v mlmmj-maintd)
-	helptxt="Usage: /usr/home/bapt/dev/mlmmj/tests/../src/mlmmj-maintd [-L | -d] /path/to/dir [-F]
+	helptxt="Usage: $mlmmjmaintd [-L | -d] /path/to/dir [-F]
  -d: Full path to directory with listdirs
      Use this to run maintenance on all list directories
      in that directory.
