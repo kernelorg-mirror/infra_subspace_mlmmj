@@ -1,3 +1,5 @@
+1.4.0-a2
+ o Remove perl and php frontends
 1.4.0-a1
  o Add a test suite
  o Modernize code (dprintf, posix_spawn, asprintf, getline, daemon, ...)

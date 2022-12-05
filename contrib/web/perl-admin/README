@@ -1,0 +1,62 @@
+mlmmj-1.0.0                                                  August 20th 2004
+
+To use this web-interface you have to:
+
+0) Make sure you have the CGI::FastTemplate perl module installed. If not, then
+   install it. It has no dependencies to other perl modules.
+
+1) Copy the files from the perl-admin directory of the mlmmj distribution to a
+   suitable location and point your webroot to the htdocs directory. If you
+   don't want the webinterface in the root of your website it is recommended to
+   make an alias in your web server configuration in order to keep the conf
+   directory at the same level as the htdocs directory and still outside
+   webscope.
+
+2) You need to enable cgi in your apache configuration like this
+
+      Options ExecCGI
+      DirectoryIndex index.cgi
+      AddHandler cgi-script .cgi
+
+3) Change the permissions of the listdir/control directories of any list you
+   want to control using the web-interface, so the web server can write in it:
+
+     # chown -R wwwrun /var/spool/mlmmj/mlmmj-test/control/
+
+4) If the web server does not run as the same user the mailserver writes as
+   you need to create a group (eg. mlmmj) and add both users to it. The
+   subscribers.d directory then needs to be writable by that group:
+
+     # chgrp -R mlmmj /var/spool/mlmmj/mlmmj-test/subscribers.d
+     # chmod -R g+w /var/spool/mlmmj/mlmmj-test/subscribers.d
+     # chgrp -R mlmmj /var/spool/mlmmj/mlmmj-test/digesters.d
+     # chmod -R g+w /var/spool/mlmmj/mlmmj-test/digesters.d
+     # chgrp -R mlmmj /var/spool/mlmmj/mlmmj-test/nomailsubs.d
+     # chmod -R g+w /var/spool/mlmmj/mlmmj-test/nomailsubs.d
+     # chgrp -R mlmmj /var/spool/mlmmj/mlmmj-test/text
+     # chmod -R g+w /var/spool/mlmmj/mlmmj-test/text
+
+To enable access control on Apache you have to:
+
+5) Rename dot.htaccess to .htaccess and edit the path inside the file to point
+   to a htpasswd file somewhere outside the webscope.
+
+   If you don't have one already, you can create one like this
+
+      htpasswd -c /home/mlmmj/htpasswd USER
+
+   It will then ask you for a password for the given username.
+
+6) That is it, you are ready to use the interface.
+
+Further customization:
+
+You can set two environment variables in your apache config to control the
+configuration of the mlmmj webinterface. Remember to have mod_env loaded if
+you do this.
+
+   SetEnv CONFIG_PATH /home/mlmmj/conf/config.pl
+   SetEnv TUNABLES_PATH /home/mlmmj/conf/tunables.pl
+
+This allows you to run several instances of the webinterface with e.g. different
+topdirs, translated to another language or with another layout.
