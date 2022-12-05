@@ -392,7 +392,7 @@ int main(int argc, char **argv)
 
 	if(changeuid) {
 		uid = getuid();
-		if(!uid && stat(listdir, &st) == 0) {
+		if(!uid && stat(listdir, &st) == 0 && uid != st.st_uid) {
 			printf("Changing to uid %d, owner of %s.\n",
 					(int)st.st_uid, listdir);
 			if(setuid(st.st_uid) < 0) {
