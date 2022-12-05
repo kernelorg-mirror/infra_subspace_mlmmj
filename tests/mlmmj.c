@@ -231,7 +231,7 @@ ATF_TC_BODY(init_sock, tc)
 	if (p == 0) {
 		int s, c;
 		struct sockaddr_in me, cl;
-		socklen_t clsize;
+		socklen_t clsize = 0;
 		s = socket(AF_INET, SOCK_STREAM, 0);
 		if (s < 0)
 			exit(1);
