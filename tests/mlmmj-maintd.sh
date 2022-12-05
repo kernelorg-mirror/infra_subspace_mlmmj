@@ -6,7 +6,17 @@ tests_init \
 	nolongerbouncing \
 	discarded \
 	digests \
-	unsub_bouncers \
+	unsub_bouncers_0 \
+	unsub_bouncers_1 \
+	unsub_bouncers_2 \
+	unsub_bouncers_3 \
+	unsub_bouncers_4 \
+	unsub_bouncers_5 \
+	unsub_bouncers_6 \
+	unsub_bouncers_7 \
+	unsub_bouncers_8 \
+	unsub_bouncers_9 \
+	unsub_bouncers_10 \
 	basics
 
 nolongerbouncing_body()
@@ -342,7 +352,7 @@ run_digests
 	atf_check -o "inline:$output" sed -e "s/at .*/at/" lists/ml/mlmmj-maintd.lastrun.log
 }
 
-unsub_bouncers_body()
+unsub_bouncers_0_body()
 {
 	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
@@ -352,19 +362,37 @@ unsub_bouncers_body()
 	touch list/bounce/plop
 	atf_check -s exit:0 $mlmmjmaintd -L list -F
 	atf_check -s exit:0 test -f list/bounce/plop
-	rm list/bounce/plop
+}
+
+unsub_bouncers_1_body()
+{
+	mlmmjmaintd=$(command -v mlmmj-maintd)
+	mkdir lists
+	init_ml list
 
 	# ignore probe files
 	touch list/bounce/plop-probe
 	atf_check -s exit:0 $mlmmjmaintd -L list -F
 	atf_check -s exit:0 test -f list/bounce/plop-probe
-	rm list/bounce/plop-probe
+}
+
+unsub_bouncers_2_body()
+{
+	mlmmjmaintd=$(command -v mlmmj-maintd)
+	mkdir lists
+	init_ml list
 
 	# ignore lastmsg files
 	touch list/bounce/plop.lastmsg
 	atf_check -s exit:0 $mlmmjmaintd -L list -F
 	atf_check -s exit:0 test -f list/bounce/plop.lastmsg
-	rm list/bounce/plop.lastmsg
+}
+
+unsub_bouncers_3_body()
+{
+	mlmmjmaintd=$(command -v mlmmj-maintd)
+	mkdir lists
+	init_ml list
 
 	# ignore files with a probe out already
 	echo "a:1234 # plop" > list/bounce/plop
@@ -372,13 +400,25 @@ unsub_bouncers_body()
 	atf_check -s exit:0 $mlmmjmaintd -L list -F
 	atf_check -s exit:0 test -f list/bounce/plop
 	atf_check -s exit:0 test -f list/bounce/plop-probe
-	rm list/bounce/*
+}
+
+unsub_bouncers_4_body()
+{
+	mlmmjmaintd=$(command -v mlmmj-maintd)
+	mkdir lists
+	init_ml list
 
 	# filename should contain a = to be properly treated
 	echo "a:1234 # plop" > list/bounce/plop
 	atf_check -s exit:0 $mlmmjmaintd -L list -F
 	atf_check -s exit:0 test -f list/bounce/plop
-	rm list/bounce/plop
+}
+
+unsub_bouncers_5_body()
+{
+	mlmmjmaintd=$(command -v mlmmj-maintd)
+	mkdir lists
+	init_ml list
 
 	# Log if invalid format
 	echo "a:a #plop" > list/bounce/plop=meh
@@ -400,6 +440,13 @@ run_digests
  - No readable index file: no digest
 "
 	atf_check -o "inline:$output" sed -e "s/at .*/at/" list/mlmmj-maintd.lastrun.log
+}
+
+unsub_bouncers_6_body()
+{
+	mlmmjmaintd=$(command -v mlmmj-maintd)
+	mkdir lists
+	init_ml list
 
 	# Log unreabable bouncefile
 	echo "a:1234 #plop" > list/bounce/plop=meh
@@ -422,16 +469,36 @@ run_digests
  - No readable index file: no digest
 "
 	atf_check -o "inline:$output" sed -e "s/at .*/at/" list/mlmmj-maintd.lastrun.log
-	rm list/bounce/plop=meh
+}
+
+unsub_bouncers_7_body()
+{
+	mlmmjmaintd=$(command -v mlmmj-maintd)
+	mkdir lists
+	init_ml list
 
 	# keep if recent enough
 	echo "a:$(date +%s) # plop" > list/bounce/plop=meh
 	atf_check -s exit:0 $mlmmjmaintd -L list -F
 	atf_check -s exit:0 test -f list/bounce/plop=meh
+}
+
+unsub_bouncers_8_body()
+{
+	mlmmjmaintd=$(command -v mlmmj-maintd)
+	mkdir lists
+	init_ml list
 
 	echo "a:1234 # plop" > list/bounce/plop=meh
 	atf_check -s exit:0 $mlmmjmaintd -L list -F
 	atf_check -s exit:1 test -f list/bounce/plop=meh
+}
+
+unsub_bouncers_9_body()
+{
+	mlmmjmaintd=$(command -v mlmmj-maintd)
+	mkdir lists
+	init_ml list
 
 	# last message properly cleaned out
 	echo "a:1234 # plop" > list/bounce/plop=meh
@@ -439,6 +506,13 @@ run_digests
 	atf_check -s exit:0 $mlmmjmaintd -L list -F
 	atf_check -s exit:1 test -f list/bounce/plop=meh
 	atf_check -s exit:1 test -f list/bounce/plop=meh.lastmsg
+}
+
+unsub_bouncers_10_body()
+{
+	mlmmjmaintd=$(command -v mlmmj-maintd)
+	mkdir lists
+	init_ml list
 
 	# has been unsubscribe from regular
 	echo "a:1234 # plop" > list/bounce/plop=meh
