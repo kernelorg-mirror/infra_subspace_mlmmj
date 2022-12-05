@@ -5,7 +5,11 @@
 tests_init \
 	nolongerbouncing \
 	discarded \
-	digests \
+	digests_0 \
+	digests_1 \
+	digests_2 \
+	digests_3 \
+	digests_4 \
 	unsub_bouncers_0 \
 	unsub_bouncers_1 \
 	unsub_bouncers_2 \
@@ -108,6 +112,7 @@ basics_1_body()
 
 basics_2_body()
 {
+	test $(id -u) = 0 && atf_skip "Can only be run as non-root"
 	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
 	init_ml lists/ml
@@ -362,7 +367,7 @@ run_digests
 	atf_check -o "inline:$output" sed -e "s/at .*/at/" lists/ml/mlmmj-maintd.lastrun.log
 }
 
-digests_body()
+digests_0_body()
 {
 	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
@@ -385,8 +390,14 @@ run_digests
  - noarchive tunable: skipping digest
 "
 	atf_check -o "inline:$output" sed -e "s/at .*/at/" lists/ml/mlmmj-maintd.lastrun.log
+}
 
-	rm lists/ml/control/noarchive
+digests_1_body()
+{
+	mlmmjmaintd=$(command -v mlmmj-maintd)
+	mkdir lists
+	init_ml lists/ml
+
 	touch lists/ml/index
 	atf_check -s exit:0 $mlmmjmaintd -L lists/ml -F
 	output="Starting maintenance run at
@@ -403,6 +414,14 @@ probe_bouncers
 run_digests
 "
 	atf_check -o "inline:$output" sed -e "s/at .*/at/" lists/ml/mlmmj-maintd.lastrun.log
+}
+
+digests_2_body()
+{
+	test $(id -u) = 0 && atf_skip "Can only be run as non-root"
+	mlmmjmaintd=$(command -v mlmmj-maintd)
+	mkdir lists
+	init_ml lists/ml
 
 	chmod -r lists/ml/index
 	atf_check -s exit:0 $mlmmjmaintd -L lists/ml -F
@@ -421,7 +440,14 @@ run_digests
  - No readable index file: no digest
 "
 	atf_check -o "inline:$output" sed -e "s/at .*/at/" lists/ml/mlmmj-maintd.lastrun.log
-	chmod +r lists/ml/index
+}
+
+digests_3_body()
+{
+	mlmmjmaintd=$(command -v mlmmj-maintd)
+	mkdir lists
+	init_ml lists/ml
+
 	echo "-1" > lists/ml/index
 	atf_check -s exit:0 -e match:"An error occured while running digests, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L lists/ml -F
 	output="Starting maintenance run at
@@ -439,8 +465,16 @@ run_digests
  - Invalid index content '-1': too small
 "
 	atf_check -o "inline:$output" sed -e "s/at .*/at/" lists/ml/mlmmj-maintd.lastrun.log
-	echo "0" > lists/ml/index
+}
 
+digests_4_body()
+{
+	test $(id -u) = 0 && atf_skip "Can only be run as non-root"
+	mlmmjmaintd=$(command -v mlmmj-maintd)
+	mkdir lists
+	init_ml lists/ml
+
+	echo "0" > lists/ml/index
 	touch lists/ml/lastdigest
 	chmod -w lists/ml/lastdigest
 	atf_check -s exit:0 -e match:"An error occured while running digests, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L lists/ml -F
