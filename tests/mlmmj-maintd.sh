@@ -448,6 +448,8 @@ unsub_bouncers_6_body()
 	mkdir lists
 	init_ml list
 
+	test $(id -u) = 0 && atf_skip "Can only be run as non-root"
+
 	# Log unreabable bouncefile
 	echo "a:1234 #plop" > list/bounce/plop=meh
 	chmod -r list/bounce/plop=meh
