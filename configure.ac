@@ -17,10 +17,6 @@ AC_CHECK_LIB(socket,socket)
 AC_CHECK_LIB(nsl,gethostbyname)
 AC_CHECK_LIB(iconv,iconv_open)
 
-# Checks for header files.
-AC_CHECK_INCLUDES_DEFAULT
-AC_PROG_EGREP
-
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h netinet/in.h stddef.h stdlib.h string.h])
 AC_CHECK_HEADERS([sys/socket.h syslog.h unistd.h time.h])
 AC_CHECK_HEADER([iconv.h])
