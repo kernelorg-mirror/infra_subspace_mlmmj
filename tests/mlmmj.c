@@ -47,6 +47,7 @@
 #include "init_sockfd.h"
 #include "checkwait_smtpreply.h"
 #include "find_email_adr.h"
+#include "send_mail.h"
 
 ATF_TC_WITHOUT_HEAD(random_int);
 ATF_TC_WITHOUT_HEAD(chomp);
@@ -78,6 +79,7 @@ ATF_TC_WITHOUT_HEAD(open_subscriber_directory);
 ATF_TC_WITHOUT_HEAD(unsubscribe);
 ATF_TC_WITHOUT_HEAD(genlistname);
 ATF_TC_WITHOUT_HEAD(genlistfqdn);
+ATF_TC_WITHOUT_HEAD(smtp);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -945,6 +947,86 @@ ATF_TC_BODY(genlistfqdn, tc)
 	ATF_REQUIRE_STREQ(ret, "bla@meh");
 }
 
+ATF_TC_BODY(smtp, tc)
+{
+	int smtppipe[2];
+	char *reply;
+	ATF_REQUIRE(pipe(smtppipe) >= 0);
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		dprintf(smtppipe[0], "220 me fake smtp\n");
+		/* EHLO */
+		reply = mygetline(smtppipe[0]);
+		dprintf(smtppipe[0],
+		    "250-hostname.net\n"
+		    "250-PIPELINEING\n"
+		    "250-SIZE 20480000\n"
+		    "250-ETRN\n"
+		    "250-STARTTLS\n"
+		    "250-ENHANCEDSTATUSCODES\n"
+		    "250-8BITMIME\n"
+		    "250-DSN\n"
+		    "250-SMTPUTF8\n"
+		    "250 CHUNKING\n");
+		/* HELO */
+		reply = mygetline(smtppipe[0]);
+		dprintf(smtppipe[0],
+		    "250-hostname.net\n");
+		/* MAIL FROM */
+		reply = mygetline(smtppipe[0]);
+		dprintf(smtppipe[0],
+		    "250 2.1.0 Ok\n");
+		/* RCPT TO */
+		reply = mygetline(smtppipe[0]);
+		dprintf(smtppipe[0],
+		    "250 2.1.0 Ok\n");
+		/* DATA */
+		reply = mygetline(smtppipe[0]);
+		dprintf(smtppipe[0],
+		    "354 Send message content; end with <CRLF>.<CRLF>\n");
+		/* DATA */
+		reply = mygetline(smtppipe[0]);
+		dprintf(smtppipe[0],
+		    "250 2.1.0 Ok\n");
+		/* QUIT */
+		reply = mygetline(smtppipe[0]);
+		dprintf(smtppipe[0],
+		    "221 2.0.0 Bye\n");
+		/* RSET */
+		reply = mygetline(smtppipe[0]);
+		dprintf(smtppipe[0],
+		    "250 2.0.0 Ok\n");
+		exit (0);
+	}
+	close(smtppipe[0]);
+	reply = checkwait_smtpreply(smtppipe[1], MLMMJ_CONNECT);
+	ATF_REQUIRE_EQ(reply, NULL);
+	write_ehlo(smtppipe[1], "plop");
+	reply = checkwait_smtpreply(smtppipe[1], MLMMJ_EHLO);
+	ATF_REQUIRE_EQ(reply, NULL);
+	write_helo(smtppipe[1], "plop");
+	reply = checkwait_smtpreply(smtppipe[1], MLMMJ_HELO);
+	ATF_REQUIRE_EQ(reply, NULL);
+	write_mail_from(smtppipe[1], "plop", NULL);
+	reply = checkwait_smtpreply(smtppipe[1], MLMMJ_FROM);
+	ATF_REQUIRE_EQ(reply, NULL);
+	write_rcpt_to(smtppipe[1], "plop");
+	reply = checkwait_smtpreply(smtppipe[1], MLMMJ_RCPTTO);
+	ATF_REQUIRE_EQ(reply, NULL);
+	write_data(smtppipe[1]);
+	reply = checkwait_smtpreply(smtppipe[1], MLMMJ_DATA);
+	ATF_REQUIRE_EQ(reply, NULL);
+	write_dot(smtppipe[1]);
+	reply = checkwait_smtpreply(smtppipe[1], MLMMJ_DOT);
+	ATF_REQUIRE_EQ(reply, NULL);
+	write_quit(smtppipe[1]);
+	reply = checkwait_smtpreply(smtppipe[1], MLMMJ_QUIT);
+	ATF_REQUIRE_EQ(reply, NULL);
+	write_rset(smtppipe[1]);
+	reply = checkwait_smtpreply(smtppipe[1], MLMMJ_RSET);
+	ATF_REQUIRE_EQ(reply, NULL);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -977,6 +1059,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, unsubscribe);
 	ATF_TP_ADD_TC(tp, genlistname);
 	ATF_TP_ADD_TC(tp, genlistfqdn);
+	ATF_TP_ADD_TC(tp, smtp);
 
 	return (atf_no_error());
 }
