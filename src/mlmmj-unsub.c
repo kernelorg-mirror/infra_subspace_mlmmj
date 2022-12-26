@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
@@ -292,7 +293,7 @@ int main(int argc, char **argv)
 	int nogennotsubscribed = 0;
 	int status;
 	char *listaddr, *listdelim, *listdir = NULL, *address = NULL;
-	char *mlmmjsend, *bindir, *subdir, *subddirname;
+	char *mlmmjsend, *bindir, *subdir;
 	enum subtype typesub = SUB_ALL;
 	enum subreason reasonsub = SUB_ADMIN;
 	uid_t uid;
@@ -406,23 +407,32 @@ int main(int argc, char **argv)
 	}
 
 	if (typesub == SUB_ALL) {
-		subbed = is_subbed(listdir, address, 0) != SUB_NONE;
+		subbed = is_subbed(listdir, address, false) != SUB_NONE;
 	} else {
 		switch(typesub) {
 			default:
 			case SUB_NORMAL:
-				subdir = "/subscribers.d/";
+				subdir = "subscribers.d";
 				break;
 			case SUB_DIGEST:
-				subdir = "/digesters.d/";
+				subdir = "digesters.d";
 				break;
 			case SUB_NOMAIL:
-				subdir = "/nomailsubs.d/";
+				subdir = "nomailsubs.d";
 				break;
 		}
-		subddirname = concatstr(2, listdir, subdir);
-		subbed = is_subbed_in(subddirname, address);
-		free(subddirname);
+		int listdirfd = open(listdir, O_DIRECTORY);
+		if (listdirfd == -1) {
+			log_error(LOG_ARGS, "Could not opendir(%s)", listdir);
+			exit(EXIT_FAILURE);
+		}
+		int subdirfd = openat(listdirfd, subdir, O_DIRECTORY);
+		if (subdirfd == -1) {
+			log_error(LOG_ARGS, "Could not opendir(%s/%s)", listdir, subdir);
+			exit(EXIT_FAILURE);
+		}
+		close(listdirfd);
+		subbed = is_subbed_in(subdirfd, subdir, address);
 	}
 
 	if(!subbed) {

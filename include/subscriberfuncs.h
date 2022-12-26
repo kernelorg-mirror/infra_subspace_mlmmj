@@ -24,8 +24,10 @@
 #ifndef SUBSCRIBERFUNC_H
 #define SUBSCRIBERFUNC_H
 
+#include <stdbool.h>
+
 off_t find_subscriber(int fd, const char *address);
-int is_subbed_in(const char *subddirname, const char *address);
-enum subtype is_subbed(const char *listdir, const char *address, int both);
+int is_subbed_in(int fd, const char *subddirname, const char *address);
+enum subtype is_subbed(const char *listdir, const char *address, bool both);
 
 #endif /* SUBSCRIBERFUNC_H */

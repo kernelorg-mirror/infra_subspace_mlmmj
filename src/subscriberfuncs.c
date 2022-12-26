@@ -37,7 +37,6 @@
 #include "mygetline.h"
 #include "log_error.h"
 #include "wrappers.h"
-#include "strgen.h"
 
 char *subtype_strs[] = {
 	"normal",
@@ -109,16 +108,16 @@ off_t find_subscriber(int fd, const char *address)
 	return (off_t)-1;
 }
 
-int is_subbed_in(const char *subddirname, const char *address)
+int
+is_subbed_in(int dirfd, const char *subdirname, const char *address)
 {
 	int retval = 0, subread;
-	char *subreadname;
 	off_t suboff;
 	DIR *subddir;
 	struct dirent *dp;
 
-	if((subddir = opendir(subddirname)) == NULL) {
-		log_error(LOG_ARGS, "Could not opendir(%s)", subddirname);
+	if((subddir = fdopendir(dirfd)) == NULL) {
+		log_error(LOG_ARGS, "Could not opendir(%s)", subdirname);
 		exit(EXIT_FAILURE);
 	}
 
@@ -128,17 +127,15 @@ int is_subbed_in(const char *subddirname, const char *address)
 		if(!strcmp(dp->d_name, ".."))
 			continue;
 
-		subreadname = concatstr(2, subddirname, dp->d_name);
-		subread = open(subreadname, O_RDONLY);
+		subread = openat(dirfd, dp->d_name, O_RDONLY);
 		if(subread < 0) {
-	                log_error(LOG_ARGS, "Could not open %s", subreadname);
-			free(subreadname);
+			log_error(LOG_ARGS, "Could not open %s/%s",
+			  subdirname, dp->d_name);
 			continue;
 		}
 
 		suboff = find_subscriber(subread, address);
 		close(subread);
-		free(subreadname);
 
 		if(suboff == -1) {
 			continue;
@@ -152,32 +149,32 @@ int is_subbed_in(const char *subddirname, const char *address)
 	return retval;
 }
 
-enum subtype is_subbed(const char *listdir, const char *address, int both)
+enum subtype
+is_subbed(const char *listdir, const char *address, bool both)
 {
-	int retval;
-	char *subddirname;
 	enum subtype typesub = SUB_NONE;
-	
-	subddirname = concatstr(2, listdir, "/subscribers.d/");
-	retval = is_subbed_in(subddirname, address);
-	free(subddirname);
-	if (retval) {
+	int fd, dirfd;
+
+	dirfd = open(listdir, O_DIRECTORY);
+	if (dirfd == -1) {
+		log_error(LOG_ARGS, "Could not opendir()");
+		exit(EXIT_FAILURE);
+	}
+	fd = openat(dirfd, "subscribers.d", O_DIRECTORY);
+	if (fd != -1 && is_subbed_in(fd, "subscribers.d", address)) {
 		if (!both) return SUB_NORMAL;
 		typesub = SUB_NORMAL;
 	}
 
-	subddirname = concatstr(2, listdir, "/digesters.d/");
-	retval = is_subbed_in(subddirname, address);
-	free(subddirname);
-	if (retval) {
+	fd = openat(dirfd, "digesters.d", O_DIRECTORY);
+	if (fd != -1 && is_subbed_in(fd, "digesters.d", address)) {
 		if (typesub == SUB_NORMAL) return SUB_BOTH;
 		return SUB_DIGEST;
 	}
 
-	subddirname = concatstr(2, listdir, "/nomailsubs.d/");
-	retval = is_subbed_in(subddirname, address);
-	free(subddirname);
-	if (retval) return SUB_NOMAIL;
+	fd = openat(dirfd, "nomailsubs.d", O_DIRECTORY);
+	if (fd != -1 && is_subbed_in(fd, "nomailsubs.d", address))
+		return SUB_NOMAIL;
 
 	return typesub;
 }
