@@ -64,7 +64,7 @@
 #include "getaddrsfromfd.h"
 #include "utils.h"
 
-static int addtohdr = 0;
+static int addtohdr = false;
 static int prepmailinmem = 0;
 static int maxverprecips = MAXVERPRECIPS;
 static int gotsigterm = 0;
@@ -778,8 +778,8 @@ int main(int argc, char **argv)
 	size_t len = 0, hdrslen, bodylen;
 	int sockfd = -1, mailfd = 0, opt, mindex = 0, subfd = 0, tmpfd, i;
 	int deletewhensent = 1, sendres = 0, digest = 0;
-	bool archive = true;
-	int ctrlarchive, res;
+	bool archive = true, ctrlarchive;
+	int res;
 	char *listaddr = NULL, *listdelim = NULL;
 	char *mailfilename = NULL, *subfilename = NULL, *omit = NULL;
 	char *replyto = NULL, *bounceaddr = NULL, *to_addr = NULL;
@@ -1136,7 +1136,7 @@ int main(int argc, char **argv)
 		break;
 	case '7':
 		digest = 1;
-		addtohdr = 1;
+		addtohdr = true;
 		archivefilename = "digest";
 		/* fall through */
 	default: /* normal list mail */

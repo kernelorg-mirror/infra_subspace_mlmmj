@@ -24,6 +24,8 @@
 #ifndef STATCTRL_H
 #define STATCTRL_H
 
-int statctrl(const char *listdir, const char *ctrlstr);
+#include <stdbool.h>
+
+bool statctrl(const char *listdir, const char *ctrlstr);
 
 #endif /* STATCTRL_H */

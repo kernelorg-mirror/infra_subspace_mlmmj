@@ -26,21 +26,24 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "strgen.h"
+#include "xmalloc.h"
 #include "statctrl.h"
 #include "log_error.h"
 
-int statctrl(const char *listdir, const char *ctrlstr)
+bool
+statctrl(const char *listdir, const char *ctrlstr)
 {
-	char *filename = concatstr(3, listdir, "/control/", ctrlstr);
-	
+	char *filename;
+
+	xasprintf(&filename, "%s/contorl/%s", listdir, ctrlstr);
+
 	if (access(filename, F_OK) == -1) {
 		if(errno == ENOENT)
-			return 0;
+			return (false);
 		log_error(LOG_ARGS, "Could not stat %s/control/%s. "
 		    "Bailing out.", listdir, ctrlstr);
 		exit(EXIT_FAILURE);
 	}
 
-	return 1;
+	return (true);
 }

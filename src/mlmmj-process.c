@@ -420,10 +420,10 @@ int main(int argc, char **argv)
 	int i, j, opt, noprocess = 0, moderated = 0, send = 0;
 	enum modreason modreason;
 	int hdrfd, footfd, rawmailfd, donemailfd, omitfd;
-	int addrtocc, intocc = 0, findaddress = 0;
+	bool addrtocc, notmetoo;
+	int intocc = 0, findaddress = 0;
 	int maxmailsize = 0;
-	int notmetoo = 0;
-	int subonlypost = 0, modonlypost = 0, modnonsubposts = 0, foundaddr = 0;
+	bool subonlypost, modonlypost, modnonsubposts, foundaddr = 0;
 	char *listdir = NULL, *mailfile = NULL, *headerfilename = NULL;
 	char *footerfilename = NULL, *donemailname = NULL;
 	char *randomstr = NULL, *mqueuename, *omitfilename;
@@ -619,7 +619,7 @@ int main(int argc, char **argv)
 		findaddress = 1;
 	}
 
-	addrtocc = !(statctrl(listdir, "tocc"));
+	addrtocc = !statctrl(listdir, "tocc");
 
 	if (findaddress) {
 		listdelim = getlistdelim(listdir);

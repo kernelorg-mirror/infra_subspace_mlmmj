@@ -123,8 +123,8 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 	char *omit = NULL;
 	char *c, *archivefilename, *sendfilename;
 	struct stat stbuf;
-	int closedlist, nosubconfirm, tmpfd, noget, i, closedlistsub,
-	    subonlyget = 0;
+	bool closedlist, closedlistsub, nosubconfirm, subonlyget;
+	int tmpfd, noget, i;
 	size_t cmdlen;
 	unsigned int ctrl;
 	struct strlist *owners;
