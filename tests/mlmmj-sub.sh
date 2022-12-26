@@ -22,7 +22,6 @@ add_normal_body()
 {
 	init_ml ml
 	mlmmjsub=$(command -v mlmmj-sub)
-	printf "To: test@mlmmjtest1\r\nSubject: test\n\nplop" > mail
 	echo test@mlmmjtest > ml/control/listaddress
 	atf_check -s exit:0 $mlmmjsub -L ml -a john@doe.org
 	atf_check -o inline:"john@doe.org\n" cat ml/subscribers.d/j
@@ -48,11 +47,7 @@ add_normal_owner_body()
 {
 	init_ml ml
 	mlmmjsub=$(command -v mlmmj-sub)
-	printf "To: test@mlmmjtest1\r\nSubject: test\n\nplop" > mail
-	echo 25678 > ml/control/smtpport
 	echo test@mlmmjtest > ml/control/listaddress
-	echo owner@mlmmjtest > ml/control/owner
-	touch ml/control/notifysub
 	atf_check -s exit:0 $mlmmjsub -L ml -q -a john@doe.org
 	atf_check -o inline:"john@doe.org\n" cat ml/subscribers.d/j
 }
@@ -61,7 +56,6 @@ add_digest_body()
 {
 	init_ml ml
 	mlmmjsub=$(command -v mlmmj-sub)
-	printf "To: test@mlmmjtest1\r\nSubject: test\n\nplop" > mail
 	echo test@mlmmjtest > ml/control/listaddress
 	atf_check -s exit:0 $mlmmjsub -L ml -a john@doe.org -d
 	atf_check -o inline:"john@doe.org\n" cat ml/digesters.d/j
@@ -71,7 +65,6 @@ add_nomail_body()
 {
 	init_ml ml
 	mlmmjsub=$(command -v mlmmj-sub)
-	printf "To: test@mlmmjtest1\r\nSubject: test\n\nplop" > mail
 	echo test@mlmmjtest > ml/control/listaddress
 	atf_check -s exit:0 $mlmmjsub -L ml -a john@doe.org -n
 	atf_check -o inline:"john@doe.org\n" cat ml/nomailsubs.d/j
