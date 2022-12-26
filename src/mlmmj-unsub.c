@@ -389,6 +389,8 @@ int main(int argc, char **argv)
 
 	/* Make the address lowercase */
 	address = lowercase(address);
+	listaddr = getlistaddr(listdir);
+	listdelim = getlistdelim(listdir);
 
 	if(changeuid) {
 		uid = getuid();
@@ -424,10 +426,10 @@ int main(int argc, char **argv)
 	}
 
 	if(!subbed) {
-		/* Address is not subscribed */
 		free(listaddr);
 		free(listdelim);
 
+		/* Address is not subscribed */
 		if(!nogennotsubscribed) {
 			generate_notsubscribed(listdir, address, mlmmjsend,
 					typesub);
