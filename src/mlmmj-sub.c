@@ -533,24 +533,12 @@ void generate_subscribed(const char *listdir, const char *subaddr,
 
 static void subscribe_type(int listfd, char *address, enum subtype typesub) {
 	int dirfd;;
-	char chstr[2], *subdir;
+	char chstr[2];
+	const char *subdir;
 	int groupwritable = 0, subfilefd;
 	struct stat st;
 
-	switch(typesub) {
-		default:
-		case SUB_NORMAL:
-			subdir = "subscribers.d";
-			break;
-		case SUB_DIGEST:
-			subdir = "digesters.d";
-			break;
-		case SUB_NOMAIL:
-			subdir = "nomailsubs.d";
-			break;
-	}
-
-	dirfd = openat(listfd, subdir, O_DIRECTORY);
+	dirfd = open_subscriber_directory(listfd, typesub, &subdir);
 	if (dirfd == -1)
 		err(EXIT_FAILURE, "cannot open(%s)", subdir);
 	if (fstat(dirfd, &st) == 0) {
