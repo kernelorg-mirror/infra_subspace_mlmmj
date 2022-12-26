@@ -579,9 +579,8 @@ static void subscribe_type(char *listdir, char *address, enum subtype typesub) {
 int main(int argc, char **argv)
 {
 	char *listaddr, *listdelim, *listdir = NULL;
-	char *mlmmjsend, *mlmmjunsub, *bindir;
+	char *mlmmjsend, *bindir;
 	char *address = NULL, *modstr = NULL;
-	const char *flag = NULL;
 	int opt, subconfirm = 0, confirmsub = 0, notifysub;
 	int changeuid = 1, status, digest = 0, nomail = 0, both = 0;
 	int nogensubscribed = 0;
@@ -599,7 +598,6 @@ int main(int argc, char **argv)
 
 	bindir = mydirname(argv[0]);
 	mlmmjsend = concatstr(2, bindir, "/mlmmj-send");
-	mlmmjunsub = concatstr(2, bindir, "/mlmmj-unsub");
 	free(bindir);
 
 	while ((opt = getopt(argc, argv, "hbcCdfm:nsVUL:a:qrR")) != -1) {
@@ -724,12 +722,13 @@ int main(int argc, char **argv)
 		 * missing version, so don't unsub. */
 		if (!(typesub == SUB_BOTH &&
 				subbed != SUB_NOMAIL)) {
+			enum subtype ts = SUB_ALL;
+			int fd = open(listdir, O_DIRECTORY);
 			if (subbed == SUB_BOTH) {
-				if (typesub == SUB_NORMAL) flag = "-d";
-				if (typesub == SUB_DIGEST) flag = "-N";
+				if (typesub == SUB_NORMAL) ts = SUB_DIGEST;
+				if (typesub == SUB_DIGEST) ts = SUB_NORMAL;
 			}
-			if (exec_and_wait(mlmmjunsub, "-L", listdir, "-q", "-a",
-			    address, flag, NULL) != 0)
+			if (!unsubscribe(fd, address, ts))
 				log_error(LOG_ARGS, "not unsubscribed from "
 				    "current version");
 		}
