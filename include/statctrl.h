@@ -27,5 +27,6 @@
 #include <stdbool.h>
 
 bool statctrl(const char *listdir, const char *ctrlstr);
+bool fstatctrl(int, const char *ctrlstr);
 
 #endif /* STATCTRL_H */
