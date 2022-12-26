@@ -531,8 +531,8 @@ void generate_subscribed(const char *listdir, const char *subaddr,
 	    fromaddr, "-m", queuefilename, NULL);
 }
 
-static void subscribe_type(char *listdir, char *address, enum subtype typesub) {
-	int listfd, dirfd;;
+static void subscribe_type(int listfd, char *address, enum subtype typesub) {
+	int dirfd;;
 	char chstr[2], *subdir;
 	int groupwritable = 0, subfilefd;
 	struct stat st;
@@ -550,13 +550,9 @@ static void subscribe_type(char *listdir, char *address, enum subtype typesub) {
 			break;
 	}
 
-	listfd = open(listdir, O_DIRECTORY);
-	if (listfd == -1)
-		err(EXIT_FAILURE, "cannot open(%s)", listdir);
 	dirfd = openat(listfd, subdir, O_DIRECTORY);
-	close(listfd);
 	if (dirfd == -1)
-		err(EXIT_FAILURE, "cannot open(%s/%s)", listdir, subdir);
+		err(EXIT_FAILURE, "cannot open(%s)", subdir);
 	if (fstat(dirfd, &st) == 0) {
 		if(st.st_mode & S_IWGRP) {
 			groupwritable = S_IRGRP|S_IWGRP;
@@ -595,6 +591,7 @@ int main(int argc, char **argv)
 	uid_t uid;
 	enum subtype typesub = SUB_NORMAL;
 	enum subreason reasonsub = SUB_ADMIN;
+	int listfd, ctrlfd;
 
 	CHECKFULLPATH(argv[0]);
 
@@ -664,7 +661,11 @@ int main(int argc, char **argv)
 		errx(EXIT_FAILURE, "You have to specify -L\n"
 		    "%s -h for help", argv[0]);
 	}
-	
+	if ((listfd = open(listdir, O_DIRECTORY|O_CLOEXEC)) == -1)
+		errx(EXIT_FAILURE, "Cannot open(%s)", listdir);
+	if ((ctrlfd = openat(listfd, "control", O_DIRECTORY|O_CLOEXEC)) == -1)
+		errx(EXIT_FAILURE, "Cannot open(%s/control)", listdir);
+
 	if(address == NULL && modstr == NULL) {
 		errx(EXIT_FAILURE, "You have to specify -a or -m\n"
 		    "%s -h for help", argv[0]);
@@ -727,12 +728,11 @@ int main(int argc, char **argv)
 		if (!(typesub == SUB_BOTH &&
 				subbed != SUB_NOMAIL)) {
 			enum subtype ts = SUB_ALL;
-			int fd = open(listdir, O_DIRECTORY);
 			if (subbed == SUB_BOTH) {
 				if (typesub == SUB_NORMAL) ts = SUB_DIGEST;
 				if (typesub == SUB_DIGEST) ts = SUB_NORMAL;
 			}
-			if (!unsubscribe(fd, address, ts))
+			if (!unsubscribe(listfd, address, ts))
 				log_error(LOG_ARGS, "not unsubscribed from "
 				    "current version");
 		}
@@ -745,20 +745,20 @@ int main(int argc, char **argv)
 			address, mlmmjsend, typesub, reasonsub);
 
 	if(modstr == NULL && subbed == SUB_NONE && !force &&
-			statctrl(listdir, "submod")) {
+			fstatctrl(ctrlfd, "submod")) {
 		moderate_sub(listdir, listaddr, listdelim,
 				address, mlmmjsend, typesub, reasonsub);
 	}
 
 	if (typesub == SUB_BOTH) {
 		if (subbed != SUB_NORMAL) {
-			subscribe_type(listdir, address, SUB_NORMAL);
+			subscribe_type(listfd, address, SUB_NORMAL);
 		}
 		if (subbed != SUB_DIGEST) {
-			subscribe_type(listdir, address, SUB_DIGEST);
+			subscribe_type(listfd, address, SUB_DIGEST);
 		}
 	} else if (!(subbed == SUB_BOTH && typesub != SUB_NOMAIL)) {
-		subscribe_type(listdir, address, typesub);
+		subscribe_type(listfd, address, typesub);
 	}
 
 	if(confirmsub) {
@@ -783,7 +783,7 @@ int main(int argc, char **argv)
 	}
 
 	notifysub = !quiet && reasonsub != SUB_SWITCH &&
-			statctrl(listdir, "notifysub");
+			fstatctrl(ctrlfd, "notifysub");
 
 	/* Notify list owner about subscription */
 	if (notifysub)
