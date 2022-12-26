@@ -532,27 +532,32 @@ void generate_subscribed(const char *listdir, const char *subaddr,
 }
 
 static void subscribe_type(char *listdir, char *address, enum subtype typesub) {
-	char *subfilename = NULL;
+	int listfd, dirfd;;
 	char chstr[2], *subdir;
-	char *subddirname = NULL;
 	int groupwritable = 0, subfilefd;
 	struct stat st;
 
 	switch(typesub) {
 		default:
 		case SUB_NORMAL:
-			subdir = "/subscribers.d/";
+			subdir = "subscribers.d";
 			break;
 		case SUB_DIGEST:
-			subdir = "/digesters.d/";
+			subdir = "digesters.d";
 			break;
 		case SUB_NOMAIL:
-			subdir = "/nomailsubs.d/";
+			subdir = "nomailsubs.d";
 			break;
 	}
 
-	subddirname = concatstr(2, listdir, subdir);
-	if (stat(subddirname, &st) == 0) {
+	listfd = open(listdir, O_DIRECTORY);
+	if (listfd == -1)
+		err(EXIT_FAILURE, "cannot open(%s)", listdir);
+	dirfd = openat(listfd, subdir, O_DIRECTORY);
+	close(listfd);
+	if (dirfd == -1)
+		err(EXIT_FAILURE, "cannot open(%s/%s)", listdir, subdir);
+	if (fstat(dirfd, &st) == 0) {
 		if(st.st_mode & S_IWGRP) {
 			groupwritable = S_IRGRP|S_IWGRP;
 			umask(S_IWOTH);
@@ -562,17 +567,16 @@ static void subscribe_type(char *listdir, char *address, enum subtype typesub) {
 
 	chstr[0] = address[0];
 	chstr[1] = '\0';
-	
-	subfilename = concatstr(3, listdir, subdir, chstr);
 
-	subfilefd = open(subfilename, O_RDWR|O_CREAT|O_APPEND,
+	subfilefd = openat(dirfd, chstr, O_RDWR|O_CREAT|O_APPEND,
 				S_IRUSR|S_IWUSR|groupwritable);
 	if(subfilefd == -1 && !lock(subfilefd, true)) {
-		log_error(LOG_ARGS, "Could not open '%s'", subfilename);
+		log_error(LOG_ARGS, "Could not open '%s/%s'", subdir, chstr);
 		exit(EXIT_FAILURE);
 	}
 
 	dprintf(subfilefd, "%s\n", address);
+	close(dirfd);
 	close(subfilefd);
 }
 
