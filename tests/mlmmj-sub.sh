@@ -9,6 +9,9 @@ tests_init \
 	add_nomail \
 	add_digest \
 	add_normal_then_nomail \
+	add_both \
+	add_both_with_digest \
+	add_both_with_normal \
 	remove_basics \
 	remove_normal \
 	remove_normal_owner \
@@ -72,6 +75,38 @@ add_nomail_body()
 	echo test@mlmmjtest > ml/control/listaddress
 	atf_check -s exit:0 $mlmmjsub -L ml -a john@doe.org -n
 	atf_check -o inline:"john@doe.org\n" cat ml/nomailsubs.d/j
+}
+
+add_both_body()
+{
+	init_ml ml
+	mlmmjsub=$(command -v mlmmj-sub)
+	echo test@mlmmjtest > ml/control/listaddress
+	atf_check -s exit:0 $mlmmjsub -L ml -a john@doe.org -b
+	atf_check -o inline:"john@doe.org\n" cat ml/subscribers.d/j
+	atf_check -o inline:"john@doe.org\n" cat ml/digesters.d/j
+}
+
+add_both_with_digest_body()
+{
+	init_ml ml
+	mlmmjsub=$(command -v mlmmj-sub)
+	echo test@mlmmjtest > ml/control/listaddress
+	echo "john@doe.org" > ml/digesters.d/j
+	atf_check -s exit:0 $mlmmjsub -L ml -a john@doe.org -b
+	atf_check -o inline:"john@doe.org\n" cat ml/subscribers.d/j
+	atf_check -o inline:"john@doe.org\n" cat ml/digesters.d/j
+}
+
+add_both_with_normal_body()
+{
+	init_ml ml
+	mlmmjsub=$(command -v mlmmj-sub)
+	echo test@mlmmjtest > ml/control/listaddress
+	echo "john@doe.org" > ml/subscribers.d/j
+	atf_check -s exit:0 $mlmmjsub -L ml -a john@doe.org -b
+	atf_check -o inline:"john@doe.org\n" cat ml/subscribers.d/j
+	atf_check -o inline:"john@doe.org\n" cat ml/digesters.d/j
 }
 
 remove_normal_body()
