@@ -55,7 +55,7 @@ static void moderate_sub(const char *listdir, const char *listaddr,
 		const char *listdelim, const char *subaddr,
 		const char *mlmmjsend, enum subtype typesub, enum subreason reasonsub)
 {
-	int i, fd, status, nosubmodmails = 0;
+	int i, fd, status;
 	text *txt;
 	memory_lines_state *mls;
 	char *a = NULL, *queuefilename, *from, *listname, *listfqdn, *str;
@@ -165,10 +165,8 @@ static void moderate_sub(const char *listdir, const char *listaddr,
 	close_text(txt);
 	
 	/* we might need to exec more than one mlmmj-send */
-	
-	nosubmodmails = statctrl(listdir,"nosubmodmails");
-	
-	if (nosubmodmails)
+
+	if (statctrl(listdir, "nosubmodmails"))
 		childpid = -1;
 	else {
 		childpid = fork();
