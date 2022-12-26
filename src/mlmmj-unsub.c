@@ -417,9 +417,6 @@ int main(int argc, char **argv)
 	}
 
 	if(!subbed) {
-		free(listaddr);
-		free(listdelim);
-
 		/* Address is not subscribed */
 		if(!nogennotsubscribed) {
 			generate_notsubscribed(listdir, address, mlmmjsend,
