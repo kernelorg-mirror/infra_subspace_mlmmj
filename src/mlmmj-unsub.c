@@ -253,17 +253,16 @@ static void print_help(const char *prg)
 }
 
 static void generate_notsubscribed(const char *listdir, const char *subaddr,
-	const char *mlmmjsend, enum subtype typesub, const char *listaddr)
+	const char *mlmmjsend, enum subtype typesub, const char *listaddr,
+	const char *listdelim)
 {
 	text *txt;
 	char *queuefilename, *fromaddr, *listname, *listfqdn;
-	char *listdelim = getlistdelim(listdir);
 
 	listname = genlistname(listaddr);
 	listfqdn = genlistfqdn(listaddr);
 
 	fromaddr = concatstr(4, listname, listdelim, "bounces-help@", listfqdn);
-	free(listdelim);
 
 	txt = open_text(listdir,
 			"deny", "unsub", "unsubbed", subtype_strs[typesub],
@@ -391,7 +390,7 @@ int main(int argc, char **argv)
 	/* Make the address lowercase */
 	address = lowercase(address);
 	listaddr = fgetlistaddr(ctrlfd);
-	listdelim = getlistdelim(listdir);
+	listdelim = fgetlistdelim(ctrlfd);
 
 	if(changeuid) {
 		uid = getuid();
@@ -424,7 +423,7 @@ int main(int argc, char **argv)
 		/* Address is not subscribed */
 		if(!nogennotsubscribed) {
 			generate_notsubscribed(listdir, address, mlmmjsend,
-			    typesub, listaddr);
+			    typesub, listaddr, listdelim);
 		}
 
 		exit(EXIT_SUCCESS);

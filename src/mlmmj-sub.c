@@ -128,7 +128,6 @@ static void moderate_sub(const char *listdir, const char *listaddr,
 	}
 
 	/* send mail to moderators about request pending */
-	listdelim = getlistdelim(listdir);
 	listfqdn = genlistfqdn(listaddr);
 	listname = genlistname(listaddr);
 
@@ -500,17 +499,16 @@ static void print_help(const char *prg)
 }
 
 void generate_subscribed(const char *listdir, const char *subaddr,
-		const char *mlmmjsend, enum subtype typesub, const char *listaddr)
+    const char *mlmmjsend, enum subtype typesub, const char *listaddr,
+    const char *listdelim)
 {
 	text *txt;
 	char *queuefilename, *fromaddr, *listname, *listfqdn;
-	char *listdelim = getlistdelim(listdir);
 
 	listname = genlistname(listaddr);
 	listfqdn = genlistfqdn(listaddr);
 
 	fromaddr = concatstr(4, listname, listdelim, "bounces-help@", listfqdn);
-	free(listdelim);
 
 	txt = open_text(listdir,
 			"deny", "sub", "subbed", subtype_strs[typesub],
@@ -705,7 +703,7 @@ int main(int argc, char **argv)
 	if(subbed == typesub) {
 		if(!nogensubscribed)
 			generate_subscribed(listdir, address, mlmmjsend,
-					typesub, listaddr);
+			    typesub, listaddr, listdelim);
 		return EXIT_SUCCESS;
 	} else if(subbed != SUB_NONE) {
 		reasonsub = SUB_SWITCH;
@@ -724,7 +722,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	listdelim = getlistdelim(listdir);
+	listdelim = fgetlistdelim(ctrlfd);
 
 	if(subbed == SUB_NONE && subconfirm)
 			generate_subconfirm(listdir, listaddr, listdelim,
