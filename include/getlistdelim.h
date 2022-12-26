@@ -25,5 +25,6 @@
 #define GETLISTDELIM_H
 
 char *getlistdelim(const char *listdir);
+char *fgetlistdelim(int ctrlfd);
 
 #endif /* GETLISTDELIM_H */
