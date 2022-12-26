@@ -253,13 +253,12 @@ static void print_help(const char *prg)
 }
 
 static void generate_notsubscribed(const char *listdir, const char *subaddr,
-		const char *mlmmjsend, enum subtype typesub)
+	const char *mlmmjsend, enum subtype typesub, const char *listaddr)
 {
 	text *txt;
-	char *queuefilename, *fromaddr, *listname, *listfqdn, *listaddr;
+	char *queuefilename, *fromaddr, *listname, *listfqdn;
 	char *listdelim = getlistdelim(listdir);
 
-	listaddr = getlistaddr(listdir);
 	listname = genlistname(listaddr);
 	listfqdn = genlistfqdn(listaddr);
 
@@ -276,7 +275,6 @@ static void generate_notsubscribed(const char *listdir, const char *subaddr,
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
-	free(listaddr);
 	free(listname);
 	free(listfqdn);
 
@@ -392,7 +390,7 @@ int main(int argc, char **argv)
 
 	/* Make the address lowercase */
 	address = lowercase(address);
-	listaddr = getlistaddr(listdir);
+	listaddr = fgetlistaddr(ctrlfd);
 	listdelim = getlistdelim(listdir);
 
 	if(changeuid) {
@@ -426,7 +424,7 @@ int main(int argc, char **argv)
 		/* Address is not subscribed */
 		if(!nogennotsubscribed) {
 			generate_notsubscribed(listdir, address, mlmmjsend,
-					typesub);
+			    typesub, listaddr);
 		}
 
 		exit(EXIT_SUCCESS);

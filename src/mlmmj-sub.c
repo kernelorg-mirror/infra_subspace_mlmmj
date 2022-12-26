@@ -500,13 +500,12 @@ static void print_help(const char *prg)
 }
 
 void generate_subscribed(const char *listdir, const char *subaddr,
-		const char *mlmmjsend, enum subtype typesub)
+		const char *mlmmjsend, enum subtype typesub, const char *listaddr)
 {
 	text *txt;
-	char *queuefilename, *fromaddr, *listname, *listfqdn, *listaddr;
+	char *queuefilename, *fromaddr, *listname, *listfqdn;
 	char *listdelim = getlistdelim(listdir);
 
-	listaddr = getlistaddr(listdir);
 	listname = genlistname(listaddr);
 	listfqdn = genlistfqdn(listaddr);
 
@@ -523,7 +522,6 @@ void generate_subscribed(const char *listdir, const char *subaddr,
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
-	free(listaddr);
 	free(listname);
 	free(listfqdn);
 
@@ -685,7 +683,7 @@ int main(int argc, char **argv)
 	address = lowercase(address);
 
 	/* get the list address */
-	listaddr = getlistaddr(listdir);
+	listaddr = fgetlistaddr(ctrlfd);
 	if(strncasecmp(listaddr, address, strlen(listaddr)) == 0)
 		errx(EXIT_FAILURE, "Cannot subscribe the list address to the list");
 
@@ -707,7 +705,7 @@ int main(int argc, char **argv)
 	if(subbed == typesub) {
 		if(!nogensubscribed)
 			generate_subscribed(listdir, address, mlmmjsend,
-					typesub);
+					typesub, listaddr);
 		return EXIT_SUCCESS;
 	} else if(subbed != SUB_NONE) {
 		reasonsub = SUB_SWITCH;
