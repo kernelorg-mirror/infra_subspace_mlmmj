@@ -131,6 +131,8 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 	int owner_idx;
 	text *txt;
 	char *queuefilename;
+	const char *subtype = NULL;
+	const char *subtypename = NULL;
 	
 	/* A closed list doesn't allow subscribtion and unsubscription */
 	closedlist = statctrl(listdir, "closedlist");
@@ -354,56 +356,28 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 
 	/* listname+subconf-digest-COOKIE@domain.tld */
 	case CTRL_CONFSUB_DIGEST:
-		conffilename = concatstr(3, listdir, "/subconf/", param);
-		free(param);
-		if((tmpfd = open(conffilename, O_RDONLY)) < 0) {
-			/* invalid COOKIE */
-			errno = 0;
-			log_error(LOG_ARGS, "A subconf-digest request was"
-				" sent with a mismatching cookie."
-				" Ignoring mail");
-			return -1;
-		}
-		tmpstr = mygetline(tmpfd);
-		chomp(tmpstr);
-		close(tmpfd);
-		unlink(conffilename);
-		log_oper(listdir, OPLOGFNAME, "mlmmj-sub: %s confirmed"
-					" subscription to digest", tmpstr);
-		exec_or_die(mlmmjsub, "-L", listdir, "-a", tmpstr, "-d",
-		    "-R", "-c", NULL);
-		break;
-
+		subtype = "-d";
+		subtypename = "digest";
+		/* FALLTHROUH */
 	/* listname+subconf-nomail-COOKIE@domain.tld */
 	case CTRL_CONFSUB_NOMAIL:
-		conffilename = concatstr(3, listdir, "/subconf/", param);
-		free(param);
-		if((tmpfd = open(conffilename, O_RDONLY)) < 0) {
-			/* invalid COOKIE */
-			errno = 0;
-			log_error(LOG_ARGS, "A subconf-nomail request was"
-				" sent with a mismatching cookie."
-				" Ignoring mail");
-			return -1;
+		if (subtype == NULL) {
+			subtype = "-n";
+			subtypename = "nomail";
 		}
-		tmpstr = mygetline(tmpfd);
-		chomp(tmpstr);
-		close(tmpfd);
-		unlink(conffilename);
-		log_oper(listdir, OPLOGFNAME, "mlmmj-sub: %s confirmed"
-					" subscription to nomail", tmpstr);
-		exec_or_die(mlmmjsub, "-L", listdir, "-a", tmpstr, "-n",
-		    "-R", "-c", NULL);
-		break;
-
+		/* FALLTHROUH */
 	/* listname+subconf-both-COOKIE@domain.tld */
 	case CTRL_CONFSUB_BOTH:
+		if (subtype == NULL) {
+			subtype = "-b";
+			subtypename = "both";
+		}
 		conffilename = concatstr(3, listdir, "/subconf/", param);
 		free(param);
 		if((tmpfd = open(conffilename, O_RDONLY)) < 0) {
 			/* invalid COOKIE */
 			errno = 0;
-			log_error(LOG_ARGS, "A subconf-both request was"
+			log_error(LOG_ARGS, "A subconf request was"
 				" sent with a mismatching cookie."
 				" Ignoring mail");
 			return -1;
@@ -411,10 +385,9 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 		tmpstr = mygetline(tmpfd);
 		chomp(tmpstr);
 		close(tmpfd);
-		unlink(conffilename);
 		log_oper(listdir, OPLOGFNAME, "mlmmj-sub: %s confirmed"
-					" subscription to both", tmpstr);
-		exec_or_die(mlmmjsub, "-L", listdir, "-a", tmpstr, "-b",
+		" subscription to %s", tmpstr, subtypename);
+		exec_or_die(mlmmjsub, "-L", listdir, "-a", tmpstr, "-n",
 		    "-R", "-c", NULL);
 		break;
 
