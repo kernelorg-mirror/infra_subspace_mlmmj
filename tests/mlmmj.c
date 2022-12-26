@@ -36,6 +36,7 @@
 #include <limits.h>
 #include <errno.h>
 
+#include "atf-c/macros.h"
 #include "xmalloc.h"
 #include "wrappers.h"
 #include "chomp.h"
@@ -75,6 +76,7 @@ ATF_TC_WITHOUT_HEAD(parse_lastdigest);
 ATF_TC_WITHOUT_HEAD(extract_bouncetime);
 ATF_TC_WITHOUT_HEAD(open_subscriber_directory);
 ATF_TC_WITHOUT_HEAD(unsubscribe);
+ATF_TC_WITHOUT_HEAD(genlistname);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -919,6 +921,19 @@ ATF_TC_BODY(unsubscribe, tc)
 
 }
 
+ATF_TC_BODY(genlistname, tc)
+{
+	char *ret;
+
+	ret = genlistname("plop@bla");
+	ATF_REQUIRE_STREQ(ret, "plop");
+	free(ret);
+
+	ret = genlistname("plop@bla@meh");
+	ATF_REQUIRE_STREQ(ret, "plop");
+	free(ret);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -949,6 +964,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, extract_bouncetime);
 	ATF_TP_ADD_TC(tp, open_subscriber_directory);
 	ATF_TP_ADD_TC(tp, unsubscribe);
+	ATF_TP_ADD_TC(tp, genlistname);
 
 	return (atf_no_error());
 }

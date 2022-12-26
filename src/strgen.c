@@ -59,14 +59,11 @@ char *headerstr(const char *headertoken, const char *str)
 
 char *genlistname(const char *listaddr)
 {
-	char *dest, *atsign;
+	const char *atsign;
 
 	atsign = strchr(listaddr, '@');
 	MY_ASSERT(atsign);
-	
-	xasprintf(&dest, "%s", listaddr);
-
-	return dest;
+	return (xstrndup(listaddr, atsign - listaddr));
 }
 
 char *genlistfqdn(const char *listaddr)
