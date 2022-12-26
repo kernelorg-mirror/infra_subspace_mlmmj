@@ -77,6 +77,7 @@ ATF_TC_WITHOUT_HEAD(extract_bouncetime);
 ATF_TC_WITHOUT_HEAD(open_subscriber_directory);
 ATF_TC_WITHOUT_HEAD(unsubscribe);
 ATF_TC_WITHOUT_HEAD(genlistname);
+ATF_TC_WITHOUT_HEAD(genlistfqdn);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -934,6 +935,16 @@ ATF_TC_BODY(genlistname, tc)
 	free(ret);
 }
 
+ATF_TC_BODY(genlistfqdn, tc)
+{
+	char *ret;
+
+	ret = genlistfqdn("plop@bla");
+	ATF_REQUIRE_STREQ(ret, "bla");
+	ret = genlistfqdn("plop@bla@meh");
+	ATF_REQUIRE_STREQ(ret, "bla@meh");
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -965,6 +976,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, open_subscriber_directory);
 	ATF_TP_ADD_TC(tp, unsubscribe);
 	ATF_TP_ADD_TC(tp, genlistname);
+	ATF_TP_ADD_TC(tp, genlistfqdn);
 
 	return (atf_no_error());
 }

@@ -68,13 +68,11 @@ char *genlistname(const char *listaddr)
 
 char *genlistfqdn(const char *listaddr)
 {
-	char *dest, *atsign;
+	const char *atsign;
 
 	atsign = strchr(listaddr, '@');
 	MY_ASSERT(atsign);
-	xasprintf(&dest, "%s", atsign + 1);
-
-	return dest;
+	return (xstrdup(atsign + 1));
 }
 
 char *concatstr(int count, ...)
