@@ -293,13 +293,14 @@ int main(int argc, char **argv)
 	int nogennotsubscribed = 0;
 	int status;
 	char *listaddr, *listdelim, *listdir = NULL, *address = NULL;
-	char *mlmmjsend, *bindir, *subdir;
+	char *mlmmjsend, *bindir;
+	const char *subdir;
 	enum subtype typesub = SUB_ALL;
 	enum subreason reasonsub = SUB_ADMIN;
 	uid_t uid;
 	struct stat st;
 	pid_t pid, childpid;
-	int listfd;
+	int listfd, ctrlfd;
 
 	CHECKFULLPATH(argv[0]);
 	
@@ -363,8 +364,9 @@ int main(int argc, char **argv)
 		    "%s -h for help", argv[0]);
 	}
 	if ((listfd = open(listdir, O_DIRECTORY|O_CLOEXEC)) == -1)
-		err(EXIT_FAILURE, "Impossible to open the mailing list %s",
-		    listdir);
+		errx(EXIT_FAILURE, "Cannot open(%s)", listdir);
+	if ((ctrlfd = openat(listfd, "control", O_DIRECTORY|O_CLOEXEC)) == -1)
+		errx(EXIT_FAILURE, "Cannot open(%s/control)", listdir);
 
 	if(digest + nomail + normal > 1) {
 		errx(EXIT_FAILURE, "Specify at most one of -d, -n and -N\n"
@@ -409,29 +411,11 @@ int main(int argc, char **argv)
 	if (typesub == SUB_ALL) {
 		subbed = is_subbed(listdir, address, false) != SUB_NONE;
 	} else {
-		switch(typesub) {
-			default:
-			case SUB_NORMAL:
-				subdir = "subscribers.d";
-				break;
-			case SUB_DIGEST:
-				subdir = "digesters.d";
-				break;
-			case SUB_NOMAIL:
-				subdir = "nomailsubs.d";
-				break;
-		}
-		int listdirfd = open(listdir, O_DIRECTORY);
-		if (listdirfd == -1) {
-			log_error(LOG_ARGS, "Could not opendir(%s)", listdir);
-			exit(EXIT_FAILURE);
-		}
-		int subdirfd = openat(listdirfd, subdir, O_DIRECTORY);
+		int subdirfd = open_subscriber_directory(listfd, typesub, &subdir);
 		if (subdirfd == -1) {
 			log_error(LOG_ARGS, "Could not opendir(%s/%s)", listdir, subdir);
 			exit(EXIT_FAILURE);
 		}
-		close(listdirfd);
 		subbed = is_subbed_in(subdirfd, subdir, address);
 	}
 
@@ -453,7 +437,6 @@ int main(int argc, char **argv)
 				mlmmjsend, typesub, reasonsub);
 
 	unsubscribe(listfd, address, typesub);
-	close(listfd);
 
 	if(confirmunsub) {
 		childpid = fork();
@@ -478,7 +461,7 @@ int main(int argc, char **argv)
 					typesub, reasonsub);
 	}
 
-        notifysub = !quiet && statctrl(listdir, "notifysub");
+	notifysub = !quiet && fstatctrl(ctrlfd, "notifysub");
 
         /* Notify list owner about subscription */
         if (notifysub)
