@@ -35,7 +35,7 @@ statctrl(const char *listdir, const char *ctrlstr)
 {
 	char *filename;
 
-	xasprintf(&filename, "%s/contorl/%s", listdir, ctrlstr);
+	xasprintf(&filename, "%s/control/%s", listdir, ctrlstr);
 
 	if (access(filename, F_OK) == -1) {
 		if(errno == ENOENT)
