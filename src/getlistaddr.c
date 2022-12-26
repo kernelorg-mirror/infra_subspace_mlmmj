@@ -1,6 +1,6 @@
-/* Copyright (C) 2002, 2003 Mads Martin Joergensen <mmj at mmj.dk>
- *
- * $Id$
+/*
+ * Copyright (C) 2002, 2003 Mads Martin Joergensen <mmj at mmj.dk>
+ * Copyright (C) 2022 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -32,6 +32,33 @@
 #include "log_error.h"
 #include "mygetline.h"
 #include "strgen.h"
+
+char *
+fgetlistaddr(int fd)
+{
+	char *tmpstr;
+	int listnamefd;
+
+	if ((listnamefd = openat(fd, "listaddress", O_RDONLY|O_CLOEXEC)) < 0) {
+		log_error(LOG_ARGS, "Could not open 'control/listaddress'");
+		exit(EXIT_FAILURE);
+	}
+	tmpstr = mygetline(listnamefd);
+	if (tmpstr == NULL) {
+		log_error(LOG_ARGS, "FATAL. Could not get listaddress "
+		    "in control/listaddress");
+		exit(EXIT_FAILURE);
+	}
+	if (strchr(tmpstr, '@') == NULL) {
+		log_error(LOG_ARGS, "FATAL. No @ sign in listaddress");
+		exit(EXIT_FAILURE);
+	}
+
+	chomp(tmpstr);
+	close(listnamefd);
+
+	return (tmpstr);
+}
 
 char *getlistaddr(const char *listdir)
 {
