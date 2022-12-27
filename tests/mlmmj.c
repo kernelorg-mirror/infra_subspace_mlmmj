@@ -84,6 +84,7 @@ ATF_TC_WITHOUT_HEAD(init_smtp);
 ATF_TC_WITHOUT_HEAD(smtp_bad_greetings);
 ATF_TC_WITHOUT_HEAD(smtp_bad_ehlo);
 ATF_TC_WITHOUT_HEAD(smtp_no_ehlo);
+ATF_TC_WITHOUT_HEAD(endsmtp);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -1180,6 +1181,12 @@ ATF_TC_BODY(smtp_no_ehlo, tc)
 	atf_utils_wait(p, 0, "EHLO heloname\r\nQUIT\r\nHELO heloname\r\n", "");
 }
 
+ATF_TC_BODY(endsmtp, tc)
+{
+	int sock = -1;
+	ATF_REQUIRE_EQ(endsmtp(&sock), 0);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -1217,6 +1224,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, smtp_bad_greetings);
 	ATF_TP_ADD_TC(tp, smtp_bad_ehlo);
 	ATF_TP_ADD_TC(tp, smtp_no_ehlo);
+	ATF_TP_ADD_TC(tp, endsmtp);
 
 	return (atf_no_error());
 }
