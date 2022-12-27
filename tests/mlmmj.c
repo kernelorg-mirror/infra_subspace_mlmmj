@@ -1052,12 +1052,10 @@ ATF_TC_BODY(init_smtp, tc)
 		int c;
 		struct sockaddr_in cl;
 		char *reply;
-		int cnt = 0;
 		socklen_t clsize = 0;
 		c = accept(s, (struct sockaddr *) &cl, &clsize);
 		if (c == -1)
 			err(5, "accept()");
-		cnt ++;
 		dprintf(c, "220 me fake smtp\n");
 		reply = mygetline(c);
 		printf("%s", reply);
