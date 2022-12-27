@@ -427,7 +427,7 @@ int main(int argc, char **argv)
 	char *listdir = NULL, *mailfile = NULL, *headerfilename = NULL;
 	char *footerfilename = NULL, *donemailname = NULL;
 	char *randomstr = NULL, *mqueuename, *omitfilename;
-	char *mlmmjsend, *mlmmjsub, *mlmmjunsub, *mlmmjbounce;
+	char *mlmmjsend, *mlmmjsub, *mlmmjunsub;
 	char *bindir, *subjectprefix, *discardname, *listaddr, *listdelim = NULL;
 	char *listfqdn, *listname, *fromaddr;
 	text *txt;
@@ -468,7 +468,6 @@ int main(int argc, char **argv)
 	mlmmjsend = concatstr(2, bindir, "/mlmmj-send");
 	mlmmjsub = concatstr(2, bindir, "/mlmmj-sub");
 	mlmmjunsub = concatstr(2, bindir, "/mlmmj-unsub");
-	mlmmjbounce = concatstr(2, bindir, "/mlmmj-bounce");
 	free(bindir);
 
 	while ((opt = getopt(argc, argv, "hVPm:L:")) != -1) {
@@ -780,7 +779,7 @@ int main(int argc, char **argv)
 		else
 			testfrom = &fromemails;
 		listcontrol(testfrom, listdir, recipextra,
-			    mlmmjsub, mlmmjunsub, mlmmjsend, mlmmjbounce,
+			    mlmmjsub, mlmmjunsub, mlmmjsend,
 			    donemailname);
 
 		return EXIT_SUCCESS;

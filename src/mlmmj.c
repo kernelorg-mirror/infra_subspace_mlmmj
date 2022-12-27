@@ -38,7 +38,10 @@
 #include "log_error.h"
 #include "xmalloc.h"
 #include "chomp.h"
+#include "gethdrline.h"
+#include "mygetline.h"
 #include "subscriberfuncs.h"
+#include "find_email_adr.h"
 
 bool
 parse_lastdigest(char *line, long *lastindex, time_t *lasttime,
@@ -382,4 +385,110 @@ save_lastbouncedmsg(int listfd, const char *address, const char *mailname)
 	renameat(AT_FDCWD, mailname, listfd, savename);
 	free(savename);
 	free(fname);
+}
+
+char *dsnparseaddr(const char *mailname)
+{
+	int fd, i;
+	char *line, *hdr, *walk, *addr = NULL, *boundary = NULL;
+	bool quoted = false;
+	bool indsn = false;
+	struct email_container emails = { 0, NULL };
+
+	fd = open(mailname, O_RDONLY);
+	if(fd < 0) {
+		log_error(LOG_ARGS, "Could not open bounceindexfile %s",
+				mailname);
+		return NULL;
+	}
+
+	while((line = gethdrline(fd, NULL))) {
+		if (strncasecmp(line, "content-type:", 13) != 0) {
+			free(line);
+			continue;
+		}
+		walk = line + 13;
+		while (isspace(*walk) && *walk != '\0')
+			walk++;
+		if (strncasecmp(walk, "multipart/report;", 17) != 0) {
+			free(line);
+			break;
+		}
+		walk += 17;
+		while (isspace(*walk) && *walk != '\0')
+			walk++;
+		if (strncasecmp(walk, "report-type=delivery-status;", 28) != 0) {
+			free(line);
+			break;
+		}
+		walk += 28;
+		while (isspace(*walk) && *walk != '\0')
+			walk++;
+		if (strncasecmp(walk, "boundary=", 9) != 0) {
+			free(line);
+			break;
+		}
+		walk += 9;
+
+		if (*walk == '"') {
+			walk++;
+			quoted = true;
+		}
+		xasprintf(&boundary, "--%s", walk);
+		boundary[strcspn(boundary, quoted ? " \t\"" : " \t")] = '\0';
+		free(line);
+		break;
+	}
+	/* this is not a miltipart/report mail see RFC1839 */
+	if (boundary == NULL)
+		return NULL;
+	while ((line = mygetline(fd))) {
+		chomp(line);
+		if (indsn) {
+			if (strncasecmp(line, "Final-Recipient:", 16) == 0) {
+				walk = strchr(line, ';');
+				if (walk == NULL) {
+					free(line);
+					break;
+				}
+				find_email_adr(walk+1, &emails);
+				if(emails.emailcount > 0) {
+					addr = xstrdup(emails.emaillist[0]);
+					for(i = 0; i < emails.emailcount; i++)
+						free(emails.emaillist[i]);
+					free(emails.emaillist);
+				}
+				free(line);
+				break;
+			}
+		}
+		if (strcmp(line, boundary) == 0) {
+			if (indsn) {
+				free(line);
+				break;
+			}
+			/* check our content type is a valid one */
+			while ((hdr = gethdrline(fd, NULL))) {
+				if (indsn) {
+					/* skip the rest of the headers if any */
+					free(hdr);
+					continue;
+				}
+				if (strncasecmp(hdr, "content-type:", 13) != 0) {
+					free(line);
+					continue;
+				}
+				walk = hdr + 13;
+				while (isspace(*walk) && *walk != '\0')
+					walk++;
+				if (strncasecmp(walk, "message/delivery-status", 23) != 0) {
+					free(hdr);
+					break;
+				}
+				free(hdr);
+				indsn = true;
+			}
+		}
+	}
+	return addr;
 }

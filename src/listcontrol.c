@@ -115,7 +115,7 @@ static struct ctrl_command ctrl_commands[] = {
 int listcontrol(struct email_container *fromemails, const char *listdir,
 		const char *controlstr, const char *mlmmjsub,
 		const char *mlmmjunsub, const char *mlmmjsend,
-		const char *mlmmjbounce, const char *mailname)
+		const char *mailname)
 {
 	char *bouncenr, *tmpstr;
 	char *param = NULL, *conffilename, *moderatefilename, *gatekeepfilename;
@@ -133,7 +133,9 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 	char *queuefilename;
 	const char *subtype = NULL;
 	const char *subtypename = NULL;
-	
+	bounce_t bret;
+	int listfd;
+
 	/* A closed list doesn't allow subscribtion and unsubscription */
 	closedlist = statctrl(listdir, "closedlist");
 
@@ -529,15 +531,28 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 
 	/* listname+bounces-INDEX-user=example.tld@domain.tld */
 	case CTRL_BOUNCES:
+		listfd = open(listdir, O_DIRECTORY);
 		bouncenr = param;
 		c = strchr(param, '-');
 		if (!c) { /* Exec with dsn parsing, since the addr is missing */
-			exec_or_die(mlmmjbounce, "-L", listdir, "-m", mailname,
-			    "-n", bouncenr, "-d", NULL);
+			c = dsnparseaddr(mailname);
+			if (c == NULL)
+				exit(EXIT_SUCCESS);
+			char *tmp = strrchr(c, '@');
+			MY_ASSERT(tmp);
+			*tmp = '=';
+		} else {
+			*c++ = '\0';
 		}
-		*c++ = '\0';
-		exec_or_die(mlmmjbounce, "-L", listdir, "-a", c, "-m", mailname,
-		    "-n", bouncenr, NULL);
+		bret = bouncemail(listfd, lowercase(c), bouncenr);
+		if (bret == BOUNCE_DONE)
+			save_lastbouncedmsg(listfd, c, mailname);
+		if (bouncemail(listfd, c, bouncenr) == BOUNCE_FAIL)
+			exit(EXIT_FAILURE);
+		if (bret == BOUNCE_OK)
+			unlink(mailname);
+		unlink(mailname);
+		exit(bret == BOUNCE_FAIL ? EXIT_FAILURE : EXIT_SUCCESS);
 		break;
 
 	/* listname+release-COOKIE@domain.tld */
