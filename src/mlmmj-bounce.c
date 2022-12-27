@@ -241,8 +241,8 @@ int main(int argc, char **argv)
 	int opt, dsnbounce = 0;
 	char *listdir = NULL, *address = NULL, *number = NULL;
 	const char *thisaddr;
-	char *bindir, *mlmmjsend, *savename;
-	char *mailname = NULL, *bfilename, *a;
+	char *bindir, *mlmmjsend, *a;
+	const char *mailname = NULL;
 	int probe = 0;
 	struct stat st;
 	uid_t uid;
@@ -344,16 +344,11 @@ int main(int argc, char **argv)
 #endif
 
 	bret = bouncemail(listfd, lowercase(thisaddr), number);
-	if (bret == BOUNCE_DONE && mailname != NULL) {
-		bfilename = lowercase(thisaddr);
-		xasprintf(&savename, "bounce/%s.lastmsg", bfilename);
-		renameat(AT_FDCWD, mailname, listfd, savename);
-		free(savename);
-		free(bfilename);
-	}
-	if (mailname)
-		unlink(mailname);
+	if (bret == BOUNCE_DONE && mailname != NULL)
+		save_lastbouncedmsg(listfd, thisaddr, mailname);
 	free(address);
+	if (bret == BOUNCE_OK && mailname != NULL)
+		unlink(mailname);
 
 	return (bret == BOUNCE_FAIL ? EXIT_FAILURE : EXIT_SUCCESS);
 }

@@ -109,6 +109,7 @@ time_t extract_bouncetime(char *line, const char **errstr);
 int open_subscriber_directory(int listfd, enum subtype typesub, const char **dir);
 bool unsubscribe(int listfd, const char *address, enum subtype typesub);
 bounce_t bouncemail(int listfd, const char *theaddress, const char *identifier);
+void save_lastbouncedmsg(int listfd, const char *address, const char *mailname);
 
 #define MY_ASSERT(expression) if (!(expression)) { \
 			errno = 0; \

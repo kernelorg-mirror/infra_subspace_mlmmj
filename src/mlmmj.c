@@ -370,3 +370,16 @@ bouncemail(int listfd, const char *theaddress, const char *identifier)
 
 	return (BOUNCE_DONE);
 }
+
+void
+save_lastbouncedmsg(int listfd, const char *address, const char *mailname)
+{
+	char *savename, *fname;
+
+	fname = lowercase(address);
+
+	xasprintf(&savename, "bounce/%s.lastmsg", fname);
+	renameat(AT_FDCWD, mailname, listfd, savename);
+	free(savename);
+	free(fname);
+}
