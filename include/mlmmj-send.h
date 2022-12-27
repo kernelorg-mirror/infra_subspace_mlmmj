@@ -24,25 +24,16 @@
 #ifndef MMJML_SEND_H
 #define MMJML_SEND_H
 
-int send_mail(int sockfd, const char *from, const char *to,
-	      const char *replyto, char *mailmap, size_t mailsize,
-	      int listfd, bool bounce,
-	      const char *hdrs, const char *body);
-int send_mail_many_fd(int sockfd, const char *from, const char *replyto,
-		   char *mailmap, size_t mailsize, int subfd,
+#include <sys/types.h>
+#include <stdbool.h>
+#include "send_mail.h"
+
+int send_mail_many_fd(int sockfd, struct mail *mail, int subfd,
 		   const char *listaddr, const char *listdelim,
-		   const char *archivefilename, int listfd,
-		   const char *hdrs,
-		   const char *body);
-int send_mail_many_list(int sockfd, const char *from, const char *replyto,
-		   char *mailmap, size_t mailsize, struct strlist *addrs,
+		   const char *archivefilename, int listfd);
+int send_mail_many_list(int sockfd, struct mail *mail, struct strlist *addrs,
 		   const char *listaddr, const char *listdelim,
-		   const char *archivefilename, int listfd,
-		   const char *hdrs, const char *body);
-int send_mail_verp(int sockfd, struct strlist *addrs, char *mailmap,
-		   size_t mailsize, const char *from,
-		   const char *hdrs, const char *body, const char *extra);
-int initsmtp(int *sockfd, const char *relayhost, unsigned short port, const char *heloname);
-int endsmtp(int *sockfd);
+		   const char *archivefilename, int listfd);
+int send_mail_verp(int sockfd, struct strlist *addrs, struct mail *mail, const char *extra);
 
 #endif /* MMJML_SEND_H */

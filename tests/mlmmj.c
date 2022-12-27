@@ -85,6 +85,7 @@ ATF_TC_WITHOUT_HEAD(smtp_bad_greetings);
 ATF_TC_WITHOUT_HEAD(smtp_bad_ehlo);
 ATF_TC_WITHOUT_HEAD(smtp_no_ehlo);
 ATF_TC_WITHOUT_HEAD(endsmtp);
+ATF_TC_WITHOUT_HEAD(do_bouncemail);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -1187,6 +1188,34 @@ ATF_TC_BODY(endsmtp, tc)
 	ATF_REQUIRE_EQ(endsmtp(&sock), 0);
 }
 
+ATF_TC_BODY(do_bouncemail, tc)
+{
+	init_ml(true);
+	int lfd = open("list", O_DIRECTORY);
+	/* malformed */
+	ATF_REQUIRE_EQ(do_bouncemail(lfd, "plop"), 0);
+
+	/* malformed, missing number */
+	ATF_REQUIRE_EQ(do_bouncemail(lfd, "plop@meh"), 0);
+
+	/* malformed, empty numbr */
+	ATF_REQUIRE_EQ(do_bouncemail(lfd, "plop-@meh"), 0);
+
+	/* no listdelim */
+	ATF_REQUIRE_EQ(do_bouncemail(lfd, "plop-0@meh"), 0);
+
+	/* listdelim before */
+	ATF_REQUIRE_EQ(do_bouncemail(lfd, "plop+-0@meh"), 0);
+
+	/* listdelim before */
+	ATF_REQUIRE_EQ(do_bouncemail(lfd, "plop-0+@meh"), 0);
+
+	/* 2 ticks */
+	ATF_REQUIRE_EQ(do_bouncemail(lfd, "plop+--bla@meh"), 1);
+
+	close(lfd);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -1225,6 +1254,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, smtp_bad_ehlo);
 	ATF_TP_ADD_TC(tp, smtp_no_ehlo);
 	ATF_TP_ADD_TC(tp, endsmtp);
+	ATF_TP_ADD_TC(tp, do_bouncemail);
 
 	return (atf_no_error());
 }

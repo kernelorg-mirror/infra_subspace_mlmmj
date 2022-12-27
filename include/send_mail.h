@@ -23,5 +23,22 @@
 
 #pragma once
 
+#include <sys/types.h>
+#include <stdbool.h>
+
+struct mail {
+	const char *from;
+	const char *to;
+	const char *replyto;
+	char *map;
+	size_t size;
+	char *hdrs;
+	char *body;
+	bool inmem;
+	bool addtohdr;
+};
+
 int initsmtp(int *sockfd, const char *relayhost, unsigned short port, const char *heloname);
 int endsmtp(int *sockfd);
+int send_mail(int sockfd, struct mail *mail, int listfd, bool bounce);
+int do_bouncemail(int listfd, const char *from);

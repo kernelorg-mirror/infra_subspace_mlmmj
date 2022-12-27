@@ -1,5 +1,6 @@
 1.4.0-a2
- o Remove perl and php frontends
+ o Fix a crash with forged probe emails
+ o mlmmj-send does not need anymore absolute path
 1.4.0-a1
  o Add a test suite
  o Modernize code (dprintf, posix_spawn, asprintf, getline, daemon, ...)

@@ -26,6 +26,8 @@
 
 #include "checkwait_smtpreply.h"
 #include "mail-functions.h"
+#include "getlistaddr.h"
+#include "getlistdelim.h"
 #include "send_mail.h"
 #include "log_error.h"
 #include "init_sockfd.h"
@@ -179,3 +181,177 @@ endsmtp(int *sockfd)
 	return retval;
 }
 
+int do_bouncemail(int listfd, const char *from)
+{
+	/* expected format for the from: "something+anything-<number>-anything@anything" */
+	char *tofree;
+	char *myfrom = xstrdup(from);
+	char *listdelim = fgetlistdelim(listfd);
+	char *addr, *num, *c;
+
+	tofree = myfrom;
+	if((c = strchr(myfrom, '@')) == NULL) {
+		free(myfrom);
+		free(listdelim);
+		return 0; /* Success when malformed 'from' */
+	}
+	*c = '\0';
+	num = strrchr(myfrom, '-');
+	if (num == NULL) {
+		free(tofree);
+		return (0); /* Success when malformed 'from' */
+	}
+	num++;
+	c = strstr(myfrom, listdelim);
+	if (c == NULL) {
+		free(tofree);
+		return (0); /* Success when malformed 'from' */
+	}
+	myfrom = strchr(c, '-'); /* malformed entry with delimiter after the -num */
+	if (myfrom == NULL) {
+		free(tofree);
+		return (0);
+	}
+	myfrom++;
+	if (num <= myfrom) {
+		free(tofree);
+		return (0); /* Success when malformed 'from' */
+	}
+	addr = xstrndup(myfrom, num - myfrom - 1);
+	free(listdelim);
+
+	bouncemail(listfd, num, addr);
+	return 1;
+}
+
+int
+send_mail(int sockfd, struct mail *mail, int listfd, bool bounce)
+{
+	int retval = 0;
+	char *reply, *reply2, *tohdr;
+
+	if(sockfd == -1)
+		return EBADF;
+
+	if(strchr(mail->to, '@') == NULL) {
+		errno = 0;
+		log_error(LOG_ARGS, "No @ in address, ignoring %s",
+		    mail->to);
+		return 0;
+	}
+	
+	retval = write_mail_from(sockfd, mail->from, "");
+	if(retval) {
+		log_error(LOG_ARGS, "Could not write MAIL FROM\n");
+		return retval;
+	}
+	reply = checkwait_smtpreply(sockfd, MLMMJ_FROM);
+	if(reply) {
+		log_error(LOG_ARGS, "Error in MAIL FROM. Reply = [%s]",
+				reply);
+		free(reply);
+		write_rset(sockfd);
+		reply2 = checkwait_smtpreply(sockfd, MLMMJ_RSET);
+		if (reply2 != NULL) free(reply2);
+		return MLMMJ_FROM;
+	}
+	retval = write_rcpt_to(sockfd, mail->to);
+	if(retval) {
+		log_error(LOG_ARGS, "Could not write RCPT TO:\n");
+		return retval;
+	}
+
+	reply = checkwait_smtpreply(sockfd, MLMMJ_RCPTTO);
+	if(reply) {
+		write_rset(sockfd);
+		reply2 = checkwait_smtpreply(sockfd, MLMMJ_RSET);
+		if (reply2 != NULL) free(reply2);
+		if(bounce && ((reply[0] == '4') || (reply[0] == '5'))
+				&& (reply[1] == '5')) {
+			free(reply);
+			return do_bouncemail(listfd, mail->from);
+		} else {
+			log_error(LOG_ARGS, "Error in RCPT TO. Reply = [%s]",
+					reply);
+			free(reply);
+			return MLMMJ_RCPTTO;
+		}
+	}
+
+	retval = write_data(sockfd);
+	if(retval) {
+		log_error(LOG_ARGS, "Could not write DATA\b");
+		return retval;
+	}
+
+	reply = checkwait_smtpreply(sockfd, MLMMJ_DATA);
+	if(reply) {
+		log_error(LOG_ARGS, "Error with DATA. Reply = [%s]", reply);
+		free(reply);
+		write_rset(sockfd);
+		reply2 = checkwait_smtpreply(sockfd, MLMMJ_RSET);
+		if (reply2 != NULL) free(reply2);
+		return MLMMJ_DATA;
+	}
+
+	if(mail->replyto) {
+		retval = write_replyto(sockfd, mail->replyto);
+		if(retval) {
+			log_error(LOG_ARGS, "Could not write reply-to addr.\n");
+			return retval;
+		}
+	}
+
+	if(mail->addtohdr)
+		xasprintf(&tohdr, "To: %s\r\n", mail->to);
+	else
+		tohdr = NULL;
+
+	if(mail->inmem) {
+		retval = dprintf(sockfd, "%s", mail->hdrs);
+		if(retval < 0) {
+			log_error(LOG_ARGS, "Could not write mailheaders.\n");
+			return retval;
+		}
+		if(tohdr) {
+			retval = dprintf(sockfd, "%s", tohdr);
+			if(retval < 0) {
+				log_error(LOG_ARGS, "Could not write To:.\n");
+				return retval;
+			}
+			free(tohdr);
+		}
+		retval = dprintf(sockfd, "%s", mail->body);
+		if(retval < 0) {
+			log_error(LOG_ARGS, "Could not write mailbody.\n");
+			return retval;
+		}
+	} else {
+		retval = write_mailbody_from_map(sockfd, mail->map, mail->size,
+						 tohdr);
+		if(retval) {
+			log_error(LOG_ARGS, "Could not write mail\n");
+			return retval;
+		}
+	}
+
+	retval = write_dot(sockfd);
+	if(retval) {
+		log_error(LOG_ARGS, "Could not write <CR><LF>.<CR><LF>\n");
+		return retval;
+	}
+
+	reply = checkwait_smtpreply(sockfd, MLMMJ_DOT);
+	if(reply) {
+		log_error(LOG_ARGS, "Mailserver did not ack end of mail.\n"
+				"<CR><LF>.<CR><LF> was written, to no"
+				"avail. Reply = [%s]", reply);
+		free(reply);
+		write_rset(sockfd);
+		reply2 = checkwait_smtpreply(sockfd, MLMMJ_RSET);
+		if (reply2 != NULL) free(reply2);
+		return MLMMJ_DOT;
+	}
+
+	return 0;
+}
