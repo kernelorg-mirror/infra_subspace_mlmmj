@@ -641,7 +641,7 @@ int main(int argc, char **argv)
 	char *relayhost = NULL, *archivefilename = NULL, *tmpstr;
 	char *subddirname = NULL, *listdir = NULL;
 	char listctrl = 0;
-	char *mlmmjbounce = NULL, *bindir, *mailmap, *probefile, *a;
+	char *mailmap, *probefile, *a;
 	char *body = NULL, *hdrs = NULL, *verp = NULL;
 	char *listname, *listfqdn, *verpfrom;
 	char *reply, *smtphelo, *requeuefilename;
@@ -655,14 +655,8 @@ int main(int argc, char **argv)
 	struct sigaction sigact;
 	int listfd;
 
-	CHECKFULLPATH(argv[0]);
-	
 	log_set_name(argv[0]);
 
-	bindir = mydirname(argv[0]);
-	mlmmjbounce = concatstr(2, bindir, "/mlmmj-bounce");
-	free(bindir);
-	
 	/* install signal handler for SIGTERM */
 	sigact.sa_handler = catch_sig_term;
 	sigemptyset(&sigact.sa_mask);
@@ -1182,7 +1176,6 @@ int main(int argc, char **argv)
 	free(listdelim);
 	free(hdrs);
 	free(body);
-	free(mlmmjbounce);
 	munmap(mailmap, st.st_size);
 	close(mailfd);
 	free(verp);
