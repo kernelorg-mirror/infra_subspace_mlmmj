@@ -150,31 +150,39 @@ is_subbed_in(int dirfd, const char *subdirname, const char *address)
 }
 
 enum subtype
-is_subbed(const char *listdir, const char *address, bool both)
+is_subbedat(int listfd, const char *address, bool both)
 {
 	enum subtype typesub = SUB_NONE;
-	int fd, dirfd;
+	int fd;
+
+	fd = openat(listfd, "subscribers.d", O_DIRECTORY);
+	if (fd != -1 && is_subbed_in(fd, "subscribers.d", address)) {
+		if (!both) return SUB_NORMAL;
+		typesub = SUB_NORMAL;
+	}
+
+	fd = openat(listfd, "digesters.d", O_DIRECTORY);
+	if (fd != -1 && is_subbed_in(fd, "digesters.d", address)) {
+		if (typesub == SUB_NORMAL) return SUB_BOTH;
+		return SUB_DIGEST;
+	}
+
+	fd = openat(listfd, "nomailsubs.d", O_DIRECTORY);
+	if (fd != -1 && is_subbed_in(fd, "nomailsubs.d", address))
+		return SUB_NOMAIL;
+
+	return (typesub);
+}
+
+enum subtype
+is_subbed(const char *listdir, const char *address, bool both)
+{
+	int dirfd;
 
 	dirfd = open(listdir, O_DIRECTORY);
 	if (dirfd == -1) {
 		log_error(LOG_ARGS, "Could not opendir()");
 		exit(EXIT_FAILURE);
 	}
-	fd = openat(dirfd, "subscribers.d", O_DIRECTORY);
-	if (fd != -1 && is_subbed_in(fd, "subscribers.d", address)) {
-		if (!both) return SUB_NORMAL;
-		typesub = SUB_NORMAL;
-	}
-
-	fd = openat(dirfd, "digesters.d", O_DIRECTORY);
-	if (fd != -1 && is_subbed_in(fd, "digesters.d", address)) {
-		if (typesub == SUB_NORMAL) return SUB_BOTH;
-		return SUB_DIGEST;
-	}
-
-	fd = openat(dirfd, "nomailsubs.d", O_DIRECTORY);
-	if (fd != -1 && is_subbed_in(fd, "nomailsubs.d", address))
-		return SUB_NOMAIL;
-
-	return typesub;
+	return (is_subbedat(dirfd, address, both));
 }
