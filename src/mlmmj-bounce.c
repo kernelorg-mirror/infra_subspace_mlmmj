@@ -238,14 +238,16 @@ static void print_help(const char *prg)
 
 int main(int argc, char **argv)
 {
-	int opt, fd, dsnbounce = 0;
+	int opt, dsnbounce = 0;
 	char *listdir = NULL, *address = NULL, *number = NULL;
+	const char *thisaddr;
 	char *bindir, *mlmmjsend, *savename;
-	char *mailname = NULL, *bfilename, *a, buf[26];
-	time_t t;
+	char *mailname = NULL, *bfilename, *a;
 	int probe = 0;
 	struct stat st;
 	uid_t uid;
+	int listfd;
+	bounce_t bret;
 
 	log_set_name(argv[0]);
 
@@ -261,7 +263,7 @@ int main(int argc, char **argv)
 			listdir = optarg;
 			break;
 		case 'a':
-			address = optarg;
+			thisaddr = optarg;
 			break;
 		case 'd':
 			dsnbounce = 1;
@@ -284,11 +286,13 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if(listdir == NULL || (address == NULL && dsnbounce == 0)
+	if(listdir == NULL || (thisaddr == NULL && dsnbounce == 0)
 				|| (number == NULL && probe == 0)) {
 		errx(EXIT_FAILURE, "You have to specify -L, -a or -d and -n or -p\n"
 		    "%s -h for help", argv[0]);
 	}
+	if ((listfd = open(listdir, O_DIRECTORY|O_CLOEXEC)) == -1)
+		errx(EXIT_FAILURE, "Cannot open(%s)", listdir);
 
 	/* Lets make sure no random user tries to do bouncehandling */
 	if(listdir) {
@@ -320,10 +324,8 @@ int main(int argc, char **argv)
 		a = strrchr(address, '@');
 		MY_ASSERT(a);
 		*a = '=';
+		thisaddr = address;
 	}
-
-	/* Make the address lowercase */
-	address = lowercase(address);
 
 	if(number != NULL && probe != 0) {
 		errx(EXIT_FAILURE, "You can only specify one of -n or -p\n"
@@ -341,91 +343,17 @@ int main(int argc, char **argv)
 	log_error(LOG_ARGS, "listdir = [%s] address = [%s] number = [%s]", listdir, address, number);
 #endif
 
-	/* check if it's sub/unsub requests bouncing, and in that case
-	 * simply remove the confirmation file. Variablenames address and
-	 * number are a bit misleading in this case due to the different
-	 * construction of the sub/unsub confirmation From header.
-	 */
-	if(strcmp(number, "confsub") == 0) {
-		a = concatstr(3, listdir, "/subconf/", address);
-		unlink(a);
-		free(a);
-		if(mailname)
-			unlink(mailname);
-		exit(EXIT_SUCCESS);
-	}
-	if(strcmp(number, "confunsub") == 0) {
-		a = concatstr(3, listdir, "/unsubconf/", address);
-		unlink(a);
-		free(a);
-		if(mailname)
-			unlink(mailname);
-		exit(EXIT_SUCCESS);
-	}
-	/* Below checks for bounce probes bouncing. If they do, simply remove
-	 * the probe file and exit successfully. Yes, I know the variables
-	 * have horrible names, but please bear with me.
-	 */
-	if(strcmp(number, "probe") == 0) {
-		a = concatstr(4, listdir, "/bounce/", address, "-probe");
-		unlink(a);
-		unlink(mailname);
-		free(a);
-		exit(EXIT_SUCCESS);
-	}
-
-	/* save the filename with '=' before replacing it with '@' */
-	bfilename = concatstr(3, listdir, "/bounce/", address);
-
-	a = strrchr(address, '=');
-	if (!a) {
-		if(mailname)
-			unlink(mailname);
-		exit(EXIT_SUCCESS);  /* ignore malformed address */
-	}
-	*a = '@';
-
-	/* make sure it's a subscribed address */
-	if(is_subbed(listdir, address, 0) == SUB_NONE) {
-		log_error(LOG_ARGS, "%s is bouncing but not subscribed?",
-				address);
-		if(mailname)
-			unlink(mailname);
-		free(bfilename);
-		exit(EXIT_SUCCESS); /* Not subbed, so exit silently */
-	}
-
-	if(lstat(bfilename, &st) == 0) {
-		if((st.st_mode & S_IFLNK) == S_IFLNK) {
-			log_error(LOG_ARGS, "%s is a symbolic link",
-					bfilename);
-			exit(EXIT_FAILURE);
-		}
-	}
-
-	if ((fd = open(bfilename, O_WRONLY|O_APPEND|O_CREAT,
-			S_IRUSR|S_IWUSR)) < 0) {
-		log_error(LOG_ARGS, "Could not open '%s'", bfilename);
-		free(bfilename);
-		exit(EXIT_FAILURE);
-	}
-
-	/* TODO check that the message is not already bounced */
-
-	t = time(NULL);
-	ctime_r(&t, buf);
-	dprintf(fd, "%s:%ld # %s", number, (long int)t, buf);
-	close(fd);
-
-	if(mailname) {
-		savename = concatstr(2, bfilename, ".lastmsg");
-		rename(mailname, savename);
+	bret = bouncemail(listfd, lowercase(thisaddr), number);
+	if (bret == BOUNCE_DONE && mailname != NULL) {
+		bfilename = lowercase(thisaddr);
+		xasprintf(&savename, "bounce/%s.lastmsg", bfilename);
+		renameat(AT_FDCWD, mailname, listfd, savename);
 		free(savename);
+		free(bfilename);
 	}
+	if (mailname)
+		unlink(mailname);
+	free(address);
 
-	free(bfilename);
-	if(dsnbounce && address)
-		free(address);
-
-	return EXIT_SUCCESS;
+	return (bret == BOUNCE_FAIL ? EXIT_FAILURE : EXIT_SUCCESS);
 }

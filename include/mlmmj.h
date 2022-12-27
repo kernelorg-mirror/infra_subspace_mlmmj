@@ -58,6 +58,12 @@
 #define OPLOGFNAME "mlmmj.operation.log" /* logfile to log operations */
 #define OPLOGSIZE 524288
 
+typedef enum bounce {
+	BOUNCE_OK,
+	BOUNCE_FAIL,
+	BOUNCE_DONE
+} bounce_t;
+
 #define MAXVERPRECIPS 100
 
 struct strlist {
@@ -102,6 +108,7 @@ bool parse_lastdigest(char *line, long *lastindex, time_t *lasttime,
 time_t extract_bouncetime(char *line, const char **errstr);
 int open_subscriber_directory(int listfd, enum subtype typesub, const char **dir);
 bool unsubscribe(int listfd, const char *address, enum subtype typesub);
+bounce_t bouncemail(int listfd, const char *theaddress, const char *identifier);
 
 #define MY_ASSERT(expression) if (!(expression)) { \
 			errno = 0; \

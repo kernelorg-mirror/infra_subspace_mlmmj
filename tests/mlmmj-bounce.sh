@@ -3,12 +3,19 @@
 . $(atf_get_srcdir)/test_env.sh
 
 tests_init \
-	basics \
+	basics_0 \
+	basics_1 \
+	basics_2 \
+	basics_3 \
+	basics_4 \
+	basics_5 \
+	basics_6 \
+	basics_7 \
 	bounce_subscription \
 	probe \
 	dsnparse
 
-basics_body()
+basics_0_body()
 {
 
 	mlmmjbounce=$(command -v mlmmj-bounce)
@@ -26,50 +33,85 @@ basics_body()
 	echo test@mlmmjtest > ml/control/listaddress
 
 	atf_check -s exit:1 -e "inline:mlmmj-bounce: You have to specify -L, -a or -d and -n or -p\n$mlmmjbounce -h for help\n" $mlmmjbounce
-	atf_check -s exit:0 -o "inline:mlmmj-bounce version 1.3.0\n" $mlmmjbounce -V
 	atf_check -s exit:0 -o "inline:$helptxt" $mlmmjbounce -h
+}
 
+basics_1_body()
+{
+	mlmmjbounce=$(command -v mlmmj-bounce)
+	init_ml ml
+	echo test@mlmmjtest > ml/control/listaddress
 	# no '=' in the mail address
 	atf_check -s exit:0 $mlmmjbounce -L ./ml -a me -n 2
+}
+
+basics_2_body()
+{
+	mlmmjbounce=$(command -v mlmmj-bounce)
+	init_ml ml
+	echo test@mlmmjtest > ml/control/listaddress
 
 	touch ${TMPDIR}/plop
 	atf_check -s exit:0 $mlmmjbounce -L ./ml -a me -n 2 -m ${TMPDIR}/plop
 	atf_check -s exit:1 test -f ${TMPDIR}/plop
+}
 
-	touch ml/queue/plop
-	atf_check -s exit:0 $mlmmjbounce -L ./ml -a me -n 2 -m queue/plop
-	atf_check -s exit:1 test -f ml/queue/plop
-
+basics_3_body()
+{
+	mlmmjbounce=$(command -v mlmmj-bounce)
+	init_ml ml
+	echo test@mlmmjtest > ml/control/listaddress
 	# not subscribed
 	atf_check -s exit:0 $mlmmjbounce -L ./ml -a me=meh -n 2
+}
 
+basics_4_body()
+{
+	mlmmjbounce=$(command -v mlmmj-bounce)
+	init_ml ml
+	echo test@mlmmjtest > ml/control/listaddress
 	touch ${TMPDIR}/plop
 	atf_check -s exit:0 $mlmmjbounce -L ./ml -a me=meh -n 2 -m ${TMPDIR}/plop
 	atf_check -s exit:1 test -f ${TMPDIR}/plop
+}
 
+basics_5_body()
+{
+	mlmmjbounce=$(command -v mlmmj-bounce)
+	init_ml ml
+	echo test@mlmmjtest > ml/control/listaddress
 	# now the user is subscribed but the file is a symlink
 	echo "me@meh" > ml/subscribers.d/m
 	ln -sf  plop ml/bounce/me=meh
 	atf_check -s exit:1 $mlmmjbounce -L ./ml -a me=meh -n 2
 	rm ml/bounce/me=meh
+}
+
+basics_6_body()
+{
+	mlmmjbounce=$(command -v mlmmj-bounce)
+	init_ml ml
+	echo test@mlmmjtest > ml/control/listaddress
+	echo "me@meh" > ml/subscribers.d/m
 	# not allowed to write
 	chmod 444 ml/bounce
 	atf_check -s exit:1 $mlmmjbounce -L ./ml -a me=meh -n 2
 	chmod 755 ml/bounce
 	atf_check -s exit:0 $mlmmjbounce -L ./ml -a me=meh -n 2
 	atf_check test -f ml/bounce/me=meh
+}
 
+basics_7_body()
+{
+	mlmmjbounce=$(command -v mlmmj-bounce)
+	init_ml ml
+	echo test@mlmmjtest > ml/control/listaddress
+	echo "me@meh" > ml/subscribers.d/m
 	echo "coucou" > ${TMPDIR}/plop
 	atf_check -s exit:0 $mlmmjbounce -L ./ml -a me=meh -n 2 -m ${TMPDIR}/plop
 	atf_check -o inline:"coucou\n" cat ml/bounce/me=meh.lastmsg
 	atf_check -s exit:1 test -f ${TMPDIR}/plop
 	rm ml/bounce/me=meh.lastmsg
-
-	echo "coucou" > ml/queue/plop
-	atf_check -s exit:0 $mlmmjbounce -L ./ml -a me=meh -n 2 -m queue/plop
-	atf_check -o inline:"coucou\n" cat ml/bounce/me=meh.lastmsg
-	atf_check -s exit:1 test -f ml/queue/plop
-	atf_check -o match:".3 ml/bounce/me=meh$" wc -l ml/bounce/me=meh
 }
 
 bounce_subscription_body()
@@ -84,9 +126,6 @@ bounce_subscription_body()
 	touch plop
 	atf_check -s exit:0 $mlmmjbounce -L ./ml -a me=meh -n confsub -m ${TMPDIR}/plop
 	atf_check -s exit:1 test -f ${TMPDIR}/plop
-	touch ml/queue/plop
-	atf_check -s exit:0 $mlmmjbounce -L ./ml -a me=meh -n confsub -m queue/plop
-	atf_check -s exit:1 test -f ml/queue/plop
 
 	touch ml/unsubconf/me=meh
 	atf_check -s exit:0 $mlmmjbounce -L ./ml -a me=meh -n confunsub
@@ -94,9 +133,6 @@ bounce_subscription_body()
 	touch plop
 	atf_check -s exit:0 $mlmmjbounce -L ./ml -a me=meh -n confunsub -m ${TMPDIR}/plop
 	atf_check -s exit:1 test -f ${TMPDIR}/plop
-	touch ml/queue/plop
-	atf_check -s exit:0 $mlmmjbounce -L ./ml -a me=meh -n confunsub -m queue/plop
-	atf_check -s exit:1 test -f ml/queue/plop
 }
 
 probe_body()
@@ -112,10 +148,6 @@ probe_body()
 	touch ${TMPDIR}/plop
 	atf_check -s exit:0 $mlmmjbounce -L ./ml -a me=meh -n probe -m ${TMPDIR}/plop
 	atf_check -s exit:1 test -f ${TMPDIR}/plop
-
-	touch ml/queue/plop
-	atf_check -s exit:0 $mlmmjbounce -L ./ml -a me=meh -n probe -m queue/plop
-	atf_check -s exit:1 test -f ml/queue/plop
 
 }
 

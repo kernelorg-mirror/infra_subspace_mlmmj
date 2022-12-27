@@ -20,6 +20,7 @@
  * IN THE SOFTWARE.
  */
 
+#include <stdlib.h>
 #include <sys/mman.h>
 #include <sys/param.h>
 #include <sys/stat.h>
@@ -37,6 +38,7 @@
 #include "log_error.h"
 #include "xmalloc.h"
 #include "chomp.h"
+#include "subscriberfuncs.h"
 
 bool
 parse_lastdigest(char *line, long *lastindex, time_t *lasttime,
@@ -283,4 +285,88 @@ unsubscribe(int listfd, const char *address, enum subtype typesub)
 	}
 	closedir(dir);
 	return (ret);
+}
+
+bounce_t
+bouncemail(int listfd, const char *theaddress, const char *identifier)
+{
+	char *tmp, buf[26];
+	char *address = lowercase(theaddress);
+	int fd, bdfd, bfd;
+	time_t t;
+	struct stat st;
+
+	/* check if it's sub/unsub requests bouncing, and in that case
+	 * simply remove the confirmation file. Variablenames address and
+	 * number are a bit misleading in this case due to the different
+	 * construction of the sub/unsub confirmation From header.
+	 */
+	if (strcmp(identifier, "confsub") == 0) {
+		fd = openat(listfd, "subconf", O_DIRECTORY);
+		if (fd == -1)
+			return (BOUNCE_OK);
+		unlinkat(fd, address, 0);
+		close(fd);
+		return (BOUNCE_OK);
+	}
+
+	if (strcmp(identifier, "confunsub") == 0) {
+		fd = openat(listfd, "unsubconf", O_DIRECTORY);
+		if (fd == -1)
+			return (BOUNCE_OK);
+		unlinkat(fd, address, 0);
+		close(fd);
+		return (BOUNCE_OK);
+	}
+	/* Below checks for bounce probes bouncing. If they do, simply remove
+	 * the probe file and exit successfully. Yes, I know the variables
+	 * have horrible names, but please bear with me.
+	 */
+	bdfd = openat(listfd, "bounce", O_DIRECTORY|O_CLOEXEC);
+	if (bdfd == -1) {
+		log_error(LOG_ARGS, "No bounce directory");
+		return (BOUNCE_FAIL);
+	}
+	if(strcmp(identifier, "probe") == 0) {
+		char *a;
+		xasprintf(&a, "%s-probe", address);
+		unlinkat(bdfd, a, 0);
+		close(bdfd);
+		free(a);
+		return (BOUNCE_OK);
+	}
+
+	tmp = strrchr(address, '=');
+	if (tmp == NULL) {
+		close(bdfd);
+		return (BOUNCE_OK);
+	}
+
+	if(fstatat(bdfd, address, &st, AT_SYMLINK_NOFOLLOW) == 0) {
+		if(S_ISLNK(st.st_mode)) {
+			log_error(LOG_ARGS, "bounce/%s is a symbolic link", address);
+			return (BOUNCE_FAIL);
+		}
+	}
+	bfd = openat(bdfd, address, O_WRONLY|O_APPEND|O_CREAT, S_IRUSR|S_IWUSR);
+	close(bdfd);
+	if (bfd == -1) {
+		log_error(LOG_ARGS, "Cound not open(bounce/%s)", address);
+		return (BOUNCE_FAIL);
+	}
+	*tmp = '@';
+
+	if (is_subbedat(listfd, address, 0) == SUB_NONE) {
+		log_error(LOG_ARGS, "%s is bouncing but not subscribed?",
+		    address);
+		return (BOUNCE_OK);
+	}
+
+	t = time(NULL);
+	ctime_r(&t, buf);
+	dprintf(bfd, "%s:%ld # %s", identifier, (long int)t, buf);
+	close(bfd);
+	free(address);
+
+	return (BOUNCE_DONE);
 }

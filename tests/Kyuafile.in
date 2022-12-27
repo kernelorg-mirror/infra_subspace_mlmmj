@@ -7,3 +7,4 @@ atf_test_program{name='mlmmj-send'}
 atf_test_program{name='functional-tests'}
 atf_test_program{name='mlmmj-maintd'}
 atf_test_program{name='mlmmj-sub'}
+atf_test_program{name='mlmmj-bounce'}

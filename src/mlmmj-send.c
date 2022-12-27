@@ -172,7 +172,7 @@ char *bounce_from_adr(const char *recipient, const char *listadr,
 	return bounceaddr;
 }
 
-int bouncemail(const char *listdir, const char *mlmmjbounce, const char *from)
+int do_bouncemail(const char *listdir, const char *mlmmjbounce, const char *from)
 {
 	char *tofree;
 	char *myfrom = xstrdup(from);
@@ -268,7 +268,7 @@ int send_mail(int sockfd, const char *from, const char *to,
 		if(mlmmjbounce && ((reply[0] == '4') || (reply[0] == '5'))
 				&& (reply[1] == '5')) {
 			free(reply);
-			return bouncemail(listdir, mlmmjbounce, from);
+			return do_bouncemail(listdir, mlmmjbounce, from);
 		} else {
 			log_error(LOG_ARGS, "Error in RCPT TO. Reply = [%s]",
 					reply);
