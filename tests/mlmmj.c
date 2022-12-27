@@ -81,6 +81,9 @@ ATF_TC_WITHOUT_HEAD(genlistname);
 ATF_TC_WITHOUT_HEAD(genlistfqdn);
 ATF_TC_WITHOUT_HEAD(smtp);
 ATF_TC_WITHOUT_HEAD(init_smtp);
+ATF_TC_WITHOUT_HEAD(smtp_bad_greetings);
+ATF_TC_WITHOUT_HEAD(smtp_bad_ehlo);
+ATF_TC_WITHOUT_HEAD(smtp_no_ehlo);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -1084,6 +1087,99 @@ ATF_TC_BODY(init_smtp, tc)
 	atf_utils_wait(p, 0, "EHLO heloname\r\nQUIT\r\n", "");
 }
 
+ATF_TC_BODY(smtp_bad_greetings, tc)
+{
+	int smtppipe[2];
+	ATF_REQUIRE(pipe(smtppipe) >= 0);
+
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		int s = fakesmtp(smtppipe[0]);
+		int c;
+		struct sockaddr_in cl;
+		socklen_t clsize = 0;
+		c = accept(s, (struct sockaddr *) &cl, &clsize);
+		if (c == -1)
+			err(5, "accept()");
+		dprintf(c, "me fake smtp\n");
+		exit(0);
+	}
+	close(smtppipe[0]);
+	mygetline(smtppipe[1]);
+	int sockfd;
+	int ret = initsmtp(&sockfd, "127.0.0.1", 25678, "heloname");
+	ATF_REQUIRE_EQ(ret, MLMMJ_CONNECT);
+	atf_utils_wait(p, 0, "", "");
+}
+
+ATF_TC_BODY(smtp_bad_ehlo, tc)
+{
+	int smtppipe[2];
+	ATF_REQUIRE(pipe(smtppipe) >= 0);
+
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		int s = fakesmtp(smtppipe[0]);
+		int c;
+		struct sockaddr_in cl;
+		char *reply;
+		socklen_t clsize = 0;
+		c = accept(s, (struct sockaddr *) &cl, &clsize);
+		if (c == -1)
+			err(5, "accept()");
+		dprintf(c, "220 me fake smtp\n");
+		reply = mygetline(c);
+		printf("%s", reply);
+		dprintf(c, "501 nop nope\n");
+		exit(0);
+	}
+	close(smtppipe[0]);
+	mygetline(smtppipe[1]);
+	int sockfd;
+	int ret = initsmtp(&sockfd, "127.0.0.1", 25678, "heloname");
+	ATF_REQUIRE_EQ(ret, MLMMJ_EHLO);
+	atf_utils_wait(p, 0, "EHLO heloname\r\n", "");
+}
+
+ATF_TC_BODY(smtp_no_ehlo, tc)
+{
+	int smtppipe[2];
+	ATF_REQUIRE(pipe(smtppipe) >= 0);
+
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		int s = fakesmtp(smtppipe[0]);
+		int c;
+		struct sockaddr_in cl;
+		char *reply;
+		socklen_t clsize = 0;
+		c = accept(s, (struct sockaddr *) &cl, &clsize);
+		if (c == -1)
+			err(5, "accept()");
+		dprintf(c, "220 me fake smtp\n");
+		reply = mygetline(c);
+		printf("%s", reply);
+		dprintf(c, "801 meh\n");
+		reply = mygetline(c);
+		printf("%s", reply);
+		close(c);
+		c = accept(s, (struct sockaddr *) &cl, &clsize);
+		if (c == -1)
+			err(5, "accept()");
+		dprintf(c, "220 me fake smtp\n");
+		reply = mygetline(c);
+		printf("%s", reply);
+		dprintf(c, "250 OK\n");
+		exit(0);
+	}
+	close(smtppipe[0]);
+	mygetline(smtppipe[1]);
+	int sockfd;
+	int ret = initsmtp(&sockfd, "127.0.0.1", 25678, "heloname");
+	ATF_REQUIRE_EQ(ret, 0);
+	atf_utils_wait(p, 0, "EHLO heloname\r\nQUIT\r\nHELO heloname\r\n", "");
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -1118,6 +1214,9 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, genlistfqdn);
 	ATF_TP_ADD_TC(tp, smtp);
 	ATF_TP_ADD_TC(tp, init_smtp);
+	ATF_TP_ADD_TC(tp, smtp_bad_greetings);
+	ATF_TP_ADD_TC(tp, smtp_bad_ehlo);
+	ATF_TP_ADD_TC(tp, smtp_no_ehlo);
 
 	return (atf_no_error());
 }
