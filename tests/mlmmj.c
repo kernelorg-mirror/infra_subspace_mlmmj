@@ -80,6 +80,7 @@ ATF_TC_WITHOUT_HEAD(unsubscribe);
 ATF_TC_WITHOUT_HEAD(genlistname);
 ATF_TC_WITHOUT_HEAD(genlistfqdn);
 ATF_TC_WITHOUT_HEAD(smtp);
+ATF_TC_WITHOUT_HEAD(init_smtp);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -120,6 +121,30 @@ init_ml(bool complete)
 		fputs("test@test", f);
 		fclose(f);
 	}
+}
+
+static int
+fakesmtp(int pipe)
+{
+	int s;
+	struct sockaddr_in me;
+	s = socket(AF_INET, SOCK_STREAM, 0);
+	if (s < 0)
+		exit(1);
+	if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &(int) { 1 }, sizeof(int)) != 0)
+		exit(2);
+	memset(&me, 0, sizeof(me));
+	me.sin_family = AF_INET;
+	me.sin_addr.s_addr = inet_addr("127.0.0.1");
+	/* specific interface */
+	me.sin_port = htons(25678);
+	if (bind(s, (struct sockaddr *) &me, sizeof(me)) == -1)
+		exit(3);
+	if (listen(s, 1) == -1)
+			exit(4);
+	dprintf(pipe, "ready\n");
+
+	return (s);
 }
 
 ATF_TC_BODY(random_int, tc)
@@ -232,36 +257,26 @@ ATF_TC_BODY(lowercase, tc)
 
 ATF_TC_BODY(init_sock, tc)
 {
+	int mypipe[2];
+	ATF_REQUIRE(pipe(mypipe) >= 0);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
-		int s, c;
+		int s = fakesmtp(mypipe[0]);
+		int c;
 		struct sockaddr_in me, cl;
 		socklen_t clsize = 0;
-		s = socket(AF_INET, SOCK_STREAM, 0);
-		if (s < 0)
-			exit(1);
-		if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &(int) { 1 }, sizeof(int)) != 0)
-			exit(2);
-		memset(&me, 0, sizeof(me));
-		me.sin_family = AF_INET;
-		me.sin_addr.s_addr = inet_addr("127.0.0.1");
-		/* specific interface */
-		me.sin_port = htons(25678);
-		if (bind(s, (struct sockaddr *) &me, sizeof(me)) == -1)
-			exit(3);
-		if (listen(s, 1) == -1)
-			exit(4);
-
-		/* Now we can accept incoming connections one
-		 *               at a time using accept(2). */
-
+		/*
+		 * Now we can accept incoming connections one
+		 * at a time using accept(2).
+		 */
 		c = accept(s, (struct sockaddr *) &cl,
 				&clsize);
 		if (c == -1)
 			err(5, "accept()");
 		exit(0);
 	}
-	sleep(1);
+	close(mypipe[0]);
+	mygetline(mypipe[1]);
 	int sock;
 	do {
 		init_sockfd(&sock, "127.0.0.1", 25678);
@@ -1027,6 +1042,50 @@ ATF_TC_BODY(smtp, tc)
 	ATF_REQUIRE_EQ(reply, NULL);
 }
 
+ATF_TC_BODY(init_smtp, tc)
+{
+	int smtppipe[2];
+	ATF_REQUIRE(pipe(smtppipe) >= 0);
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		int s = fakesmtp(smtppipe[0]);
+		int c;
+		struct sockaddr_in cl;
+		char *reply;
+		int cnt = 0;
+		socklen_t clsize = 0;
+		c = accept(s, (struct sockaddr *) &cl, &clsize);
+		if (c == -1)
+			err(5, "accept()");
+		cnt ++;
+		dprintf(c, "220 me fake smtp\n");
+		reply = mygetline(c);
+		printf("%s", reply);
+		dprintf(c,
+			"250-hostname.net\n"
+			"250-PIPELINEING\n"
+			"250-SIZE 20480000\n"
+			"250-ETRN\n"
+			"250-STARTTLS\n"
+			"250-ENHANCEDSTATUSCODES\n"
+			"250-8BITMIME\n"
+			"250-DSN\n"
+			"250-SMTPUTF8\n"
+			"250 CHUNKING\n");
+		reply = mygetline(c);
+		printf("%s", reply);
+		dprintf(c, "221 2.0.0 bye\n");
+		exit(0);
+	}
+	close(smtppipe[0]);
+	mygetline(smtppipe[1]);
+	int sockfd;
+	int ret = initsmtp(&sockfd, "127.0.0.1", 25678, "heloname");
+	ATF_REQUIRE_EQ(ret, 0);
+	ATF_REQUIRE_EQ(endsmtp(&sockfd), 0);
+	atf_utils_wait(p, 0, "EHLO heloname\r\nQUIT\r\n", "");
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -1060,6 +1119,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, genlistname);
 	ATF_TP_ADD_TC(tp, genlistfqdn);
 	ATF_TP_ADD_TC(tp, smtp);
+	ATF_TP_ADD_TC(tp, init_smtp);
 
 	return (atf_no_error());
 }
