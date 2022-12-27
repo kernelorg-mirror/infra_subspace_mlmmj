@@ -28,6 +28,7 @@
 #include <time.h>
 #include <limits.h>
 
+char *fctrlvalue(int listfd, const char *ctrlstr);
 char *ctrlvalue(const char *listdir, const char *ctrlstr);
 char *ctrlcontent(const char *listdir, const char *ctrlstr);
 char *textcontent(const char *listdir, const char *ctrlstr);

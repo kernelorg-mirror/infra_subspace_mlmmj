@@ -84,6 +84,10 @@ static char *ctrlval(const char *listdir, const char *subdir,
 	return (ret);
 }
 
+char *fctrlvalue(int listfd, const char *ctrlstr)
+{
+	return (ctrlvalat(listfd, "control", ctrlstr, 1));
+}
 char *ctrlvalue(const char *listdir, const char *ctrlstr)
 {
 	return ctrlval(listdir, "control", ctrlstr, 1);

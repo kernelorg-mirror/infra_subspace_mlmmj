@@ -26,19 +26,19 @@
 
 int send_mail(int sockfd, const char *from, const char *to,
 	      const char *replyto, char *mailmap, size_t mailsize,
-	      const char *listdir, const char *mlmmjbounce,
+	      int listfd, bool bounce,
 	      const char *hdrs, const char *body);
 int send_mail_many_fd(int sockfd, const char *from, const char *replyto,
 		   char *mailmap, size_t mailsize, int subfd,
 		   const char *listaddr, const char *listdelim,
-		   const char *archivefilename, const char *listdir,
-		   const char *mlmmjbounce, const char *hdrs,
+		   const char *archivefilename, int listfd,
+		   const char *hdrs,
 		   const char *body);
 int send_mail_many_list(int sockfd, const char *from, const char *replyto,
 		   char *mailmap, size_t mailsize, struct strlist *addrs,
 		   const char *listaddr, const char *listdelim,
-		   const char *archivefilename, const char *listdir,
-		   const char *mlmmjbounce, const char *hdrs, const char *body);
+		   const char *archivefilename, int listfd,
+		   const char *hdrs, const char *body);
 int send_mail_verp(int sockfd, struct strlist *addrs, char *mailmap,
 		   size_t mailsize, const char *from,
 		   const char *hdrs, const char *body, const char *extra);

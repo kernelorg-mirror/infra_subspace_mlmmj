@@ -23,6 +23,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/fcntl.h>
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
@@ -103,7 +104,7 @@ get_index_from_filename(const char *filename)
 
 char *bounce_from_adr(const char *recipient, const char *listadr,
 		      const char *listdelim, const char *mailfilename,
-		      const char *listdir)
+		      int listfd)
 {
 	char *bounceaddr, *myrecipient, *mylistadr;
 	char *listdomain, *a = NULL, *mymailfilename;
@@ -143,7 +144,7 @@ char *bounce_from_adr(const char *recipient, const char *listadr,
 	}
 	*listdomain++ = '\0';
 
-	staticbounceaddr = ctrlvalue(listdir, "staticbounceaddr");
+	staticbounceaddr = fctrlvalue(listfd, "staticbounceaddr");
 	if (staticbounceaddr) {
 		staticbounceaddr_localpart = genlistname(staticbounceaddr);
 		staticbounceaddr_domain = genlistfqdn(staticbounceaddr);
@@ -172,11 +173,11 @@ char *bounce_from_adr(const char *recipient, const char *listadr,
 	return bounceaddr;
 }
 
-int do_bouncemail(const char *listdir, const char *mlmmjbounce, const char *from)
+int do_bouncemail(int listfd, const char *from)
 {
 	char *tofree;
 	char *myfrom = xstrdup(from);
-	char *listdelim = getlistdelim(listdir);
+	char *listdelim = fgetlistdelim(listfd);
 	char *addr, *num, *c;
 	pid_t pid = 0;
 
@@ -217,13 +218,13 @@ int do_bouncemail(const char *listdir, const char *mlmmjbounce, const char *from
 	if(pid > 0)
 		return 0;
 	
-	exec_or_die(mlmmjbounce, "-L", listdir, "-a", num, "-n", addr, NULL);
+	bouncemail(listfd, num, addr);
 	return 1;
 }
 
 int send_mail(int sockfd, const char *from, const char *to,
 	      const char *replyto, char *mailmap, size_t mailsize,
-	      const char *listdir, const char *mlmmjbounce,
+	      int listfd, bool bounce,
 	      const char *hdrs, const char *body)
 {
 	int retval = 0;
@@ -265,10 +266,10 @@ int send_mail(int sockfd, const char *from, const char *to,
 		write_rset(sockfd);
 		reply2 = checkwait_smtpreply(sockfd, MLMMJ_RSET);
 		if (reply2 != NULL) free(reply2);
-		if(mlmmjbounce && ((reply[0] == '4') || (reply[0] == '5'))
+		if(bounce && ((reply[0] == '4') || (reply[0] == '5'))
 				&& (reply[1] == '5')) {
 			free(reply);
-			return do_bouncemail(listdir, mlmmjbounce, from);
+			return do_bouncemail(listfd, from);
 		} else {
 			log_error(LOG_ARGS, "Error in RCPT TO. Reply = [%s]",
 					reply);
@@ -467,8 +468,8 @@ int send_mail_verp(int sockfd, struct strlist *addrs, char *mailmap,
 int send_mail_many_fd(int sockfd, const char *from, const char *replyto,
 		      char *mailmap, size_t mailsize, int subfd,
 		      const char *listaddr, const char *listdelim,
-		      const char *archivefilename, const char *listdir,
-		      const char *mlmmjbounce, const char *hdrs,
+		      const char *archivefilename, int listfd,
+		      const char *hdrs,
 		      const char *body)
 {
 	int res, ret, i;
@@ -482,8 +483,8 @@ int send_mail_many_fd(int sockfd, const char *from, const char *replyto,
 		if(stl.count == maxverprecips) {
 			ret = send_mail_many_list(sockfd, from, replyto,
 					mailmap, mailsize, &stl, listaddr,
-					listdelim, archivefilename, listdir,
-					mlmmjbounce, hdrs, body);
+					listdelim, archivefilename, listfd,
+					hdrs, body);
 			for(i = 0; i < stl.count; i++)
 				free(stl.strs[i]);
 			if(ret < 0)
@@ -495,8 +496,7 @@ int send_mail_many_fd(int sockfd, const char *from, const char *replyto,
 	if(stl.count) {
 		ret = send_mail_many_list(sockfd, from, replyto, mailmap,
 				mailsize, &stl, listaddr, listdelim,
-				archivefilename, listdir, mlmmjbounce,
-				hdrs, body);
+				archivefilename, listfd, hdrs, body);
 		for(i = 0; i < stl.count; i++)
 			free(stl.strs[i]);
 		stl.count = 0;
@@ -506,14 +506,14 @@ int send_mail_many_fd(int sockfd, const char *from, const char *replyto,
 	return 0;
 }
 
-int requeuemail(const char *listdir, int index, struct strlist *addrs,
+int requeuemail(int listfd, int index, struct strlist *addrs,
 		int addrcount)
 {
 	int addrfd, i;
 	char *dirname, *addrfilename;
 	
-	xasprintf(&dirname, "%s/requeue/%d", listdir, index);
-	if(mkdir(dirname, 0750) < 0 && errno != EEXIST) {
+	xasprintf(&dirname, "requeue/%d", index);
+	if(mkdirat(listfd, dirname, 0750) < 0 && errno != EEXIST) {
 		log_error(LOG_ARGS, "Could not mkdir(%s) for "
 				"requeueing. Mail cannot "
 				"be requeued.", dirname);
@@ -522,7 +522,7 @@ int requeuemail(const char *listdir, int index, struct strlist *addrs,
 	}
 	addrfilename = concatstr(2, dirname, "/subscribers");
 	free(dirname);
-	addrfd = open(addrfilename, O_WRONLY|O_CREAT|O_APPEND,
+	addrfd = openat(listfd, addrfilename, O_WRONLY|O_CREAT|O_APPEND,
 			S_IRUSR|S_IWUSR);
 	if(addrfd < 0) {
 		log_error(LOG_ARGS, "Could not open %s",
@@ -556,8 +556,7 @@ int requeuemail(const char *listdir, int index, struct strlist *addrs,
 int send_mail_many_list(int sockfd, const char *from, const char *replyto,
 		   char *mailmap, size_t mailsize, struct strlist *addrs,
 		   const char *listaddr, const char *listdelim,
-		   const char *archivefilename, const char *listdir,
-		   const char *mlmmjbounce, const char *hdrs, const char *body)
+		   const char *archivefilename, int listfd, const char *hdrs, const char *body)
 {
 	int res = 0, i, status, index;
 	char *bounceaddr, *addr;
@@ -575,25 +574,25 @@ int send_mail_many_list(int sockfd, const char *from, const char *replyto,
 			log_error(LOG_ARGS, "TERM signal received, "
 						"shutting down.");
 			index = get_index_from_filename(archivefilename);
-			status = requeuemail(listdir, index, addrs, i);
+			status = requeuemail(listfd, index, addrs, i);
 			return status;
 		}
 		if(from) {
 			res = send_mail(sockfd, from, addr, replyto,
-					    mailmap, mailsize, listdir, NULL,
-					    hdrs, body);
+					    mailmap, mailsize, listfd,
+					    false, hdrs, body);
 		} else {
 			bounceaddr = bounce_from_adr(addr, listaddr, listdelim,
-						     archivefilename, listdir);
+						     archivefilename, listfd);
 			res = send_mail(sockfd, bounceaddr, addr, replyto,
-				  mailmap, mailsize, listdir, mlmmjbounce,
+				  mailmap, mailsize, listfd, true,
 				  hdrs, body);
 			free(bounceaddr);
 		}
 		if(res && listaddr && archivefilename) {
 			/* we failed, so save the addresses and bail */
 			index = get_index_from_filename(archivefilename);
-			status = requeuemail(listdir, index, addrs, i);
+			status = requeuemail(listfd, index, addrs, i);
 			return status;
 		}
 	}
@@ -654,6 +653,7 @@ int main(int argc, char **argv)
 	struct strlist stl;
 	unsigned short smtpport;
 	struct sigaction sigact;
+	int listfd;
 
 	CHECKFULLPATH(argv[0]);
 	
@@ -723,6 +723,11 @@ int main(int argc, char **argv)
 		errx(EXIT_FAILURE, "You have to specify -m and -L or -l\n"
 		    "%s -h for help", argv[0]);
 	}
+	if (listdir != NULL) {
+		listfd = open(listdir, O_DIRECTORY|O_CLOEXEC);
+		if (listfd == -1)
+			err(EXIT_FAILURE, "Cannot open(%s)", listdir);
+	}
 
 	/* Lets make sure no random user tries to send mail to the list */
 	if(listdir) {
@@ -755,19 +760,21 @@ int main(int argc, char **argv)
 		errx(EXIT_FAILURE, "With -l 7 you need -L");
 	}
 
-	verp = ctrlvalue(listdir, "verp");
-	if(verp == NULL)
-		if(statctrl(listdir, "verp") == 1)
-			verp = xstrdup("");
+	if (listdir) {
+		verp = ctrlvalue(listdir, "verp");
+		if(verp == NULL)
+			if(fstatctrl(listfd, "verp") == 1)
+				verp = xstrdup("");
 
-	if(verp && statctrl(listdir, "maxverprecips"))
-		maxverprecips = ctrlint(listdir, "maxverprecips", MAXVERPRECIPS);
+		if(verp && fstatctrl(listfd, "maxverprecips"))
+			maxverprecips = ctrlint(listdir, "maxverprecips", MAXVERPRECIPS);
+	}
 
 	stl.strs = NULL;
 	stl.count = 0;
 
 	if(listdir && listctrl != '5')
-		listaddr = getlistaddr(listdir);
+		listaddr = fgetlistaddr(listfd);
 	
 	/* initialize file with mail to send */
 
@@ -782,8 +789,10 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	memmailsize = ctrlsizet(listdir, "memorymailsize", MEMORYMAILSIZE);
-	ctrlarchive = statctrl(listdir, "noarchive");
+	if (listdir) {
+		memmailsize = ctrlsizet(listdir, "memorymailsize", MEMORYMAILSIZE);
+		ctrlarchive = statctrl(listdir, "noarchive");
+	}
 
 	if(st.st_size > memmailsize) {
 		prepmailinmem = 0;
@@ -815,7 +824,7 @@ int main(int argc, char **argv)
 	}
 
 	if(listdir)
-		listdelim = getlistdelim(listdir);
+		listdelim = fgetlistdelim(listfd);
 
 	switch(listctrl) {
 	case '1': /* A single mail is to be sent, do nothing */
@@ -837,7 +846,7 @@ int main(int argc, char **argv)
 		}
 		break;
 	case '3':
-		addtohdr = statctrl(listdir, "addtohdr");
+		addtohdr = fstatctrl(listfd, "addtohdr");
 	case '4': /* sending mails to subfile */
 		if((subfd = open(subfilename, O_RDONLY)) < 0) {
 			log_error(LOG_ARGS, "Could not open '%s':",
@@ -852,10 +861,10 @@ int main(int argc, char **argv)
 		deletewhensent = 0;
 		archivefilename = xstrdup(mailfilename);
 		bounceaddr = bounce_from_adr(to_addr, listaddr, listdelim,
-						archivefilename, listdir);
+						archivefilename, listfd);
 		break;
 	default: /* normal list mail -- now handled when forking */
-		addtohdr = statctrl(listdir, "addtohdr");
+		addtohdr = fstatctrl(listfd, "addtohdr");
 		break;
 	}
 
@@ -883,7 +892,7 @@ int main(int argc, char **argv)
 	case '6':
 		initsmtp(&sockfd, relayhost, smtpport, smtphelo);
 		if(send_mail(sockfd, bounceaddr, to_addr, replyto,
-				mailmap, st.st_size, listdir, NULL,
+				mailmap, st.st_size, listfd, false,
 				hdrs, body)) {
 			close(sockfd);
 			sockfd = -1;
@@ -938,7 +947,7 @@ int main(int argc, char **argv)
 		initsmtp(&sockfd, relayhost, smtpport, smtphelo);
 		if(send_mail_many_fd(sockfd, bounceaddr, NULL, mailmap,
 				     st.st_size, subfd, NULL, NULL, NULL,
-				     listdir, NULL, hdrs, body)) {
+				     listfd, hdrs, body)) {
 			close(sockfd);
 			sockfd = -1;
 		} else {
@@ -949,7 +958,7 @@ int main(int argc, char **argv)
 		initsmtp(&sockfd, relayhost, smtpport, smtphelo);
 		if(send_mail_many_fd(sockfd, NULL, NULL, mailmap, st.st_size,
 				subfd, listaddr, listdelim, mailfilename,
-				listdir, mlmmjbounce, hdrs, body)) {
+				listfd, hdrs, body)) {
 			close(sockfd);
 			sockfd = -1;
 		} else {
@@ -961,8 +970,7 @@ int main(int argc, char **argv)
 		initsmtp(&sockfd, relayhost, smtpport, smtphelo);
 		if(send_mail_many_fd(sockfd, bounceaddr, NULL, mailmap,
 				st.st_size, subfd, listaddr, listdelim,
-				mailfilename, listdir, mlmmjbounce,
-				hdrs, body)) {
+				mailfilename, listfd, hdrs, body)) {
 			close(sockfd);
 			sockfd = -1;
 		} else {
@@ -972,8 +980,8 @@ int main(int argc, char **argv)
 	case '5': /* bounceprobe - handle relayhost local users bouncing*/
 		initsmtp(&sockfd, relayhost, smtpport, smtphelo);
 		if(send_mail(sockfd, bounceaddr, to_addr, replyto,
-				mailmap, st.st_size, listdir, NULL,
-				hdrs, body)) {
+				mailmap, st.st_size, listfd,
+				false, hdrs, body)) {
 			close(sockfd);
 			sockfd = -1;
 			/* error, so remove the probefile */
@@ -1109,7 +1117,7 @@ int main(int argc, char **argv)
 								hdrs,
 								body, verp);
 						if(sendres)
-							requeuemail(listdir,
+							requeuemail(listfd,
 								mindex,
 								&stl, 0);
 					} else {
@@ -1121,8 +1129,7 @@ int main(int argc, char **argv)
 								listaddr,
 								listdelim,
 								archivefilename,
-								listdir,
-								mlmmjbounce,
+								listfd,
 								hdrs, body);
 					}
 				    	if (sendres) {
@@ -1147,14 +1154,13 @@ int main(int argc, char **argv)
 						st.st_size, verpfrom,
 						hdrs, body, verp);
 				if(sendres)
-					requeuemail(listdir, mindex, &stl,
-							0);
+					requeuemail(listfd, mindex, &stl, 0);
 			} else {
 				sendres = send_mail_many_list(sockfd, NULL,
 						NULL, mailmap, st.st_size,
 						&stl, listaddr, listdelim,
-						archivefilename, listdir,
-						mlmmjbounce, hdrs, body);
+						archivefilename, listfd,
+						hdrs, body);
 			}
 			if (sendres) {
 				close(sockfd);
