@@ -1,60 +1,35 @@
-#include <sys/types.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include <string.h>
 
 #include "xmalloc.h"
 #include "mlmmj.h"
-#include "log_error.h"
-#include "strgen.h"
 #include "getaddrsfromfd.h"
+#include "chomp.h"
 
-off_t getaddrsfromfd(struct strlist *slist, int fd, int max)
+int
+getaddrsfromfd(struct strlist *slist, FILE *f, int max)
 {
-	off_t offset = lseek(fd, 0, SEEK_CUR);
-	char *start, *cur, *next;
-	struct stat st;
-	size_t len;
+	char *line = NULL;
+	size_t linecap = 0;
+	ssize_t linelen;
 
-	if(fstat(fd, &st) < 0) {
-		log_error(LOG_ARGS, "Could not fstat fd");
+	if (max == 0)
 		return -1;
-	}
-	/* mmap of 0-bytes is invalid */
-	if(st.st_size == 0) {
-		return 0;
-	}
-
-	start = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
-	if(start == MAP_FAILED) {
-		log_error(LOG_ARGS, "Could not mmap fd");
+	if (f == NULL)
 		return -1;
-	}
-	
-	for(next = cur = (start + offset); next < start + st.st_size; next++) {
-		if(*next == '\n' || next == start + st.st_size - 1) {
-			slist->count++;
-			len = next - cur;
-			if(next == start + st.st_size - 1 && *next != '\n')
-				len++;
-			slist->strs = (char **)xrealloc(slist->strs,
-					sizeof(char *) * slist->count);
-			slist->strs[slist->count - 1] = xmalloc(len + 1);
-			strncpy(slist->strs[slist->count - 1], cur, len);
-			slist->strs[slist->count - 1][len] = '\0';
-			cur = next + 1;
-		} else {
+	if (feof(f))
+		return (-1);
+	while ((linelen = getline(&line, &linecap, f)) > 0) {
+		chomp(line);
+		if (*line == '\0')
 			continue;
-		}
-		if(slist->count >= max) {
-			offset = (off_t)(cur - start);
-			goto donegetting;
-		}
+		slist->count++;
+		slist->strs = (char **)xrealloc(slist->strs,
+			sizeof(char *) * slist->count);
+		slist->strs[slist->count -1] = xstrdup(line);
+		if (slist->count >= max)
+			break;
 	}
-	offset = st.st_size;
-donegetting:			
-	munmap(start, st.st_size);
-	lseek(fd, offset, SEEK_SET);
-	return st.st_size - offset;
+	if (feof(f))
+		return (0);
+	return (1);
 }

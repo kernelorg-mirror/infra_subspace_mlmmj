@@ -27,6 +27,6 @@
 #include <sys/types.h>
 #include "mlmmj.h"
 
-off_t getaddrsfromfd(struct strlist *slist, int fd, int max);
+int getaddrsfromfd(struct strlist *slist, FILE *f, int max);
 
 #endif /* GETADDRSFROMFD_H */

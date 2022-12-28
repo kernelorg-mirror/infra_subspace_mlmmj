@@ -284,12 +284,13 @@ int send_mail_many_fd(int sockfd, struct mail *mail, int subfd,
 {
 	int res, ret, i;
 	struct strlist stl;
+	FILE *f = fdopen(subfd, "r");
 
 	stl.strs = NULL;
 	stl.count = 0;
 
 	do {
-		res = getaddrsfromfd(&stl, subfd, maxverprecips);
+		res = getaddrsfromfd(&stl, f, maxverprecips);
 		if(stl.count == maxverprecips) {
 			ret = send_mail_many_list(sockfd, mail, &stl,
 					listaddr, listdelim, archivefilename,
@@ -301,6 +302,7 @@ int send_mail_many_fd(int sockfd, struct mail *mail, int subfd,
 			stl.count = 0;
 		}
 	} while(res > 0);
+	fdclose(f, NULL);
 
 	if(stl.count) {
 		ret = send_mail_many_list(sockfd, mail, &stl, listaddr, listdelim,
@@ -880,7 +882,8 @@ int main(int argc, char **argv)
 			if(!strcmp(dp->d_name, ".."))
 				continue;
 			subfilename = concatstr(2, subddirname, dp->d_name);
-			if((subfd = open(subfilename, O_RDONLY)) < 0) {
+			FILE *f = fopen(subfilename, "r");
+			if (f == NULL) {
 				log_error(LOG_ARGS, "Could not open '%s'",
 						    subfilename);
 				free(subfilename);
@@ -888,7 +891,7 @@ int main(int argc, char **argv)
 			}
 			do {
 				i = stl.count;
-				res = getaddrsfromfd(&stl, subfd,
+				res = getaddrsfromfd(&stl, f,
 						maxverprecips);
 				if(omit != NULL) {
 					while(i < stl.count) {
@@ -942,7 +945,7 @@ int main(int argc, char **argv)
 				}
 			} while(res > 0);
 			free(subfilename);
-			close(subfd);
+			fclose(f);
 
 		}
 		if(stl.count) {

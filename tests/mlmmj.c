@@ -1638,35 +1638,37 @@ ATF_TC_BODY(is_subbed_in, tc)
 ATF_TC_BODY(getaddrsfromfd, tc)
 {
 	struct strlist stl = {};
-	ATF_REQUIRE_EQ(getaddrsfromfd(&stl, -1, 2), -1);
+	ATF_REQUIRE_EQ(getaddrsfromfd(&stl, NULL, 2), -1);
 	fclose(fopen("list", "w+"));
-	int fd = open("list", O_RDONLY);
-	ATF_REQUIRE_EQ(getaddrsfromfd(&stl, fd, 2), 0);
-	close(fd);
+	FILE *fp;
+	fp = fopen("list", "r");
+	ATF_REQUIRE_EQ(getaddrsfromfd(&stl, fp, 2), 0);
+	fclose(fp);
 	FILE *f = fopen("list", "w+");
 	fprintf(f,"mail1@fqdn\n");
 	fclose(f);
-	fd = open("list", O_RDONLY);
-	ATF_REQUIRE_EQ(getaddrsfromfd(&stl, fd, 2), 0);
-	close(fd);
-	ATF_REQUIRE_EQ(stl.count, 1);
+	fp = fopen("list", "r");
+	ATF_REQUIRE_EQ(getaddrsfromfd(&stl, fp, 2), 0);
+	fclose(fp);
+	ATF_REQUIRE_EQ_MSG(stl.count, 1, "%d is not 1", stl.count);
 	ATF_REQUIRE_STREQ(stl.strs[0], "mail1@fqdn");
 	free(stl.strs[0]);
 	stl.count = 0;
 	f = fopen("list", "w+");
 	fprintf(f,"mail1@fqdn\nmail2@fqdn\nmail3@fqdn");
 	fclose(f);
-	fd = open("list", O_RDONLY);
-	ATF_REQUIRE(getaddrsfromfd(&stl, fd, 2) > 0);
+	fp = fopen("list", "r");
+	ATF_REQUIRE(getaddrsfromfd(&stl, fp, 2) > 0);
 	ATF_REQUIRE_EQ(stl.count, 2);
 	ATF_REQUIRE_STREQ(stl.strs[0], "mail1@fqdn");
 	ATF_REQUIRE_STREQ(stl.strs[1], "mail2@fqdn");
 	free(stl.strs[0]);
 	free(stl.strs[1]);
 	stl.count = 0;
-	ATF_REQUIRE_EQ(getaddrsfromfd(&stl, fd, 2), 0);
-	ATF_REQUIRE_EQ(stl.count, 1);
+	ATF_REQUIRE_EQ(getaddrsfromfd(&stl, fp, 2), 0);
+	ATF_REQUIRE_EQ_MSG(stl.count, 1, "%d is not 1", stl.count);
 	ATF_REQUIRE_STREQ(stl.strs[0], "mail3@fqdn");
+	fclose(fp);
 }
 
 ATF_TP_ADD_TCS(tp)
