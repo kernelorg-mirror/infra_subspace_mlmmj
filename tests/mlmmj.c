@@ -1645,6 +1645,11 @@ ATF_TC_BODY(getaddrsfromfd, tc)
 	ATF_REQUIRE_EQ(getaddrsfromfd(&stl, fp, 2), 0);
 	fclose(fp);
 	FILE *f = fopen("list", "w+");
+	fprintf(f,"\n");
+	fclose(f);
+	fp = fopen("list", "r");
+	ATF_REQUIRE_EQ(getaddrsfromfd(&stl, fp, 2), 0);
+	f = fopen("list", "w+");
 	fprintf(f,"mail1@fqdn\n");
 	fclose(f);
 	fp = fopen("list", "r");
@@ -1654,6 +1659,8 @@ ATF_TC_BODY(getaddrsfromfd, tc)
 	ATF_REQUIRE_STREQ(stl.strs[0], "mail1@fqdn");
 	free(stl.strs[0]);
 	stl.count = 0;
+	fp = fopen("list", "r");
+	ATF_REQUIRE_EQ(getaddrsfromfd(&stl, fp, 0), -1);
 	f = fopen("list", "w+");
 	fprintf(f,"mail1@fqdn\nmail2@fqdn\nmail3@fqdn");
 	fclose(f);
