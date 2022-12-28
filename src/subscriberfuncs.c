@@ -1,6 +1,6 @@
-/* Copyright (C) 2003 Mads Martin Joergensen <mmj at mmj.dk>
- *
- * $Id$
+/*
+ * Copyright (C) 2003 Mads Martin Joergensen <mmj at mmj.dk>
+ * Copyright (C) 2022 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -22,21 +22,14 @@
  */
 
 #include <stdio.h>
-#include <string.h>
-#include <ctype.h>
 #include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
-#include <unistd.h>
 #include <dirent.h>
 #include <fcntl.h>
 
 #include "mlmmj.h"
 #include "subscriberfuncs.h"
-#include "mygetline.h"
 #include "log_error.h"
-#include "wrappers.h"
+#include "chomp.h"
 
 char *subtype_strs[] = {
 	"normal",
@@ -57,64 +50,35 @@ char * subreason_strs[] = {
 	"switch"
 };
 
-off_t find_subscriber(int fd, const char *address)
+bool
+find_subscriber(int fd, const char *address)
 {
-	char *start, *cur, *next;
-	struct stat st;
-	size_t len;
+	FILE *f;
+	char *line = NULL;
+	size_t linecap = 0;
+	ssize_t linelen;
+	bool ret = false;
 
-	if(fstat(fd, &st) < 0) {
-		log_error(LOG_ARGS, "Could not stat fd");
-		return (off_t)-1;
-	}
-
-	/* No need to check in 0-size file */
-	if(st.st_size == 0)
-		return (off_t)-1;
-
-	if(!S_ISREG(st.st_mode)) {
-		log_error(LOG_ARGS, "Non regular file in subscribers.d/");
-		return (off_t)-1;
-	}
-
-	if((start = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd, 0)) ==
-			MAP_FAILED) {
-		log_error(LOG_ARGS, "Could not mmap fd");
-		return (off_t)-1;
-	}
-	
-	for(next = cur = start; next < start + st.st_size; next++) {
-		if(*next == '\n') {
-			len = next - cur;
-			if((strlen(address) == len) &&
-			   (strncasecmp(address, cur, len) == 0)) {
-				munmap(start, st.st_size);
-				return (off_t)(cur - start);
-			}
-			cur = next + 1;
+	f = fdopen(fd, "r");
+	while ((linelen = getline(&line, &linecap, f)) > 0) {
+		chomp(line);
+		if (strcasecmp(address, line) == 0) {
+			ret = true;
+			break;
 		}
 	}
-	
-	if(next > cur) {
-		len = next - cur;
-		if((strlen(address) == len) &&
-		   (strncasecmp(address, cur, len) == 0)) {
-			munmap(start, st.st_size);
-			return (off_t)(cur - start);
-		}
-	}
-	
-	munmap(start, st.st_size);
-	return (off_t)-1;
+	free(line);
+	fclose(f);
+	return (ret);;
 }
 
 int
 is_subbed_in(int dirfd, const char *subdirname, const char *address)
 {
-	int retval = 0, subread;
-	off_t suboff;
+	int subread;
 	DIR *subddir;
 	struct dirent *dp;
+	bool ret = false;
 
 	if((subddir = fdopendir(dirfd)) == NULL) {
 		log_error(LOG_ARGS, "Could not opendir(%s)", subdirname);
@@ -134,19 +98,13 @@ is_subbed_in(int dirfd, const char *subdirname, const char *address)
 			continue;
 		}
 
-		suboff = find_subscriber(subread, address);
-		close(subread);
-
-		if(suboff == -1) {
-			continue;
-		} else {
-			retval = 1;
+		ret = find_subscriber(subread, address);
+		if (ret)
 			break;
-		}
 	}
 	closedir(subddir);
 
-	return retval;
+	return ret;
 }
 
 enum subtype

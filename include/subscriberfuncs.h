@@ -26,7 +26,7 @@
 
 #include <stdbool.h>
 
-off_t find_subscriber(int fd, const char *address);
+bool find_subscriber(int fd, const char *address);
 int is_subbed_in(int fd, const char *subddirname, const char *address);
 enum subtype is_subbed(int listfd, const char *address, bool both);
 

@@ -53,6 +53,7 @@
 #include "getlistdelim.h"
 #include "getlistaddr.h"
 #include "statctrl.h"
+#include "subscriberfuncs.h"
 
 ATF_TC_WITHOUT_HEAD(random_int);
 ATF_TC_WITHOUT_HEAD(chomp);
@@ -103,6 +104,7 @@ ATF_TC_WITHOUT_HEAD(send_mail_8);
 ATF_TC_WITHOUT_HEAD(getlistdelim);
 ATF_TC_WITHOUT_HEAD(getlistaddr);
 ATF_TC_WITHOUT_HEAD(statctrl);
+ATF_TC_WITHOUT_HEAD(is_subbed_in);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -1620,6 +1622,17 @@ ATF_TC_BODY(statctrl, tc)
 	ATF_REQUIRE_EQ(statctrl(fd, "test"), true);
 }
 
+ATF_TC_BODY(is_subbed_in, tc)
+{
+	pid_t p;
+
+	p = atf_utils_fork();
+	if (p == 0) {
+		is_subbed_in(-1, "plop", "meh");
+	}
+	atf_utils_wait(p, EXIT_FAILURE, "", "");
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -1671,6 +1684,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, getlistdelim);
 	ATF_TP_ADD_TC(tp, getlistaddr);
 	ATF_TP_ADD_TC(tp, statctrl);
+	ATF_TP_ADD_TC(tp, is_subbed_in);
 
 	return (atf_no_error());
 }
