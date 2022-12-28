@@ -233,13 +233,36 @@ send_mail(int sockfd, struct mail *mail, int listfd, bool bounce)
 	if(sockfd == -1)
 		return EBADF;
 
+	if (mail->to == NULL) {
+		errno = 0;
+		log_error(LOG_ARGS, "No 'to' address, ignoring");
+		return (0);
+	}
+
 	if(strchr(mail->to, '@') == NULL) {
 		errno = 0;
 		log_error(LOG_ARGS, "No @ in address, ignoring %s",
 		    mail->to);
 		return 0;
 	}
-	
+
+	if (mail->from == NULL) {
+		errno = 0;
+		log_error(LOG_ARGS, "No from address, ignoring");
+		return 0;
+	}
+
+	if (mail->inmem) {
+		if (mail->hdrs == NULL || mail->body == NULL) {
+			log_error(LOG_ARGS, "No body or headers");
+			return (0);
+		}
+	} else {
+		if (mail->size == 0 || mail->map == NULL) {
+			log_error(LOG_ARGS, "No mmap mail");
+			return (0);
+		}
+	}
 	retval = write_mail_from(sockfd, mail->from, "");
 	if(retval) {
 		log_error(LOG_ARGS, "Could not write MAIL FROM\n");

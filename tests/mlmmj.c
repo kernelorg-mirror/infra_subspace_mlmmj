@@ -86,6 +86,15 @@ ATF_TC_WITHOUT_HEAD(smtp_bad_ehlo);
 ATF_TC_WITHOUT_HEAD(smtp_no_ehlo);
 ATF_TC_WITHOUT_HEAD(endsmtp);
 ATF_TC_WITHOUT_HEAD(do_bouncemail);
+ATF_TC_WITHOUT_HEAD(send_mail_0);
+ATF_TC_WITHOUT_HEAD(send_mail_1);
+ATF_TC_WITHOUT_HEAD(send_mail_2);
+ATF_TC_WITHOUT_HEAD(send_mail_3);
+ATF_TC_WITHOUT_HEAD(send_mail_4);
+ATF_TC_WITHOUT_HEAD(send_mail_5);
+ATF_TC_WITHOUT_HEAD(send_mail_6);
+ATF_TC_WITHOUT_HEAD(send_mail_7);
+ATF_TC_WITHOUT_HEAD(send_mail_8);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -1216,6 +1225,321 @@ ATF_TC_BODY(do_bouncemail, tc)
 	close(lfd);
 }
 
+ATF_TC_BODY(send_mail_0, tc)
+{
+	int smtppipe[2];
+	struct mail mail = {};
+	ATF_REQUIRE_EQ(send_mail(-1, NULL, -1, false), EBADF);
+	ATF_REQUIRE(pipe(smtppipe) >= 0);
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		char *reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		/* nope */
+		dprintf(smtppipe[0], "550 2.1.0 kO\n");
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		exit(0);
+	}
+	close(smtppipe[0]);
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), 0);
+	mail.to = "plop@meh";
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), 0);
+	mail.from = "test@meh";
+	mail.inmem = true;
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), 0);
+	mail.hdrs = "plop";
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), 0);
+	mail.hdrs = NULL;
+	mail.body = "body";
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), 0);
+	mail.inmem = false;
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), 0);
+	mail.size = 1;
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), 0);
+	mail.size = 0;
+	mail.map = "bla";
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), 0);
+	mail.inmem = true;
+	mail.hdrs = "headers";
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), MLMMJ_FROM);
+	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRSET\r\n", "");
+}
+
+ATF_TC_BODY(send_mail_1, tc)
+{
+	int smtppipe[2];
+	struct mail mail = {};
+	ATF_REQUIRE(pipe(smtppipe) >= 0);
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		char *reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		dprintf(smtppipe[0], "250 2.1.0 Ok\n");
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		dprintf(smtppipe[0], "550 2.1.0 OK\n");
+		exit(0);
+	}
+	close(smtppipe[0]);
+	mail.to = "plop@meh";
+	mail.from = "test@meh";
+	mail.inmem = true;
+	mail.hdrs = "headers";
+	mail.body = "body";
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), MLMMJ_RCPTTO);
+	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRCPT TO:<plop@meh>\r\n", "");
+}
+
+ATF_TC_BODY(send_mail_2, tc)
+{
+	int smtppipe[2];
+	struct mail mail = {};
+	ATF_REQUIRE(pipe(smtppipe) >= 0);
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		char *reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		dprintf(smtppipe[0], "250 2.1.0 Ok\n");
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		dprintf(smtppipe[0], "250 2.1.0 OK\n");
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		dprintf(smtppipe[0], "550 2.1.0 OK\n");
+		exit(0);
+	}
+	close(smtppipe[0]);
+	mail.to = "plop@meh";
+	mail.from = "test@meh";
+	mail.inmem = true;
+	mail.hdrs = "headers";
+	mail.body = "body";
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), MLMMJ_DATA);
+	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRCPT TO:<plop@meh>\r\nDATA\r\n", "");
+}
+
+ATF_TC_BODY(send_mail_3, tc)
+{
+	int smtppipe[2];
+	struct mail mail = {};
+	ATF_REQUIRE(pipe(smtppipe) >= 0);
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		char *reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		dprintf(smtppipe[0], "250 2.1.0 Ok\n");
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		dprintf(smtppipe[0], "250 2.1.0 OK\n");
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		dprintf(smtppipe[0], "550 2.1.0 OK\n");
+		exit(0);
+	}
+	close(smtppipe[0]);
+	mail.to = "plop@meh";
+	mail.from = "test@meh";
+	mail.inmem = true;
+	mail.hdrs = "headers";
+	mail.body = "body";
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), MLMMJ_DATA);
+	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRCPT TO:<plop@meh>\r\nDATA\r\n", "");
+}
+
+ATF_TC_BODY(send_mail_4, tc)
+{
+	int smtppipe[2];
+	struct mail mail = {};
+	ATF_REQUIRE(pipe(smtppipe) >= 0);
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		char *reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		dprintf(smtppipe[0], "250 2.1.0 Ok\n");
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		dprintf(smtppipe[0], "250 2.1.0 OK\n");
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		dprintf(smtppipe[0], "250 2.1.0 OK\n");
+		exit(0);
+	}
+	close(smtppipe[0]);
+	mail.to = "plop@meh";
+	mail.from = "test@meh";
+	mail.inmem = true;
+	mail.hdrs = "headers";
+	mail.body = "body";
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), MLMMJ_DATA);
+	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRCPT TO:<plop@meh>\r\nDATA\r\n", "");
+}
+
+ATF_TC_BODY(send_mail_5, tc)
+{
+	int smtppipe[2];
+	struct mail mail = {};
+	ATF_REQUIRE(pipe(smtppipe) >= 0);
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		char *reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		dprintf(smtppipe[0], "250 2.1.0 Ok\n");
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		dprintf(smtppipe[0], "250 2.1.0 OK\n");
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		dprintf(smtppipe[0], "350 2.1.0 OK\n");
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		dprintf(smtppipe[0], "350 2.1.0 OK\n");
+		exit(0);
+	}
+	close(smtppipe[0]);
+	mail.to = "plop@meh";
+	mail.from = "test@meh";
+	mail.inmem = true;
+	mail.hdrs = "headers\n";
+	mail.body = "body\n";
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), MLMMJ_DOT);
+	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRCPT TO:<plop@meh>\r\nDATA\r\nheaders\nbody\n\r\n.\r\n", "");
+}
+
+ATF_TC_BODY(send_mail_6, tc)
+{
+	int smtppipe[2];
+	struct mail mail = {};
+	ATF_REQUIRE(pipe(smtppipe) >= 0);
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		char *reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		dprintf(smtppipe[0], "250 2.1.0 Ok\n");
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		dprintf(smtppipe[0], "250 2.1.0 OK\n");
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		dprintf(smtppipe[0], "350 2.1.0 OK\n");
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		dprintf(smtppipe[0], "250 2.1.0 OK\n");
+		exit(0);
+	}
+	close(smtppipe[0]);
+	mail.to = "plop@meh";
+	mail.from = "test@meh";
+	mail.inmem = true;
+	mail.hdrs = "headers\n";
+	mail.body = "body\n";
+	mail.replyto= "yeah@meh";
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), 0);
+	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRCPT TO:<plop@meh>\r\nDATA\r\nReply-To: yeah@meh\r\nheaders\nbody\n\r\n.\r\n", "");
+}
+
+ATF_TC_BODY(send_mail_7, tc)
+{
+	int smtppipe[2];
+	struct mail mail = {};
+	ATF_REQUIRE(pipe(smtppipe) >= 0);
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		char *reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		dprintf(smtppipe[0], "250 2.1.0 Ok\n");
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		dprintf(smtppipe[0], "250 2.1.0 OK\n");
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		dprintf(smtppipe[0], "350 2.1.0 OK\n");
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		dprintf(smtppipe[0], "250 2.1.0 OK\n");
+		exit(0);
+	}
+	close(smtppipe[0]);
+	mail.to = "plop@meh";
+	mail.from = "test@meh";
+	mail.inmem = true;
+	mail.hdrs = "headers\n";
+	mail.body = "body\n";
+	mail.addtohdr = true;
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), 0);
+	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRCPT TO:<plop@meh>\r\nDATA\r\nheaders\nTo: plop@meh\r\nbody\n\r\n.\r\n", "");
+}
+
+ATF_TC_BODY(send_mail_8, tc)
+{
+	int smtppipe[2];
+	struct mail mail = {};
+	struct stat st;
+	ATF_REQUIRE(pipe(smtppipe) >= 0);
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		char *reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		dprintf(smtppipe[0], "250 2.1.0 Ok\n");
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		dprintf(smtppipe[0], "250 2.1.0 OK\n");
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		dprintf(smtppipe[0], "350 2.1.0 OK\n");
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		reply = mygetline(smtppipe[0]);
+		printf("%s", reply);
+		dprintf(smtppipe[0], "250 2.1.0 OK\n");
+		exit(0);
+	}
+	close(smtppipe[0]);
+	mail.to = "plop@meh";
+	mail.from = "test@meh";
+	mail.inmem = false;
+	FILE *f = fopen("mymail.txt", "w+");
+	fprintf(f, "headers\n\nbody\n");
+	fclose(f);
+	int fd = open("mymail.txt", O_RDONLY);
+	fstat(fd, &st);
+	mail.size = st.st_size;
+	mail.map = mmap(0, mail.size, PROT_READ, MAP_SHARED, fd, 0);
+	mail.addtohdr = true;
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), 0);
+	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRCPT TO:<plop@meh>\r\nDATA\r\nheaders\r\nTo: plop@meh\r\n\r\nbody\r\n\r\n.\r\n", "");
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -1255,6 +1579,15 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, smtp_no_ehlo);
 	ATF_TP_ADD_TC(tp, endsmtp);
 	ATF_TP_ADD_TC(tp, do_bouncemail);
+	ATF_TP_ADD_TC(tp, send_mail_0);
+	ATF_TP_ADD_TC(tp, send_mail_1);
+	ATF_TP_ADD_TC(tp, send_mail_2);
+	ATF_TP_ADD_TC(tp, send_mail_3);
+	ATF_TP_ADD_TC(tp, send_mail_4);
+	ATF_TP_ADD_TC(tp, send_mail_5);
+	ATF_TP_ADD_TC(tp, send_mail_6);
+	ATF_TP_ADD_TC(tp, send_mail_7);
+	ATF_TP_ADD_TC(tp, send_mail_8);
 
 	return (atf_no_error());
 }
