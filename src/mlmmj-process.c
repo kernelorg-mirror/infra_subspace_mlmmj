@@ -129,7 +129,7 @@ static int is_moderator(const char *listdir, const char *address,
 static void newmoderated(const char *listdir, const char *mailfilename,
 		  const char *mlmmjsend, const char *efromsender,
 		  const char *subject, const char *posteraddr,
-		  enum modreason modreason)
+		  enum modreason modreason, int ctrlfd)
 {
 	char *from, *listfqdn, *listname, *moderators = NULL;
 	char *replyto, *listaddr = getlistaddr(listdir), *listdelim;
@@ -146,7 +146,7 @@ static void newmoderated(const char *listdir, const char *mailfilename,
 	listfqdn = genlistfqdn(listaddr);
 	listname = genlistname(listaddr);
 
-	if(statctrl(listdir, "ifmodsendonlymodmoderate"))
+	if(statctrl(ctrlfd, "ifmodsendonlymodmoderate"))
 		efromismod = efromsender;
 
 	if(!is_moderator(listdir, efromismod, &moderators))
@@ -182,13 +182,14 @@ static void newmoderated(const char *listdir, const char *mailfilename,
 	register_formatted(txt, "moderators",
 			rewind_memory_lines, get_memory_line, mls);
 	register_originalmail(txt, mailfilename);
-	queuefilename = prepstdreply(txt, listdir, "$listowner$", to, replyto);
+	queuefilename = prepstdreply(txt, listdir, "$listowner$", to, replyto,
+	    ctrlfd);
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
 	/* we might need to exec more than one mlmmj-send */
 	
-	notifymod = !efromismod && statctrl(listdir,"notifymod");
+	notifymod = !efromismod && statctrl(ctrlfd,"notifymod");
 
 	if (notifymod) {
 		free(queuefilename);
@@ -203,7 +204,7 @@ static void newmoderated(const char *listdir, const char *mailfilename,
 				rewind_memory_lines, get_memory_line, mls);
 		register_originalmail(txt, mailfilename);
 		queuefilename = prepstdreply(txt, listdir,
-				"$listowner$", efromsender, NULL);
+				"$listowner$", efromsender, NULL, ctrlfd);
 		MY_ASSERT(queuefilename);
 		close_text(txt);
 
@@ -625,7 +626,7 @@ int main(int argc, char **argv)
 		findaddress = 1;
 	}
 
-	addrtocc = !statctrl(listdir, "tocc");
+	addrtocc = !statctrl(ctrlfd, "tocc");
 
 	if (findaddress) {
 		listdelim = getlistdelim(listdir);
@@ -787,7 +788,7 @@ int main(int argc, char **argv)
 			testfrom = &fromemails;
 		listcontrol(testfrom, listdir, recipextra,
 			    mlmmjsub, mlmmjunsub, mlmmjsend,
-			    donemailname);
+			    donemailname, ctrlfd);
 
 		return EXIT_SUCCESS;
 	}
@@ -806,7 +807,7 @@ int main(int argc, char **argv)
 
 		if(st.st_size > maxmailsize) {
 
-			if (statctrl(listdir, "nomaxmailsizedenymails")) {
+			if (statctrl(ctrlfd, "nomaxmailsizedenymails")) {
 				errno = 0;
 				log_error(LOG_ARGS, "Discarding %s due to"
 						" size limit (%d bytes too big)",
@@ -831,7 +832,7 @@ int main(int argc, char **argv)
 			register_unformatted(txt, "maxmailsize", maxmailsizestr);
 			register_originalmail(txt, donemailname);
 			queuefilename = prepstdreply(txt, listdir,
-					"$listowner$", posteraddr, NULL);
+			    "$listowner$", posteraddr, NULL, ctrlfd);
 			MY_ASSERT(queuefilename);
 			close_text(txt);
 			free(listdelim);
@@ -873,7 +874,7 @@ int main(int argc, char **argv)
 		 * discard and exit. Also don't in case of it being turned off
 		 */
 		if ((strcasecmp(listaddr, posteraddr) == 0) ||
-				statctrl(listdir, "notoccdenymails")) {
+				statctrl(ctrlfd, "notoccdenymails")) {
 			log_error(LOG_ARGS, "Discarding %s because list"
 					" address was not in To: or Cc:,"
 					" and From: was the list or"
@@ -896,7 +897,7 @@ int main(int argc, char **argv)
 		register_unformatted(txt, "posteraddr", posteraddr);
 		register_originalmail(txt, donemailname);
 		queuefilename = prepstdreply(txt, listdir,
-				"$listowner$", posteraddr, NULL);
+		    "$listowner$", posteraddr, NULL, ctrlfd);
 		MY_ASSERT(queuefilename)
 		close_text(txt);
 		free(listdelim);
@@ -917,7 +918,7 @@ int main(int argc, char **argv)
 					posteraddr, listdir);
 		if (accret == DENY) {
 			if ((strcasecmp(listaddr, posteraddr) == 0) ||
-				    statctrl(listdir, "noaccessdenymails")) {
+				    statctrl(ctrlfd, "noaccessdenymails")) {
 				log_error(LOG_ARGS, "Discarding %s because"
 					" it was denied by an access"
 					" rule, and From: was the list"
@@ -941,7 +942,7 @@ int main(int argc, char **argv)
 			register_unformatted(txt, "posteraddr", posteraddr);
 			register_originalmail(txt, donemailname);
 			queuefilename = prepstdreply(txt, listdir,
-					"$listowner$", posteraddr, NULL);
+					"$listowner$", posteraddr, NULL, ctrlfd);
 			MY_ASSERT(queuefilename)
 			close_text(txt);
 			free(listaddr);
@@ -988,9 +989,9 @@ int main(int argc, char **argv)
 		}
 	}
 
-	subonlypost = statctrl(listdir, "subonlypost");
-	modonlypost = statctrl(listdir, "modonlypost");
-	modnonsubposts = statctrl(listdir, "modnonsubposts");
+	subonlypost = statctrl(ctrlfd, "subonlypost");
+	modonlypost = statctrl(ctrlfd, "modonlypost");
+	modnonsubposts = statctrl(ctrlfd, "modnonsubposts");
 	/* modnonsubposts implies subonlypost if modonlypost is not set */
 	if (modnonsubposts && !modonlypost) subonlypost = 1;
 
@@ -1025,9 +1026,9 @@ int main(int argc, char **argv)
 				modreason = MODNONMODPOSTS;
 			} else {
 			    if((subonlypost &&
-				    statctrl(listdir, "nosubonlydenymails")) ||
+				    statctrl(ctrlfd, "nosubonlydenymails")) ||
 				    (modonlypost &&
-				    statctrl(listdir, "nomodonlydenymails"))) {
+				    statctrl(ctrlfd, "nomodonlydenymails"))) {
 				log_error(LOG_ARGS, "Discarding %s because"
 					" no{sub|mod}onlydenymails was set",
 					mailfile);
@@ -1053,7 +1054,7 @@ int main(int argc, char **argv)
 			    register_unformatted(txt, "posteraddr", testaddr);
 			    register_originalmail(txt, donemailname);
 			    queuefilename = prepstdreply(txt, listdir,
-				    "$listowner$", testaddr, NULL);
+				    "$listowner$", testaddr, NULL, ctrlfd);
 			    MY_ASSERT(queuefilename)
 			    close_text(txt);
 			    free(listaddr);
@@ -1070,13 +1071,13 @@ int main(int argc, char **argv)
 	}
 
 	if(!send && !moderated) {
-		if(statctrl(listdir, "moderated")) {
+		if(statctrl(ctrlfd, "moderated")) {
 			moderated = 1;
 			modreason = MODERATED;
 		}
 	}
 
-	notmetoo = statctrl(listdir, "notmetoo");
+	notmetoo = statctrl(ctrlfd, "notmetoo");
 
 	if(moderated) {
 		mqueuename = concatstr(3, listdir, "/moderation/",
@@ -1112,7 +1113,7 @@ int main(int argc, char **argv)
 		}
 		newmoderated(listdir, mqueuename,
 				mlmmjsend, efrom, subject, posteraddr,
-				modreason);
+				modreason, ctrlfd);
 		return EXIT_SUCCESS;
 	}
 

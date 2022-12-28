@@ -564,10 +564,10 @@ int main(int argc, char **argv)
 	if (listdir) {
 		verp = ctrlvalue(ctrlfd, "verp");
 		if(verp == NULL)
-			if(fstatctrl(listfd, "verp") == 1)
+			if(statctrl(ctrlfd, "verp") == 1)
 				verp = xstrdup("");
 
-		if(verp && fstatctrl(listfd, "maxverprecips"))
+		if(verp && statctrl(ctrlfd, "maxverprecips"))
 			maxverprecips = ctrlint(ctrlfd, "maxverprecips", MAXVERPRECIPS);
 	}
 
@@ -592,7 +592,7 @@ int main(int argc, char **argv)
 
 	if (listdir) {
 		memmailsize = ctrlsizet(ctrlfd, "memorymailsize", MEMORYMAILSIZE);
-		ctrlarchive = fstatctrl(ctrlfd, "noarchive");
+		ctrlarchive = statctrl(ctrlfd, "noarchive");
 	}
 
 	if(st.st_size > memmailsize) {
@@ -647,7 +647,7 @@ int main(int argc, char **argv)
 		}
 		break;
 	case '3':
-		mail.addtohdr = fstatctrl(listfd, "addtohdr");
+		mail.addtohdr = statctrl(ctrlfd, "addtohdr");
 	case '4': /* sending mails to subfile */
 		if((subfd = open(subfilename, O_RDONLY)) < 0) {
 			log_error(LOG_ARGS, "Could not open '%s':",
@@ -665,7 +665,7 @@ int main(int argc, char **argv)
 						archivefilename, ctrlfd);
 		break;
 	default: /* normal list mail -- now handled when forking */
-		mail.addtohdr = fstatctrl(listfd, "addtohdr");
+		mail.addtohdr = statctrl(ctrlfd, "addtohdr");
 		break;
 	}
 

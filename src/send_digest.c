@@ -236,7 +236,7 @@ static void finish_thread_list(thread_list_state * s)
 
 
 int send_digest(const char *listdir, int firstindex, int lastindex,
-		int issue, const char *addr, const char *mlmmjsend)
+		int issue, const char *addr, const char *mlmmjsend, int ctrlfd)
 {
 	int i, fd, archivefd, hdrfd;
 	size_t len;
@@ -310,7 +310,7 @@ int send_digest(const char *listdir, int firstindex, int lastindex,
 	register_formatted(txt, "digestthreads", rewind_thread_list,
 			get_thread_list_line, tls);
 
-	line = get_processed_text_line(txt, 1, listaddr, listdelim, listdir);
+	line = get_processed_text_line(txt, 1, listaddr, listdelim, listdir, ctrlfd);
 
 	if (line == NULL) {
 		log_error(LOG_ARGS, "No content in digest listtext");
@@ -338,7 +338,7 @@ int send_digest(const char *listdir, int firstindex, int lastindex,
 
 		/* Skip the empty line after the subject */
 		line = get_processed_text_line(txt, 1, listaddr, listdelim,
-				listdir);
+				listdir, ctrlfd);
 		if (line == NULL || *line != '\0') {
 			log_error(LOG_ARGS, "Too many headers "
 					"in digest listtext");
@@ -408,7 +408,7 @@ errdighdrs:
 		return -1;
 	}
 
-	if ((txt != NULL) && !statctrl(listdir, "nodigesttext")) {
+	if ((txt != NULL) && !statctrl(ctrlfd, "nodigesttext")) {
 
 		if (dprintf(fd, "\n--%s"
 		    "\nContent-Type: text/plain; charset=UTF-8"
@@ -432,7 +432,7 @@ errdighdrs:
 
 		for (;;) {
 			line = get_processed_text_line(txt, 0, listaddr, listdelim,
-					listdir);
+					listdir, ctrlfd);
 			if (line == NULL) break;
 			if(dprintf(fd, "%s\n", line) < 0) {
 				free(line);

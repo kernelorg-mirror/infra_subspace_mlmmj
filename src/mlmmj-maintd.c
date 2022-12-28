@@ -590,7 +590,7 @@ run_digests(int dfd, int ctrlfd, const char *mlmmjsend, const char *listdir, int
 	const char *errstr = NULL;
 	bool ret = false;
 
-	if (statctrl(listdir, "noarchive")) {
+	if (statctrl(ctrlfd, "noarchive")) {
 		log(" - noarchive tunable: skipping digest\n");
 		return (true);
 	}
@@ -652,7 +652,7 @@ run_digests(int dfd, int ctrlfd, const char *mlmmjsend, const char *listdir, int
 
 		if (index > lastindex) {
 			lastissue++;
-			send_digest(listdir, lastindex+1, index, lastissue, NULL, mlmmjsend);
+			send_digest(listdir, lastindex+1, index, lastissue, NULL, mlmmjsend, ctrlfd);
 		}
 
 		if (lseek(fd, 0, SEEK_SET) < 0) {

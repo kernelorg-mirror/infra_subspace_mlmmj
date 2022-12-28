@@ -31,33 +31,13 @@
 #include "log_error.h"
 
 bool
-fstatctrl(int fd, const char *ctrlstr)
+statctrl(int fd, const char *ctrlstr)
 {
-	char *filename;
-
-	xasprintf(&filename, "%s", ctrlstr);
-	if (faccessat(fd, filename, F_OK, 0) == -1) {
+	if (faccessat(fd, ctrlstr, F_OK, 0) == -1) {
 		if(errno == ENOENT)
 			return (false);
-		log_error(LOG_ARGS, "Could not stat control/%s. "
-		    "Bailing out.", ctrlstr);
-		exit(EXIT_FAILURE);
-	}
-	return (true);
-}
-
-bool
-statctrl(const char *listdir, const char *ctrlstr)
-{
-	char *filename;
-
-	xasprintf(&filename, "%s/control/%s", listdir, ctrlstr);
-
-	if (access(filename, F_OK) == -1) {
-		if(errno == ENOENT)
-			return (false);
-		log_error(LOG_ARGS, "Could not stat %s/control/%s. "
-		    "Bailing out.", listdir, ctrlstr);
+		log_error(LOG_ARGS, "Could not stat control/%s. Bailing out.",
+		    ctrlstr);
 		exit(EXIT_FAILURE);
 	}
 

@@ -53,7 +53,7 @@
 #include "utils.h"
 
 
-void do_probe(const char *listdir, const char *mlmmjsend, const char *addr)
+void do_probe(const char *listdir, const char *mlmmjsend, const char *addr, int ctrlfd)
 {
 	text *txt;
 	file_lines_state *fls;
@@ -92,7 +92,7 @@ void do_probe(const char *listdir, const char *mlmmjsend, const char *addr)
 	fls = init_truncated_file_lines(addr, 0, ':');
 	register_formatted(txt, "bouncenumbers",
 			rewind_file_lines, get_file_line, fls);
-	queuefilename = prepstdreply(txt, listdir, "$listowner$", myaddr, NULL);
+	queuefilename = prepstdreply(txt, listdir, "$listowner$", myaddr, NULL, ctrlfd);
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
@@ -140,7 +140,7 @@ int main(int argc, char **argv)
 	int probe = 0;
 	struct stat st;
 	uid_t uid;
-	int listfd;
+	int listfd, ctrlfd;
 	bounce_t bret;
 
 	log_set_name(argv[0]);
@@ -187,6 +187,9 @@ int main(int argc, char **argv)
 	}
 	if ((listfd = open(listdir, O_DIRECTORY|O_CLOEXEC)) == -1)
 		errx(EXIT_FAILURE, "Cannot open(%s)", listdir);
+	if ((ctrlfd = openat(listfd, "control", O_DIRECTORY|O_CLOEXEC)) == -1)
+		err(EXIT_FAILURE, "Cannot open(%s/control)", listdir);
+
 
 	/* Lets make sure no random user tries to do bouncehandling */
 	if(listdir) {
@@ -228,7 +231,7 @@ int main(int argc, char **argv)
 
 	if (probe) {
 		/* send out a probe */
-		do_probe(listdir, mlmmjsend, address);
+		do_probe(listdir, mlmmjsend, address, ctrlfd);
 		/* do_probe() will never return */
 		exit(EXIT_FAILURE);
 	}

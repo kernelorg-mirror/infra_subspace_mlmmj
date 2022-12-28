@@ -52,7 +52,7 @@
 void confirm_unsub(const char *listdir, const char *listaddr,
 		   const char *listdelim, const char *subaddr,
 		   const char *mlmmjsend,
-		   enum subtype typesub, enum subreason reasonsub)
+		   enum subtype typesub, enum subreason reasonsub, int ctrlfd)
 {
 	text *txt;
 	char *queuefilename, *fromaddr, *listname, *listfqdn, *listtext;
@@ -85,7 +85,7 @@ void confirm_unsub(const char *listdir, const char *listaddr,
 	MY_ASSERT(txt);
 	register_unformatted(txt, "subaddr", subaddr);
 	queuefilename = prepstdreply(txt, listdir,
-			"$helpaddr$", subaddr, NULL);
+			"$helpaddr$", subaddr, NULL, ctrlfd);
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
@@ -96,7 +96,7 @@ void confirm_unsub(const char *listdir, const char *listaddr,
 void notify_unsub(const char *listdir, const char *listaddr,
 		  const char *listdelim, const char *subaddr,
 		  const char *mlmmjsend,
-		  enum subtype typesub, enum subreason reasonsub)
+		  enum subtype typesub, enum subreason reasonsub, int ctrlfd)
 {
         char *listfqdn, *listname, *fromaddr, *tostr;
 	text *txt;
@@ -132,7 +132,7 @@ void notify_unsub(const char *listdir, const char *listaddr,
 	register_unformatted(txt, "subaddr", subaddr);
 	register_unformatted(txt, "oldsub", subaddr); /* DEPRECATED */
 	queuefilename = prepstdreply(txt, listdir,
-			"$listowner$", "$listowner$", NULL);
+			"$listowner$", "$listowner$", NULL, ctrlfd);
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
@@ -144,7 +144,7 @@ void notify_unsub(const char *listdir, const char *listaddr,
 void generate_unsubconfirm(const char *listdir, const char *listaddr,
 			   const char *listdelim, const char *subaddr,
 			   const char *mlmmjsend,
-			   enum subtype typesub, enum subreason reasonsub)
+			   enum subtype typesub, enum subreason reasonsub, int ctrlfd)
 {
 	char *confirmaddr, *listname, *listfqdn, *tmpstr;
 	text *txt;
@@ -219,7 +219,7 @@ void generate_unsubconfirm(const char *listdir, const char *listaddr,
 	register_unformatted(txt, "confaddr", confirmaddr); /* DEPRECATED */
 	register_unformatted(txt, "confirmaddr", confirmaddr);
 	queuefilename = prepstdreply(txt, listdir,
-			"$helpaddr$", subaddr, confirmaddr);
+			"$helpaddr$", subaddr, confirmaddr, ctrlfd);
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
@@ -254,7 +254,7 @@ static void print_help(const char *prg)
 
 static void generate_notsubscribed(const char *listdir, const char *subaddr,
 	const char *mlmmjsend, enum subtype typesub, const char *listaddr,
-	const char *listdelim)
+	const char *listdelim, int ctrlfd)
 {
 	text *txt;
 	char *queuefilename, *fromaddr, *listname, *listfqdn;
@@ -270,7 +270,7 @@ static void generate_notsubscribed(const char *listdir, const char *subaddr,
 	MY_ASSERT(txt);
 	register_unformatted(txt, "subaddr", subaddr);
 	queuefilename = prepstdreply(txt, listdir,
-			"$helpaddr$", subaddr, NULL);
+			"$helpaddr$", subaddr, NULL, ctrlfd);
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
@@ -377,6 +377,7 @@ int main(int argc, char **argv)
 	if(normal)
 		typesub = SUB_NORMAL;
 
+
 	if(confirmunsub && unsubconfirm) {
 		errx(EXIT_FAILURE, "Cannot specify both -C and -c\n"
 		    "%s -h for help", argv[0]);
@@ -420,7 +421,7 @@ int main(int argc, char **argv)
 		/* Address is not subscribed */
 		if(!nogennotsubscribed) {
 			generate_notsubscribed(listdir, address, mlmmjsend,
-			    typesub, listaddr, listdelim);
+			    typesub, listaddr, listdelim, ctrlfd);
 		}
 
 		exit(EXIT_SUCCESS);
@@ -428,7 +429,7 @@ int main(int argc, char **argv)
 
 	if(unsubconfirm)
 		generate_unsubconfirm(listdir, listaddr, listdelim, address,
-				mlmmjsend, typesub, reasonsub);
+				mlmmjsend, typesub, reasonsub, ctrlfd);
 
 	unsubscribe(listfd, address, typesub);
 
@@ -439,7 +440,7 @@ int main(int argc, char **argv)
 			log_error(LOG_ARGS, "Could not fork");
 			confirm_unsub(listdir, listaddr, listdelim,
 					address, mlmmjsend,
-					typesub, reasonsub);
+					typesub, reasonsub, ctrlfd);
 		}
 
 		if(childpid > 0) {
@@ -452,15 +453,15 @@ int main(int argc, char **argv)
 		if(childpid == 0)
 			confirm_unsub(listdir, listaddr, listdelim,
 					address, mlmmjsend,
-					typesub, reasonsub);
+					typesub, reasonsub, ctrlfd);
 	}
 
-	notifysub = !quiet && fstatctrl(ctrlfd, "notifysub");
+	notifysub = !quiet && statctrl(ctrlfd, "notifysub");
 
         /* Notify list owner about subscription */
         if (notifysub)
                 notify_unsub(listdir, listaddr, listdelim, address, mlmmjsend,
-				typesub, reasonsub);
+				typesub, reasonsub, ctrlfd);
 
 	free(listaddr);
 	free(listdelim);
