@@ -682,7 +682,7 @@ int main(int argc, char **argv)
 	address = lowercase(address);
 
 	/* get the list address */
-	listaddr = fgetlistaddr(ctrlfd);
+	listaddr = getlistaddr(ctrlfd);
 	if(strncasecmp(listaddr, address, strlen(listaddr)) == 0)
 		errx(EXIT_FAILURE, "Cannot subscribe the list address to the list");
 
@@ -723,7 +723,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	listdelim = fgetlistdelim(ctrlfd);
+	listdelim = getlistdelim(ctrlfd);
 
 	if(subbed == SUB_NONE && subconfirm)
 			generate_subconfirm(listdir, listaddr, listdelim,

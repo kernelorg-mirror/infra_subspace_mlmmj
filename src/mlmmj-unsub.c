@@ -390,8 +390,8 @@ int main(int argc, char **argv)
 
 	/* Make the address lowercase */
 	address = lowercase(address);
-	listaddr = fgetlistaddr(ctrlfd);
-	listdelim = fgetlistdelim(ctrlfd);
+	listaddr = getlistaddr(ctrlfd);
+	listdelim = getlistdelim(ctrlfd);
 
 	if(changeuid) {
 		uid = getuid();

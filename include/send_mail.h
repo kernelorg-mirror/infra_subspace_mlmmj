@@ -40,5 +40,5 @@ struct mail {
 
 int initsmtp(int *sockfd, const char *relayhost, unsigned short port, const char *heloname);
 int endsmtp(int *sockfd);
-int send_mail(int sockfd, struct mail *mail, int listfd, bool bounce);
-int do_bouncemail(int listfd, const char *from);
+int send_mail(int sockfd, struct mail *mail, int listfd, int ctrlfd, bool bounce);
+int do_bouncemail(int listfd, int ctrlfd, const char *from);

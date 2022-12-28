@@ -277,10 +277,10 @@ int send_digest(const char *listdir, int firstindex, int lastindex,
 
 	boundary = random_str();
 
-	listaddr = getlistaddr(listdir);
+	listaddr = getlistaddr(ctrlfd);
 	listname = genlistname(listaddr);
 	listfqdn = genlistfqdn(listaddr);
-	listdelim = getlistdelim(listdir);
+	listdelim = getlistdelim(ctrlfd);
 	
 	txt = open_text_file(listdir, "digest");
 	if (txt == NULL) {

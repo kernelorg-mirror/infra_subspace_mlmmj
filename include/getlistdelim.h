@@ -24,7 +24,6 @@
 #ifndef GETLISTDELIM_H
 #define GETLISTDELIM_H
 
-char *getlistdelim(const char *listdir);
-char *fgetlistdelim(int ctrlfd);
+char *getlistdelim(int ctrlfd);
 
 #endif /* GETLISTDELIM_H */

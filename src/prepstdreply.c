@@ -1592,8 +1592,8 @@ char *prepstdreply(text *txt, const char *listdir,
 	char *str;
 	char *headers[10] = { NULL }; /* relies on NULL to flag end */
 
-	listaddr = getlistaddr(listdir);
-	listdelim = getlistdelim(listdir);
+	listaddr = getlistaddr(ctrlfd);
+	listdelim = getlistdelim(ctrlfd);
 	listfqdn = genlistfqdn(listaddr);
 
 	do {

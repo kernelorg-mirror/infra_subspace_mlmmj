@@ -1201,35 +1201,37 @@ ATF_TC_BODY(do_bouncemail, tc)
 {
 	init_ml(true);
 	int lfd = open("list", O_DIRECTORY);
+	int ctrlfd = openat(lfd, "control", O_DIRECTORY);
 	/* malformed */
-	ATF_REQUIRE_EQ(do_bouncemail(lfd, "plop"), 0);
+	ATF_REQUIRE_EQ(do_bouncemail(lfd, ctrlfd, "plop"), 0);
 
 	/* malformed, missing number */
-	ATF_REQUIRE_EQ(do_bouncemail(lfd, "plop@meh"), 0);
+	ATF_REQUIRE_EQ(do_bouncemail(lfd, ctrlfd, "plop@meh"), 0);
 
 	/* malformed, empty numbr */
-	ATF_REQUIRE_EQ(do_bouncemail(lfd, "plop-@meh"), 0);
+	ATF_REQUIRE_EQ(do_bouncemail(lfd, ctrlfd, "plop-@meh"), 0);
 
 	/* no listdelim */
-	ATF_REQUIRE_EQ(do_bouncemail(lfd, "plop-0@meh"), 0);
+	ATF_REQUIRE_EQ(do_bouncemail(lfd, ctrlfd, "plop-0@meh"), 0);
 
 	/* listdelim before */
-	ATF_REQUIRE_EQ(do_bouncemail(lfd, "plop+-0@meh"), 0);
+	ATF_REQUIRE_EQ(do_bouncemail(lfd, ctrlfd, "plop+-0@meh"), 0);
 
 	/* listdelim before */
-	ATF_REQUIRE_EQ(do_bouncemail(lfd, "plop-0+@meh"), 0);
+	ATF_REQUIRE_EQ(do_bouncemail(lfd, ctrlfd, "plop-0+@meh"), 0);
 
 	/* 2 ticks */
-	ATF_REQUIRE_EQ(do_bouncemail(lfd, "plop+--bla@meh"), 1);
+	ATF_REQUIRE_EQ(do_bouncemail(lfd, ctrlfd, "plop+--bla@meh"), 1);
 
 	close(lfd);
+	close(ctrlfd);
 }
 
 ATF_TC_BODY(send_mail_0, tc)
 {
 	int smtppipe[2];
 	struct mail mail = {};
-	ATF_REQUIRE_EQ(send_mail(-1, NULL, -1, false), EBADF);
+	ATF_REQUIRE_EQ(send_mail(-1, NULL, -1, -1, false), EBADF);
 	ATF_REQUIRE(pipe(smtppipe) >= 0);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
@@ -1242,27 +1244,27 @@ ATF_TC_BODY(send_mail_0, tc)
 		exit(0);
 	}
 	close(smtppipe[0]);
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), 0);
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), 0);
 	mail.to = "plop@meh";
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), 0);
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), 0);
 	mail.from = "test@meh";
 	mail.inmem = true;
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), 0);
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), 0);
 	mail.hdrs = "plop";
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), 0);
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), 0);
 	mail.hdrs = NULL;
 	mail.body = "body";
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), 0);
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), 0);
 	mail.inmem = false;
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), 0);
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), 0);
 	mail.size = 1;
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), 0);
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), 0);
 	mail.size = 0;
 	mail.map = "bla";
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), 0);
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), 0);
 	mail.inmem = true;
 	mail.hdrs = "headers";
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), MLMMJ_FROM);
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), MLMMJ_FROM);
 	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRSET\r\n", "");
 }
 
@@ -1287,7 +1289,7 @@ ATF_TC_BODY(send_mail_1, tc)
 	mail.inmem = true;
 	mail.hdrs = "headers";
 	mail.body = "body";
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), MLMMJ_RCPTTO);
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), MLMMJ_RCPTTO);
 	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRCPT TO:<plop@meh>\r\n", "");
 }
 
@@ -1315,7 +1317,7 @@ ATF_TC_BODY(send_mail_2, tc)
 	mail.inmem = true;
 	mail.hdrs = "headers";
 	mail.body = "body";
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), MLMMJ_DATA);
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), MLMMJ_DATA);
 	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRCPT TO:<plop@meh>\r\nDATA\r\n", "");
 }
 
@@ -1343,7 +1345,7 @@ ATF_TC_BODY(send_mail_3, tc)
 	mail.inmem = true;
 	mail.hdrs = "headers";
 	mail.body = "body";
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), MLMMJ_DATA);
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), MLMMJ_DATA);
 	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRCPT TO:<plop@meh>\r\nDATA\r\n", "");
 }
 
@@ -1371,7 +1373,7 @@ ATF_TC_BODY(send_mail_4, tc)
 	mail.inmem = true;
 	mail.hdrs = "headers";
 	mail.body = "body";
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), MLMMJ_DATA);
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), MLMMJ_DATA);
 	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRCPT TO:<plop@meh>\r\nDATA\r\n", "");
 }
 
@@ -1408,7 +1410,7 @@ ATF_TC_BODY(send_mail_5, tc)
 	mail.inmem = true;
 	mail.hdrs = "headers\n";
 	mail.body = "body\n";
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), MLMMJ_DOT);
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), MLMMJ_DOT);
 	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRCPT TO:<plop@meh>\r\nDATA\r\nheaders\nbody\n\r\n.\r\n", "");
 }
 
@@ -1448,7 +1450,7 @@ ATF_TC_BODY(send_mail_6, tc)
 	mail.hdrs = "headers\n";
 	mail.body = "body\n";
 	mail.replyto= "yeah@meh";
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), 0);
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), 0);
 	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRCPT TO:<plop@meh>\r\nDATA\r\nReply-To: yeah@meh\r\nheaders\nbody\n\r\n.\r\n", "");
 }
 
@@ -1488,7 +1490,7 @@ ATF_TC_BODY(send_mail_7, tc)
 	mail.hdrs = "headers\n";
 	mail.body = "body\n";
 	mail.addtohdr = true;
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), 0);
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), 0);
 	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRCPT TO:<plop@meh>\r\nDATA\r\nheaders\nTo: plop@meh\r\nbody\n\r\n.\r\n", "");
 }
 
@@ -1536,7 +1538,7 @@ ATF_TC_BODY(send_mail_8, tc)
 	mail.size = st.st_size;
 	mail.map = mmap(0, mail.size, PROT_READ, MAP_SHARED, fd, 0);
 	mail.addtohdr = true;
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, false), 0);
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), 0);
 	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRCPT TO:<plop@meh>\r\nDATA\r\nheaders\r\nTo: plop@meh\r\n\r\nbody\r\n\r\n.\r\n", "");
 }
 

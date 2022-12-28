@@ -237,7 +237,7 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 			MY_ASSERT(queuefilename);
 			close_text(txt);
 			send_help(listdir, queuefilename,
-					fromemails->emaillist[0], mlmmjsend);
+					fromemails->emaillist[0], mlmmjsend, ctrlfd);
 			return -1;
 		}
 		log_oper(listdir, OPLOGFNAME, "mlmmj-sub: request for digest"
@@ -279,7 +279,7 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 			MY_ASSERT(queuefilename);
 			close_text(txt);
 			send_help(listdir, queuefilename,
-					fromemails->emaillist[0], mlmmjsend);
+					fromemails->emaillist[0], mlmmjsend, ctrlfd);
 			return -1;
 		}
 		log_oper(listdir, OPLOGFNAME, "mlmmj-sub: request for nomail"
@@ -321,7 +321,7 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 			MY_ASSERT(queuefilename);
 			close_text(txt);
 			send_help(listdir, queuefilename,
-					fromemails->emaillist[0], mlmmjsend);
+					fromemails->emaillist[0], mlmmjsend, ctrlfd);
 			return -1;
 		}
 		log_oper(listdir, OPLOGFNAME, "mlmmj-sub: request for both"
@@ -699,7 +699,7 @@ permit:
 		MY_ASSERT(queuefilename);
 		close_text(txt);
 		send_help(listdir, queuefilename,
-				fromemails->emaillist[0], mlmmjsend);
+				fromemails->emaillist[0], mlmmjsend, ctrlfd);
 		break;
 
        /* listname+faq@domain.tld */
@@ -721,7 +721,7 @@ permit:
 		MY_ASSERT(queuefilename);
 		close_text(txt);
 		send_help(listdir, queuefilename,
-				fromemails->emaillist[0], mlmmjsend);
+				fromemails->emaillist[0], mlmmjsend, ctrlfd);
                break;
 
 	/* listname+get-INDEX@domain.tld */

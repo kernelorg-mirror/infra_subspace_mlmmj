@@ -24,7 +24,6 @@
 #ifndef GETLISTADDR_H
 #define GETLISTADDR_H
 
-char *getlistaddr(const char *listdir);
-char *fgetlistaddr(int fd);
+char *getlistaddr(int fd);
 
 #endif /* GETLISTADDR_H */

@@ -34,66 +34,15 @@
 #include "log_error.h"
 #include "mygetline.h"
 #include "strgen.h"
+#include "ctrlvalue.h"
 
-char *fgetlistdelim(int ctrlfd)
+char *getlistdelim(int ctrlfd)
 {
 	char *delimstr;
-	int delimfd;
 
-	delimfd = openat(ctrlfd, "delimiter", O_RDONLY|O_CLOEXEC);
-	if (delimfd == -1)
+	delimstr = ctrlvalue(ctrlfd, "delimiter");
+	if (delimstr == NULL)
 		return (xstrdup(DEFAULT_RECIPDELIM));
 
-	delimstr = mygetline(delimfd);
-	close(delimfd);
-
-	if(NULL == delimstr){
-		log_error(LOG_ARGS, "FATAL. Could not get list delimiter from "
-		    "control/delimiter");
-			exit(EXIT_FAILURE);
-	}
-	chomp(delimstr);
-
-	if(0 == strlen(delimstr)){
-		log_error(LOG_ARGS, "FATAL. Zero-length delimiter found from "
-		    "control/delimiter");
-		exit(EXIT_FAILURE);
-	}
-
 	return (delimstr);
-}
-
-char *getlistdelim(const char *listdir)
-{
-	char *delimfn, *delimstr;
-	int delimfd;
-
-	delimfn = concatstr(2, listdir, "/control/delimiter");
-	if(-1 != (delimfd = open(delimfn, O_RDONLY))){
-		delimstr = mygetline(delimfd);
-		close(delimfd);
-
-		if(NULL == delimstr){
-			log_error(LOG_ARGS,
-				  "FATAL. Could not get list delimiter from %s",
-				  delimfn);
-			free(delimfn);
-			exit(EXIT_FAILURE);
-		}
-	
-		chomp(delimstr);
-	
-		if(0 == strlen(delimstr)){
-			log_error(LOG_ARGS,
-				  "FATAL. Zero-length delimiter found from %s",
-				  delimfn);
-			free(delimfn);
-			exit(EXIT_FAILURE);
-		}
-	} else
-		delimstr = xstrdup(DEFAULT_RECIPDELIM);
-
-	free(delimfn);
-
-	return delimstr;
 }

@@ -161,8 +161,8 @@ void send_list(const char *listdir, const char *emailaddr,
 	char *fromaddr, *subdir, *nomaildir, *digestdir;
 	int fd;
 
-	listaddr = getlistaddr(listdir);
-	listdelim = getlistdelim(listdir);
+	listaddr = getlistaddr(ctrlfd);
+	listdelim = getlistdelim(ctrlfd);
 	listname = genlistname(listaddr);
 	listfqdn = genlistfqdn(listaddr);
 

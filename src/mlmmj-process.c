@@ -132,7 +132,7 @@ static void newmoderated(const char *listdir, const char *mailfilename,
 		  enum modreason modreason, int ctrlfd)
 {
 	char *from, *listfqdn, *listname, *moderators = NULL;
-	char *replyto, *listaddr = getlistaddr(listdir), *listdelim;
+	char *replyto, *listaddr = getlistaddr(ctrlfd), *listdelim;
 	text *txt;
 	memory_lines_state *mls;
 	char *queuefilename = NULL;
@@ -157,7 +157,7 @@ static void newmoderated(const char *listdir, const char *mailfilename,
 
 	free(moderators);
 
-	listdelim = getlistdelim(listdir);
+	listdelim = getlistdelim(ctrlfd);
 	replyto = concatstr(6, listname, listdelim, "release-", mailbasename,
 			    "@", listfqdn);
 	reject = concatstr(6, listname, listdelim, "reject-", mailbasename,
@@ -614,7 +614,7 @@ int main(int argc, char **argv)
 		recipextra = xstrdup(envstr);
 	} else if((envstr = getenv("LOCAL_PART_SUFFIX")) != NULL) {
 		/* exim */
-		listdelim = getlistdelim(listdir);
+		listdelim = getlistdelim(ctrlfd);
 		if (strncmp(envstr, listdelim, strlen(listdelim)) == 0) {
 			recipextra = xstrdup(envstr + strlen(listdelim));
 		} else {
@@ -629,7 +629,7 @@ int main(int argc, char **argv)
 	addrtocc = !statctrl(ctrlfd, "tocc");
 
 	if (findaddress) {
-		listdelim = getlistdelim(listdir);
+		listdelim = getlistdelim(ctrlfd);
 	}
 	if(addrtocc || findaddress) {
 		listaddrs = ctrlvalues(listdir, "listaddress");
@@ -793,7 +793,7 @@ int main(int argc, char **argv)
 		return EXIT_SUCCESS;
 	}
 
-	listaddr = getlistaddr(listdir);
+	listaddr = getlistaddr(ctrlfd);
 
 	/* checking incoming mail's size */
 	maxmailsize = ctrlsizet(ctrlfd, "maxmailsize", 0);
@@ -819,7 +819,7 @@ int main(int argc, char **argv)
 				exit(EXIT_SUCCESS);
 			}
 
-			listdelim = getlistdelim(listdir);
+			listdelim = getlistdelim(ctrlfd);
 			listname = genlistname(listaddr);
 			listfqdn = genlistfqdn(listaddr);
 			fromaddr = concatstr(4, listname, listdelim,
@@ -885,7 +885,7 @@ int main(int argc, char **argv)
 			free(donemailname);
 			exit(EXIT_SUCCESS);
 		}
-		listdelim = getlistdelim(listdir);
+		listdelim = getlistdelim(ctrlfd);
 		listname = genlistname(listaddr);
 		listfqdn = genlistfqdn(listaddr);
 		fromaddr = concatstr(4, listname, listdelim, "bounces-help@",
@@ -930,7 +930,7 @@ int main(int argc, char **argv)
 				free(donemailname);
 				exit(EXIT_SUCCESS);
 			}
-			listdelim = getlistdelim(listdir);
+			listdelim = getlistdelim(ctrlfd);
 			listname = genlistname(listaddr);
 			listfqdn = genlistfqdn(listaddr);
 			fromaddr = concatstr(4, listname, listdelim,
@@ -1037,7 +1037,7 @@ int main(int argc, char **argv)
 				free(donemailname);
 				exit(EXIT_SUCCESS);
 			    }
-			    listdelim = getlistdelim(listdir);
+			    listdelim = getlistdelim(ctrlfd);
 			    listname = genlistname(listaddr);
 			    listfqdn = genlistfqdn(listaddr);
 			    fromaddr = concatstr(4, listname, listdelim,

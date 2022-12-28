@@ -181,12 +181,12 @@ endsmtp(int *sockfd)
 	return retval;
 }
 
-int do_bouncemail(int listfd, const char *from)
+int do_bouncemail(int listfd, int ctrlfd, const char *from)
 {
 	/* expected format for the from: "something+anything-<number>-anything@anything" */
 	char *tofree;
 	char *myfrom = xstrdup(from);
-	char *listdelim = fgetlistdelim(listfd);
+	char *listdelim = getlistdelim(ctrlfd);
 	char *addr, *num, *c;
 
 	tofree = myfrom;
@@ -225,7 +225,7 @@ int do_bouncemail(int listfd, const char *from)
 }
 
 int
-send_mail(int sockfd, struct mail *mail, int listfd, bool bounce)
+send_mail(int sockfd, struct mail *mail, int listfd, int ctrlfd, bool bounce)
 {
 	int retval = 0;
 	char *reply, *reply2;
@@ -292,7 +292,7 @@ send_mail(int sockfd, struct mail *mail, int listfd, bool bounce)
 		if(bounce && ((reply[0] == '4') || (reply[0] == '5'))
 				&& (reply[1] == '5')) {
 			free(reply);
-			return do_bouncemail(listfd, mail->from);
+			return do_bouncemail(listfd, ctrlfd, mail->from);
 		} else {
 			log_error(LOG_ARGS, "Error in RCPT TO. Reply = [%s]",
 					reply);

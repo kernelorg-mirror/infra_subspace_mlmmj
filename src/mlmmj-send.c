@@ -389,7 +389,7 @@ int send_mail_many_list(int sockfd, struct mail *mail, struct strlist *addrs,
 			    archivefilename, ctrlfd);
 			mail->from = bounceaddr;
 		}
-		res = send_mail(sockfd, mail, listfd, bounceaddr != NULL);
+		res = send_mail(sockfd, mail, listfd, ctrlfd, bounceaddr != NULL);
 		free(bounceaddr);
 		if(res && listaddr && archivefilename) {
 			/* we failed, so save the addresses and bail */
@@ -575,7 +575,7 @@ int main(int argc, char **argv)
 	stl.count = 0;
 
 	if(listdir && listctrl != '5')
-		listaddr = fgetlistaddr(listfd);
+		listaddr = getlistaddr(ctrlfd);
 	
 	/* initialize file with mail to send */
 
@@ -625,7 +625,7 @@ int main(int argc, char **argv)
 	}
 
 	if(listdir)
-		listdelim = fgetlistdelim(listfd);
+		listdelim = getlistdelim(ctrlfd);
 
 	switch(listctrl) {
 	case '1': /* A single mail is to be sent, do nothing */
@@ -693,7 +693,7 @@ int main(int argc, char **argv)
 	case '6':
 		initsmtp(&sockfd, relayhost, smtpport, smtphelo);
 		mail.from = bounceaddr;
-		if(send_mail(sockfd, &mail,listfd, false)) {
+		if(send_mail(sockfd, &mail,listfd, ctrlfd, false)) {
 			close(sockfd);
 			sockfd = -1;
 			/* error, so keep it in the queue */
@@ -782,7 +782,7 @@ int main(int argc, char **argv)
 	case '5': /* bounceprobe - handle relayhost local users bouncing*/
 		initsmtp(&sockfd, relayhost, smtpport, smtphelo);
 		mail.from = bounceaddr;
-		if(send_mail(sockfd, &mail, listfd, false)) {
+		if(send_mail(sockfd, &mail, listfd, ctrlfd, false)) {
 			close(sockfd);
 			sockfd = -1;
 			/* error, so remove the probefile */
@@ -820,7 +820,7 @@ int main(int argc, char **argv)
 			exit(EXIT_FAILURE);
 		}
 
-		listdelim = getlistdelim(listdir);
+		listdelim = getlistdelim(ctrlfd);
 		listname = genlistname(listaddr);	
 		listfqdn = genlistfqdn(listaddr);	
 		xasprintf(&verpfrom, "%s%sbounces-%d@%s", listname, listdelim,

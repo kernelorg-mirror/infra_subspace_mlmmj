@@ -28,65 +28,22 @@
 #include <errno.h>
 
 #include "getlistaddr.h"
-#include "chomp.h"
 #include "log_error.h"
-#include "mygetline.h"
-#include "strgen.h"
+#include "ctrlvalue.h"
 
 char *
-fgetlistaddr(int fd)
+getlistaddr(int fd)
 {
-	char *tmpstr;
-	int listnamefd;
-
-	if ((listnamefd = openat(fd, "listaddress", O_RDONLY|O_CLOEXEC)) < 0) {
-		log_error(LOG_ARGS, "Could not open 'control/listaddress'");
-		exit(EXIT_FAILURE);
-	}
-	tmpstr = mygetline(listnamefd);
-	if (tmpstr == NULL) {
+	char *listaddr = ctrlvalue(fd, "listaddress");
+	if (listaddr == NULL) {
 		log_error(LOG_ARGS, "FATAL. Could not get listaddress "
 		    "in control/listaddress");
 		exit(EXIT_FAILURE);
 	}
-	if (strchr(tmpstr, '@') == NULL) {
+	if (strchr(listaddr, '@') == NULL) {
 		log_error(LOG_ARGS, "FATAL. No @ sign in listaddress");
 		exit(EXIT_FAILURE);
 	}
 
-	chomp(tmpstr);
-	close(listnamefd);
-
-	return (tmpstr);
-}
-
-char *getlistaddr(const char *listdir)
-{
-	char *tmpstr;
-	int listnamefd;
-
-	tmpstr = concatstr(2, listdir, "/control/listaddress");;
-	if((listnamefd = open(tmpstr, O_RDONLY)) < 0) {
-		log_error(LOG_ARGS, "Could not open '%s'", tmpstr);
-		exit(EXIT_FAILURE);
-	}
-	free(tmpstr);
-
-	tmpstr = mygetline(listnamefd);
-
-	if(tmpstr == NULL){
-		log_error(LOG_ARGS, "FATAL. Could not get listaddress "
-				    "in %s/control/listaddress", listdir);
-		exit(EXIT_FAILURE);
-	}
-
-	if(strchr(tmpstr, '@') == NULL) {
-		log_error(LOG_ARGS, "FATAL. No @ sign in listaddress");
-		exit(EXIT_FAILURE);
-	}
-
-	chomp(tmpstr);
-	close(listnamefd);
-
-	return tmpstr;
+	return (listaddr);
 }

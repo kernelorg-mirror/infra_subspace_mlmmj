@@ -43,13 +43,13 @@
 #include "utils.h"
 
 void send_help(const char *listdir, const char *queuefilename,
-		const char *emailaddr, const char *mlmmjsend)
+		const char *emailaddr, const char *mlmmjsend, int ctrlfd)
 {
 	char *listaddr, *listdelim, *listname, *listfqdn;
 	char *fromaddr;
 
-	listaddr = getlistaddr(listdir);
-	listdelim = getlistdelim(listdir);
+	listaddr = getlistaddr(ctrlfd);
+	listdelim = getlistdelim(ctrlfd);
 	listname = genlistname(listaddr);
 	listfqdn = genlistfqdn(listaddr);
 

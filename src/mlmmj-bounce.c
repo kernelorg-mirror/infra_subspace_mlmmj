@@ -58,13 +58,13 @@ void do_probe(const char *listdir, const char *mlmmjsend, const char *addr, int 
 	text *txt;
 	file_lines_state *fls;
 	char *myaddr, *from, *a, *queuefilename, *listaddr;
-	char *listfqdn, *listname, *probefile, *listdelim=getlistdelim(listdir);
+	char *listfqdn, *listname, *probefile, *listdelim = getlistdelim(ctrlfd);
 	int fd;
 	time_t t;
 
 	myaddr = xstrdup(addr);
 
-	listaddr = getlistaddr(listdir);
+	listaddr = getlistaddr(ctrlfd);
 	listname = genlistname(listaddr);
 	listfqdn = genlistfqdn(listaddr);
 
