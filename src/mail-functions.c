@@ -104,7 +104,7 @@ int write_mailbody_from_map(int sockfd, char *mapstart, size_t size,
 				return -1;
 			}
 			if(i && tohdr && *(next+1) == '\n') { /* add To: header */
-				if(dprintf(sockfd, "%s", tohdr) < 0) {
+				if(dprintf(sockfd, "To: %s\r\n", tohdr) < 0) {
 					log_error(LOG_ARGS, "Could not write"
 							    " To: header");
 					return -1;

@@ -228,7 +228,7 @@ int
 send_mail(int sockfd, struct mail *mail, int listfd, bool bounce)
 {
 	int retval = 0;
-	char *reply, *reply2, *tohdr;
+	char *reply, *reply2;
 
 	if(sockfd == -1)
 		return EBADF;
@@ -325,24 +325,18 @@ send_mail(int sockfd, struct mail *mail, int listfd, bool bounce)
 		}
 	}
 
-	if(mail->addtohdr)
-		xasprintf(&tohdr, "To: %s\r\n", mail->to);
-	else
-		tohdr = NULL;
-
 	if(mail->inmem) {
 		retval = dprintf(sockfd, "%s", mail->hdrs);
 		if(retval < 0) {
 			log_error(LOG_ARGS, "Could not write mailheaders.\n");
 			return retval;
 		}
-		if(tohdr) {
-			retval = dprintf(sockfd, "%s", tohdr);
+		if(mail->addtohdr) {
+			retval = dprintf(sockfd, "To: %s\r\n", mail->to);
 			if(retval < 0) {
 				log_error(LOG_ARGS, "Could not write To:.\n");
 				return retval;
 			}
-			free(tohdr);
 		}
 		retval = dprintf(sockfd, "%s", mail->body);
 		if(retval < 0) {
@@ -351,7 +345,7 @@ send_mail(int sockfd, struct mail *mail, int listfd, bool bounce)
 		}
 	} else {
 		retval = write_mailbody_from_map(sockfd, mail->map, mail->size,
-						 tohdr);
+		    mail->addtohdr ? mail->to : NULL);
 		if(retval) {
 			log_error(LOG_ARGS, "Could not write mail\n");
 			return retval;

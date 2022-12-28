@@ -660,7 +660,7 @@ ATF_TC_BODY(write_mailbody_from_map, tc)
 	close(fd);
 	munmap(start, st.st_size);
 	close(fd1);
-	if (!atf_utils_compare_file("out.txt", "line\r\ntest@plop.meh\r\n")) {
+	if (!atf_utils_compare_file("out.txt", "line\r\nTo: test@plop.meh\r\n\r\n")) {
 		atf_utils_cat_file("out.txt", ">");
 		atf_tc_fail("Unexpected output");
 	}
@@ -678,7 +678,7 @@ ATF_TC_BODY(write_mailbody_from_map, tc)
 	close(fd);
 	munmap(start, st.st_size);
 	close(fd1);
-	if (!atf_utils_compare_file("out.txt", "line\r\ntest@plop.meh\r\nline2\r\n\r\n")) {
+	if (!atf_utils_compare_file("out.txt", "line\r\nTo: test@plop.meh\r\n\r\nline2\r\n\r\n")) {
 		atf_utils_cat_file("out.txt", ">");
 		atf_tc_fail("Unexpected output");
 	}
