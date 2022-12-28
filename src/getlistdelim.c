@@ -41,8 +41,10 @@ char *getlistdelim(int ctrlfd)
 	char *delimstr;
 
 	delimstr = ctrlvalue(ctrlfd, "delimiter");
-	if (delimstr == NULL)
+	if (delimstr == NULL || *delimstr == '\0') {
+		free(delimstr);
 		return (xstrdup(DEFAULT_RECIPDELIM));
+	}
 
 	return (delimstr);
 }

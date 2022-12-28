@@ -37,6 +37,8 @@
 #include <errno.h>
 
 #include "atf-c/macros.h"
+#include "atf-c/utils.h"
+#include "mlmmj.h"
 #include "xmalloc.h"
 #include "wrappers.h"
 #include "chomp.h"
@@ -48,6 +50,8 @@
 #include "checkwait_smtpreply.h"
 #include "find_email_adr.h"
 #include "send_mail.h"
+#include "getlistdelim.h"
+#include "getlistaddr.h"
 
 ATF_TC_WITHOUT_HEAD(random_int);
 ATF_TC_WITHOUT_HEAD(chomp);
@@ -95,6 +99,8 @@ ATF_TC_WITHOUT_HEAD(send_mail_5);
 ATF_TC_WITHOUT_HEAD(send_mail_6);
 ATF_TC_WITHOUT_HEAD(send_mail_7);
 ATF_TC_WITHOUT_HEAD(send_mail_8);
+ATF_TC_WITHOUT_HEAD(getlistdelim);
+ATF_TC_WITHOUT_HEAD(getlistaddr);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -1542,6 +1548,60 @@ ATF_TC_BODY(send_mail_8, tc)
 	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRCPT TO:<plop@meh>\r\nDATA\r\nheaders\r\nTo: plop@meh\r\n\r\nbody\r\n\r\n.\r\n", "");
 }
 
+ATF_TC_BODY(getlistdelim, tc)
+{
+	init_ml(true);
+	int fd = open("list/control", O_RDONLY);
+	ATF_REQUIRE_STREQ_MSG(getlistdelim(fd), DEFAULT_RECIPDELIM, "Invalid fallback");
+
+	FILE *f = fopen("list/control/delimiter", "w+");
+	fclose(f);
+	ATF_REQUIRE_STREQ_MSG(getlistdelim(fd), DEFAULT_RECIPDELIM, "Invalid fallback, in case of empty delimiter");
+	f = fopen("list/control/delimiter", "w+");
+	fprintf(f,"\n");
+	fclose(f);
+	ATF_REQUIRE_STREQ_MSG(getlistdelim(fd), DEFAULT_RECIPDELIM, "Invalid fallback, in case of empty delimiter");
+
+	f = fopen("list/control/delimiter", "w+");
+	fprintf(f,"mydelim\n");
+	fclose(f);
+	ATF_REQUIRE_STREQ_MSG(getlistdelim(fd), "mydelim", "Invalid delimiter found");
+
+	f = fopen("list/control/delimiter", "w+");
+	fprintf(f,"mydelim\nignoreme\n");
+	fclose(f);
+	ATF_REQUIRE_STREQ_MSG(getlistdelim(fd), "mydelim", "Invalid delimiter found");
+
+	f = fopen("list/control/delimiter", "w+");
+	fprintf(f,"mydelim");
+	fclose(f);
+	ATF_REQUIRE_STREQ_MSG(getlistdelim(fd), "mydelim", "Invalid delimiter found");
+}
+
+ATF_TC_BODY(getlistaddr, tc)
+{
+	init_ml(false);
+	int fd = open("list/control", O_RDONLY);
+
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		ATF_REQUIRE_EQ_MSG(getlistaddr(fd), NULL, "no control/listaddress file should be null");
+	}
+	atf_utils_wait(p, EXIT_FAILURE, "", "");
+	FILE *f = fopen("list/control/listaddress", "w+");
+	fprintf(f, "plop\n");
+	fclose(f);
+	p = atf_utils_fork();
+	if (p == 0) {
+		ATF_REQUIRE_EQ_MSG(getlistaddr(fd), NULL, "no control/listaddress file should be null");
+	}
+	atf_utils_wait(p, EXIT_FAILURE, "", "");
+	f = fopen("list/control/listaddress", "w+");
+	fprintf(f, "plop@meh\n");
+	fclose(f);
+	ATF_REQUIRE_STREQ_MSG(getlistaddr(fd), "plop@meh", "list address not read properly");
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -1590,6 +1650,8 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, send_mail_6);
 	ATF_TP_ADD_TC(tp, send_mail_7);
 	ATF_TP_ADD_TC(tp, send_mail_8);
+	ATF_TP_ADD_TC(tp, getlistdelim);
+	ATF_TP_ADD_TC(tp, getlistaddr);
 
 	return (atf_no_error());
 }
