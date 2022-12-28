@@ -1012,7 +1012,7 @@ int main(int argc, char **argv)
 			exit(EXIT_SUCCESS);
 		}
 		if(subonlypost) {
-			foundaddr = (is_subbed(listdir, testaddr, 0) !=
+			foundaddr = (is_subbed(listfd, testaddr, 0) !=
 					SUB_NONE);
 		} else if (modonlypost) {
 			foundaddr = is_moderator(listdir, testaddr, NULL);

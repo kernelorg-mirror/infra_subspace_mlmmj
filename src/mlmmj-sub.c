@@ -703,7 +703,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	subbed = is_subbed(listdir, address, 1);
+	subbed = is_subbed(listfd, address, 1);
 
 	if(subbed == typesub) {
 		if(!nogensubscribed)

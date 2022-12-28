@@ -408,7 +408,7 @@ int main(int argc, char **argv)
 	}
 
 	if (typesub == SUB_ALL) {
-		subbed = is_subbed(listdir, address, false) != SUB_NONE;
+		subbed = is_subbed(listfd, address, false) != SUB_NONE;
 	} else {
 		int subdirfd = open_subscriber_directory(listfd, typesub, &subdir);
 		if (subdirfd == -1) {

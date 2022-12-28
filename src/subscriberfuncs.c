@@ -150,7 +150,7 @@ is_subbed_in(int dirfd, const char *subdirname, const char *address)
 }
 
 enum subtype
-is_subbedat(int listfd, const char *address, bool both)
+is_subbed(int listfd, const char *address, bool both)
 {
 	enum subtype typesub = SUB_NONE;
 	int fd;
@@ -172,17 +172,4 @@ is_subbedat(int listfd, const char *address, bool both)
 		return SUB_NOMAIL;
 
 	return (typesub);
-}
-
-enum subtype
-is_subbed(const char *listdir, const char *address, bool both)
-{
-	int dirfd;
-
-	dirfd = open(listdir, O_DIRECTORY);
-	if (dirfd == -1) {
-		log_error(LOG_ARGS, "Could not opendir()");
-		exit(EXIT_FAILURE);
-	}
-	return (is_subbedat(dirfd, address, both));
 }

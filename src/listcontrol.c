@@ -734,7 +734,7 @@ permit:
 		}
 		subonlyget = statctrl(ctrlfd, "subonlyget");
 		if(subonlyget) {
-			if(is_subbed(listdir, fromemails->emaillist[0], 0) ==
+			if(is_subbed(listfd, fromemails->emaillist[0], 0) ==
 					SUB_NONE) {
 				errno = 0;
 				log_error(LOG_ARGS, "A get request was sent"

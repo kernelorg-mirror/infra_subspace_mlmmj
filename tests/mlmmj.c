@@ -52,6 +52,7 @@
 #include "send_mail.h"
 #include "getlistdelim.h"
 #include "getlistaddr.h"
+#include "statctrl.h"
 
 ATF_TC_WITHOUT_HEAD(random_int);
 ATF_TC_WITHOUT_HEAD(chomp);
@@ -101,6 +102,7 @@ ATF_TC_WITHOUT_HEAD(send_mail_7);
 ATF_TC_WITHOUT_HEAD(send_mail_8);
 ATF_TC_WITHOUT_HEAD(getlistdelim);
 ATF_TC_WITHOUT_HEAD(getlistaddr);
+ATF_TC_WITHOUT_HEAD(statctrl);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -1602,6 +1604,22 @@ ATF_TC_BODY(getlistaddr, tc)
 	ATF_REQUIRE_STREQ_MSG(getlistaddr(fd), "plop@meh", "list address not read properly");
 }
 
+ATF_TC_BODY(statctrl, tc)
+{
+	pid_t p;
+	p = atf_utils_fork();
+	if (p == 0) {
+		statctrl(-1, "test");
+		exit(0);
+	}
+	atf_utils_wait(p, EXIT_FAILURE, "", "");
+	mkdir("plop", 0755);
+	int fd = open("plop", O_DIRECTORY);
+	ATF_REQUIRE_EQ(statctrl(fd, "test"), false);
+	fclose(fopen("plop/test", "w+"));
+	ATF_REQUIRE_EQ(statctrl(fd, "test"), true);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -1652,6 +1670,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, send_mail_8);
 	ATF_TP_ADD_TC(tp, getlistdelim);
 	ATF_TP_ADD_TC(tp, getlistaddr);
+	ATF_TP_ADD_TC(tp, statctrl);
 
 	return (atf_no_error());
 }

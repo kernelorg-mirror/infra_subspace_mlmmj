@@ -359,7 +359,7 @@ bouncemail(int listfd, const char *theaddress, const char *identifier)
 	}
 	*tmp = '@';
 
-	if (is_subbedat(listfd, address, 0) == SUB_NONE) {
+	if (is_subbed(listfd, address, 0) == SUB_NONE) {
 		log_error(LOG_ARGS, "%s is bouncing but not subscribed?",
 		    address);
 		return (BOUNCE_OK);
