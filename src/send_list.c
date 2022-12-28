@@ -153,7 +153,7 @@ static void print_subs(int fd, subs_list_state *s)
 
 
 void send_list(const char *listdir, const char *emailaddr,
-	       const char *mlmmjsend, int ctrlfd)
+	       const char *mlmmjsend, int ctrlfd, int listfd)
 {
 	text *txt;
 	subs_list_state *normalsls, *digestsls, *nomailsls;
@@ -190,7 +190,8 @@ void send_list(const char *listdir, const char *emailaddr,
 			rewind_subs_list, get_sub, digestsls);
 	register_formatted(txt, "nomailsubs",
 			rewind_subs_list, get_sub, nomailsls);
-	queuefilename = prepstdreply(txt, listdir, "$listowner$", emailaddr, NULL, ctrlfd);
+	queuefilename = prepstdreply(txt, listdir, "$listowner$", emailaddr,
+	    NULL, listfd, ctrlfd);
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 

@@ -115,7 +115,7 @@ static struct ctrl_command ctrl_commands[] = {
 int listcontrol(struct email_container *fromemails, const char *listdir,
 		const char *controlstr, const char *mlmmjsub,
 		const char *mlmmjunsub, const char *mlmmjsend,
-		const char *mailname, int ctrlfd)
+		const char *mailname, int listfd, int ctrlfd)
 {
 	char *bouncenr, *tmpstr;
 	char *param = NULL, *conffilename, *moderatefilename, *gatekeepfilename;
@@ -134,7 +134,6 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 	const char *subtype = NULL;
 	const char *subtypename = NULL;
 	bounce_t bret;
-	int listfd;
 
 	/* A closed list doesn't allow subscribtion and unsubscription */
 	closedlist = statctrl(ctrlfd, "closedlist");
@@ -233,7 +232,7 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 					fromemails->emaillist[0]);
 			queuefilename = prepstdreply(txt, listdir,
 					"$listowner$",
-					fromemails->emaillist[0], NULL, ctrlfd);
+					fromemails->emaillist[0], NULL, listfd, ctrlfd);
 			MY_ASSERT(queuefilename);
 			close_text(txt);
 			send_help(listdir, queuefilename,
@@ -275,7 +274,7 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 					fromemails->emaillist[0]);
 			queuefilename = prepstdreply(txt, listdir,
 					"$listowner$",
-					fromemails->emaillist[0], NULL, ctrlfd);
+					fromemails->emaillist[0], NULL, listfd, ctrlfd);
 			MY_ASSERT(queuefilename);
 			close_text(txt);
 			send_help(listdir, queuefilename,
@@ -317,7 +316,7 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 					fromemails->emaillist[0]);
 			queuefilename = prepstdreply(txt, listdir,
 					"$listowner$",
-					fromemails->emaillist[0], NULL, ctrlfd);
+					fromemails->emaillist[0], NULL, listfd, ctrlfd);
 			MY_ASSERT(queuefilename);
 			close_text(txt);
 			send_help(listdir, queuefilename,
@@ -695,7 +694,7 @@ permit:
 		txt = open_text(listdir, "help", NULL, NULL, NULL, "listhelp");
 		MY_ASSERT(txt);
 		queuefilename = prepstdreply(txt, listdir,
-				"$listowner$", fromemails->emaillist[0], NULL, ctrlfd);
+				"$listowner$", fromemails->emaillist[0], NULL, listfd, ctrlfd);
 		MY_ASSERT(queuefilename);
 		close_text(txt);
 		send_help(listdir, queuefilename,
@@ -717,7 +716,7 @@ permit:
 		txt = open_text(listdir, "faq", NULL, NULL, NULL, "listfaq");
 		MY_ASSERT(txt);
 		queuefilename = prepstdreply(txt, listdir,
-				"$listowner$", fromemails->emaillist[0], NULL, ctrlfd);
+				"$listowner$", fromemails->emaillist[0], NULL, listfd, ctrlfd);
 		MY_ASSERT(queuefilename);
 		close_text(txt);
 		send_help(listdir, queuefilename,
@@ -792,7 +791,8 @@ permit:
 				" Ignoring mail");
 			return -1;
 		} else {
-			send_list(listdir, owners->strs[owner_idx], mlmmjsend, ctrlfd);
+			send_list(listdir, owners->strs[owner_idx], mlmmjsend,
+			    listfd, ctrlfd);
 		}
 		break;
 

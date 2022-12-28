@@ -329,7 +329,7 @@ static char *numeric_token(char *token)
 
 static void substitute_one(char **line_p, char **pos_p, int *width_p,
 			const char *listaddr, const char *listdelim,
-			const char *listdir, text *txt)
+			int listfd, int ctrlfd, text *txt)
 {
 	/* It is important for this function to leave the length of the
 	 * processed portion unchanged, or increase it by just one ASCII
@@ -402,10 +402,10 @@ static void substitute_one(char **line_p, char **pos_p, int *width_p,
 				  fqdn);
 	} else if(strncmp(token, "control ", 8) == 0) {
 		token = filename_token(token + 8);
-		if (token != NULL) value = ctrlcontent(listdir, token);
+		if (token != NULL) value = ctrlcontent(ctrlfd, token);
 	} else if(strncmp(token, "text ", 5) == 0) {
 		token = filename_token(token + 5);
-		if (token != NULL) value = textcontent(listdir, token);
+		if (token != NULL) value = textcontent(listfd, token);
 	} else if(strcmp(token, "originalmail") == 0) {
 		/* DEPRECATED: use %originalmail% instead */
 		value = xstrdup(" %originalmail 100%");
@@ -442,7 +442,7 @@ static void substitute_one(char **line_p, char **pos_p, int *width_p,
 
 
 char *substitute(const char *line, const char *listaddr, const char *listdelim,
-		const char *listdir, text *txt)
+		int listfd, int ctrlfd, text *txt)
 {
 	char *new;
 	char *pos;
@@ -454,7 +454,7 @@ char *substitute(const char *line, const char *listaddr, const char *listdelim,
 	while (*pos != '\0') {
 		if (*pos == '$') {
 			substitute_one(&new, &pos, &width,
-					listaddr, listdelim, listdir, txt);
+					listaddr, listdelim, listfd, ctrlfd, txt);
 			/* The function sets up for the next character
 			 * to process, so continue straight away. */
 			continue;
@@ -1090,7 +1090,7 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 
 char *get_processed_text_line(text *txt, int headers,
 		const char *listaddr, const char *listdelim,
-		const char *listdir, int ctrlfd)
+		const char *listdir, int listfd, int ctrlfd)
 {
 	char *line;
 	const char *item;
@@ -1351,7 +1351,7 @@ char *get_processed_text_line(text *txt, int headers,
 			} else if (*pos == '$' && txt->skip == NULL) {
 				if (peeking) break;
 				substitute_one(&line, &pos, &width, listaddr,
-						listdelim, listdir, txt);
+						listdelim, listfd, ctrlfd, txt);
 				if (len != pos - line) {
 					/* Cancel any break inhibition if the
 					 * length changed (which will be
@@ -1583,7 +1583,7 @@ void close_text(text *txt)
 
 
 char *prepstdreply(text *txt, const char *listdir,
-		   const char *from, const char *to, const char *replyto, int ctrlfd)
+		   const char *from, const char *to, const char *replyto, int listfd,  int ctrlfd)
 {
 	size_t len, i;
 	int outfd;
@@ -1626,10 +1626,10 @@ char *prepstdreply(text *txt, const char *listdir,
 		free(str);
 	}
 
-	tmp = substitute(from, listaddr, listdelim, listdir, txt);
+	tmp = substitute(from, listaddr, listdelim, listfd, ctrlfd, txt);
 	headers[0] = concatstr(2, "From: ", tmp);
 	free(tmp);
-	tmp = substitute(to, listaddr, listdelim, listdir, txt);
+	tmp = substitute(to, listaddr, listdelim, listfd, ctrlfd, txt);
 	headers[1] = concatstr(2, "To: ", tmp);
 	free(tmp);
 	headers[2] = genmsgid(listfqdn);
@@ -1642,14 +1642,14 @@ char *prepstdreply(text *txt, const char *listdir,
 	headers[7] = xstrdup("Content-Transfer-Encoding: 8bit");
 
 	if(replyto) {
-		tmp = substitute(replyto, listaddr, listdelim, listdir, txt);
+		tmp = substitute(replyto, listaddr, listdelim, listfd, ctrlfd, txt);
 		headers[8] = concatstr(2, "Reply-To: ", tmp);
 		free(tmp);
 	}
 
 	for(;;) {
 		line = get_processed_text_line(txt, 1, listaddr, listdelim,
-				listdir, ctrlfd);
+				listdir, listfd, ctrlfd);
 		if (!line) {
 			log_error(LOG_ARGS, "No body in listtext");
 			break;
@@ -1736,7 +1736,7 @@ char *prepstdreply(text *txt, const char *listdir,
 
 	if (line == NULL) {
 		line = get_processed_text_line(txt, 0, listaddr, listdelim,
-				listdir, ctrlfd);
+				listdir, listfd, ctrlfd);
 	}
 	while(line) {
 			if(dprintf(outfd, "%s\n", line) < 0) {
@@ -1748,7 +1748,7 @@ char *prepstdreply(text *txt, const char *listdir,
 			}
 		free(line);
 		line = get_processed_text_line(txt, 0, listaddr, listdelim,
-				listdir, ctrlfd);
+				listdir, listfd, ctrlfd);
 	}
 
 	fsync(outfd);

@@ -29,8 +29,8 @@
 #include <limits.h>
 
 char *ctrlvalue(int ctrlfd, const char *ctrlstr);
-char *ctrlcontent(const char *listdir, const char *ctrlstr);
-char *textcontent(const char *listdir, const char *ctrlstr);
+char *ctrlcontent(int ctrlfd, const char *ctrlstr);
+char *textcontent(int listfd, const char *ctrlstr);
 intmax_t ctrlim(int ctrlfd, const char *ctrlstr, intmax_t min,
     intmax_t max, intmax_t fallback);
 uintmax_t ctrluim(int ctrlfd, const char *ctrlstr, uintmax_t min,

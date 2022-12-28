@@ -652,7 +652,7 @@ run_digests(int dfd, int ctrlfd, const char *mlmmjsend, const char *listdir, int
 
 		if (index > lastindex) {
 			lastissue++;
-			send_digest(listdir, lastindex+1, index, lastissue, NULL, mlmmjsend, ctrlfd);
+			send_digest(listdir, lastindex+1, index, lastissue, NULL, mlmmjsend, dfd, ctrlfd);
 		}
 
 		if (lseek(fd, 0, SEEK_SET) < 0) {

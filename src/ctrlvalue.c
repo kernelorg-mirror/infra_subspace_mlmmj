@@ -39,7 +39,7 @@
 #include "xmalloc.h"
 
 static char *
-_ctrlval(int ctrlfd, const char *ctrlstr, int oneline)
+ctrlval(int ctrlfd, const char *ctrlstr, int oneline)
 {
 	int fd;
 	FILE *fp;
@@ -72,48 +72,25 @@ _ctrlval(int ctrlfd, const char *ctrlstr, int oneline)
 	return (buf);
 }
 
-static char *ctrlvalat(int dfd, const char *subdir,
-		const char *ctrlstr, int oneline)
+char *
+ctrlvalue(int ctrlfd, const char *ctrlstr)
 {
-	char *buf;
-	int ctrlfd;
-
-	if (dfd == -1)
-		return NULL;
-
-	ctrlfd = openat(dfd, subdir, O_DIRECTORY|O_CLOEXEC);
-
-	if(ctrlfd < 0)
-		return NULL;
-
-	buf = _ctrlval(ctrlfd, ctrlstr, oneline);
-	close(ctrlfd);
-	return (buf);
+	return (ctrlval(ctrlfd, ctrlstr, true));
 }
 
-static char *ctrlval(const char *listdir, const char *subdir,
-		const char *ctrlstr, int oneline)
+char *
+ctrlcontent(int ctrlfd, const char *ctrlstr)
 {
-	int dfd = open(listdir, O_DIRECTORY|O_CLOEXEC);
-	char *ret = ctrlvalat(dfd, subdir, ctrlstr, oneline);
-	if (dfd != -1)
-		close(dfd);
+	return (ctrlval(ctrlfd, ctrlstr, false));
+}
+
+char *
+textcontent(int listfd, const char *ctrlstr)
+{
+	int fd = openat(listfd, "text", O_DIRECTORY|O_CLOEXEC);
+	char *ret = ctrlval(fd, ctrlstr, false);
+	close(fd);
 	return (ret);
-}
-
-char *ctrlvalue(int ctrlfd, const char *ctrlstr)
-{
-	return (_ctrlval(ctrlfd, ctrlstr, true));
-}
-
-char *ctrlcontent(const char *listdir, const char *ctrlstr)
-{
-	return ctrlval(listdir, "control", ctrlstr, 0);
-}
-
-char *textcontent(const char *listdir, const char *ctrlstr)
-{
-	return ctrlval(listdir, "text", ctrlstr, 0);
 }
 
 intmax_t
@@ -121,7 +98,7 @@ ctrlim(int ctrlfd, const char *ctrlstr, intmax_t min, intmax_t max,
     intmax_t fallback)
 {
 	const char *errstr;
-	char *val = _ctrlval(ctrlfd, ctrlstr, true);
+	char *val = ctrlval(ctrlfd, ctrlstr, true);
 	intmax_t ret;
 
 	if (val == NULL)
@@ -142,7 +119,7 @@ ctrluim(int ctrlfd, const char *ctrlstr, uintmax_t min, uintmax_t max,
     uintmax_t fallback)
 {
 	const char *errstr;
-	char *val = _ctrlval(ctrlfd, ctrlstr, true);
+	char *val = ctrlval(ctrlfd, ctrlstr, true);
 	uintmax_t ret;
 
 	if (val == NULL)
@@ -162,7 +139,7 @@ time_t
 ctrltimet(int dfd, const char *ctrlstr, time_t fallback)
 {
 	const char *errstr;
-	char *val = _ctrlval(dfd, ctrlstr, true);
+	char *val = ctrlval(dfd, ctrlstr, true);
 	time_t ret;
 
 	if (val == NULL)

@@ -53,7 +53,8 @@
 #include "utils.h"
 
 
-void do_probe(const char *listdir, const char *mlmmjsend, const char *addr, int ctrlfd)
+void do_probe(const char *listdir, const char *mlmmjsend, const char *addr,
+    int listfd, int ctrlfd)
 {
 	text *txt;
 	file_lines_state *fls;
@@ -92,7 +93,7 @@ void do_probe(const char *listdir, const char *mlmmjsend, const char *addr, int 
 	fls = init_truncated_file_lines(addr, 0, ':');
 	register_formatted(txt, "bouncenumbers",
 			rewind_file_lines, get_file_line, fls);
-	queuefilename = prepstdreply(txt, listdir, "$listowner$", myaddr, NULL, ctrlfd);
+	queuefilename = prepstdreply(txt, listdir, "$listowner$", myaddr, NULL, listfd, ctrlfd);
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
@@ -231,7 +232,7 @@ int main(int argc, char **argv)
 
 	if (probe) {
 		/* send out a probe */
-		do_probe(listdir, mlmmjsend, address, ctrlfd);
+		do_probe(listdir, mlmmjsend, address, listfd, ctrlfd);
 		/* do_probe() will never return */
 		exit(EXIT_FAILURE);
 	}

@@ -25,6 +25,6 @@
 #define SEND_LIST_H
 
 void send_list(const char *listdir, const char *emailaddr,
-	       const char *mlmmjsend, int ctrlfd);
+	       const char *mlmmjsend, int ctrlfd, int listfd);
 
 #endif

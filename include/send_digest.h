@@ -25,6 +25,6 @@
 #define SEND_DIGEST_H
 
 int send_digest(const char *listdir, int lastindex, int index,
-		int issue, const char *addr, const char *mlmmjsend, int ctrlfd);
+		int issue, const char *addr, const char *mlmmjsend, int listfd, int ctrlfd);
 
 #endif /* SEND_DIGEST_H */

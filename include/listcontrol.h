@@ -29,6 +29,6 @@
 int listcontrol(struct email_container *fromemails, const char *listdir,
 		const char *controlstr, const char *mlmmjsub,
 		const char *mlmmjunsub, const char *mlmmjsend,
-		const char *mailname, int fd);
+		const char *mailname, int listfd, int ctrlfd);
 
 #endif /* LISTCONTROL_H */

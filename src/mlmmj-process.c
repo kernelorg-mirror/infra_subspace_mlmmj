@@ -129,7 +129,7 @@ static int is_moderator(const char *listdir, const char *address,
 static void newmoderated(const char *listdir, const char *mailfilename,
 		  const char *mlmmjsend, const char *efromsender,
 		  const char *subject, const char *posteraddr,
-		  enum modreason modreason, int ctrlfd)
+		  enum modreason modreason, int listfd, int ctrlfd)
 {
 	char *from, *listfqdn, *listname, *moderators = NULL;
 	char *replyto, *listaddr = getlistaddr(ctrlfd), *listdelim;
@@ -183,7 +183,7 @@ static void newmoderated(const char *listdir, const char *mailfilename,
 			rewind_memory_lines, get_memory_line, mls);
 	register_originalmail(txt, mailfilename);
 	queuefilename = prepstdreply(txt, listdir, "$listowner$", to, replyto,
-	    ctrlfd);
+	    listfd, ctrlfd);
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
@@ -204,7 +204,7 @@ static void newmoderated(const char *listdir, const char *mailfilename,
 				rewind_memory_lines, get_memory_line, mls);
 		register_originalmail(txt, mailfilename);
 		queuefilename = prepstdreply(txt, listdir,
-				"$listowner$", efromsender, NULL, ctrlfd);
+				"$listowner$", efromsender, NULL, listfd, ctrlfd);
 		MY_ASSERT(queuefilename);
 		close_text(txt);
 
@@ -788,7 +788,7 @@ int main(int argc, char **argv)
 			testfrom = &fromemails;
 		listcontrol(testfrom, listdir, recipextra,
 			    mlmmjsub, mlmmjunsub, mlmmjsend,
-			    donemailname, ctrlfd);
+			    donemailname, listfd, ctrlfd);
 
 		return EXIT_SUCCESS;
 	}
@@ -832,7 +832,7 @@ int main(int argc, char **argv)
 			register_unformatted(txt, "maxmailsize", maxmailsizestr);
 			register_originalmail(txt, donemailname);
 			queuefilename = prepstdreply(txt, listdir,
-			    "$listowner$", posteraddr, NULL, ctrlfd);
+			    "$listowner$", posteraddr, NULL, listfd, ctrlfd);
 			MY_ASSERT(queuefilename);
 			close_text(txt);
 			free(listdelim);
@@ -897,7 +897,7 @@ int main(int argc, char **argv)
 		register_unformatted(txt, "posteraddr", posteraddr);
 		register_originalmail(txt, donemailname);
 		queuefilename = prepstdreply(txt, listdir,
-		    "$listowner$", posteraddr, NULL, ctrlfd);
+		    "$listowner$", posteraddr, NULL, listfd, ctrlfd);
 		MY_ASSERT(queuefilename)
 		close_text(txt);
 		free(listdelim);
@@ -942,7 +942,7 @@ int main(int argc, char **argv)
 			register_unformatted(txt, "posteraddr", posteraddr);
 			register_originalmail(txt, donemailname);
 			queuefilename = prepstdreply(txt, listdir,
-					"$listowner$", posteraddr, NULL, ctrlfd);
+					"$listowner$", posteraddr, NULL, listfd, ctrlfd);
 			MY_ASSERT(queuefilename)
 			close_text(txt);
 			free(listaddr);
@@ -1054,7 +1054,7 @@ int main(int argc, char **argv)
 			    register_unformatted(txt, "posteraddr", testaddr);
 			    register_originalmail(txt, donemailname);
 			    queuefilename = prepstdreply(txt, listdir,
-				    "$listowner$", testaddr, NULL, ctrlfd);
+				    "$listowner$", testaddr, NULL, listfd, ctrlfd);
 			    MY_ASSERT(queuefilename)
 			    close_text(txt);
 			    free(listaddr);
@@ -1113,7 +1113,7 @@ int main(int argc, char **argv)
 		}
 		newmoderated(listdir, mqueuename,
 				mlmmjsend, efrom, subject, posteraddr,
-				modreason, ctrlfd);
+				modreason, listfd, ctrlfd);
 		return EXIT_SUCCESS;
 	}
 
