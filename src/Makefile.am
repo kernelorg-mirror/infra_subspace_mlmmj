@@ -21,7 +21,7 @@ EXTRA_DIST = mlmmj-make-ml
 libmlmmj_a_SOURCES=	mail-functions.c chomp.c incindexfile.c \
 			checkwait_smtpreply.c init_sockfd.c strgen.c \
 			random-int.c print-version.c log_error.c mygetline.c \
-			getaddrsfromfd.c readn.c \
+			getaddrsfromfile.c readn.c \
 			subscriberfuncs.c find_email_adr.c dumpfd2fd.c \
 			listcontrol.c send_help.c prepstdreply.c \
 			do_all_the_voodoo_here.c log_oper.c send_list.c \

@@ -62,7 +62,7 @@
 #include "statctrl.h"
 #include "ctrlvalue.h"
 #include "stdbool.h"
-#include "getaddrsfromfd.h"
+#include "getaddrsfromfile.h"
 #include "utils.h"
 #include "send_mail.h"
 
@@ -290,7 +290,7 @@ int send_mail_many_fd(int sockfd, struct mail *mail, int subfd,
 	stl.count = 0;
 
 	do {
-		res = getaddrsfromfd(&stl, f, maxverprecips);
+		res = getaddrsfromfile(&stl, f, maxverprecips);
 		if(stl.count == maxverprecips) {
 			ret = send_mail_many_list(sockfd, mail, &stl,
 					listaddr, listdelim, archivefilename,
@@ -891,7 +891,7 @@ int main(int argc, char **argv)
 			}
 			do {
 				i = stl.count;
-				res = getaddrsfromfd(&stl, f,
+				res = getaddrsfromfile(&stl, f,
 						maxverprecips);
 				if(omit != NULL) {
 					while(i < stl.count) {

@@ -1,6 +1,6 @@
-/* Copyright (C) 2005 Mads Martin Joergensen <mmj at mmj.dk>
- *
- * $Id$
+/*
+ * Copyright (C) 2005 Mads Martin Joergensen <mmj at mmj.dk>
+ * Copyright (C) 2022 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -21,12 +21,9 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef GETADDRSFROMFD_H
-#define GETADDRSFROMFD_H
+#pragma once
 
-#include <sys/types.h>
+#include <stdio.h>
 #include "mlmmj.h"
 
-int getaddrsfromfd(struct strlist *slist, FILE *f, int max);
-
-#endif /* GETADDRSFROMFD_H */
+int getaddrsfromfile(struct strlist *slist, FILE *f, int max);

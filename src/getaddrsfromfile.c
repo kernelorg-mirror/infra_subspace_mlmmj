@@ -2,11 +2,11 @@
 
 #include "xmalloc.h"
 #include "mlmmj.h"
-#include "getaddrsfromfd.h"
+#include "getaddrsfromfile.h"
 #include "chomp.h"
 
 int
-getaddrsfromfd(struct strlist *slist, FILE *f, int max)
+getaddrsfromfile(struct strlist *slist, FILE *f, int max)
 {
 	char *line = NULL;
 	size_t linecap = 0;
