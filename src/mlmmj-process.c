@@ -459,6 +459,7 @@ int main(int argc, char **argv)
 		{ "X-Original-From:", 0, NULL },
 		{ NULL, 0, NULL }
 	};
+	int listfd, ctrlfd;
 
 	CHECKFULLPATH(argv[0]);
 
@@ -511,6 +512,12 @@ int main(int argc, char **argv)
 			exit(EXIT_FAILURE);
 		}
 	}
+	listfd = open(listdir, O_DIRECTORY|O_CLOEXEC);
+	if (listfd == -1)
+		err(EXIT_FAILURE, "Cannot open(%s)", listdir);
+	ctrlfd = openat(listfd, "control", O_DIRECTORY|O_CLOEXEC);
+	if (ctrlfd == -1)
+		err(EXIT_FAILURE, "Cannot open(%s/control", listdir);
 
         do {
                 free(donemailname);
@@ -561,7 +568,7 @@ int main(int argc, char **argv)
 	delheaders->strs[delheaders->count++] = xstrdup("From ");
 	delheaders->strs[delheaders->count++] = xstrdup("Return-Path:");
 
-	subjectprefix = ctrlvalue(listdir, "prefix");
+	subjectprefix = ctrlvalue(ctrlfd, "prefix");
 
 	if(do_all_the_voodoo_here(rawmailfd, donemailfd, hdrfd, footfd,
 				delheaders, readhdrs,
@@ -788,7 +795,8 @@ int main(int argc, char **argv)
 	listaddr = getlistaddr(listdir);
 
 	/* checking incoming mail's size */
-	maxmailsizestr = ctrlvalue(listdir, "maxmailsize");
+	maxmailsize = ctrlsizet(ctrlfd, "maxmailsize", 0);
+	maxmailsizestr = ctrlvalue(ctrlfd, "maxmailsize");
 	if(maxmailsizestr) {
 		maxmailsize = atol(maxmailsizestr);
 		if(stat(donemailname, &st) < 0) {

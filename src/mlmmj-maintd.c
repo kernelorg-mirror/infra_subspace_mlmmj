@@ -117,12 +117,12 @@ delolder(int dfd, const char *dirname, time_t than, int logfd)
 
 
 static bool
-clean_moderation(int dfd, int logfd)
+clean_moderation(int dfd, int ctrlfd, int logfd)
 {
 
 	time_t modreqlife;
 
-	modreqlife = ctrltimet(dfd, "modreqlife", MODREQLIFE);
+	modreqlife = ctrltimet(ctrlfd, "modreqlife", MODREQLIFE);
 	return (delolder(dfd, "moderation", modreqlife, logfd));
 }
 
@@ -145,7 +145,7 @@ clean_unsubconf(int dfd, int logfd)
 }
 
 static bool
-resend_queue(int dfd, const char *mlmmjsend, const char *listdir, int logfd)
+resend_queue(int dfd, int ctrlfd, const char *mlmmjsend, const char *listdir, int logfd)
 {
 	DIR *queuedir;
 	struct dirent *dp;
@@ -243,7 +243,7 @@ resend_queue(int dfd, const char *mlmmjsend, const char *listdir, int logfd)
 		}
 
 		/* before we try again, check and see if it's old */
-		bouncelife = ctrltimet(dfd, "bouncelife", BOUNCELIFE);
+		bouncelife = ctrltimet(ctrlfd, "bouncelife", BOUNCELIFE);
 		t = time(NULL);
 		if(t - st.st_mtime > bouncelife) {
 			if (unlinkat(qfd, dp->d_name, 0) == -1) {
@@ -485,7 +485,7 @@ probe_bouncers(int dfd, const char *mlmmjbounce, const char *listdir, int logfd)
 }
 
 static bool
-unsub_bouncers(int dfd, int logfd)
+unsub_bouncers(int dfd, int ctrlfd, int logfd)
 {
 	DIR *bouncedir;
 	char *probefile, *address, *a, *firstbounce;
@@ -497,7 +497,7 @@ unsub_bouncers(int dfd, int logfd)
 
 	opendirat(dfd, bfd, bouncedir, "bounce");
 
-	bouncelife = ctrltimet(dfd, "bouncelife", BOUNCELIFE);
+	bouncelife = ctrltimet(ctrlfd, "bouncelife", BOUNCELIFE);
 
 	while((dp = readdir(bouncedir)) != NULL) {
 		if((strcmp(dp->d_name, "..") == 0) ||
@@ -581,7 +581,7 @@ unsub_bouncers(int dfd, int logfd)
 }
 
 static bool
-run_digests(int dfd, const char *mlmmjsend, const char *listdir, int logfd)
+run_digests(int dfd, int ctrlfd, const char *mlmmjsend, const char *listdir, int logfd)
 {
 	char *s1, *s2;
 	time_t digestinterval, t, lasttime;
@@ -599,8 +599,8 @@ run_digests(int dfd, const char *mlmmjsend, const char *listdir, int logfd)
 		return (true);
 	}
 
-	digestinterval = ctrltimet(dfd, "digestinterval", DIGESTINTERVAL);
-	digestmaxmails = ctrllong(listdir, "digestmaxmail", DIGESTMAXMAILS);
+	digestinterval = ctrltimet(ctrlfd, "digestinterval", DIGESTINTERVAL);
+	digestmaxmails = ctrllong(ctrlfd, "digestmaxmail", DIGESTMAXMAILS);
 
 	fd = openat(dfd, "lastdigest", O_RDWR|O_CREAT, S_IRUSR | S_IWUSR);
 	if (fd < 0 && !lock(fd, true)) {
@@ -685,9 +685,12 @@ void do_maintenance(int listfd, const char *listdir, const char *mlmmjsend,
 	int logfd;
 	uid_t uid = getuid();
 	time_t t;
+	int ctrlfd;
 
 	if (listfd == -1)
 		return;
+
+	ctrlfd = openat(listfd, "control", O_DIRECTORY|O_CLOEXEC);
 
 	if (fstat(listfd, &st) < 0) {
 		log_error(LOG_ARGS, "Could not stat "
@@ -724,7 +727,7 @@ void do_maintenance(int listfd, const char *listdir, const char *mlmmjsend,
 		    timenow);
 
 	log("clean_moderation\n");
-	if (!clean_moderation(listfd, logfd))
+	if (!clean_moderation(listfd, ctrlfd, logfd))
 		log_err("An error occured while cleaning moderation, see %s",
 		    MAINTD_LOGFILE);
 
@@ -744,7 +747,7 @@ void do_maintenance(int listfd, const char *listdir, const char *mlmmjsend,
 		    "confirmations, mails, see %s", MAINTD_LOGFILE);
 
 	log("resend_queue\n");
-	if (!resend_queue(listfd, mlmmjsend, listdir, logfd))
+	if (!resend_queue(listfd, ctrlfd, mlmmjsend, listdir, logfd))
 		log_err("An error occured while resending queued mails, see %s",
 		    MAINTD_LOGFILE);
 
@@ -759,7 +762,7 @@ void do_maintenance(int listfd, const char *listdir, const char *mlmmjsend,
 		   "traces, see %s", MAINTD_LOGFILE);
 
 	log("unsub_bouncers\n");
-	if (!unsub_bouncers(listfd, logfd))
+	if (!unsub_bouncers(listfd, ctrlfd, logfd))
 		log_err("An error occured while unsubscribing bouncing emails, "
 		    "see %s", MAINTD_LOGFILE);
 
@@ -769,7 +772,7 @@ void do_maintenance(int listfd, const char *listdir, const char *mlmmjsend,
 		    "see %s", MAINTD_LOGFILE);
 
 	log("run_digests\n");
-	if (!run_digests(listfd, mlmmjsend, listdir, logfd))
+	if (!run_digests(listfd, ctrlfd, mlmmjsend, listdir, logfd))
 		log_err("An error occured while running digests, see %s",
 		   MAINTD_LOGFILE);
 
@@ -842,7 +845,7 @@ int main(int argc, char **argv)
 	while(1) {
 		if(listdir) {
 			log_set_namef("%s(%s)", argv[0], listdir);
-			int fd = open(listdir, O_DIRECTORY);
+			int fd = open(listdir, O_DIRECTORY|O_CLOEXEC);
 			do_maintenance(fd, listdir, mlmmjsend, mlmmjbounce);
 			goto mainsleep;
 		}

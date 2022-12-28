@@ -30,10 +30,10 @@
 
 int send_mail_many_fd(int sockfd, struct mail *mail, int subfd,
 		   const char *listaddr, const char *listdelim,
-		   const char *archivefilename, int listfd);
+		   const char *archivefilename, int listfd, int ctrlfd);
 int send_mail_many_list(int sockfd, struct mail *mail, struct strlist *addrs,
 		   const char *listaddr, const char *listdelim,
-		   const char *archivefilename, int listfd);
+		   const char *archivefilename, int listfd, int ctrlfd);
 int send_mail_verp(int sockfd, struct strlist *addrs, struct mail *mail, const char *extra);
 
 #endif /* MMJML_SEND_H */

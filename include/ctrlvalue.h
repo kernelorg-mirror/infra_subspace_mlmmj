@@ -28,34 +28,33 @@
 #include <time.h>
 #include <limits.h>
 
-char *fctrlvalue(int listfd, const char *ctrlstr);
-char *ctrlvalue(const char *listdir, const char *ctrlstr);
+char *ctrlvalue(int ctrlfd, const char *ctrlstr);
 char *ctrlcontent(const char *listdir, const char *ctrlstr);
 char *textcontent(const char *listdir, const char *ctrlstr);
-intmax_t ctrlim(const char *listdir, const char *ctrlstr, intmax_t min,
+intmax_t ctrlim(int ctrlfd, const char *ctrlstr, intmax_t min,
     intmax_t max, intmax_t fallback);
-uintmax_t ctrluim(const char *listdir, const char *ctrlstr, uintmax_t min,
+uintmax_t ctrluim(int ctrlfd, const char *ctrlstr, uintmax_t min,
     uintmax_t max, uintmax_t fallback);
 static inline int
-ctrlint(const char *listdir, const char *ctrlstr, int fallback)
+ctrlint(int ctrlfd, const char *ctrlstr, int fallback)
 {
-	return (ctrlim(listdir, ctrlstr, INT_MIN, INT_MAX, fallback));
+	return (ctrlim(ctrlfd, ctrlstr, INT_MIN, INT_MAX, fallback));
 }
 static inline size_t
-ctrlsizet(const char *listdir, const char *ctrlstr, uintmax_t fallback)
+ctrlsizet(int ctrlfd, const char *ctrlstr, uintmax_t fallback)
 {
-	return (ctrluim(listdir, ctrlstr, 0, SIZE_MAX, fallback));
+	return (ctrluim(ctrlfd, ctrlstr, 0, SIZE_MAX, fallback));
 }
 static inline unsigned short
-ctrlushort(const char *listdir, const char *ctrlstr, unsigned short fallback)
+ctrlushort(int ctrlfd, const char *ctrlstr, unsigned short fallback)
 {
-	return (ctrluim(listdir, ctrlstr, 0, USHRT_MAX, fallback));
+	return (ctrluim(ctrlfd, ctrlstr, 0, USHRT_MAX, fallback));
 }
 time_t ctrltimet(int dfd, const char *ctrlstr, time_t fallback);
 static inline long
-ctrllong(const char *listdir, const char *ctrlstr, unsigned short fallback)
+ctrllong(int ctrlfd, const char *ctrlstr, unsigned short fallback)
 {
-	return (ctrlim(listdir, ctrlstr, LONG_MIN, LONG_MAX, fallback));
+	return (ctrlim(ctrlfd, ctrlstr, LONG_MIN, LONG_MAX, fallback));
 }
 
 #endif /* CTRLVALUE_H */

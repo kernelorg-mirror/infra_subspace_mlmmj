@@ -38,26 +38,23 @@
 #include "log_error.h"
 #include "xmalloc.h"
 
-static char *ctrlvalat(int dfd, const char *subdir,
-		const char *ctrlstr, int oneline)
+static char *
+_ctrlval(int ctrlfd, const char *ctrlstr, int oneline)
 {
-	char *filename, *buf = NULL;
-	int ctrlfd;
+	int fd;
+	FILE *fp;
 	size_t bufcap = 0;
 	ssize_t buflen;
-	FILE *fp;
-
-	if (dfd == -1)
-		return NULL;
-
-	xasprintf(&filename, "%s/%s", subdir, ctrlstr);
-	ctrlfd = openat(dfd, filename, O_RDONLY|O_CLOEXEC);
-	free(filename);
+	char *buf = NULL;
 
 	if(ctrlfd < 0)
 		return NULL;
 
-	fp = fdopen(ctrlfd, "r");
+	fd = openat(ctrlfd, ctrlstr, O_RDONLY|O_CLOEXEC);
+	if (fd == -1)
+		return (NULL);
+
+	fp = fdopen(fd, "r");
 	if (fp == NULL) {
 		close(ctrlfd);
 		return (NULL);
@@ -74,6 +71,26 @@ static char *ctrlvalat(int dfd, const char *subdir,
 
 	return (buf);
 }
+
+static char *ctrlvalat(int dfd, const char *subdir,
+		const char *ctrlstr, int oneline)
+{
+	char *buf;
+	int ctrlfd;
+
+	if (dfd == -1)
+		return NULL;
+
+	ctrlfd = openat(dfd, subdir, O_DIRECTORY|O_CLOEXEC);
+
+	if(ctrlfd < 0)
+		return NULL;
+
+	buf = _ctrlval(ctrlfd, ctrlstr, oneline);
+	close(ctrlfd);
+	return (buf);
+}
+
 static char *ctrlval(const char *listdir, const char *subdir,
 		const char *ctrlstr, int oneline)
 {
@@ -84,13 +101,9 @@ static char *ctrlval(const char *listdir, const char *subdir,
 	return (ret);
 }
 
-char *fctrlvalue(int listfd, const char *ctrlstr)
+char *ctrlvalue(int ctrlfd, const char *ctrlstr)
 {
-	return (ctrlvalat(listfd, "control", ctrlstr, 1));
-}
-char *ctrlvalue(const char *listdir, const char *ctrlstr)
-{
-	return ctrlval(listdir, "control", ctrlstr, 1);
+	return (_ctrlval(ctrlfd, ctrlstr, true));
 }
 
 char *ctrlcontent(const char *listdir, const char *ctrlstr)
@@ -104,11 +117,11 @@ char *textcontent(const char *listdir, const char *ctrlstr)
 }
 
 intmax_t
-ctrlim(const char *listdir, const char *ctrlstr, intmax_t min, intmax_t max,
+ctrlim(int ctrlfd, const char *ctrlstr, intmax_t min, intmax_t max,
     intmax_t fallback)
 {
 	const char *errstr;
-	char *val = ctrlvalue(listdir, ctrlstr);
+	char *val = _ctrlval(ctrlfd, ctrlstr, true);
 	intmax_t ret;
 
 	if (val == NULL)
@@ -125,11 +138,11 @@ ctrlim(const char *listdir, const char *ctrlstr, intmax_t min, intmax_t max,
 }
 
 uintmax_t
-ctrluim(const char *listdir, const char *ctrlstr, uintmax_t min, uintmax_t max,
+ctrluim(int ctrlfd, const char *ctrlstr, uintmax_t min, uintmax_t max,
     uintmax_t fallback)
 {
 	const char *errstr;
-	char *val = ctrlvalue(listdir, ctrlstr);
+	char *val = _ctrlval(ctrlfd, ctrlstr, true);
 	uintmax_t ret;
 
 	if (val == NULL)
@@ -149,7 +162,7 @@ time_t
 ctrltimet(int dfd, const char *ctrlstr, time_t fallback)
 {
 	const char *errstr;
-	char *val = ctrlvalat(dfd, "control", ctrlstr, 1);
+	char *val = _ctrlval(dfd, ctrlstr, true);
 	time_t ret;
 
 	if (val == NULL)
