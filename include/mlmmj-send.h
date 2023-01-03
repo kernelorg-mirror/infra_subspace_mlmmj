@@ -27,13 +27,14 @@
 #include <sys/types.h>
 #include <stdbool.h>
 #include "send_mail.h"
+#include "mlmmj.h"
 
 int send_mail_many_fd(int sockfd, struct mail *mail, int subfd,
 		   const char *listaddr, const char *listdelim,
 		   const char *archivefilename, int listfd, int ctrlfd);
-int send_mail_many_list(int sockfd, struct mail *mail, struct strlist *addrs,
+int send_mail_many_list(int sockfd, struct mail *mail, strlist *addrs,
 		   const char *listaddr, const char *listdelim,
 		   const char *archivefilename, int listfd, int ctrlfd);
-int send_mail_verp(int sockfd, struct strlist *addrs, struct mail *mail, const char *extra);
+int send_mail_verp(int sockfd, strlist *addrs, struct mail *mail, const char *extra);
 
 #endif /* MMJML_SEND_H */

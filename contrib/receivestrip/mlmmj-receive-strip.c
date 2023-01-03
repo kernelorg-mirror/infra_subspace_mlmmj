@@ -55,45 +55,20 @@
 
 #define UNWANTED_MIME_HDR "X-ThisMailContainsUnwantedMimeParts: N\n"
 
-/* append a copy of a string to a string list */
-static void append_strtolist(struct strlist *list, char* str) {
-	list->count++;
-	list->strs = xrealloc(list->strs,
-                         sizeof(char *) * (list->count + 1));
-	list->strs[list->count-1] = xstrdup(str);
-	list->strs[list->count] = NULL;
-}
-
-/* free all strings in a strlist */
-static void free_strlist(struct strlist *list) {
-	if(!list)
-		return;
-	if(list->strs) {
-		int i;
-		for(i=0;i < list->count;i++)
-			free(list->strs[i]);
-		free(list->strs);
-	}
-	list->strs = NULL;
-	list->count = 0;
-}
-
-static int findit(char *line, char **headers)
+static int findit(char *line, strlist *headers)
 {
-        int i = 0;
-        size_t len;
+	size_t len;
 
-	if (!headers)
-		return 0;
+	if (headers == NULL)
+		return (0);
 
-        while(headers[i]) {
-                len = strlen(headers[i]);
-                if(strncasecmp(line, headers[i], len) == 0)
-                        return 1;
-                i++;
-        }
+	tll_foreach(*headers, hdr) {
+		len = strlen(hdr->item);
+		if(strncasecmp(line, hdr->item, len) == 0)
+			return 1;
+	}
 
-        return 0;
+	return 0;
 }
 
 /* extract mime_type and boundary from the Content-Type header
@@ -101,13 +76,12 @@ static int findit(char *line, char **headers)
  * always allocates a boundarie (using "--" when none is found)
  * the caller needs to free the allocated strings
 */
-static void extract_boundary(struct strlist *allhdrs, char** mime_type, char** boundary)
+static void extract_boundary(strlist *allhdrs, char** mime_type, char** boundary)
 {
-	int x;
 	*boundary = NULL;
 	*mime_type = NULL;
-	for( x = 0 ; x < allhdrs->count ; x++ ){
-		char* hdr = allhdrs->strs[x];
+	tll_foreach(*allhdrs, header) {
+		char* hdr = header->item;
 		if(hdr && !strncasecmp(hdr,"Content-Type:",13)){
 			char* pos = hdr + 13;
 			size_t len = 0;
@@ -168,11 +142,9 @@ static void extract_boundary(struct strlist *allhdrs, char** mime_type, char** b
  */
 #define MIME_OK 0
 #define MIME_STRIP 1
-static int read_hdrs(int fd, struct strlist *allhdrs,struct strlist* delmime,struct strlist* denymime,int* deny,char** boundary) {
+static int read_hdrs(int fd, strlist *allhdrs, strlist* delmime, strlist* denymime,int* deny,char** boundary) {
 	int result = MIME_OK;
 	char* mime_type = NULL;
-	allhdrs->strs = NULL;
-	allhdrs->count = 0;
 	/* read headers */
 	while(1) {
 		char* line = mygetline(fd);
@@ -184,22 +156,22 @@ static int read_hdrs(int fd, struct strlist *allhdrs,struct strlist* delmime,str
 			free(line);
 			break;
 		}
-		if(!allhdrs->count || ((line[0] != '\t') && (line[0] != ' '))) /* first header line or no more unfolding */
-			append_strtolist(allhdrs,line);
+		if(!tll_length(*allhdrs) || ((line[0] != '\t') && (line[0] != ' '))) /* first header line or no more unfolding */
+			tll_push_back(*allhdrs, line);
 		else{
-			char* tmp = concatstr(2, allhdrs->strs[allhdrs->count-1], line);
-			free(allhdrs->strs[allhdrs->count-1]);
-		 	allhdrs->strs[allhdrs->count-1] = tmp;
+			char* tmp = concatstr(2, tll_back(*allhdrs), line);
+			free(tll_pop_back(*allhdrs));
+			tll_push_back(*allhdrs, tmp);
 		}
 		free(line);
 	}
 	extract_boundary(allhdrs,&mime_type,boundary);
 	if(mime_type) {
 		/* check if this part should be stripped */
-		if(delmime && findit(mime_type, delmime->strs))
+		if(delmime && findit(mime_type, delmime))
 			result = MIME_STRIP;
 		/* check if the mail should be denied */
-		if(denymime && findit(mime_type, denymime->strs))
+		if(denymime && findit(mime_type, denymime))
 			*deny = 1;
 		free(mime_type);
 	}
@@ -210,10 +182,9 @@ static int read_hdrs(int fd, struct strlist *allhdrs,struct strlist* delmime,str
  * is inserted and its position saved in unwantedmime_hdrpos
  * returns 0 on success
  */
-static int write_hdrs(int outfd,struct strlist* hdrs,off_t* unwantedmime_hdrpos) {
-	int i;
-	for(i = 0; i < hdrs->count ; i++) {
-		if(dprintf(outfd, "%s", hdrs->strs[i]) < 0){
+static int write_hdrs(int outfd, strlist* hdrs,off_t* unwantedmime_hdrpos) {
+	tll_foreach(*hdrs, hdr) {
+		if(dprintf(outfd, "%s", hdr->item) < 0){
 			log_error(LOG_ARGS, "Error when dumping headers");
 			return -1;
 		}
@@ -265,7 +236,7 @@ static int update_unwantedmime_hdr(int outfd,off_t unwantedmime_hdrpos) {
 	return 0;
 }
 
-static int parse_body(int infd,int outfd, struct strlist* delmime, struct strlist* denymime,
+static int parse_body(int infd,int outfd, strlist* delmime, strlist* denymime,
 			int* deny,char* boundary){
 	int strip = 0;
 	char* line;
@@ -274,7 +245,7 @@ static int parse_body(int infd,int outfd, struct strlist* delmime, struct strlis
 			strip = 0;
 			/* check if the boundary is the beginning of a new part */
 			if(strncmp(line + strlen(boundary),"--",2)){
-				struct strlist hdrs;
+				strlist hdrs = tll_init();
 				char* new_boundary = NULL;
 				/* check if this part should be stripped */
 				if(read_hdrs(infd, &hdrs,delmime,denymime,deny,&new_boundary) == MIME_STRIP)
@@ -296,7 +267,7 @@ static int parse_body(int infd,int outfd, struct strlist* delmime, struct strlis
 						return -1;
 					}
 				}
-				free_strlist(&hdrs);
+				tll_free_and_free(hdrs, free);
 				if(new_boundary)
 					free(new_boundary);
 			}else{
@@ -328,9 +299,9 @@ static int parse_body(int infd,int outfd, struct strlist* delmime, struct strlis
 
 /* read a mail stripping unwanted parts */
 static int dump_mail(int infd, int outfd,char* listdir) {
-	struct strlist hdrs;
-	struct strlist* delmime;
-	struct strlist* denymime;
+	strlist hdrs = tll_init();
+	strlist *delmime;
+	strlist *denymime;
 	char* boundary=NULL;
 	int deny = 0;
 	int result;
@@ -349,7 +320,7 @@ static int dump_mail(int infd, int outfd,char* listdir) {
 	}
 
 	/* free mail header */
-	free_strlist(&hdrs);
+	tll_free_and_free(hdrs, free);
 
 	if(result == MIME_OK && !deny) {
 		/* try to parse the mail */
@@ -377,11 +348,11 @@ static int dump_mail(int infd, int outfd,char* listdir) {
 
 	/* free mime types */
 	if(delmime) {
-		free_strlist(delmime);
+		tll_free_and_free(*delmime, free);
 		free(delmime);
 	}
 	if(denymime) {
-		free_strlist(denymime);
+		tll_free_and_free(*denymime, free);
 		free(denymime);
 	}
 	return 0;

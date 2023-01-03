@@ -34,12 +34,12 @@
 #include "chomp.h"
 #include "mlmmj.h"
 
-struct strlist *ctrlvalues(const char *listdir, const char *ctrlstr)
+strlist *ctrlvalues(const char *listdir, const char *ctrlstr)
 {
-	struct strlist *ret;
 	char *filename = concatstr(3, listdir, "/control/", ctrlstr);
 	char *value;
 	int ctrlfd;
+	strlist *ret;
 
 	ctrlfd = open(filename, O_RDONLY);
 	free(filename);
@@ -47,21 +47,15 @@ struct strlist *ctrlvalues(const char *listdir, const char *ctrlstr)
 	if(ctrlfd < 0)
 		return NULL;
 		
-	ret = xmalloc(sizeof(struct strlist));
-	ret->count = 0;
-	ret->strs = NULL;
+	ret = xcalloc(1, sizeof(*ret));
 	while((value = mygetline(ctrlfd)) != NULL) {
 		chomp(value);
 		/* Ignore empty lines */
 		if (*value == '\0')
 			continue;
-		ret->count++;
-		ret->strs = (char **) xrealloc(ret->strs, sizeof(char *) *
-					(ret->count + 1));
-		ret->strs[ret->count-1] = value;
-		ret->strs[ret->count] = NULL;
+		tll_push_back(*ret, value);
 	}
-		
+
 	close(ctrlfd);
 
 	return ret;

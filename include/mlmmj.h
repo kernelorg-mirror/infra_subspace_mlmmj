@@ -69,11 +69,6 @@ typedef enum bounce {
 
 #define MAXVERPRECIPS 100
 
-struct strlist {
-	int count;
-	char **strs;
-};
-
 struct mailhdr {
 	const char *token;
 	int valuecount;

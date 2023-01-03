@@ -124,11 +124,10 @@ int listcontrol(strlist *fromemails, const char *listdir,
 	char *c, *archivefilename, *sendfilename;
 	struct stat stbuf;
 	bool closedlist, closedlistsub, nosubconfirm, subonlyget;
-	int tmpfd, noget, i;
+	int tmpfd, noget;
 	size_t cmdlen;
 	unsigned int ctrl;
-	struct strlist *owners;
-	int owner_idx;
+	strlist *owners;
 	text *txt;
 	char *queuefilename;
 	const char *subtype = NULL;
@@ -770,30 +769,32 @@ permit:
 	case CTRL_LIST:
 		if(statctrl(ctrlfd, "nolistsubsemail"))
 			return -1;
-		owner_idx = -1;
+		const char *owner = NULL;
 		owners = ctrlvalues(listdir, "owner");
 		if (owners != NULL) {
-			for(i = 0; i < owners->count; i++) {
+			tll_foreach(*owners, it) {
 				if(strcasecmp(tll_front(*fromemails),
-							owners->strs[i]) == 0) {
+							it->item) == 0) {
 					log_oper(listdir, OPLOGFNAME,
 							"%s requested sub list",
 					tll_front(*fromemails));
-					owner_idx = i;
+					owner = it->item;
 					break;
 				}
 			}
 		}
-		if (owner_idx == -1) {
+		if (owner != NULL) {
 			errno = 0;
 			log_error(LOG_ARGS, "A list request was sent to the"
 				" list from a non-owner address."
 				" Ignoring mail");
 			return -1;
 		} else {
-			send_list(listdir, owners->strs[owner_idx], mlmmjsend,
-			    listfd, ctrlfd);
+			send_list(listdir, owner, mlmmjsend, listfd, ctrlfd);
 		}
+		if (owners != NULL)
+			tll_free_and_free(*owners, free);
+		free(owners);
 		break;
 
 	/* listname+???@domain.tld */

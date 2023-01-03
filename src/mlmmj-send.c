@@ -66,7 +66,7 @@
 #include "utils.h"
 #include "send_mail.h"
 
-static int maxverprecips = MAXVERPRECIPS;
+static size_t maxverprecips = MAXVERPRECIPS;
 static int gotsigterm = 0;
 
 void catch_sig_term(int sig)
@@ -171,10 +171,10 @@ char *bounce_from_adr(const char *recipient, const char *listadr,
 	return bounceaddr;
 }
 
-int send_mail_verp(int sockfd, struct strlist *addrs, struct mail *mail,
+int send_mail_verp(int sockfd, strlist *addrs, struct mail *mail,
     const char *verpextra)
 {
-	int retval, i;
+	int retval;
 	char *reply, *reply2;
 
 	if(sockfd == -1)
@@ -195,19 +195,19 @@ int send_mail_verp(int sockfd, struct strlist *addrs, struct mail *mail,
 		if (reply2 != NULL) free(reply2);
 		return MLMMJ_FROM;
 	}
-	for(i = 0; i < addrs->count; i++) {
+	tll_foreach(*addrs, it) {
 		if(gotsigterm) {
 			log_error(LOG_ARGS, "TERM signal received, "
 					"shutting down.");
 			return -1;
 		}
-		if(strchr(addrs->strs[i], '@') == NULL) {
+		if(strchr(it->item, '@') == NULL) {
 			errno = 0;
 			log_error(LOG_ARGS, "No @ in address, ignoring %s",
-					addrs->strs[i]);
+					it->item);
 			continue;
 		}
-		retval = write_rcpt_to(sockfd, addrs->strs[i]);
+		retval = write_rcpt_to(sockfd, it->item);
 		if(retval) {
 			log_error(LOG_ARGS, "Could not write RCPT TO:\n");
 			return retval;
@@ -282,44 +282,37 @@ int send_mail_many_fd(int sockfd, struct mail *mail, int subfd,
 		      const char *listaddr, const char *listdelim,
 		      const char *archivefilename, int listfd, int ctrlfd)
 {
-	int res, ret, i;
-	struct strlist stl;
+	int res, ret;
+	strlist stl = tll_init();
 	FILE *f = fdopen(subfd, "r");
-
-	stl.strs = NULL;
-	stl.count = 0;
 
 	do {
 		res = getaddrsfromfile(&stl, f, maxverprecips);
-		if(stl.count == maxverprecips) {
+		if(tll_length(stl) == maxverprecips) {
 			ret = send_mail_many_list(sockfd, mail, &stl,
 					listaddr, listdelim, archivefilename,
 					listfd, ctrlfd);
-			for(i = 0; i < stl.count; i++)
-				free(stl.strs[i]);
+			tll_free_and_free(stl, free);
 			if(ret < 0)
 				return ret;
-			stl.count = 0;
 		}
 	} while(res > 0);
 	fdclose(f, NULL);
 
-	if(stl.count) {
+	if(tll_length(stl)) {
 		ret = send_mail_many_list(sockfd, mail, &stl, listaddr, listdelim,
 				archivefilename, listfd, ctrlfd);
-		for(i = 0; i < stl.count; i++)
-			free(stl.strs[i]);
-		stl.count = 0;
+		tll_free_and_free(stl, free);
 		return ret;
 	}
 
 	return 0;
 }
 
-int requeuemail(int listfd, int index, struct strlist *addrs,
-		int addrcount)
+int
+requeuemail(int listfd, int index, strlist *addrs)
 {
-	int addrfd, i;
+	int addrfd;
 	char *dirname, *addrfilename;
 	
 	xasprintf(&dirname, "requeue/%d", index);
@@ -344,18 +337,20 @@ int requeuemail(int listfd, int index, struct strlist *addrs,
 		 * we write the failing address to ensure the potential good
 		 * ones will be tried first when mlmmj-maintd sends out mails
 		 * that have been requeued. addrcount was so far we were */
-		for(i = addrcount + 1; i < addrs->count; i++) {
-			if(dprintf(addrfd, "%s\n", addrs->strs[i]) < 0) {
+		char *addr = tll_pop_front(*addrs);
+		tll_foreach(*addrs, it) {
+			if(dprintf(addrfd, "%s\n", it->item) < 0) {
 				log_error(LOG_ARGS, "Could not add [%s] "
-						    "to requeue file", addrs->strs[i]);
+						    "to requeue file", it->item);
 				return -1;
 			}
 		}
-		if(dprintf(addrfd, "%s\n", addrs->strs[addrcount]) < 0) {
+		if(dprintf(addrfd, "%s\n", addr) < 0) {
 			log_error(LOG_ARGS, "Could not add [%s] to requeue "
-					"file", addrs->strs[addrcount]);
+					"file", addr);
 			return -1;
 		}
+		free(addr);
 	}
 	free(addrfilename);
 	close(addrfd);
@@ -363,19 +358,20 @@ int requeuemail(int listfd, int index, struct strlist *addrs,
 	return 0;
 }
 
-int send_mail_many_list(int sockfd, struct mail *mail, struct strlist *addrs,
+int send_mail_many_list(int sockfd, struct mail *mail, strlist *addrs,
 		   const char *listaddr, const char *listdelim,
 		   const char *archivefilename, int listfd, int ctrlfd)
 {
-	int res = 0, i, status, index;
+	int res = 0, status, index;
 	char *bounceaddr, *addr;
 
-	for(i = 0; i < addrs->count; i++) {
-		addr = addrs->strs[i];
+	tll_foreach(*addrs, it) {
+		addr = it->item;
 		if(strchr(addr, '@') == NULL) {
 			errno = 0;
 			log_error(LOG_ARGS, "No @ in address, ignoring %s",
 					addr);
+			tll_remove_and_free(*addrs, it, free);
 			continue;
 		}
 		if(gotsigterm && listaddr && archivefilename) {
@@ -383,7 +379,7 @@ int send_mail_many_list(int sockfd, struct mail *mail, struct strlist *addrs,
 			log_error(LOG_ARGS, "TERM signal received, "
 						"shutting down.");
 			index = get_index_from_filename(archivefilename);
-			status = requeuemail(listfd, index, addrs, i);
+			status = requeuemail(listfd, index, addrs);
 			return status;
 		}
 		if (mail->from == NULL) {
@@ -396,9 +392,10 @@ int send_mail_many_list(int sockfd, struct mail *mail, struct strlist *addrs,
 		if(res && listaddr && archivefilename) {
 			/* we failed, so save the addresses and bail */
 			index = get_index_from_filename(archivefilename);
-			status = requeuemail(listfd, index, addrs, i);
+			status = requeuemail(listfd, index, addrs);
 			return status;
 		}
+		tll_remove_and_free(*addrs, it, free);
 	}
 	return 0;
 }
@@ -435,7 +432,7 @@ static void print_help(const char *prg)
 int main(int argc, char **argv)
 {
 	size_t len = 0, hdrslen, bodylen;
-	int sockfd = -1, mailfd = 0, opt, mindex = 0, subfd = 0, tmpfd, i;
+	int sockfd = -1, mailfd = 0, opt, mindex = 0, subfd = 0, tmpfd;
 	int deletewhensent = 1, sendres = 0, digest = 0;
 	bool archive = true, ctrlarchive;
 	int res;
@@ -454,7 +451,7 @@ int main(int argc, char **argv)
 	struct dirent *dp;
 	struct stat st;
 	uid_t uid;
-	struct strlist stl;
+	strlist stl = tll_init();
 	unsigned short smtpport;
 	struct sigaction sigact;
 	int listfd, ctrlfd;
@@ -570,11 +567,8 @@ int main(int argc, char **argv)
 				verp = xstrdup("");
 
 		if(verp && statctrl(ctrlfd, "maxverprecips"))
-			maxverprecips = ctrlint(ctrlfd, "maxverprecips", MAXVERPRECIPS);
+			maxverprecips = ctrlsizet(ctrlfd, "maxverprecips", MAXVERPRECIPS);
 	}
-
-	stl.strs = NULL;
-	stl.count = 0;
 
 	if(listdir && listctrl != '5')
 		listaddr = getlistaddr(ctrlfd);
@@ -890,27 +884,13 @@ int main(int argc, char **argv)
 				continue;
 			}
 			do {
-				i = stl.count;
-				res = getaddrsfromfile(&stl, f,
-						maxverprecips);
+				res = getaddrsfromfile(&stl, f, maxverprecips);
 				if(omit != NULL) {
-					while(i < stl.count) {
-						if(strcmp(stl.strs[i], omit)
-							== 0) {
-						    free(stl.strs[i]);
-						    stl.count--;
-						    while (i < stl.count) {
-							stl.strs[i] =
-								stl.strs[i+1];
-							i++;
-						    }
-						    stl.strs[stl.count] = NULL;
-						    break;
-						}
-						i++;
-					}
+					tll_foreach(stl, it)
+						if (strcmp(it->item, omit) == 0)
+							tll_remove_and_free(stl, it, free);
 				}
-				if(stl.count == maxverprecips) {
+				if(tll_length(stl) == maxverprecips) {
 					initsmtp(&sockfd, relayhost, smtpport, smtphelo);
 					if(verp) {
 						mail.from = verpfrom;
@@ -922,7 +902,7 @@ int main(int argc, char **argv)
 						if(sendres)
 							requeuemail(listfd,
 								mindex,
-								&stl, 0);
+								&stl);
 					} else {
 						mail.from = NULL;
 						mail.replyto = NULL;
@@ -939,23 +919,21 @@ int main(int argc, char **argv)
 				    	} else {
 					    	endsmtp(&sockfd);
 				    	}
-					for(i = 0; i < stl.count; i++)
-						free(stl.strs[i]);
-					stl.count = 0;
+					tll_free_and_free(stl, free);
 				}
 			} while(res > 0);
 			free(subfilename);
 			fclose(f);
 
 		}
-		if(stl.count) {
+		if(tll_length(stl)) {
 			initsmtp(&sockfd, relayhost, smtpport, smtphelo);
 			if(verp) {
 				mail.from = verpfrom;
 				mail.replyto = NULL;
 				sendres = send_mail_verp(sockfd, &stl, &mail, verp);
 				if(sendres)
-					requeuemail(listfd, mindex, &stl, 0);
+					requeuemail(listfd, mindex, &stl);
 			} else {
 				mail.from = NULL;
 				mail.replyto = NULL;
@@ -969,11 +947,8 @@ int main(int argc, char **argv)
 			} else {
 				endsmtp(&sockfd);
 			}
-			for(i = 0; i < stl.count; i++)
-				free(stl.strs[i]);
-			stl.count = 0;
+			tll_free_and_free(stl, free);
 		}
-		free(stl.strs);
 		free(verpfrom);
 		closedir(subddir);
 		free(subddirname);

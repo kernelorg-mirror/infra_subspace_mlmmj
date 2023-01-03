@@ -56,13 +56,13 @@ static void moderate_sub(const char *listdir, const char *listaddr,
 		const char *mlmmjsend, enum subtype typesub, enum subreason reasonsub,
 		int listfd, int ctrlfd)
 {
-	int i, fd, status;
+	int fd, status;
 	text *txt;
 	memory_lines_state *mls;
 	char *a = NULL, *queuefilename, *from, *listname, *listfqdn, *str;
 	char *modfilename, *mods, *to, *replyto, *moderators = NULL;
 	char *cookie, *obstruct;
-	struct strlist *submods;
+	strlist *submods;
 	pid_t childpid, pid;
 
 	/* generate the file in moderation/ */
@@ -113,15 +113,13 @@ static void moderate_sub(const char *listdir, const char *listaddr,
 	submods = ctrlvalues(listdir, "submod");
 	mods = concatstr(2, listdir, "/control/submod");
 	/* check to see if there's adresses in the submod control file */
-	for(i = 0; i < submods->count; i++)
-		a = strchr(submods->strs[i], '@');
+	tll_foreach(*submods, it)
+		a = strchr(it->item, '@');
 
 	/* no addresses in submod control file, use owner */
 	if(a == NULL) {
 		/* free the submods struct from above */
-		for(i = 0; i < submods->count; i++)
-			free(submods->strs[i]);
-		free(submods->strs);
+		tll_free_and_free(*submods, free);
 		free(submods);
 		submods = ctrlvalues(listdir, "owner");
 		free(mods);
@@ -139,10 +137,10 @@ static void moderate_sub(const char *listdir, const char *listaddr,
 	obstruct = concatstr(6, listname, listdelim, "obstruct-", cookie,
 			"@", listfqdn);
 	free(cookie);
-	for(i = 0; i < submods->count; i++) {
-		printf("%s", submods->strs[i]);
+	tll_foreach(*submods, sm) {
+		printf("%s", sm->item);
 		str = moderators;
-		moderators = concatstr(3, moderators, submods->strs[i], "\n");
+		moderators = concatstr(3, moderators, sm->item, "\n");
 		free(str);
 	}
 	mls = init_memory_lines(moderators);

@@ -36,14 +36,14 @@
 #include "log_error.h"
 #include "wrappers.h"
 
-int findit(const char *line, const struct strlist *headers)
+int
+findit(const char *line, const strlist *headers)
 {
-	int i;
 	size_t len;
 
-	for (i=0;i<headers->count;i++) {
-		len = strlen(headers->strs[i]);
-		if(strncasecmp(line, headers->strs[i], len) == 0)
+	tll_foreach(*headers, it) {
+		len = strlen(it->item);
+		if(strncasecmp(line, it->item, len) == 0)
 			return 1;
 	}
 
@@ -73,15 +73,12 @@ void getinfo(const char *line, struct mailhdr *readhdrs)
 }
 
 int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
-		 const struct strlist *delhdrs, struct mailhdr *readhdrs,
-		 struct strlist *allhdrs, const char *prefix)
+		 const strlist *delhdrs, struct mailhdr *readhdrs,
+		 strlist *allhdrs, const char *prefix)
 {
 	char *hdrline, *unfolded, *unqp;
 	int hdrsadded = 0;
 	int subject_present = 0;
-
-	allhdrs->count = 0;
-	allhdrs->strs = NULL;
 
 	for(;;) {
 		hdrline = gethdrline(infd, &unfolded);
@@ -129,10 +126,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 			getinfo(hdrline, readhdrs);
 
 		/* Snatch a copy of the header */
-		allhdrs->count++;
-		allhdrs->strs = xrealloc(allhdrs->strs,
-					sizeof(char *) * (allhdrs->count));
-		allhdrs->strs[allhdrs->count-1] = xstrdup(hdrline);
+		tll_push_back(*allhdrs, xstrdup(hdrline));
 
 		/* Add Subject: prefix if wanted */
 		if(prefix) {

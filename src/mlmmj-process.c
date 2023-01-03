@@ -222,10 +222,9 @@ static void newmoderated(const char *listdir, const char *mailfilename,
 }
 
 
-static enum action do_access(struct strlist *rule_strs, struct strlist *hdrs,
+static enum action do_access(strlist *rule_strs, strlist *hdrs,
 		const char *from, const char *listdir)
 {
-	int i, j;
 	unsigned int match;
 	char *rule_ptr;
 	char errbuf[128];
@@ -234,11 +233,10 @@ static enum action do_access(struct strlist *rule_strs, struct strlist *hdrs,
 	unsigned int not;
 	regex_t regexp;
 	char *hdr;
+	size_t i = 0;
 
-	for (i=0; i<rule_strs->count; i++) {
-
-		rule_ptr = rule_strs->strs[i];
-
+	tll_foreach(*rule_strs, it) {
+		rule_ptr = it->item;
 		if (strncmp(rule_ptr, "allow", 5) == 0) {
 			rule_ptr += 5;
 			act = ALLOW;
@@ -258,10 +256,10 @@ static enum action do_access(struct strlist *rule_strs, struct strlist *hdrs,
 			errno = 0;
 			log_error(LOG_ARGS, "Unable to parse rule #%d \"%s\":"
 					" Missing action keyword. Denying post from \"%s\"",
-					i, rule_strs->strs[i], from);
+					i, it->item, from);
 			log_oper(listdir, OPLOGFNAME, "Unable to parse rule #%d \"%s\":"
 					" Missing action keyword. Denying post from \"%s\"",
-					i, rule_strs->strs[i], from);
+					i, it->item, from);
 			return DENY;
 		}
 
@@ -271,17 +269,17 @@ static enum action do_access(struct strlist *rule_strs, struct strlist *hdrs,
 			/* the rule is a keyword and no regexp */
 			log_oper(listdir, OPLOGFNAME, "mlmmj-process: access -"
 					" A mail from \"%s\" was %s by rule #%d \"%s\"",
-					from, action_strs[act], i, rule_strs->strs[i]);
+					from, action_strs[act], i, it->item);
 			return act;
 		} else {
 			/* we must have space or end of string */
 			errno = 0;
 			log_error(LOG_ARGS, "Unable to parse rule #%d \"%s\":"
 					" Invalid character after action keyword."
-					" Denying post from \"%s\"", i, rule_strs->strs[i], from);
+					" Denying post from \"%s\"", i, it->item, from);
 			log_oper(listdir, OPLOGFNAME, "Unable to parse rule #%d \"%s\":"
 					" Invalid character after action keyword."
-					" Denying post from \"%s\"", i, rule_strs->strs[i], from);
+					" Denying post from \"%s\"", i, it->item, from);
 			return DENY;
 		}
 
@@ -310,19 +308,20 @@ static enum action do_access(struct strlist *rule_strs, struct strlist *hdrs,
 			log_error(LOG_ARGS, "regcomp() failed for rule #%d \"%s\""
 					" (message: '%s') (expression: '%s')"
 					" Denying post from \"%s\"",
-					i, rule_strs->strs[i], errbuf, rule_ptr, from);
+					i, it->item, errbuf, rule_ptr, from);
 			log_oper(listdir, OPLOGFNAME, "regcomp() failed for rule"
 					" #%d \"%s\" (message: '%s') (expression: '%s')"
 					" Denying post from \"%s\"",
-					i, rule_strs->strs[i], errbuf, rule_ptr, from);
+					i, it->item, errbuf, rule_ptr, from);
 			return DENY;
 		}
 
 		match = 0;
-		for (j=0; j<hdrs->count; j++) {
-			if (regexec(&regexp, hdrs->strs[j], 0, NULL, 0)
+		tll_foreach(*hdrs, header) {
+			if (regexec(&regexp, header->item, 0, NULL, 0)
 					== 0) {
 				match = 1;
+				hdr = header->item;
 				break;
 			}
 		}
@@ -331,21 +330,19 @@ static enum action do_access(struct strlist *rule_strs, struct strlist *hdrs,
 
 		if (match != not) {
 			if (match) {
-				hdr = xstrdup(hdrs->strs[j]);
 				log_oper(listdir, OPLOGFNAME, "mlmmj-process: access -"
 						" A mail from \"%s\" with header \"%s\" was %s by"
 						" rule #%d \"%s\"", from, hdr, action_strs[act],
-						i, rule_strs->strs[i]);
-				free(hdr);
+						i, it->item);
 			} else {
 				log_oper(listdir, OPLOGFNAME, "mlmmj-process: access -"
 						" A mail from \"%s\" was %s by rule #%d \"%s\""
 						" because no header matched.", from,
-						action_strs[act], i, rule_strs->strs[i]);
+						action_strs[act], i, it->item);
 			}
 			return act;
 		}
-
+		i++;
 	}
 
 	log_oper(listdir, OPLOGFNAME, "mlmmj-process: access -"
@@ -418,7 +415,7 @@ static void print_help(const char *prg)
 
 int main(int argc, char **argv)
 {
-	int i, j, opt, noprocess = 0, moderated = 0, send = 0;
+	int i, opt, noprocess = 0, moderated = 0, send = 0;
 	enum modreason modreason;
 	int hdrfd, footfd, rawmailfd, donemailfd, omitfd;
 	bool addrtocc, notmetoo;
@@ -445,11 +442,11 @@ int main(int argc, char **argv)
 	strlist rpemails = tll_init();
 	strlist dtemails = tll_init();
 	strlist *testfrom = NULL;
-	struct strlist *access_rules = NULL;
-	struct strlist *list_rules = NULL;
-	struct strlist *delheaders = NULL;
-	struct strlist allheaders;
-	struct strlist *listaddrs = NULL;
+	strlist *access_rules = NULL;
+	strlist *list_rules = NULL;
+	strlist *delheaders = NULL;
+	strlist allheaders = tll_init();
+	strlist *listaddrs = NULL;
 	struct mailhdr readhdrs[] = {
 		{ "From:", 0, NULL },
 		{ "To:", 0, NULL },
@@ -558,16 +555,11 @@ int main(int argc, char **argv)
 	free(footerfilename);
 
 	delheaders = ctrlvalues(listdir, "delheaders");
-	if(delheaders == NULL) {
-		delheaders = xmalloc(sizeof(struct strlist));
-		delheaders->count = 0;
-		delheaders->strs = NULL;
-	}
+	if(delheaders == NULL)
+		delheaders = xcalloc(1, sizeof(*delheaders));
 
-	delheaders->strs = xrealloc(delheaders->strs,
-			(delheaders->count+2) * sizeof(char *));
-	delheaders->strs[delheaders->count++] = xstrdup("From ");
-	delheaders->strs[delheaders->count++] = xstrdup("Return-Path:");
+	tll_push_back(*delheaders, xstrdup("From "));
+	tll_push_back(*delheaders, xstrdup("Return-Path:"));
 
 	subjectprefix = ctrlvalue(ctrlfd, "prefix");
 
@@ -578,9 +570,7 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	for(i = 0; i < delheaders->count; i++)
-		free(delheaders->strs[i]);
-	free(delheaders->strs);
+	tll_free_and_free(*delheaders, free);
 
 	close(rawmailfd);
 	close(donemailfd);
@@ -634,8 +624,8 @@ int main(int argc, char **argv)
 	if(addrtocc || findaddress) {
 		listaddrs = ctrlvalues(listdir, "listaddress");
 		tll_foreach(dtemails, it) {
-			for(j = 0; j < listaddrs->count; j++) {
-				if(addrmatch(listaddrs->strs[j], it->item,
+			tll_foreach(*listaddrs, la) {
+				if(addrmatch(la->item, it->item,
 						listdelim, &recipextra)) {
 					findaddress = 0;
 					free(listdelim);
@@ -647,8 +637,8 @@ int main(int argc, char **argv)
 	}
 	if(addrtocc || findaddress) {
 		tll_foreach(toemails, it) {
-			for(j = 0; j < listaddrs->count; j++) {
-				if(addrmatch(listaddrs->strs[j], it->item,
+			tll_foreach(*listaddrs, la) {
+				if(addrmatch(la->item, it->item,
 						listdelim, &recipextra)) {
 					intocc = 1;
 					break;
@@ -657,8 +647,8 @@ int main(int argc, char **argv)
 		}
 		if (!intocc)
 			tll_foreach(ccemails, it) {
-				for(j = 0; j < listaddrs->count; j++) {
-					if(addrmatch(listaddrs->strs[j], it->item,
+				tll_foreach(*listaddrs, la) {
+					if(addrmatch(la->item, it->item,
 						listdelim, &recipextra)) {
 						intocc = 1;
 						break;
@@ -670,8 +660,9 @@ int main(int argc, char **argv)
 		free(listdelim);
 		listdelim = NULL;
 	}
-	if (listaddrs) for(i = 0; i < listaddrs->count; i++)
-		free(listaddrs->strs[i]);
+	if (listaddrs)
+		tll_free_and_free(*listaddrs, free);
+	free(listaddrs);
 
 	if(recipextra && (strlen(recipextra) == 0)) {
 		free(recipextra);
@@ -742,14 +733,9 @@ int main(int argc, char **argv)
 			/* Why is this here, and not in listcontrol() ?
 			 * -- mortenp 20060409 */
 			/* strip envelope from before resending */
-			delheaders->count = 0;
-			delheaders->strs = NULL;
-			delheaders->strs = xrealloc(delheaders->strs,
-					2 * sizeof(char *));
-			delheaders->strs[delheaders->count++] =
-				xstrdup("From ");
-			delheaders->strs[delheaders->count++] =
-				xstrdup("Return-Path:");
+			tll_push_back(*delheaders, xstrdup("From "));
+			tll_push_back(*delheaders, xstrdup("Return-Path:"));
+
 			if((rawmailfd = open(mailfile, O_RDONLY)) < 0) {
 				log_error(LOG_ARGS, "could not open() "
 						    "input mail file");
@@ -767,9 +753,7 @@ int main(int argc, char **argv)
 				log_error(LOG_ARGS, "do_all_the_voodoo_here");
 				exit(EXIT_FAILURE);
 			}
-			for(i = 0; i < delheaders->count; i++)
-				free(delheaders->strs[i]);
-			free(delheaders->strs);
+			tll_free_and_free(*delheaders, free);
 			close(rawmailfd);
 			close(donemailfd);
 			unlink(mailfile);
@@ -911,7 +895,7 @@ int main(int argc, char **argv)
 	}
 
 	access_rules = ctrlvalues(listdir, "access");
-	if (access_rules) {
+	if (access_rules != NULL) {
 		enum action accret;
 		/* Don't send a mail about denial to the list, but silently
 		 * discard and exit. Also do this in case it's turned off */
@@ -982,8 +966,8 @@ int main(int argc, char **argv)
 
 	list_rules = ctrlvalues(listdir, "send");
 	if (list_rules != NULL) {
-		for (i = 0; i < list_rules->count; i++) {
-			if (strcasecmp(posteraddr, list_rules->strs[i]) == 0) {
+		tll_foreach(*list_rules, lr) {
+			if (strcasecmp(posteraddr, lr->item) == 0) {
 				send = 1;
 				break;
 			}

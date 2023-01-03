@@ -1,12 +1,13 @@
 #include <string.h>
 
+#include "tllist.h"
 #include "xmalloc.h"
 #include "mlmmj.h"
 #include "getaddrsfromfile.h"
 #include "chomp.h"
 
 int
-getaddrsfromfile(struct strlist *slist, FILE *f, int max)
+getaddrsfromfile(strlist *slist, FILE *f, size_t max)
 {
 	char *line = NULL;
 	size_t linecap = 0;
@@ -22,11 +23,8 @@ getaddrsfromfile(struct strlist *slist, FILE *f, int max)
 		chomp(line);
 		if (*line == '\0')
 			continue;
-		slist->count++;
-		slist->strs = (char **)xrealloc(slist->strs,
-			sizeof(char *) * slist->count);
-		slist->strs[slist->count -1] = xstrdup(line);
-		if (slist->count >= max)
+		tll_push_back(*slist, xstrdup(line));
+		if (tll_length(*slist) >= max)
 			break;
 	}
 	if (feof(f))

@@ -26,4 +26,4 @@
 #include <stdio.h>
 #include "mlmmj.h"
 
-int getaddrsfromfile(struct strlist *slist, FILE *f, int max);
+int getaddrsfromfile(strlist *slist, FILE *f, size_t max);

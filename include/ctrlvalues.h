@@ -26,6 +26,6 @@
 
 #include "mlmmj.h"
 
-struct strlist *ctrlvalues(const char *listdir, const char *ctrlstr);
+strlist *ctrlvalues(const char *listdir, const char *ctrlstr);
 
 #endif /* CTRLVALUES_H */
