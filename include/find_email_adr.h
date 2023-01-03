@@ -1,6 +1,6 @@
-/* Copyright (C) 2002, 2003 Mads Martin Joergensen <mmj at mmj.dk>
- *
- * $Id$
+/*
+ * Copyright (C) 2002, 2003 Mads Martin Joergensen <mmj at mmj.dk>
+ * Copyright (C) 2023 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -26,12 +26,6 @@
 
 #include <stddef.h>
 
-struct email_container {
-	int emailcount;
-	char **emaillist;
-};
-
-struct email_container *find_email_adr(const char *str,
-		struct email_container *retval);
+strlist *find_email_adr(const char *str, strlist *retval);
 
 #endif /* FIND_EMAIL_ADR_H */

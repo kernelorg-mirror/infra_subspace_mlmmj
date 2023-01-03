@@ -389,11 +389,11 @@ save_lastbouncedmsg(int listfd, const char *address, const char *mailname)
 
 char *dsnparseaddr(const char *mailname)
 {
-	int fd, i;
+	int fd;
 	char *line, *hdr, *walk, *addr = NULL, *boundary = NULL;
 	bool quoted = false;
 	bool indsn = false;
-	struct email_container emails = { 0, NULL };
+	strlist emails = tll_init();
 
 	fd = open(mailname, O_RDONLY);
 	if(fd < 0) {
@@ -452,11 +452,9 @@ char *dsnparseaddr(const char *mailname)
 					break;
 				}
 				find_email_adr(walk+1, &emails);
-				if(emails.emailcount > 0) {
-					addr = xstrdup(emails.emaillist[0]);
-					for(i = 0; i < emails.emailcount; i++)
-						free(emails.emaillist[i]);
-					free(emails.emaillist);
+				if(tll_length(emails) > 0) {
+					addr = xstrdup(tll_front(emails));
+					tll_free_and_free(emails, free);
 				}
 				free(line);
 				break;

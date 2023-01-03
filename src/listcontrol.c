@@ -112,7 +112,7 @@ static struct ctrl_command ctrl_commands[] = {
 };
 
 
-int listcontrol(struct email_container *fromemails, const char *listdir,
+int listcontrol(strlist *fromemails, const char *listdir,
 		const char *controlstr, const char *mlmmjsub,
 		const char *mlmmjunsub, const char *mlmmjsend,
 		const char *mailname, int listfd, int ctrlfd)
@@ -145,8 +145,8 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 	
 #if 0
 	log_error(LOG_ARGS, "controlstr = [%s]\n", controlstr);
-	log_error(LOG_ARGS, "fromemails->emaillist[0] = [%s]\n",
-			fromemails->emaillist[0]);
+	log_error(LOG_ARGS, "tll_front(*fromemails) = [%s]\n",
+			tll_front(*fromemails));
 #endif
 	for (ctrl=0; ctrl<CTRL_END; ctrl++) {
 		cmdlen = strlen(ctrl_commands[ctrl].command);
@@ -192,10 +192,10 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 	}
 	
 	/* Only allow mails with bad From: header to be bounce mails */
-	if(fromemails->emailcount != 1 && ctrl != CTRL_BOUNCES) {
+	if(tll_length(*fromemails) != 1 && ctrl != CTRL_BOUNCES) {
 		errno = 0;
 		log_error(LOG_ARGS, "Ignoring mail with invalid From: "
-				"which was not a bounce: %d", fromemails->emailcount);
+				"which was not a bounce: %d", tll_length(*fromemails));
 		return -1;
 	}
 
@@ -213,7 +213,7 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 				" sent to a closed list. Ignoring mail");
 			return -1;
 		}
-		if (!strchr(fromemails->emaillist[0], '@')) {
+		if (!strchr(tll_front(*fromemails), '@')) {
 			/* Not a valid From: address */
 			errno = 0;
 			log_error(LOG_ARGS, "A subscribe-digest request was"
@@ -229,21 +229,21 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 					"digest", "sub-deny-digest");
 			MY_ASSERT(txt);
 			register_unformatted(txt, "subaddr",
-					fromemails->emaillist[0]);
+					tll_front(*fromemails));
 			queuefilename = prepstdreply(txt, listdir,
 					"$listowner$",
-					fromemails->emaillist[0], NULL, listfd, ctrlfd);
+					tll_front(*fromemails), NULL, listfd, ctrlfd);
 			MY_ASSERT(queuefilename);
 			close_text(txt);
 			send_help(listdir, queuefilename,
-					fromemails->emaillist[0], mlmmjsend, ctrlfd);
+					tll_front(*fromemails), mlmmjsend, ctrlfd);
 			return -1;
 		}
 		log_oper(listdir, OPLOGFNAME, "mlmmj-sub: request for digest"
 					" subscription from %s",
-					fromemails->emaillist[0]);
+					tll_front(*fromemails));
 		exec_or_die(mlmmjsub, "-L", listdir, "-a",
-		    fromemails->emaillist[0], "-d", "-r", "-c",
+		    tll_front(*fromemails), "-d", "-r", "-c",
 		    (nosubconfirm ? NULL : "-C"), NULL);
 		break;
 
@@ -255,7 +255,7 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 				" sent to a closed list. Ignoring mail");
 			return -1;
 		}
-		if (!strchr(fromemails->emaillist[0], '@')) {
+		if (!strchr(tll_front(*fromemails), '@')) {
 			/* Not a valid From: address */
 			errno = 0;
 			log_error(LOG_ARGS, "A subscribe-nomail request was"
@@ -271,21 +271,21 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 					"nomail", "sub-deny-nomail");
 			MY_ASSERT(txt);
 			register_unformatted(txt, "subaddr",
-					fromemails->emaillist[0]);
+					tll_front(*fromemails));
 			queuefilename = prepstdreply(txt, listdir,
 					"$listowner$",
-					fromemails->emaillist[0], NULL, listfd, ctrlfd);
+					tll_front(*fromemails), NULL, listfd, ctrlfd);
 			MY_ASSERT(queuefilename);
 			close_text(txt);
 			send_help(listdir, queuefilename,
-					fromemails->emaillist[0], mlmmjsend, ctrlfd);
+					tll_front(*fromemails), mlmmjsend, ctrlfd);
 			return -1;
 		}
 		log_oper(listdir, OPLOGFNAME, "mlmmj-sub: request for nomail"
 					" subscription from %s",
-					fromemails->emaillist[0]);
+					tll_front(*fromemails));
 		exec_or_die(mlmmjsub, "-L", listdir, "-a",
-		    fromemails->emaillist[0], "-n", "-r", "-c",
+		    tll_front(*fromemails), "-n", "-r", "-c",
 		    (nosubconfirm ? NULL : "-C"), NULL);
 		break;
 
@@ -297,7 +297,7 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 				" sent to a closed list. Ignoring mail");
 			return -1;
 		}
-		if (!strchr(fromemails->emaillist[0], '@')) {
+		if (!strchr(tll_front(*fromemails), '@')) {
 			/* Not a valid From: address */
 			errno = 0;
 			log_error(LOG_ARGS, "A subscribe-both request was"
@@ -313,21 +313,21 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 					"both", "sub-deny-digest");
 			MY_ASSERT(txt);
 			register_unformatted(txt, "subaddr",
-					fromemails->emaillist[0]);
+					tll_front(*fromemails));
 			queuefilename = prepstdreply(txt, listdir,
 					"$listowner$",
-					fromemails->emaillist[0], NULL, listfd, ctrlfd);
+					tll_front(*fromemails), NULL, listfd, ctrlfd);
 			MY_ASSERT(queuefilename);
 			close_text(txt);
 			send_help(listdir, queuefilename,
-					fromemails->emaillist[0], mlmmjsend, ctrlfd);
+					tll_front(*fromemails), mlmmjsend, ctrlfd);
 			return -1;
 		}
 		log_oper(listdir, OPLOGFNAME, "mlmmj-sub: request for both"
 					" subscription from %s",
-					fromemails->emaillist[0]);
+					tll_front(*fromemails));
 		exec_or_die(mlmmjsub, "-L", listdir, "-a",
-		    fromemails->emaillist[0], "-b", "-r", "-c",
+		    tll_front(*fromemails), "-b", "-r", "-c",
 		    (nosubconfirm ? NULL : "-C"), NULL);
 		break;
 
@@ -339,7 +339,7 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 				" sent to a closed list. Ignoring mail");
 			return -1;
 		}
-		if (!strchr(fromemails->emaillist[0], '@')) {
+		if (!strchr(tll_front(*fromemails), '@')) {
 			/* Not a valid From: address */
 			errno = 0;
 			log_error(LOG_ARGS, "A subscribe request was"
@@ -349,9 +349,9 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 		}
 		log_oper(listdir, OPLOGFNAME, "mlmmj-sub: request for regular"
 					" subscription from %s",
-					fromemails->emaillist[0]);
+					tll_front(*fromemails));
 		exec_or_die(mlmmjsub, "-L", listdir, "-a",
-		    fromemails->emaillist[0], "-r", "-c",
+		    tll_front(*fromemails), "-r", "-c",
 		    (nosubconfirm ? NULL : "-C"), NULL);
 		break;
 
@@ -427,7 +427,7 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 				" sent to a closed list. Ignoring mail");
 			return -1;
 		}
-		if (!strchr(fromemails->emaillist[0], '@')) {
+		if (!strchr(tll_front(*fromemails), '@')) {
 			/* Not a valid From: address */
 			errno = 0;
 			log_error(LOG_ARGS, "An unsubscribe request was"
@@ -437,9 +437,9 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 		}
 		log_oper(listdir, OPLOGFNAME, "mlmmj-unsub: %s requests"
 					" unsubscribe",
-					fromemails->emaillist[0]);
+					tll_front(*fromemails));
 		exec_or_die(mlmmjunsub, "-L", listdir, "-a",
-		    fromemails->emaillist[0], "-r",
+		    tll_front(*fromemails), "-r",
 		    (nosubconfirm ? "-c" : "-C"), NULL);
 		break;
 
@@ -603,7 +603,7 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 		free(moderatefilename);
 
 		log_oper(listdir, OPLOGFNAME, "%s released %s",
-				fromemails->emaillist[0], param);
+				tll_front(*fromemails), param);
 
 		if (omit != NULL)
 			exec_or_die(mlmmjsend, "-L", listdir, "-o", omit,
@@ -624,7 +624,7 @@ int listcontrol(struct email_container *fromemails, const char *listdir,
 			return -1;
 		}
 		log_oper(listdir, OPLOGFNAME, "%s rejected %s",
-			fromemails->emaillist[0], param);
+			tll_front(*fromemails), param);
 		free(param);
 		if (unlink(moderatefilename) != 0) {
 			log_error(LOG_ARGS, "Could not unlink %s",
@@ -650,7 +650,7 @@ permit:
 			return -1;
 		}
 		log_oper(listdir, OPLOGFNAME, "%s permitted %s",
-			fromemails->emaillist[0], param);
+			tll_front(*fromemails), param);
 		exec_or_die(mlmmjsub, "-L", listdir, "-m", param, "-c", NULL);
 		break;
 
@@ -668,7 +668,7 @@ permit:
 			return -1;
 		}
 		log_oper(listdir, OPLOGFNAME, "%s obstructed %s",
-			fromemails->emaillist[0], param);
+			tll_front(*fromemails), param);
 		free(param);
 		if (unlink(gatekeepfilename) != 0) {
 			log_error(LOG_ARGS, "Could not unlink %s",
@@ -681,7 +681,7 @@ permit:
 
 	/* listname+help@domain.tld */
 	case CTRL_HELP:
-		if(!strchr(fromemails->emaillist[0], '@')) {
+		if(!strchr(tll_front(*fromemails), '@')) {
 			/* Not a valid From: address */
 			errno = 0;
 			log_error(LOG_ARGS, "A help request was"
@@ -690,20 +690,20 @@ permit:
 			return -1;
 		}
 		log_oper(listdir, OPLOGFNAME, "%s requested help",
-				fromemails->emaillist[0]);
+				tll_front(*fromemails));
 		txt = open_text(listdir, "help", NULL, NULL, NULL, "listhelp");
 		MY_ASSERT(txt);
 		queuefilename = prepstdreply(txt, listdir,
-				"$listowner$", fromemails->emaillist[0], NULL, listfd, ctrlfd);
+				"$listowner$", tll_front(*fromemails), NULL, listfd, ctrlfd);
 		MY_ASSERT(queuefilename);
 		close_text(txt);
 		send_help(listdir, queuefilename,
-				fromemails->emaillist[0], mlmmjsend, ctrlfd);
+				tll_front(*fromemails), mlmmjsend, ctrlfd);
 		break;
 
        /* listname+faq@domain.tld */
         case CTRL_FAQ:
-               if(!strchr(fromemails->emaillist[0], '@')) {
+               if(!strchr(tll_front(*fromemails), '@')) {
                        /* Not a valid From: address */
                        errno = 0;
                        log_error(LOG_ARGS, "A faq request was"
@@ -712,15 +712,15 @@ permit:
                        return -1;
                }
                log_oper(listdir, OPLOGFNAME, "%s requested faq",
-                               fromemails->emaillist[0]);
+                               tll_front(*fromemails));
 		txt = open_text(listdir, "faq", NULL, NULL, NULL, "listfaq");
 		MY_ASSERT(txt);
 		queuefilename = prepstdreply(txt, listdir,
-				"$listowner$", fromemails->emaillist[0], NULL, listfd, ctrlfd);
+				"$listowner$", tll_front(*fromemails), NULL, listfd, ctrlfd);
 		MY_ASSERT(queuefilename);
 		close_text(txt);
 		send_help(listdir, queuefilename,
-				fromemails->emaillist[0], mlmmjsend, ctrlfd);
+				tll_front(*fromemails), mlmmjsend, ctrlfd);
                break;
 
 	/* listname+get-INDEX@domain.tld */
@@ -734,7 +734,7 @@ permit:
 		}
 		subonlyget = statctrl(ctrlfd, "subonlyget");
 		if(subonlyget) {
-			if(is_subbed(listfd, fromemails->emaillist[0], 0) ==
+			if(is_subbed(listfd, tll_front(*fromemails), 0) ==
 					SUB_NONE) {
 				errno = 0;
 				log_error(LOG_ARGS, "A get request was sent"
@@ -760,8 +760,8 @@ permit:
 			exit(EXIT_FAILURE);
 		}
 		log_oper(listdir, OPLOGFNAME, "%s got archive/%s",
-				fromemails->emaillist[0], archivefilename);
-		exec_or_die(mlmmjsend, "-T", fromemails->emaillist[0], "-L",
+				tll_front(*fromemails), archivefilename);
+		exec_or_die(mlmmjsend, "-T", tll_front(*fromemails), "-L",
 		    listdir, "-l", "6", "-m", archivefilename, "-a", "-D",
 		    NULL);
 		break;
@@ -774,11 +774,11 @@ permit:
 		owners = ctrlvalues(listdir, "owner");
 		if (owners != NULL) {
 			for(i = 0; i < owners->count; i++) {
-				if(strcasecmp(fromemails->emaillist[0],
+				if(strcasecmp(tll_front(*fromemails),
 							owners->strs[i]) == 0) {
 					log_oper(listdir, OPLOGFNAME,
 							"%s requested sub list",
-					fromemails->emaillist[0]);
+					tll_front(*fromemails));
 					owner_idx = i;
 					break;
 				}

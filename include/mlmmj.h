@@ -1,6 +1,6 @@
-/* Copyright (C) 2002, 2003, 2004 Mads Martin Joergensen <mmj at mmj.dk>
- *
- * $Id$
+/*
+ * Copyright (C) 2002, 2003, 2004 Mads Martin Joergensen <mmj at mmj.dk>
+ * Copyright (C) 2022-2023 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -27,6 +27,7 @@
 #include "config.h"
 #include <stdbool.h>
 #include <time.h>
+#include <tllist.h>
 
 #define RELAYHOST "127.0.0.1"
 #define READ_BUFSIZE 2048
@@ -57,6 +58,8 @@
 				 * sending digest mails */
 #define OPLOGFNAME "mlmmj.operation.log" /* logfile to log operations */
 #define OPLOGSIZE 524288
+
+typedef tll(char *) strlist;
 
 typedef enum bounce {
 	BOUNCE_OK,

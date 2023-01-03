@@ -24,9 +24,9 @@
 #ifndef LISTCONTROL_H
 #define LISTCONTROL_H
 
-#include "find_email_adr.h"
+#include "mlmmj.h"
 
-int listcontrol(struct email_container *fromemails, const char *listdir,
+int listcontrol(strlist *fromemails, const char *listdir,
 		const char *controlstr, const char *mlmmjsub,
 		const char *mlmmjunsub, const char *mlmmjsend,
 		const char *mailname, int listfd, int ctrlfd);

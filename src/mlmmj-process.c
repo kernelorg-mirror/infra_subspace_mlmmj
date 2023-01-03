@@ -438,13 +438,13 @@ int main(int argc, char **argv)
 	char *envstr, *efrom;
 	struct stat st;
 	uid_t uid;
-	struct email_container fromemails = { 0, NULL };
-	struct email_container originalfromemails = { 0, NULL };
-	struct email_container toemails = { 0, NULL };
-	struct email_container ccemails = { 0, NULL };
-	struct email_container rpemails = { 0, NULL };
-	struct email_container dtemails = { 0, NULL };
-	struct email_container *testfrom = NULL;
+	strlist fromemails = tll_init();
+	strlist originalfromemails = tll_init();
+	strlist toemails = tll_init();
+	strlist ccemails = tll_init();
+	strlist rpemails = tll_init();
+	strlist dtemails = tll_init();
+	strlist *testfrom = NULL;
 	struct strlist *access_rules = NULL;
 	struct strlist *list_rules = NULL;
 	struct strlist *delheaders = NULL;
@@ -633,9 +633,9 @@ int main(int argc, char **argv)
 	}
 	if(addrtocc || findaddress) {
 		listaddrs = ctrlvalues(listdir, "listaddress");
-		for(i = 0; i < dtemails.emailcount; i++) {
+		tll_foreach(dtemails, it) {
 			for(j = 0; j < listaddrs->count; j++) {
-				if(addrmatch(listaddrs->strs[j], dtemails.emaillist[i],
+				if(addrmatch(listaddrs->strs[j], it->item,
 						listdelim, &recipextra)) {
 					findaddress = 0;
 					free(listdelim);
@@ -646,24 +646,25 @@ int main(int argc, char **argv)
 		}
 	}
 	if(addrtocc || findaddress) {
-		for(i = 0; i < toemails.emailcount; i++) {
+		tll_foreach(toemails, it) {
 			for(j = 0; j < listaddrs->count; j++) {
-				if(addrmatch(listaddrs->strs[j], toemails.emaillist[i],
+				if(addrmatch(listaddrs->strs[j], it->item,
 						listdelim, &recipextra)) {
 					intocc = 1;
 					break;
 				}
 			}
 		}
-		if (!intocc) for(i = 0; i < ccemails.emailcount; i++) {
-			for(j = 0; j < listaddrs->count; j++) {
-				if(addrmatch(listaddrs->strs[j], ccemails.emaillist[i],
+		if (!intocc)
+			tll_foreach(ccemails, it) {
+				for(j = 0; j < listaddrs->count; j++) {
+					if(addrmatch(listaddrs->strs[j], it->item,
 						listdelim, &recipextra)) {
-					intocc = 1;
-					break;
+						intocc = 1;
+						break;
+					}
 				}
 			}
-		}
 	}
 	if (listdelim) {
 		free(listdelim);
@@ -687,19 +688,19 @@ int main(int argc, char **argv)
 	}
 
 	/* discard malformed mail with invalid From: unless it's a bounce */
-	if(fromemails.emailcount != 1 &&
+	if(tll_length(fromemails) != 1 &&
 			(recipextra == NULL ||
 			strncmp(recipextra, "bounces", 7) != 0)) {
-		for(i = 0; i < fromemails.emailcount; i++)
-			printf("fromemails.emaillist[%d] = %s\n",
-					i, fromemails.emaillist[i]);
+		tll_foreach(fromemails, it)
+			printf("fromemails.emaillist[] = %s\n",
+					it->item);
 		discardname = concatstr(3, listdir,
 				"/queue/discarded/", randomstr);
 		log_error(LOG_ARGS, "Discarding %s due to invalid From:",
 				mailfile);
-		for(i = 0; i < fromemails.emailcount; i++)
-			log_error(LOG_ARGS, "fromemails.emaillist[%d] = %s\n",
-					i, fromemails.emaillist[i]);
+		tll_foreach(fromemails, it)
+			log_error(LOG_ARGS, "fromemails.emaillist[] = %s\n",
+					it->item);
 		rename(mailfile, discardname);
 		unlink(donemailname);
 		free(donemailname);
@@ -711,8 +712,8 @@ int main(int argc, char **argv)
 	/* The only time posteraddr will remain unset is when the mail is a
 	 * bounce, so the mail will be processed by listcontrol() and the
 	 * program will terminate before posteraddr is used. */
-	if (fromemails.emailcount > 0)
-			posteraddr = fromemails.emaillist[0];
+	if (tll_length(fromemails) > 0)
+			posteraddr = tll_front(fromemails);
 
 	/* Return-Path: addresses */
 	for(i = 0; i < readhdrs[3].valuecount; i++) {
@@ -723,9 +724,9 @@ int main(int argc, char **argv)
 	if((envstr = getenv("SENDER")) != NULL) {
 		/* qmail, postfix, exim */
 		efrom = xstrdup(envstr);
-	} else if(rpemails.emailcount >= 1) {
+	} else if(tll_length(rpemails) >= 1) {
 		/* the (first) Return-Path: header */
-		efrom = xstrdup(rpemails.emaillist[0]);
+		efrom = xstrdup(tll_front(rpemails));
 	} else {
 		efrom = xstrdup("");
 	}
@@ -782,7 +783,7 @@ int main(int argc, char **argv)
 		log_error(LOG_ARGS, "listcontrol(from, %s, %s, %s, %s, %s, %s, %s)\n", listdir, toemails.emaillist[0], mlmmjsub, mlmmjunsub, mlmmjsend, mlmmjbounce, donemailname);
 #endif
 		unlink(mailfile);
-		if (originalfromemails.emailcount > 0)
+		if (tll_length(originalfromemails) > 0)
 			testfrom = &originalfromemails;
 		else
 			testfrom = &fromemails;
@@ -999,8 +1000,8 @@ int main(int argc, char **argv)
 		/* Don't send a mail about denial to the list, but silently
 		 * discard and exit. */
 		char *testaddr = posteraddr;
-		if (originalfromemails.emailcount > 0)
-			testaddr = originalfromemails.emaillist[0];
+		if (tll_length(originalfromemails) > 0)
+			testaddr = tll_front(originalfromemails);
 		if (strcasecmp(listaddr, testaddr) == 0) {
 			log_error(LOG_ARGS, "Discarding %s because"
 					" there are sender restrictions but"

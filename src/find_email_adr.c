@@ -44,6 +44,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+#include "mlmmj.h"
 #include "find_email_adr.h"
 #include "xmalloc.h"
 
@@ -181,8 +182,8 @@ static char *skin(char *name)
 }
 
 
-struct email_container *find_email_adr(const char *str,
-		struct email_container *retstruct)
+strlist *
+find_email_adr(const char *str, strlist *retstruct)
 {
 	char *c1 = NULL, *c2 = NULL;
 	char *p;
@@ -230,12 +231,8 @@ oncemore:
 		}
 
 		adr = skin(cur);
-		if (adr) {
-			retstruct->emailcount++;
-			retstruct->emaillist = (char **)xrealloc(retstruct->emaillist,
-					  sizeof(char *) * retstruct->emailcount);
-			retstruct->emaillist[retstruct->emailcount-1] = adr;
-		}
+		if (adr)
+			tll_push_back(*retstruct, adr);
 	}
 
 	free(s);
