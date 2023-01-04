@@ -110,7 +110,7 @@ static void moderate_sub(const char *listdir, const char *listaddr,
 	
 	free(str);
 
-	submods = ctrlvalues(listdir, "submod");
+	submods = ctrlvalues(ctrlfd, "submod");
 	mods = concatstr(2, listdir, "/control/submod");
 	/* check to see if there's adresses in the submod control file */
 	tll_foreach(*submods, it)
@@ -121,7 +121,7 @@ static void moderate_sub(const char *listdir, const char *listaddr,
 		/* free the submods struct from above */
 		tll_free_and_free(*submods, free);
 		free(submods);
-		submods = ctrlvalues(listdir, "owner");
+		submods = ctrlvalues(ctrlfd, "owner");
 		free(mods);
 		mods = concatstr(2, listdir, "/control/owner");
 	}

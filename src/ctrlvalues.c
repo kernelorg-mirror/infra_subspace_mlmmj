@@ -1,6 +1,6 @@
-/* Copyright (C) 2004 Mads Martin Joergensen <mmj at mmj.dk>
- *
- * $Id$
+/*
+ * Copyright (C) 2004 Mads Martin Joergensen <mmj at mmj.dk>
+ * Copyright (C) 2023 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -21,42 +21,35 @@
  * IN THE SOFTWARE.
  */
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <stdlib.h>
 #include <fcntl.h>
-#include <unistd.h>
 
 #include "xmalloc.h"
-#include "strgen.h"
 #include "ctrlvalues.h"
-#include "mygetline.h"
 #include "chomp.h"
 #include "mlmmj.h"
 
-strlist *ctrlvalues(const char *listdir, const char *ctrlstr)
+strlist *ctrlvalues(int ctrlfd, const char *ctrlstr)
 {
-	char *filename = concatstr(3, listdir, "/control/", ctrlstr);
-	char *value;
-	int ctrlfd;
+	char *line = NULL;
+	size_t linecap = 0;
+	FILE *f;
+	int fd;
 	strlist *ret;
 
-	ctrlfd = open(filename, O_RDONLY);
-	free(filename);
+	fd = openat(ctrlfd, ctrlstr, O_RDONLY|O_CLOEXEC);
+	if (fd == -1 || (f = fdopen(fd, "r")) == NULL)
+		return (NULL);
 
-	if(ctrlfd < 0)
-		return NULL;
-		
 	ret = xcalloc(1, sizeof(*ret));
-	while((value = mygetline(ctrlfd)) != NULL) {
-		chomp(value);
+	while (getline(&line, &linecap, f) > 0) {
+		chomp(line);
 		/* Ignore empty lines */
-		if (*value == '\0')
+		if (*line == '\0')
 			continue;
-		tll_push_back(*ret, value);
+		tll_push_back(*ret, xstrdup(line));
 	}
-
-	close(ctrlfd);
+	free(line);
+	fclose(f);
 
 	return ret;
 }

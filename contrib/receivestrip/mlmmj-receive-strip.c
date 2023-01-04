@@ -304,12 +304,16 @@ static int dump_mail(int infd, int outfd,char* listdir) {
 	strlist *denymime;
 	char* boundary=NULL;
 	int deny = 0;
-	int result;
+	int result, ctrlfd;
 	off_t unwantedmime_hdr_pos = 0;
+	char *dir;
+
+	xasprintf(&dir, "%s/control", listdir);
+	ctrlfd = open(dir, O_RDONLY|O_CLOEXEC);
 
 	/* get list control values */
-	delmime = ctrlvalues(listdir, "mimestrip");
-	denymime = ctrlvalues(listdir, "mimedeny");
+	delmime = ctrlvalues(ctrlfd, "mimestrip");
+	denymime = ctrlvalues(ctrlfd, "mimedeny");
 
 	/* read mail header */
 	result = read_hdrs(infd, &hdrs,delmime,denymime,&deny,&boundary);

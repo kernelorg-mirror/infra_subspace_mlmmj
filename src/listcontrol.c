@@ -770,7 +770,7 @@ permit:
 		if(statctrl(ctrlfd, "nolistsubsemail"))
 			return -1;
 		const char *owner = NULL;
-		owners = ctrlvalues(listdir, "owner");
+		owners = ctrlvalues(ctrlfd, "owner");
 		if (owners != NULL) {
 			tll_foreach(*owners, it) {
 				if(strcasecmp(tll_front(*fromemails),

@@ -554,7 +554,7 @@ int main(int argc, char **argv)
 	footfd = open(footerfilename, O_RDONLY);
 	free(footerfilename);
 
-	delheaders = ctrlvalues(listdir, "delheaders");
+	delheaders = ctrlvalues(ctrlfd, "delheaders");
 	if(delheaders == NULL)
 		delheaders = xcalloc(1, sizeof(*delheaders));
 
@@ -622,7 +622,7 @@ int main(int argc, char **argv)
 		listdelim = getlistdelim(ctrlfd);
 	}
 	if(addrtocc || findaddress) {
-		listaddrs = ctrlvalues(listdir, "listaddress");
+		listaddrs = ctrlvalues(ctrlfd, "listaddress");
 		tll_foreach(dtemails, it) {
 			tll_foreach(*listaddrs, la) {
 				if(addrmatch(la->item, it->item,
@@ -894,7 +894,7 @@ int main(int argc, char **argv)
 		    posteraddr, "-F", fromaddr, "-m", queuefilename, NULL);
 	}
 
-	access_rules = ctrlvalues(listdir, "access");
+	access_rules = ctrlvalues(ctrlfd, "access");
 	if (access_rules != NULL) {
 		enum action accret;
 		/* Don't send a mail about denial to the list, but silently
@@ -964,7 +964,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	list_rules = ctrlvalues(listdir, "send");
+	list_rules = ctrlvalues(ctrlfd, "send");
 	if (list_rules != NULL) {
 		tll_foreach(*list_rules, lr) {
 			if (strcasecmp(posteraddr, lr->item) == 0) {
