@@ -49,7 +49,7 @@ static void print_help(const char *prg)
 }
 
 static int
-dumpcount(int fd, int *count)
+dumpcount(int fd, size_t *count)
 {
 	FILE *f;
 	char *line = NULL;
@@ -74,15 +74,16 @@ dumpcount(int fd, int *count)
 
 int main(int argc, char **argv)
 {
-	int opt, count = 0, docount = 0;
+	int opt;
+	size_t count = 0;
+	bool docount = false;
 	const char *listdir = NULL;
 	const char *subfile = NULL;
 	const char *subdir;
 	DIR *dirp;
 	struct dirent *dp;
 	enum subtype typesub = SUB_NORMAL;
-	int subdirfd = -1;
-	int listfd;
+	int subdirfd = -1, listfd, fd;
 
 	while ((opt = getopt(argc, argv, "cdhmnosVL:")) != -1) {
 		switch(opt) {
@@ -135,30 +136,23 @@ int main(int argc, char **argv)
 		if(dirp == NULL)
 			errx(EXIT_FAILURE,  "Could not opendir(%s);", subdir);
 		while((dp = readdir(dirp)) != NULL) {
-			int fd;
 			if((strcmp(dp->d_name, "..") == 0) ||
 			   (strcmp(dp->d_name, ".") == 0))
 				continue;
 
 			fd = openat(subdirfd, dp->d_name, O_RDONLY|O_CLOEXEC);
-			if(docount)
-				dumpcount(fd, &count);
-			else
-				dumpcount(fd, NULL);
+			dumpcount(fd, docount ? &count : NULL);
 			close(fd);
 		}
 		closedir(dirp);
 	} else {
-		int fd = openat(listfd, subfile, O_RDONLY|O_CLOEXEC);
-		if(docount)
-			dumpcount(fd, &count);
-		else
-			dumpcount(fd, NULL);
+		fd = openat(listfd, subfile, O_RDONLY|O_CLOEXEC);
+		dumpcount(fd, docount ? &count : NULL);
 		close(fd);
 	}
 
-	if(docount)
-		printf("%d\n", count);
+	if (docount)
+		printf("%zu\n", count);
 
 	return 0;
 }
