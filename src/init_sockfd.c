@@ -42,11 +42,6 @@ void init_sockfd(int *sockfd, const char *relayhost, unsigned short port)
 	char srv[NI_MAXSERV];
 	*sockfd = -1;
 
-	if (getenv("MLMMJ_TESTING")) {
-		relayhost = "127.0.0.1";
-		port = 10025;
-	}
-
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_family = PF_UNSPEC;
