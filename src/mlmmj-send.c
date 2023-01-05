@@ -667,7 +667,7 @@ int main(int argc, char **argv)
 
 	/* initialize the archive filename */
 	if(archive) {
-		mindex = incindexfile((const char *)listdir);
+		mindex = incindexfile(listfd);
 		len = strlen(listdir) + 9 + 20;
 		archivefilename = xmalloc(len);
 		snprintf(archivefilename, len, "%s/archive/%d", listdir,

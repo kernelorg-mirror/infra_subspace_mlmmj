@@ -56,6 +56,9 @@
 #include "statctrl.h"
 #include "subscriberfuncs.h"
 #include "getaddrsfromfile.h"
+#include "ctrlvalue.h"
+#include "ctrlvalues.h"
+#include "incindexfile.h"
 
 ATF_TC_WITHOUT_HEAD(random_int);
 ATF_TC_WITHOUT_HEAD(chomp);
@@ -109,6 +112,8 @@ ATF_TC_WITHOUT_HEAD(statctrl);
 ATF_TC_WITHOUT_HEAD(is_subbed_in);
 ATF_TC_WITHOUT_HEAD(getaddrsfromfile);
 ATF_TC_WITHOUT_HEAD(dumpfd2fd);
+ATF_TC_WITHOUT_HEAD(controls);
+ATF_TC_WITHOUT_HEAD(incindexfile);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -1742,9 +1747,73 @@ ATF_TC_BODY(dumpfd2fd, tc)
 	ATF_REQUIRE_EQ_MSG(ret, 0, "Invalid simple copy %d", ret);
 	if (!atf_utils_compare_file("to.txt", buf)) {
 		atf_utils_cat_file("to.txt", ">");
-		atf_utils_copy_file("to.txt", "/tmp/to.txt");
 		atf_tc_fail("Unexpected output");
 	}
+}
+
+ATF_TC_BODY(controls, tc)
+{
+	int ctrlfd;
+	FILE *f;
+
+	mkdir("control", 0755);
+	ctrlfd = open("control", O_DIRECTORY);
+	f = fopen("control/listaddress", "w");
+	fprintf(f, "test@test\n");
+	fclose(f);
+	ATF_REQUIRE_EQ(ctrlcontent(-1, "plop"), NULL);
+	ATF_REQUIRE_EQ(ctrlcontent(ctrlfd, "plop"), NULL);
+	ATF_REQUIRE_EQ(ctrlvalues(ctrlfd, "plop"), NULL);
+	ATF_REQUIRE_STREQ(ctrlcontent(ctrlfd, "listaddress"), "test@test\n");
+	ATF_REQUIRE_EQ(ctrltimet(ctrlfd, "listaddress", 0), 0);
+	ATF_REQUIRE_EQ(ctrltimet(ctrlfd, "plop", 0), 0);
+	f = fopen("control/val", "w");
+	fputs("12",f);
+	fclose(f);
+	ATF_REQUIRE_EQ(ctrltimet(ctrlfd, "val", 0), 12);
+	ATF_REQUIRE_EQ(ctrllong(ctrlfd, "listaddress", 0), 0);
+	ATF_REQUIRE_EQ(ctrllong(ctrlfd, "plop", 0), 0);
+	ATF_REQUIRE_EQ(ctrllong(ctrlfd, "val", 0), 12);
+	ATF_REQUIRE_EQ(ctrlint(ctrlfd, "listaddress", 0), 0);
+	ATF_REQUIRE_EQ(ctrlint(ctrlfd, "plop", 0), 0);
+	ATF_REQUIRE_EQ(ctrlint(ctrlfd, "val", 0), 12);
+	ATF_REQUIRE_EQ(ctrlsizet(ctrlfd, "listaddress", 0), 0);
+	ATF_REQUIRE_EQ(ctrlsizet(ctrlfd, "plop", 0), 0);
+	ATF_REQUIRE_EQ(ctrlsizet(ctrlfd, "val", 0), 12);
+
+	f = fopen("control/val", "w");
+	fputs("line1\nline2\n\nline3\n",f);
+	fclose(f);
+	strlist *l = ctrlvalues(ctrlfd, "val");
+	ATF_REQUIRE(l != NULL);
+	ATF_REQUIRE_EQ(tll_length(*l), 3);
+	ATF_REQUIRE_STREQ(tll_front(*l), "line1");
+	ATF_REQUIRE_STREQ(tll_back(*l), "line3");
+	ATF_REQUIRE_EQ(textcontent(ctrlfd, "text"), NULL);
+	mkdir("control/text",0755);
+	ATF_REQUIRE_EQ(textcontent(ctrlfd, "text"), NULL);
+	f = fopen("control/text/text", "w");
+	fprintf(f, "this is a test");
+	fclose(f);
+	ATF_REQUIRE_STREQ(textcontent(ctrlfd, "text"), "this is a test");
+}
+
+ATF_TC_BODY(incindexfile, tc)
+{
+	mkdir("list", 0755);
+	int fd = open("list", O_DIRECTORY|O_CLOEXEC);
+	ATF_REQUIRE_EQ(incindexfile(-1), 0);
+	ATF_REQUIRE_EQ(incindexfile(fd), 1);
+	FILE *f = fopen("list/index", "w");
+	fprintf(f, "meh");
+	fclose(f);
+	ATF_REQUIRE_EQ(incindexfile(fd), 0);
+	unlink("list/index");
+	ATF_REQUIRE_EQ(incindexfile(fd), 1);
+	unlink("list/index");
+	fclose(fopen("list/index", "w"));
+	ATF_REQUIRE_EQ(incindexfile(fd), 1);
+	close(fd);
 }
 
 ATF_TP_ADD_TCS(tp)
@@ -1801,6 +1870,8 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, is_subbed_in);
 	ATF_TP_ADD_TC(tp, getaddrsfromfile);
 	ATF_TP_ADD_TC(tp, dumpfd2fd);
+	ATF_TP_ADD_TC(tp, controls);
+	ATF_TP_ADD_TC(tp, incindexfile);
 
 	return (atf_no_error());
 }

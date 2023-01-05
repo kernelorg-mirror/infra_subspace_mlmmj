@@ -24,6 +24,6 @@
 #ifndef INCINDEXFILE_H
 #define INCINDEXFILE_H
 
-int incindexfile(const char *listdir);
+int incindexfile(int listfd);
 
 #endif /* INCINDEXFILE_H */

@@ -39,7 +39,7 @@
 #include "xmalloc.h"
 #include "utils.h"
 
-int incindexfile(const char *listdir)
+int incindexfile(int listfd)
 {
 	int fd, index = 0;
 	FILE *fp;
@@ -48,10 +48,8 @@ int incindexfile(const char *listdir)
 	char *indexfilename;
 	const char *errstr;
 
-	xasprintf(&indexfilename, "%s/index", listdir);
-	fd = open(indexfilename, O_RDWR|O_CREAT, S_IRUSR|S_IWUSR);
+	fd = openat(listfd, "index", O_RDWR|O_CREAT, S_IRUSR|S_IWUSR);
 	if(fd == -1 && !lock(fd, true)) {
-		free(indexfilename);
 		log_error(LOG_ARGS, "Error opening index file");
 		return 0;
 	}
@@ -78,7 +76,6 @@ int incindexfile(const char *listdir)
 	rewind(fp);
 	fprintf(fp, "%d", index);
 	fclose(fp); /* Lock is also released */
-	free(indexfilename);
 
 	return index;
 }
