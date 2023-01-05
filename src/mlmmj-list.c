@@ -94,8 +94,8 @@ dumpcount(int fd, int *count)
 int main(int argc, char **argv)
 {
 	int opt, count = 0, docount = 0;
-	char *listdir = NULL;
-	char *subfile = NULL;
+	const char *listdir = NULL;
+	const char *subfile = NULL;
 	const char *subdir;
 	DIR *dirp;
 	struct dirent *dp;
