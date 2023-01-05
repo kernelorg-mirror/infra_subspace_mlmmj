@@ -238,9 +238,8 @@ int listcontrol(strlist *fromemails, const char *listdir,
 					tll_front(*fromemails), mlmmjsend, ctrlfd);
 			return -1;
 		}
-		log_oper(listdir, OPLOGFNAME, "mlmmj-sub: request for digest"
-					" subscription from %s",
-					tll_front(*fromemails));
+		log_oper(listfd, OPLOGFNAME, "mlmmj-sub: request for digest"
+			" subscription from %s", tll_front(*fromemails));
 		exec_or_die(mlmmjsub, "-L", listdir, "-a",
 		    tll_front(*fromemails), "-d", "-r", "-c",
 		    (nosubconfirm ? NULL : "-C"), NULL);
@@ -280,9 +279,8 @@ int listcontrol(strlist *fromemails, const char *listdir,
 					tll_front(*fromemails), mlmmjsend, ctrlfd);
 			return -1;
 		}
-		log_oper(listdir, OPLOGFNAME, "mlmmj-sub: request for nomail"
-					" subscription from %s",
-					tll_front(*fromemails));
+		log_oper(listfd, OPLOGFNAME, "mlmmj-sub: request for nomail"
+			" subscription from %s", tll_front(*fromemails));
 		exec_or_die(mlmmjsub, "-L", listdir, "-a",
 		    tll_front(*fromemails), "-n", "-r", "-c",
 		    (nosubconfirm ? NULL : "-C"), NULL);
@@ -322,9 +320,8 @@ int listcontrol(strlist *fromemails, const char *listdir,
 					tll_front(*fromemails), mlmmjsend, ctrlfd);
 			return -1;
 		}
-		log_oper(listdir, OPLOGFNAME, "mlmmj-sub: request for both"
-					" subscription from %s",
-					tll_front(*fromemails));
+		log_oper(listfd, OPLOGFNAME, "mlmmj-sub: request for both"
+			" subscription from %s", tll_front(*fromemails));
 		exec_or_die(mlmmjsub, "-L", listdir, "-a",
 		    tll_front(*fromemails), "-b", "-r", "-c",
 		    (nosubconfirm ? NULL : "-C"), NULL);
@@ -346,9 +343,8 @@ int listcontrol(strlist *fromemails, const char *listdir,
 				" Ignoring mail");
 			return -1;
 		}
-		log_oper(listdir, OPLOGFNAME, "mlmmj-sub: request for regular"
-					" subscription from %s",
-					tll_front(*fromemails));
+		log_oper(listfd, OPLOGFNAME, "mlmmj-sub: request for regular"
+			" subscription from %s", tll_front(*fromemails));
 		exec_or_die(mlmmjsub, "-L", listdir, "-a",
 		    tll_front(*fromemails), "-r", "-c",
 		    (nosubconfirm ? NULL : "-C"), NULL);
@@ -385,8 +381,8 @@ int listcontrol(strlist *fromemails, const char *listdir,
 		tmpstr = mygetline(tmpfd);
 		chomp(tmpstr);
 		close(tmpfd);
-		log_oper(listdir, OPLOGFNAME, "mlmmj-sub: %s confirmed"
-		" subscription to %s", tmpstr, subtypename);
+		log_oper(listfd, OPLOGFNAME, "mlmmj-sub: %s confirmed"
+			" subscription to %s", tmpstr, subtypename);
 		exec_or_die(mlmmjsub, "-L", listdir, "-a", tmpstr, "-n",
 		    "-R", "-c", NULL);
 		break;
@@ -407,9 +403,8 @@ int listcontrol(strlist *fromemails, const char *listdir,
 		chomp(tmpstr);
 		close(tmpfd);
 		unlink(conffilename);
-		log_oper(listdir, OPLOGFNAME, "mlmmj-sub: %s confirmed"
-					" subscription to regular list",
-					tmpstr);
+		log_oper(listfd, OPLOGFNAME, "mlmmj-sub: %s confirmed"
+			" subscription to regular list", tmpstr);
 		exec_or_die(mlmmjsub, "-L", listdir, "-a", tmpstr,
 		    "-R", "-c", NULL);
 		break;
@@ -434,9 +429,8 @@ int listcontrol(strlist *fromemails, const char *listdir,
 				" Ignoring mail");
 			return -1;
 		}
-		log_oper(listdir, OPLOGFNAME, "mlmmj-unsub: %s requests"
-					" unsubscribe",
-					tll_front(*fromemails));
+		log_oper(listfd, OPLOGFNAME, "mlmmj-unsub: %s requests"
+			" unsubscribe", tll_front(*fromemails));
 		exec_or_die(mlmmjunsub, "-L", listdir, "-a",
 		    tll_front(*fromemails), "-r",
 		    (nosubconfirm ? "-c" : "-C"), NULL);
@@ -464,8 +458,8 @@ int listcontrol(strlist *fromemails, const char *listdir,
 		close(tmpfd);
 		chomp(tmpstr);
 		unlink(conffilename);
-		log_oper(listdir, OPLOGFNAME, "mlmmj-unsub: %s confirmed"
-					" unsubscribe from digest", tmpstr);
+		log_oper(listfd, OPLOGFNAME, "mlmmj-unsub: %s confirmed"
+			" unsubscribe from digest", tmpstr);
 		exec_or_die(mlmmjunsub, "-L", listdir, "-a", tmpstr, "-d",
 		    "-R", "-c", NULL);
 		break;
@@ -492,8 +486,8 @@ int listcontrol(strlist *fromemails, const char *listdir,
 		close(tmpfd);
 		chomp(tmpstr);
 		unlink(conffilename);
-		log_oper(listdir, OPLOGFNAME, "mlmmj-unsub: %s confirmed"
-					" unsubscribe from nomail", tmpstr);
+		log_oper(listfd, OPLOGFNAME, "mlmmj-unsub: %s confirmed"
+			" unsubscribe from nomail", tmpstr);
 		exec_or_die(mlmmjunsub, "-L", listdir, "-a", tmpstr, "-n",
 		    "-R", "-c", NULL);
 		break;
@@ -520,9 +514,8 @@ int listcontrol(strlist *fromemails, const char *listdir,
 		close(tmpfd);
 		chomp(tmpstr);
 		unlink(conffilename);
-		log_oper(listdir, OPLOGFNAME, "mlmmj-unsub: %s confirmed"
-					" unsubscribe from regular list",
-					tmpstr);
+		log_oper(listfd, OPLOGFNAME, "mlmmj-unsub: %s confirmed"
+			" unsubscribe from regular list", tmpstr);
 		exec_or_die(mlmmjunsub, "-L", listdir, "-a", tmpstr, "-R", "-c",
 		    NULL);
 		break;
@@ -601,7 +594,7 @@ int listcontrol(strlist *fromemails, const char *listdir,
 
 		free(moderatefilename);
 
-		log_oper(listdir, OPLOGFNAME, "%s released %s",
+		log_oper(listfd, OPLOGFNAME, "%s released %s",
 				tll_front(*fromemails), param);
 
 		if (omit != NULL)
@@ -622,7 +615,7 @@ int listcontrol(strlist *fromemails, const char *listdir,
 				" Ignoring mail");
 			return -1;
 		}
-		log_oper(listdir, OPLOGFNAME, "%s rejected %s",
+		log_oper(listfd, OPLOGFNAME, "%s rejected %s",
 			tll_front(*fromemails), param);
 		free(param);
 		if (unlink(moderatefilename) != 0) {
@@ -648,7 +641,7 @@ permit:
 				" Ignoring mail");
 			return -1;
 		}
-		log_oper(listdir, OPLOGFNAME, "%s permitted %s",
+		log_oper(listfd, OPLOGFNAME, "%s permitted %s",
 			tll_front(*fromemails), param);
 		exec_or_die(mlmmjsub, "-L", listdir, "-m", param, "-c", NULL);
 		break;
@@ -666,7 +659,7 @@ permit:
 				" Ignoring mail");
 			return -1;
 		}
-		log_oper(listdir, OPLOGFNAME, "%s obstructed %s",
+		log_oper(listfd, OPLOGFNAME, "%s obstructed %s",
 			tll_front(*fromemails), param);
 		free(param);
 		if (unlink(gatekeepfilename) != 0) {
@@ -688,7 +681,7 @@ permit:
 				" Ignoring mail");
 			return -1;
 		}
-		log_oper(listdir, OPLOGFNAME, "%s requested help",
+		log_oper(listfd, OPLOGFNAME, "%s requested help",
 				tll_front(*fromemails));
 		txt = open_text(listdir, "help", NULL, NULL, NULL, "listhelp");
 		MY_ASSERT(txt);
@@ -710,7 +703,7 @@ permit:
                                " Ignoring mail");
                        return -1;
                }
-               log_oper(listdir, OPLOGFNAME, "%s requested faq",
+               log_oper(listfd, OPLOGFNAME, "%s requested faq",
                                tll_front(*fromemails));
 		txt = open_text(listdir, "faq", NULL, NULL, NULL, "listfaq");
 		MY_ASSERT(txt);
@@ -758,7 +751,7 @@ permit:
 			log_error(LOG_ARGS, "Unable to open archive file");
 			exit(EXIT_FAILURE);
 		}
-		log_oper(listdir, OPLOGFNAME, "%s got archive/%s",
+		log_oper(listfd, OPLOGFNAME, "%s got archive/%s",
 				tll_front(*fromemails), archivefilename);
 		exec_or_die(mlmmjsend, "-T", tll_front(*fromemails), "-L",
 		    listdir, "-l", "6", "-m", archivefilename, "-a", "-D",
@@ -775,7 +768,7 @@ permit:
 			tll_foreach(*owners, it) {
 				if(strcasecmp(tll_front(*fromemails),
 							it->item) == 0) {
-					log_oper(listdir, OPLOGFNAME,
+					log_oper(listfd, OPLOGFNAME,
 							"%s requested sub list",
 					tll_front(*fromemails));
 					owner = it->item;

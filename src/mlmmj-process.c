@@ -223,7 +223,7 @@ static void newmoderated(const char *listdir, const char *mailfilename,
 
 
 static enum action do_access(strlist *rule_strs, strlist *hdrs,
-		const char *from, const char *listdir)
+		const char *from, int listfd)
 {
 	unsigned int match;
 	char *rule_ptr;
@@ -257,7 +257,7 @@ static enum action do_access(strlist *rule_strs, strlist *hdrs,
 			log_error(LOG_ARGS, "Unable to parse rule #%d \"%s\":"
 					" Missing action keyword. Denying post from \"%s\"",
 					i, it->item, from);
-			log_oper(listdir, OPLOGFNAME, "Unable to parse rule #%d \"%s\":"
+			log_oper(listfd, OPLOGFNAME, "Unable to parse rule #%d \"%s\":"
 					" Missing action keyword. Denying post from \"%s\"",
 					i, it->item, from);
 			return DENY;
@@ -267,7 +267,7 @@ static enum action do_access(strlist *rule_strs, strlist *hdrs,
 			rule_ptr++;
 		} else if (*rule_ptr == '\0') {
 			/* the rule is a keyword and no regexp */
-			log_oper(listdir, OPLOGFNAME, "mlmmj-process: access -"
+			log_oper(listfd, OPLOGFNAME, "mlmmj-process: access -"
 					" A mail from \"%s\" was %s by rule #%d \"%s\"",
 					from, action_strs[act], i, it->item);
 			return act;
@@ -277,7 +277,7 @@ static enum action do_access(strlist *rule_strs, strlist *hdrs,
 			log_error(LOG_ARGS, "Unable to parse rule #%d \"%s\":"
 					" Invalid character after action keyword."
 					" Denying post from \"%s\"", i, it->item, from);
-			log_oper(listdir, OPLOGFNAME, "Unable to parse rule #%d \"%s\":"
+			log_oper(listfd, OPLOGFNAME, "Unable to parse rule #%d \"%s\":"
 					" Invalid character after action keyword."
 					" Denying post from \"%s\"", i, it->item, from);
 			return DENY;
@@ -309,7 +309,7 @@ static enum action do_access(strlist *rule_strs, strlist *hdrs,
 					" (message: '%s') (expression: '%s')"
 					" Denying post from \"%s\"",
 					i, it->item, errbuf, rule_ptr, from);
-			log_oper(listdir, OPLOGFNAME, "regcomp() failed for rule"
+			log_oper(listfd, OPLOGFNAME, "regcomp() failed for rule"
 					" #%d \"%s\" (message: '%s') (expression: '%s')"
 					" Denying post from \"%s\"",
 					i, it->item, errbuf, rule_ptr, from);
@@ -330,12 +330,12 @@ static enum action do_access(strlist *rule_strs, strlist *hdrs,
 
 		if (match != not) {
 			if (match) {
-				log_oper(listdir, OPLOGFNAME, "mlmmj-process: access -"
+				log_oper(listfd, OPLOGFNAME, "mlmmj-process: access -"
 						" A mail from \"%s\" with header \"%s\" was %s by"
 						" rule #%d \"%s\"", from, hdr, action_strs[act],
 						i, it->item);
 			} else {
-				log_oper(listdir, OPLOGFNAME, "mlmmj-process: access -"
+				log_oper(listfd, OPLOGFNAME, "mlmmj-process: access -"
 						" A mail from \"%s\" was %s by rule #%d \"%s\""
 						" because no header matched.", from,
 						action_strs[act], i, it->item);
@@ -345,7 +345,7 @@ static enum action do_access(strlist *rule_strs, strlist *hdrs,
 		i++;
 	}
 
-	log_oper(listdir, OPLOGFNAME, "mlmmj-process: access -"
+	log_oper(listfd, OPLOGFNAME, "mlmmj-process: access -"
 			" A mail from \"%s\" didn't match any rules, and"
 			" was denied by default.", from);
 	return DENY;
@@ -757,7 +757,7 @@ int main(int argc, char **argv)
 			close(rawmailfd);
 			close(donemailfd);
 			unlink(mailfile);
-			log_oper(listdir, OPLOGFNAME, "mlmmj-process: sending"
+			log_oper(listfd, OPLOGFNAME, "mlmmj-process: sending"
 					" mail from %s to owner",
 					efrom);
 			exec_or_die(mlmmjsend, "-l", "4", "-L", listdir, "-F",
@@ -900,7 +900,7 @@ int main(int argc, char **argv)
 		/* Don't send a mail about denial to the list, but silently
 		 * discard and exit. Also do this in case it's turned off */
 		accret = do_access(access_rules, &allheaders,
-					posteraddr, listdir);
+					posteraddr, listfd);
 		if (accret == DENY) {
 			if ((strcasecmp(listaddr, posteraddr) == 0) ||
 				    statctrl(ctrlfd, "noaccessdenymails")) {

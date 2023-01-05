@@ -1,6 +1,6 @@
-/* Copyright (C) 2005 Mads Martin Joergensen <mmj at mmj.dk>
- *
- * $Id$
+/*
+ * Copyright (C) 2005 Mads Martin Joergensen <mmj at mmj.dk>
+ * Copyright (C) 2023 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -24,6 +24,6 @@
 #ifndef LOG_OPER_H
 #define LOG_OPER_H
 
-int log_oper(const char *prefix, const char *basename, const char *fmt, ...);
+int log_oper(int listfd, const char *basename, const char *fmt, ...);
 
 #endif /* LOG_OPER_H */

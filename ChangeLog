@@ -3,6 +3,7 @@
  o mlmmj-send does not need anymore absolute path
  o Use copy_file_range if available
  o Use arc4random_uniform if available
+ o Logs are not limited anymore to 256 characters per lines
 1.4.0-a1
  o Add a test suite
  o Modernize code (dprintf, posix_spawn, asprintf, getline, daemon, ...)
