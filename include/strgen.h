@@ -26,7 +26,6 @@
 
 char *random_str(void);
 char *random_plus_addr(const char *addr);
-char *headerstr(const char *headertoken, const char *str);
 char *genlistname(const char *listaddr);
 char *genlistfqdn(const char *listaddr);
 char *concatstr(int count, ...);

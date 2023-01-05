@@ -48,15 +48,6 @@ char *random_str()
 	return dest;
 }
 
-char *headerstr(const char *headertoken, const char *str)
-{
-	char *dest;
-
-	xasprintf(&dest,  "%s%s\n", headertoken, str);
-
-	return dest;
-}
-
 char *genlistname(const char *listaddr)
 {
 	const char *atsign;
