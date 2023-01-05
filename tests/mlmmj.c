@@ -1699,12 +1699,50 @@ ATF_TC_BODY(dumpfd2fd, tc)
 	int shm = shm_open("/tmp/myshm", O_RDWR | O_CREAT, 0644);
 	ftruncate(shm, strlen("bla\n"));
 	dprintf(shm, "bla\n");
+	close(shm);
 	from = shm_open("/tmp/myshm", O_RDONLY, 0644);
-	to = open("tobla.txt", O_WRONLY|O_CREAT|O_TRUNC, 0644);
+	to = open("to.txt", O_WRONLY|O_CREAT|O_TRUNC, 0644);
 	int ret = dumpfd2fd(from, to);
+	close(from);
+	close(to);
+	shm_unlink("/tmp/myshm");
 	ATF_REQUIRE_EQ_MSG(ret, 0, "Invalid simple copy %d", ret);
-	if (!atf_utils_compare_file("tobla.txt", "bla\n")) {
-		atf_utils_cat_file("tobla.txt", ">>");
+	if (!atf_utils_compare_file("to.txt", "bla\n")) {
+		atf_utils_cat_file("to.txt", ">>");
+		atf_tc_fail("Unexpected output");
+	}
+
+	/* empty non seekable */
+	to = open("to.txt", O_WRONLY|O_CREAT|O_TRUNC, 0644);
+	from = shm_open("/tmp/myshm", O_RDONLY, 0644);
+	ret = dumpfd2fd(from, to);
+	close(from);
+	close(to);
+	ATF_REQUIRE_EQ_MSG(ret, -1, "Invalid simple copy %d", ret);
+	if (!atf_utils_compare_file("to.txt", "")) {
+		atf_utils_cat_file("to.txt", ">>");
+		atf_tc_fail("Unexpected output");
+	}
+
+	/* large non seekable */
+	shm = shm_open("/tmp/myshm", O_RDWR | O_CREAT, 0644);
+	char buf[5000];
+	for (int i = 0; i < 5000; i++)
+		buf[i]= 'a';
+	buf[4999] = '\0';
+	ftruncate(shm, strlen(buf));
+	write(shm, buf, 5000);
+	close(shm);
+	from = shm_open("/tmp/myshm", O_RDONLY, 0644);
+	to = open("to.txt", O_WRONLY|O_CREAT|O_TRUNC, 0644);
+	ret = dumpfd2fd(from, to);
+	close(from);
+	close(to);
+	shm_unlink("/tmp/myshm");
+	ATF_REQUIRE_EQ_MSG(ret, 0, "Invalid simple copy %d", ret);
+	if (!atf_utils_compare_file("to.txt", buf)) {
+		atf_utils_cat_file("to.txt", ">");
+		atf_utils_copy_file("to.txt", "/tmp/to.txt");
 		atf_tc_fail("Unexpected output");
 	}
 }
