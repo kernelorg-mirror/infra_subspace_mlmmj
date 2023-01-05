@@ -27,13 +27,10 @@
 #include <fcntl.h>
 #include <dirent.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
 #include <err.h>
 
 #include "mlmmj.h"
-#include "log_error.h"
+#include "chomp.h"
 
 static void print_help(const char *prg)
 {
@@ -54,39 +51,23 @@ static void print_help(const char *prg)
 static int
 dumpcount(int fd, int *count)
 {
-	char *start, *next, *cur;
-	struct stat st;
-	size_t len;
-	
-	if(fstat(fd, &st) < 0)
-		return -1;
+	FILE *f;
+	char *line = NULL;
+	size_t linecap = 0;
 
-	if(!S_ISREG(st.st_mode))
-		return -1;
+	f = fdopen(fd, "r");
+	if (f == NULL)
+		return (-1);
 
-	/* Nobody there */
-	if(st.st_size == 0) {
-		return 0;
+	while (getline(&line, &linecap, f) > 0) {
+		chomp(line);
+		if (count)
+			(*count)++;
+		else
+			printf("%s\n", line);
 	}
-
-	start = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
-	if(start == MAP_FAILED)
-		return -1;
-
-	for(next = cur = start; next < start + st.st_size; next++) {
-		if(*next == '\n' || next == start + st.st_size - 1) {
-			len = next - cur;
-			if(next == start + st.st_size - 1 && *next != '\n')
-				len++;
-			if(count)
-				(*count)++;
-			else {
-				printf("%.*s\n", (int)len, cur);
-			}
-			cur = next + 1;
-		}
-	}
-	munmap(start, st.st_size);
+	free(line);
+	fdclose(f, NULL);
 
 	return 0;
 }
