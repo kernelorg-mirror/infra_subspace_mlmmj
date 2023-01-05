@@ -59,6 +59,7 @@
 #include "ctrlvalue.h"
 #include "ctrlvalues.h"
 #include "incindexfile.h"
+#include "log_oper.h"
 
 ATF_TC_WITHOUT_HEAD(random_int);
 ATF_TC_WITHOUT_HEAD(chomp);
@@ -114,6 +115,7 @@ ATF_TC_WITHOUT_HEAD(getaddrsfromfile);
 ATF_TC_WITHOUT_HEAD(dumpfd2fd);
 ATF_TC_WITHOUT_HEAD(controls);
 ATF_TC_WITHOUT_HEAD(incindexfile);
+ATF_TC_WITHOUT_HEAD(log_oper);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -1816,6 +1818,18 @@ ATF_TC_BODY(incindexfile, tc)
 	close(fd);
 }
 
+ATF_TC_BODY(log_oper, tc)
+{
+	mkdir("list", 0755);
+	int fd = open("list", O_DIRECTORY);
+
+	ATF_REQUIRE_EQ(log_oper(fd, "plop", "one line with formatting %d", fd), 0);
+	if (!atf_utils_grep_file(".* one line with formatting .*", "list/plop")) {
+		atf_utils_cat_file("list/plop", ">");
+		atf_tc_fail("Invalid log file");
+	}
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -1872,6 +1886,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, dumpfd2fd);
 	ATF_TP_ADD_TC(tp, controls);
 	ATF_TP_ADD_TC(tp, incindexfile);
+	ATF_TP_ADD_TC(tp, log_oper);
 
 	return (atf_no_error());
 }

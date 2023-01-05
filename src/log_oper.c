@@ -70,9 +70,11 @@ int log_oper(int listfd, const char *basename, const char *fmt, ...)
 
 	if((time(&t) == (time_t)-1) || (ctime_r(&t, ct) == NULL))
 		strncpy(ct, "Unknown time", sizeof(ct));
+	else
+		ct[24] = '\0';
 
 	va_start(ap, fmt);
-	if (dprintf(fd, "%s", ct) < 0)
+	if (dprintf(fd, "%s ", ct) < 0)
 		log_error(LOG_ARGS, "Could not write to %s", basename);
 	if (vdprintf(fd, fmt, ap) <0)
 		log_error(LOG_ARGS, "Could not write to %s", basename);
