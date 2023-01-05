@@ -48,7 +48,7 @@ AM_CONDITIONAL(WANT_RECEIVESTRIP, test x"$enable_receive_strip" = xyes)
 AC_FUNC_MALLOC
 AC_CHECK_FUNCS([ftruncate memset socket strerror strncasecmp snprintf fcntl])
 AC_CHECK_FUNCS([nanosleep time strftime syslog regcomp regexec])
-AC_CHECK_FUNCS([arc4random_uniform])
+AC_CHECK_FUNCS([arc4random_uniform copy_file_range])
 PKG_CHECK_MODULES([ATF], [atf-c])
 
 AC_CONFIG_FILES([Makefile])

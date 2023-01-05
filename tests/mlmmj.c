@@ -20,6 +20,7 @@
  * IN THE SOFTWARE.
  */
 
+#include <sys/fcntl.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -107,6 +108,7 @@ ATF_TC_WITHOUT_HEAD(getlistaddr);
 ATF_TC_WITHOUT_HEAD(statctrl);
 ATF_TC_WITHOUT_HEAD(is_subbed_in);
 ATF_TC_WITHOUT_HEAD(getaddrsfromfile);
+ATF_TC_WITHOUT_HEAD(dumpfd2fd);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -1675,6 +1677,38 @@ ATF_TC_BODY(getaddrsfromfile, tc)
 	fclose(fp);
 }
 
+ATF_TC_BODY(dumpfd2fd, tc)
+{
+	FILE *plop = fopen("from", "w");
+	fprintf(plop, "bla\n");
+	fclose(plop);
+
+	int from = open("from", O_RDONLY);
+	int to = open("to.txt", O_WRONLY|O_CREAT|O_TRUNC, 0644);
+
+	ATF_REQUIRE_EQ_MSG(dumpfd2fd(from, to), 0, "Invalid simple copy");
+	close(from);
+	close(to);
+
+	if (!atf_utils_compare_file("to.txt", "bla\n")) {
+		atf_utils_cat_file("to.txt", "");
+		atf_tc_fail("Unexpected output");
+	}
+
+	/* non seekable */
+	int shm = shm_open("/tmp/myshm", O_RDWR | O_CREAT, 0644);
+	ftruncate(shm, strlen("bla\n"));
+	dprintf(shm, "bla\n");
+	from = shm_open("/tmp/myshm", O_RDONLY, 0644);
+	to = open("tobla.txt", O_WRONLY|O_CREAT|O_TRUNC, 0644);
+	int ret = dumpfd2fd(from, to);
+	ATF_REQUIRE_EQ_MSG(ret, 0, "Invalid simple copy %d", ret);
+	if (!atf_utils_compare_file("tobla.txt", "bla\n")) {
+		atf_utils_cat_file("tobla.txt", ">>");
+		atf_tc_fail("Unexpected output");
+	}
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -1728,6 +1762,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, statctrl);
 	ATF_TP_ADD_TC(tp, is_subbed_in);
 	ATF_TP_ADD_TC(tp, getaddrsfromfile);
+	ATF_TP_ADD_TC(tp, dumpfd2fd);
 
 	return (atf_no_error());
 }

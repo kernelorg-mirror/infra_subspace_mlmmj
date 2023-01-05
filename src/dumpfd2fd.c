@@ -1,6 +1,6 @@
-/* Copyright (C) 2004 Mads Martin Joergensen <mmj at mmj dot dk>
- *
- * $Id$
+/*
+ * Copyright (C) 2004 Mads Martin Joergensen <mmj at mmj dot dk>
+ * Copyright (C) 2023 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -21,31 +21,60 @@
  * IN THE SOFTWARE.
  */
 
+#include <sys/limits.h>
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
+#include <stdbool.h>
 
-#include "wrappers.h"
+#include "config.h"
 
 #define DUMPBUF 4096
 
-int dumpfd2fd(int infd, int outfd)
+static int
+_copy_file(int from, int to)
 {
-	size_t n;
 	char buf[DUMPBUF];
-
-	while((n = read(infd, &buf, sizeof(buf))) != 0) {
-		if(n < 0) {
-			if(errno == EINTR)
-				continue;
-			else
-				return -1; /* Caller can check errno */
-		}
-		if(writen(outfd, &buf, n) < 0)
-			return -1; /* Caller can check errno */
+	ssize_t r, wresid, w = 0;
+	char *bufp;
+	r = read(from, buf, DUMPBUF);
+	if (r < 0)
+		return (r);
+	for (bufp = buf, wresid = r; ; bufp += w, wresid -= w) {
+		w = write(to, bufp, wresid);
+		if (w <= 0)
+			break;
+		if (w >= (ssize_t) wresid)
+			break;
 	}
-	
-	return 0;
+	return (w < 0 ? w : r);
+}
+
+int dumpfd2fd(int from, int to)
+{
+#ifdef HAVE_COPY_FILE_RANGE2
+	bool cfr = true;
+#endif
+	int r;
+
+	do {
+#ifdef HAVE_COPY_FILE_RANGE2
+		if (cfr) {
+			r = copy_file_range(from, NULL, to, NULL, SSIZE_MAX, 0);
+			if (r < 0 && errno == EINVAL) {
+				printf("la\n");
+				/* probably a non seekable FD */
+				cfr = false;
+			}
+		}
+		if (!cfr) {
+#endif
+			r = _copy_file(from, to);
+#ifdef HAVE_COPY_FILE_RANGE2
+		}
+#endif
+	} while (r > 0);
+
+	return (r);
 }
