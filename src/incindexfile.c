@@ -32,10 +32,8 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "wrappers.h"
 #include "incindexfile.h"
 #include "log_error.h"
-#include "strgen.h"
 #include "xmalloc.h"
 #include "utils.h"
 
@@ -45,7 +43,6 @@ int incindexfile(int listfd)
 	FILE *fp;
 	char *line = NULL;
 	size_t linecap = 0;
-	char *indexfilename;
 	const char *errstr;
 
 	fd = openat(listfd, "index", O_RDWR|O_CREAT, S_IRUSR|S_IWUSR);
