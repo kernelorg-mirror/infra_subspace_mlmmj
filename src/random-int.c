@@ -21,12 +21,14 @@
  * IN THE SOFTWARE.
  */
 
+#include <sys/limits.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
 
 #include "wrappers.h"
+#include "config.h"
 
 int random_int()
 {
