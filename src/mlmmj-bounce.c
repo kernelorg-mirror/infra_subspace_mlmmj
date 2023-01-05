@@ -69,8 +69,8 @@ void do_probe(const char *listdir, const char *mlmmjsend, const char *addr,
 	listname = genlistname(listaddr);
 	listfqdn = genlistfqdn(listaddr);
 
-	from = concatstr(6, listname, listdelim, "bounces-probe-", myaddr, "@",
-			 listfqdn);
+	xasprintf(&from, "%s%sbounces-probe-%s@%s", listname, listdelim, myaddr,
+	    listfqdn);
 
 	free(listaddr);
 	free(listdelim);
@@ -99,8 +99,7 @@ void do_probe(const char *listdir, const char *mlmmjsend, const char *addr,
 
 	finish_file_lines(fls);
 
-	probefile = concatstr(4, listdir, "/bounce/", addr, "-probe");
-	MY_ASSERT(probefile);
+	xasprintf(&probefile, "%s/bounce/%s-probe", listdir, addr);
 	t = time(NULL);
 	unlink(probefile);
 	fd = open(probefile, O_WRONLY|O_TRUNC|O_CREAT, S_IRUSR|S_IWUSR);
@@ -149,7 +148,7 @@ int main(int argc, char **argv)
 	CHECKFULLPATH(argv[0]);
 
 	bindir = mydirname(argv[0]);
-	mlmmjsend = concatstr(2, bindir, "/mlmmj-send");
+	xasprintf(&mlmmjsend, "%s/mlmmj-send");
 	free(bindir);
 
 	while ((opt = getopt(argc, argv, "hdVL:a:n:m:p")) != -1) {

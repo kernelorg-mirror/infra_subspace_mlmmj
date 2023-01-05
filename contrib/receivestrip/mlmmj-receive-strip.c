@@ -145,6 +145,7 @@ static void extract_boundary(strlist *allhdrs, char** mime_type, char** boundary
 static int read_hdrs(int fd, strlist *allhdrs, strlist* delmime, strlist* denymime,int* deny,char** boundary) {
 	int result = MIME_OK;
 	char* mime_type = NULL;
+	char *tmp;
 	/* read headers */
 	while(1) {
 		char* line = mygetline(fd);
@@ -159,7 +160,7 @@ static int read_hdrs(int fd, strlist *allhdrs, strlist* delmime, strlist* denymi
 		if(!tll_length(*allhdrs) || ((line[0] != '\t') && (line[0] != ' '))) /* first header line or no more unfolding */
 			tll_push_back(*allhdrs, line);
 		else{
-			char* tmp = concatstr(2, tll_back(*allhdrs), line);
+			xasprintf(&tmp, "%s%s", tll_back(*allhdrs), line);
 			free(tll_pop_back(*allhdrs));
 			tll_push_back(*allhdrs, tmp);
 		}
@@ -388,7 +389,7 @@ int main(int argc, char **argv)
 	log_set_name(argv[0]);
 
 	bindir = mydirname(argv[0]);
-	mlmmjprocess = concatstr(2, bindir, "/mlmmj-process");
+	xasprintf(&mlmmjprocess, "%s/mlmmj-process", bindir);
 	free(bindir);
 
 	while ((opt = getopt(argc, argv, "hPVL:F")) != -1) {
@@ -434,13 +435,13 @@ int main(int argc, char **argv)
 		}
 	}
 
-	infilename = concatstr(3, listdir, "/incoming/", randomstr);
+	xasprintf(&infilename, "%s/incoming/%s", listdir, randomstr);
 	free(randomstr);
 	fd = open(infilename, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
 	while(fd < 0 && errno == EEXIST) {
 		free(infilename);
 		randomstr = random_str();
-		infilename = concatstr(3, listdir, "/incoming/", randomstr);
+		xasprintf(&infilename, "%s/incoming/%s", listdir, randomstr);
 		free(randomstr);
 		fd = open(infilename, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
 	}
