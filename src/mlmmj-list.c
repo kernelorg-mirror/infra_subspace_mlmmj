@@ -1,6 +1,6 @@
-/* Copyright (C) 2004 Mads Martin Joergensen <mmj at mmj.dk>
- *
- * $Id$
+/*
+ * Copyright (C) 2004 Mads Martin Joergensen <mmj at mmj.dk>
+ * Copyright (C) 2023 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -33,8 +33,6 @@
 #include <err.h>
 
 #include "mlmmj.h"
-#include "wrappers.h"
-#include "strgen.h"
 #include "log_error.h"
 
 static void print_help(const char *prg)
@@ -53,22 +51,19 @@ static void print_help(const char *prg)
 	exit(EXIT_SUCCESS);
 }
 
-int dumpcount(const char *filename, int *count)
+static int
+dumpcount(int fd, int *count)
 {
-	int fd;
 	char *start, *next, *cur;
 	struct stat st;
 	size_t len;
 	
-	if((fd = open(filename, O_RDONLY)) < 0)
+	if(fstat(fd, &st) < 0)
 		return -1;
 
-	if(stat(filename, &st) < 0)
-		return -1;
-	
 	if(!S_ISREG(st.st_mode))
 		return -1;
-	
+
 	/* Nobody there */
 	if(st.st_size == 0) {
 		return 0;
@@ -86,14 +81,12 @@ int dumpcount(const char *filename, int *count)
 			if(count)
 				(*count)++;
 			else {
-				writen(STDOUT_FILENO, cur, len);
-				writen(STDOUT_FILENO, "\n", 1);
+				printf("%.*s\n", (int)len, cur);
 			}
 			cur = next + 1;
 		}
 	}
 	munmap(start, st.st_size);
-	close(fd);
 
 	return 0;
 }
@@ -101,11 +94,14 @@ int dumpcount(const char *filename, int *count)
 int main(int argc, char **argv)
 {
 	int opt, count = 0, docount = 0;
-	char *listdir = NULL, *fileiter = NULL, *tmp;
-	char *subddir, *subdir, *subfile = NULL;
+	char *listdir = NULL;
+	char *subfile = NULL;
+	const char *subdir;
 	DIR *dirp;
 	struct dirent *dp;
 	enum subtype typesub = SUB_NORMAL;
+	int subdirfd = -1;
+	int listfd;
 
 	while ((opt = getopt(argc, argv, "cdhmnosVL:")) != -1) {
 		switch(opt) {
@@ -123,14 +119,14 @@ int main(int argc, char **argv)
 			break;
 		case 'm':
 			typesub = SUB_FILE;
-			subfile = "/control/moderators";
+			subfile = "control/moderators";
 			break;
 		case 'n':
 			typesub = SUB_NOMAIL;
 			break;
 		case 'o':
 			typesub = SUB_FILE;
-			subfile = "/control/owner";
+			subfile = "control/owner";
 			break;
 		case 'V':
 			print_version(argv[0]);
@@ -146,60 +142,42 @@ int main(int argc, char **argv)
 		errx(EXIT_FAILURE, "You have to specify -L\n"
 		    "%s -h for help", argv[0]);
 	}
+	if ((listfd = open(listdir, O_DIRECTORY|O_CLOEXEC)) == -1)
+		err(EXIT_FAILURE, "Unable to open(%s)", listdir);
 
-	switch(typesub) {
-		default:
-		case SUB_NORMAL:
-			subddir = "/subscribers.d/";
-			break;
-		case SUB_DIGEST:
-			subddir = "/digesters.d/";
-			break;
-		case SUB_NOMAIL:
-			subddir = "/nomailsubs.d/";
-			break;
-		case SUB_FILE:
-			subddir = NULL;
-			break;
-	}
-	
-	if(subddir)
-		subdir = concatstr(2, listdir, subddir);
-	else
-		subdir = NULL;
+	subdirfd = open_subscriber_directory(listfd, typesub, &subdir);
+	if (subdirfd == -1 && subdir != NULL)
+		err(EXIT_FAILURE, "Unable to open(%s/%s)", listdir, subdir);
 
-	if(subdir) {
-		dirp = opendir(subdir);
-		if(dirp == NULL) {
+	if(subdirfd != -1) {
+		dirp = fdopendir(subdirfd);
+		if(dirp == NULL)
 			errx(EXIT_FAILURE,  "Could not opendir(%s);", subdir);
-		}
 		while((dp = readdir(dirp)) != NULL) {
+			int fd;
 			if((strcmp(dp->d_name, "..") == 0) ||
-					(strcmp(dp->d_name, ".") == 0))
+			   (strcmp(dp->d_name, ".") == 0))
 				continue;
 
-			fileiter = concatstr(2, subdir, dp->d_name);
-
+			fd = openat(subdirfd, dp->d_name, O_RDONLY|O_CLOEXEC);
 			if(docount)
-				dumpcount(fileiter, &count);
+				dumpcount(fd, &count);
 			else
-				dumpcount(fileiter, NULL);
-
-			free(fileiter);
+				dumpcount(fd, NULL);
+			close(fd);
 		}
-		free(subdir);
 		closedir(dirp);
 	} else {
-		tmp = concatstr(2, listdir, subfile);
+		int fd = openat(listfd, subfile, O_RDONLY|O_CLOEXEC);
 		if(docount)
-			dumpcount(tmp, &count);
+			dumpcount(fd, &count);
 		else
-			dumpcount(tmp, NULL);
+			dumpcount(fd, NULL);
+		close(fd);
 	}
 
 	if(docount)
 		printf("%d\n", count);
-
 
 	return 0;
 }
