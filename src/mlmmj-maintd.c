@@ -567,6 +567,7 @@ unsub_bouncers(int dfd, int ctrlfd, int logfd)
 		if (!unsubscribe(dfd, address, SUB_ALL)) {
 			log(" - Some errors during unsubscription of %s\n",
 			    address);
+			free(address);
 			ret = false;
 			continue;
 		}
@@ -574,6 +575,7 @@ unsub_bouncers(int dfd, int ctrlfd, int logfd)
 		xasprintf(&a, "%s.lastmsg",  dp->d_name);
 		unlinkat(bfd, a, 0);
 		free(a);
+		free(address);
 	}
 	closedir(bouncedir);
 
