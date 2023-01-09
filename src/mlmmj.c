@@ -306,19 +306,25 @@ bouncemail(int listfd, const char *theaddress, const char *identifier)
 	 */
 	if (strcmp(identifier, "confsub") == 0) {
 		fd = openat(listfd, "subconf", O_DIRECTORY);
-		if (fd == -1)
+		if (fd == -1) {
+			free(address);
 			return (BOUNCE_OK);
+		}
 		unlinkat(fd, address, 0);
 		close(fd);
+		free(address);
 		return (BOUNCE_OK);
 	}
 
 	if (strcmp(identifier, "confunsub") == 0) {
 		fd = openat(listfd, "unsubconf", O_DIRECTORY);
-		if (fd == -1)
+		if (fd == -1) {
+			free(address);
 			return (BOUNCE_OK);
+		}
 		unlinkat(fd, address, 0);
 		close(fd);
+		free(address);
 		return (BOUNCE_OK);
 	}
 	/* Below checks for bounce probes bouncing. If they do, simply remove
@@ -328,6 +334,7 @@ bouncemail(int listfd, const char *theaddress, const char *identifier)
 	bdfd = openat(listfd, "bounce", O_DIRECTORY|O_CLOEXEC);
 	if (bdfd == -1) {
 		log_error(LOG_ARGS, "No bounce directory");
+		free(address);
 		return (BOUNCE_FAIL);
 	}
 	if(strcmp(identifier, "probe") == 0) {
@@ -335,6 +342,7 @@ bouncemail(int listfd, const char *theaddress, const char *identifier)
 		xasprintf(&a, "%s-probe", address);
 		unlinkat(bdfd, a, 0);
 		close(bdfd);
+		free(address);
 		free(a);
 		return (BOUNCE_OK);
 	}
@@ -342,12 +350,14 @@ bouncemail(int listfd, const char *theaddress, const char *identifier)
 	tmp = strrchr(address, '=');
 	if (tmp == NULL) {
 		close(bdfd);
+		free(address);
 		return (BOUNCE_OK);
 	}
 
 	if(fstatat(bdfd, address, &st, AT_SYMLINK_NOFOLLOW) == 0) {
 		if(S_ISLNK(st.st_mode)) {
 			log_error(LOG_ARGS, "bounce/%s is a symbolic link", address);
+			free(address);
 			return (BOUNCE_FAIL);
 		}
 	}
@@ -355,6 +365,7 @@ bouncemail(int listfd, const char *theaddress, const char *identifier)
 	close(bdfd);
 	if (bfd == -1) {
 		log_error(LOG_ARGS, "Cound not open(bounce/%s)", address);
+		free(address);
 		return (BOUNCE_FAIL);
 	}
 	*tmp = '@';
@@ -362,6 +373,7 @@ bouncemail(int listfd, const char *theaddress, const char *identifier)
 	if (is_subbed(listfd, address, 0) == SUB_NONE) {
 		log_error(LOG_ARGS, "%s is bouncing but not subscribed?",
 		    address);
+		free(address);
 		return (BOUNCE_OK);
 	}
 
