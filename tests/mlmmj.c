@@ -108,6 +108,11 @@ ATF_TC_WITHOUT_HEAD(send_mail_6);
 ATF_TC_WITHOUT_HEAD(send_mail_7);
 ATF_TC_WITHOUT_HEAD(send_mail_8);
 ATF_TC_WITHOUT_HEAD(getlistdelim);
+ATF_TC_WITHOUT_HEAD(getlistdelim_0);
+ATF_TC_WITHOUT_HEAD(getlistdelim_1);
+ATF_TC_WITHOUT_HEAD(getlistdelim_2);
+ATF_TC_WITHOUT_HEAD(getlistdelim_3);
+ATF_TC_WITHOUT_HEAD(getlistdelim_4);
 ATF_TC_WITHOUT_HEAD(getlistaddr);
 ATF_TC_WITHOUT_HEAD(statctrl);
 ATF_TC_WITHOUT_HEAD(is_subbed_in);
@@ -1568,26 +1573,51 @@ ATF_TC_BODY(getlistdelim, tc)
 	init_ml(true);
 	int fd = open("list/control", O_RDONLY);
 	ATF_REQUIRE_STREQ_MSG(getlistdelim(fd), DEFAULT_RECIPDELIM, "Invalid fallback");
+}
 
-	FILE *f = fopen("list/control/delimiter", "w+");
-	fclose(f);
+ATF_TC_BODY(getlistdelim_0, tc)
+{
+	init_ml(true);
+	int fd = open("list/control", O_RDONLY);
+	fclose(fopen("list/control/delimiter", "w+"));
 	ATF_REQUIRE_STREQ_MSG(getlistdelim(fd), DEFAULT_RECIPDELIM, "Invalid fallback, in case of empty delimiter");
-	f = fopen("list/control/delimiter", "w+");
+}
+
+ATF_TC_BODY(getlistdelim_1, tc)
+{
+	init_ml(true);
+	int fd = open("list/control", O_RDONLY);
+	FILE *f = fopen("list/control/delimiter", "w+");
 	fprintf(f,"\n");
 	fclose(f);
 	ATF_REQUIRE_STREQ_MSG(getlistdelim(fd), DEFAULT_RECIPDELIM, "Invalid fallback, in case of empty delimiter");
+}
 
-	f = fopen("list/control/delimiter", "w+");
+ATF_TC_BODY(getlistdelim_2, tc)
+{
+	init_ml(true);
+	int fd = open("list/control", O_RDONLY);
+	FILE *f = fopen("list/control/delimiter", "w+");
 	fprintf(f,"mydelim\n");
 	fclose(f);
 	ATF_REQUIRE_STREQ_MSG(getlistdelim(fd), "mydelim", "Invalid delimiter found");
+}
 
-	f = fopen("list/control/delimiter", "w+");
+ATF_TC_BODY(getlistdelim_3, tc)
+{
+	init_ml(true);
+	int fd = open("list/control", O_RDONLY);
+	FILE *f = fopen("list/control/delimiter", "w+");
 	fprintf(f,"mydelim\nignoreme\n");
 	fclose(f);
 	ATF_REQUIRE_STREQ_MSG(getlistdelim(fd), "mydelim", "Invalid delimiter found");
+}
 
-	f = fopen("list/control/delimiter", "w+");
+ATF_TC_BODY(getlistdelim_4, tc)
+{
+	init_ml(true);
+	int fd = open("list/control", O_RDONLY);
+	FILE *f = fopen("list/control/delimiter", "w+");
 	fprintf(f,"mydelim");
 	fclose(f);
 	ATF_REQUIRE_STREQ_MSG(getlistdelim(fd), "mydelim", "Invalid delimiter found");
@@ -1879,6 +1909,11 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, send_mail_7);
 	ATF_TP_ADD_TC(tp, send_mail_8);
 	ATF_TP_ADD_TC(tp, getlistdelim);
+	ATF_TP_ADD_TC(tp, getlistdelim_0);
+	ATF_TP_ADD_TC(tp, getlistdelim_1);
+	ATF_TP_ADD_TC(tp, getlistdelim_2);
+	ATF_TP_ADD_TC(tp, getlistdelim_3);
+	ATF_TP_ADD_TC(tp, getlistdelim_4);
 	ATF_TP_ADD_TC(tp, getlistaddr);
 	ATF_TP_ADD_TC(tp, statctrl);
 	ATF_TP_ADD_TC(tp, is_subbed_in);

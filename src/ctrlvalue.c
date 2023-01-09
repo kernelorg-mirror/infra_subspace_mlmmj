@@ -62,6 +62,10 @@ ctrlval(int ctrlfd, const char *ctrlstr, int oneline)
 		buflen = getdelim(&buf, &bufcap, EOF, fp);
 	}
 	fclose(fp);
+	if (buflen < 0) {
+		free(buf);
+		buf = NULL;
+	}
 
 	return (buf);
 }
