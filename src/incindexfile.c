@@ -62,12 +62,13 @@ int incindexfile(int listfd)
 		/* eliminate everything which is not a number */
 		line[strspn(line, "0123456789")] = '\0';
 		index = strtoim(line, 0, INT_MAX, &errstr);
-		free(line);
 		if (errstr != NULL) {
 			log_error(LOG_ARGS, "Error reading index file: invalid "
 			    "line: %s", line);
+			free(line);
 			return (0);
 		}
+		free(line);
 	}
 	index++;
 	rewind(fp);
