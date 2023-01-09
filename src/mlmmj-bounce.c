@@ -63,7 +63,7 @@ void do_probe(const char *listdir, const char *mlmmjsend, const char *addr,
 	int fd;
 	time_t t;
 
-	myaddr = xstrdup(addr);
+	myaddr = lowercase(addr);
 
 	listaddr = getlistaddr(ctrlfd);
 	listname = genlistname(listaddr);
@@ -231,7 +231,7 @@ int main(int argc, char **argv)
 
 	if (probe) {
 		/* send out a probe */
-		do_probe(listdir, mlmmjsend, address, listfd, ctrlfd);
+		do_probe(listdir, mlmmjsend, thisaddr, listfd, ctrlfd);
 		/* do_probe() will never return */
 		exit(EXIT_FAILURE);
 	}
