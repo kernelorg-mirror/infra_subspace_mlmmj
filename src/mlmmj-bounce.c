@@ -240,7 +240,7 @@ int main(int argc, char **argv)
 	log_error(LOG_ARGS, "listdir = [%s] address = [%s] number = [%s]", listdir, address, number);
 #endif
 
-	bret = bouncemail(listfd, lowercase(thisaddr), number);
+	bret = bouncemail(listfd, thisaddr, number);
 	if (bret == BOUNCE_DONE && mailname != NULL)
 		save_lastbouncedmsg(listfd, thisaddr, mailname);
 	free(address);
