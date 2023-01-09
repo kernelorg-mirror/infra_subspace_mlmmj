@@ -171,13 +171,16 @@ exec_and_wait(const char *arg, ...)
 	if (0 != posix_spawnp(&p, argv[0], NULL, NULL,
 				(char *const *) argv, environ)) {
 		warn("Execution failed for '%s'", argv[0]);
+		free(argv);
 		return (-1);
 	}
 	while (waitpid(p, &pstat, 0) == -1) {
 		if (errno != EINTR)
 			warn("Could not wait for the execution of '%s'", argv[0]);
+		free(argv);
 		return (-1);
 	}
+	free(argv);
 
 	return (WEXITSTATUS(pstat));
 }
