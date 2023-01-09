@@ -21,7 +21,6 @@
  * IN THE SOFTWARE.
  */
 
-#include <sys/limits.h>
 #include <sys/types.h>
 #include <fcntl.h>
 #include <unistd.h>
