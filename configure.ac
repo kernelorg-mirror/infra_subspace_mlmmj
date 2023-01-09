@@ -39,6 +39,16 @@ AC_ARG_ENABLE([coverage],
 		 [build with coverage flags activated (default is no)]))
 AM_CONDITIONAL(WANT_COVERAGE, test x"$enable_coverage" = xyes)
 
+AC_ARG_ENABLE([asan],
+  AS_HELP_STRING([--enable-asan],
+		 [build with libasan (default is no)]))
+AM_CONDITIONAL(WANT_ASAN, test x"$enable_asan" = xyes)
+
+AC_ARG_ENABLE([ubsan],
+  AS_HELP_STRING([--enable-ubsan],
+		 [build with libubsan (default is no)]))
+AM_CONDITIONAL(WANT_UBSAN, test x"$enable_ubsan" = xyes)
+
 AC_ARG_ENABLE([receive-strip],
   AS_HELP_STRING([--enable-receive-strip],
                  [build mlmmj-receive-strip (default is no)]))
