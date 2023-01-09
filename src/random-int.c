@@ -26,6 +26,7 @@
 #include <unistd.h>
 #include <limits.h>
 #include <time.h>
+#include <stdint.h>
 
 #include "wrappers.h"
 #include "config.h"
@@ -36,7 +37,7 @@ int random_int()
 	static int init = 0;
 	unsigned int seed;
 	int devrandom;
-	unsigned char ch;
+	uint32_t ch;
 
 	if (init) return rand();
 
