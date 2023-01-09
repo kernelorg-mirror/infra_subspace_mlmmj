@@ -67,7 +67,7 @@ dumpcount(int fd, size_t *count)
 			printf("%s\n", line);
 	}
 	free(line);
-	fdclose(f, NULL);
+	fclose(f);
 
 	return 0;
 }
@@ -142,13 +142,11 @@ int main(int argc, char **argv)
 
 			fd = openat(subdirfd, dp->d_name, O_RDONLY|O_CLOEXEC);
 			dumpcount(fd, docount ? &count : NULL);
-			close(fd);
 		}
 		closedir(dirp);
 	} else {
 		fd = openat(listfd, subfile, O_RDONLY|O_CLOEXEC);
 		dumpcount(fd, docount ? &count : NULL);
-		close(fd);
 	}
 
 	if (docount)

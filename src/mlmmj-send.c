@@ -297,7 +297,7 @@ int send_mail_many_fd(int sockfd, struct mail *mail, int subfd,
 				return ret;
 		}
 	} while(res > 0);
-	fdclose(f, NULL);
+	fclose(f);
 
 	if(tll_length(stl)) {
 		ret = send_mail_many_list(sockfd, mail, &stl, listaddr, listdelim,
