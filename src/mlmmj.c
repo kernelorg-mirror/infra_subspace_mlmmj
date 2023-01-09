@@ -485,7 +485,7 @@ char *dsnparseaddr(const char *mailname)
 					continue;
 				}
 				if (strncasecmp(hdr, "content-type:", 13) != 0) {
-					free(line);
+					free(hdr);
 					continue;
 				}
 				walk = hdr + 13;
@@ -499,6 +499,7 @@ char *dsnparseaddr(const char *mailname)
 				indsn = true;
 			}
 		}
+		free(line);
 	}
 	return addr;
 }

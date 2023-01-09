@@ -464,8 +464,10 @@ int main(int argc, char **argv)
                 notify_unsub(listdir, listaddr, listdelim, address, mlmmjsend,
 				typesub, reasonsub, listfd, ctrlfd);
 
+	free(address);
 	free(listaddr);
 	free(listdelim);
+	free(mlmmjsend);
 
 	return EXIT_SUCCESS;
 }

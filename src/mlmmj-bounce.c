@@ -247,5 +247,6 @@ int main(int argc, char **argv)
 	if (bret == BOUNCE_OK && mailname != NULL)
 		unlink(mailname);
 
+	free(mlmmjsend);
 	return (bret == BOUNCE_FAIL ? EXIT_FAILURE : EXIT_SUCCESS);
 }

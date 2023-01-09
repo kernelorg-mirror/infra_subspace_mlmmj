@@ -781,6 +781,7 @@ int main(int argc, char **argv)
 	free(address);
 	free(listaddr);
 	free(listdelim);
+	free(mlmmjsend);
 
 	return EXIT_SUCCESS;
 }
