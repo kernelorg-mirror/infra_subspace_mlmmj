@@ -10,8 +10,8 @@ AM_CFLAGS = -g -Wall -std=gnu99 -D_GNU_SOURCE=1 -Wextra -pedantic -Wsign-compare
 mlmmj_LDADD =  $(top_builddir)/src/libmlmmj.a @ATF_LIBS@ -lrt
 AM_LDFLAGS =
 if WANT_COVERAGE
-AM_CFLAGS += -O0 -ggdb -fprofile-arcs -ftest-coverage -fprofile-instr-generate -fcoverage-mapping
-AM_LDFLAGS += -fprofile-instr-generate
+AM_CFLAGS += -O0 -ggdb -fprofile-arcs -ftest-coverage -fprofile-generate
+AM_LDFLAGS += -fprofile-generate
 endif
 if WANT_ASAN
 AM_CFLAGS += -O0 -ggdb -fsanitize=address
