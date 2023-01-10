@@ -118,6 +118,9 @@ ATF_TC_WITHOUT_HEAD(statctrl);
 ATF_TC_WITHOUT_HEAD(is_subbed_in);
 ATF_TC_WITHOUT_HEAD(getaddrsfromfile);
 ATF_TC_WITHOUT_HEAD(dumpfd2fd);
+ATF_TC_WITHOUT_HEAD(dumpfd2fd_0);
+ATF_TC_WITHOUT_HEAD(dumpfd2fd_1);
+ATF_TC_WITHOUT_HEAD(dumpfd2fd_2);
 ATF_TC_WITHOUT_HEAD(controls);
 ATF_TC_WITHOUT_HEAD(incindexfile);
 ATF_TC_WITHOUT_HEAD(log_oper);
@@ -1731,14 +1734,17 @@ ATF_TC_BODY(dumpfd2fd, tc)
 		atf_utils_cat_file("to.txt", "");
 		atf_tc_fail("Unexpected output");
 	}
+}
 
+ATF_TC_BODY(dumpfd2fd_0, tc)
+{
 	/* non seekable */
 	int shm = shm_open("/tmp/myshm", O_RDWR | O_CREAT, 0644);
 	ftruncate(shm, strlen("bla\n"));
 	dprintf(shm, "bla\n");
 	close(shm);
-	from = shm_open("/tmp/myshm", O_RDONLY, 0644);
-	to = open("to.txt", O_WRONLY|O_CREAT|O_TRUNC, 0644);
+	int from = shm_open("/tmp/myshm", O_RDONLY, 0644);
+	int to = open("to.txt", O_WRONLY|O_CREAT|O_TRUNC, 0644);
 	int ret = dumpfd2fd(from, to);
 	close(from);
 	close(to);
@@ -1748,11 +1754,14 @@ ATF_TC_BODY(dumpfd2fd, tc)
 		atf_utils_cat_file("to.txt", ">>");
 		atf_tc_fail("Unexpected output");
 	}
+}
 
+ATF_TC_BODY(dumpfd2fd_1, tc)
+{
 	/* empty non seekable */
-	to = open("to.txt", O_WRONLY|O_CREAT|O_TRUNC, 0644);
-	from = shm_open("/tmp/myshm", O_RDONLY, 0644);
-	ret = dumpfd2fd(from, to);
+	int to = open("to.txt", O_WRONLY|O_CREAT|O_TRUNC, 0644);
+	int from = shm_open("/tmp/myshm", O_RDONLY, 0644);
+	int ret = dumpfd2fd(from, to);
 	close(from);
 	close(to);
 	ATF_REQUIRE_EQ_MSG(ret, -1, "Invalid simple copy %d", ret);
@@ -1760,9 +1769,12 @@ ATF_TC_BODY(dumpfd2fd, tc)
 		atf_utils_cat_file("to.txt", ">>");
 		atf_tc_fail("Unexpected output");
 	}
+}
 
+ATF_TC_BODY(dumpfd2fd_2, tc)
+{
 	/* large non seekable */
-	shm = shm_open("/tmp/myshm", O_RDWR | O_CREAT, 0644);
+	int shm = shm_open("/tmp/myshm", O_RDWR | O_CREAT, 0644);
 	char buf[5000];
 	for (int i = 0; i < 5000; i++)
 		buf[i]= 'a';
@@ -1770,9 +1782,9 @@ ATF_TC_BODY(dumpfd2fd, tc)
 	ftruncate(shm, strlen(buf));
 	write(shm, buf, 5000);
 	close(shm);
-	from = shm_open("/tmp/myshm", O_RDONLY, 0644);
-	to = open("to.txt", O_WRONLY|O_CREAT|O_TRUNC, 0644);
-	ret = dumpfd2fd(from, to);
+	int from = shm_open("/tmp/myshm", O_RDONLY, 0644);
+	int to = open("to.txt", O_WRONLY|O_CREAT|O_TRUNC, 0644);
+	int ret = dumpfd2fd(from, to);
 	close(from);
 	close(to);
 	shm_unlink("/tmp/myshm");
@@ -1919,6 +1931,9 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, is_subbed_in);
 	ATF_TP_ADD_TC(tp, getaddrsfromfile);
 	ATF_TP_ADD_TC(tp, dumpfd2fd);
+	ATF_TP_ADD_TC(tp, dumpfd2fd_0);
+	ATF_TP_ADD_TC(tp, dumpfd2fd_1);
+	ATF_TP_ADD_TC(tp, dumpfd2fd_2);
 	ATF_TP_ADD_TC(tp, controls);
 	ATF_TP_ADD_TC(tp, incindexfile);
 	ATF_TP_ADD_TC(tp, log_oper);
