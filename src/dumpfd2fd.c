@@ -26,18 +26,19 @@
 #include <unistd.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <limits.h>
 
 #include "config.h"
 
 #define DUMPBUF 4096
 
-static int
-_copy_file(int from, int to)
+int
+copy_file(int from, int to, size_t bufsiz)
 {
-	char buf[DUMPBUF];
+	char buf[bufsiz];
 	ssize_t r, wresid, w = 0;
 	char *bufp;
-	r = read(from, buf, DUMPBUF);
+	r = read(from, buf, bufsiz);
 	if (r < 0)
 		return (r);
 	for (bufp = buf, wresid = r; ; bufp += w, wresid -= w) {
@@ -52,25 +53,24 @@ _copy_file(int from, int to)
 
 int dumpfd2fd(int from, int to)
 {
-#ifdef HAVE_COPY_FILE_RANGE2
+#ifdef HAVE_COPY_FILE_RANGE
 	bool cfr = true;
 #endif
 	int r;
 
 	do {
-#ifdef HAVE_COPY_FILE_RANGE2
+#ifdef HAVE_COPY_FILE_RANGE
 		if (cfr) {
 			r = copy_file_range(from, NULL, to, NULL, SSIZE_MAX, 0);
 			if (r < 0 && errno == EINVAL) {
-				printf("la\n");
 				/* probably a non seekable FD */
 				cfr = false;
 			}
 		}
 		if (!cfr) {
 #endif
-			r = _copy_file(from, to);
-#ifdef HAVE_COPY_FILE_RANGE2
+			r = copy_file(from, to, DUMPBUF);
+#ifdef HAVE_COPY_FILE_RANGE
 		}
 #endif
 	} while (r > 0);
