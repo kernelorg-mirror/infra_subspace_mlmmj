@@ -304,7 +304,7 @@ ATF_TC_BODY(init_sock, tc)
 	ATF_REQUIRE(pipe(mypipe) >= 0);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
-		int s = fakesmtp(mypipe[0]);
+		int s = fakesmtp(mypipe[1]);
 		int c;
 		struct sockaddr_in me, cl;
 		socklen_t clsize = 0;
@@ -318,8 +318,8 @@ ATF_TC_BODY(init_sock, tc)
 			err(5, "accept()");
 		exit(0);
 	}
-	close(mypipe[0]);
-	mygetline(mypipe[1]);
+	close(mypipe[1]);
+	mygetline(mypipe[0]);
 	int sock;
 	do {
 		init_sockfd(&sock, "127.0.0.1", 25678);
@@ -1091,7 +1091,7 @@ ATF_TC_BODY(init_smtp, tc)
 	ATF_REQUIRE(pipe(smtppipe) >= 0);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
-		int s = fakesmtp(smtppipe[0]);
+		int s = fakesmtp(smtppipe[1]);
 		int c;
 		struct sockaddr_in cl;
 		char *reply;
@@ -1118,8 +1118,8 @@ ATF_TC_BODY(init_smtp, tc)
 		dprintf(c, "221 2.0.0 bye\n");
 		exit(0);
 	}
-	close(smtppipe[0]);
-	mygetline(smtppipe[1]);
+	close(smtppipe[1]);
+	mygetline(smtppipe[0]);
 	int sockfd;
 	int ret = initsmtp(&sockfd, "127.0.0.1", 25678, "heloname");
 	ATF_REQUIRE_EQ(ret, 0);
@@ -1134,7 +1134,7 @@ ATF_TC_BODY(smtp_bad_greetings, tc)
 
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
-		int s = fakesmtp(smtppipe[0]);
+		int s = fakesmtp(smtppipe[1]);
 		int c;
 		struct sockaddr_in cl;
 		socklen_t clsize = 0;
@@ -1144,8 +1144,8 @@ ATF_TC_BODY(smtp_bad_greetings, tc)
 		dprintf(c, "me fake smtp\n");
 		exit(0);
 	}
-	close(smtppipe[0]);
-	mygetline(smtppipe[1]);
+	close(smtppipe[1]);
+	mygetline(smtppipe[0]);
 	int sockfd;
 	int ret = initsmtp(&sockfd, "127.0.0.1", 25678, "heloname");
 	ATF_REQUIRE_EQ(ret, MLMMJ_CONNECT);
@@ -1159,7 +1159,7 @@ ATF_TC_BODY(smtp_bad_ehlo, tc)
 
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
-		int s = fakesmtp(smtppipe[0]);
+		int s = fakesmtp(smtppipe[1]);
 		int c;
 		struct sockaddr_in cl;
 		char *reply;
@@ -1173,8 +1173,8 @@ ATF_TC_BODY(smtp_bad_ehlo, tc)
 		dprintf(c, "501 nop nope\n");
 		exit(0);
 	}
-	close(smtppipe[0]);
-	mygetline(smtppipe[1]);
+	close(smtppipe[1]);
+	mygetline(smtppipe[0]);
 	int sockfd;
 	int ret = initsmtp(&sockfd, "127.0.0.1", 25678, "heloname");
 	ATF_REQUIRE_EQ(ret, MLMMJ_EHLO);
@@ -1188,7 +1188,7 @@ ATF_TC_BODY(smtp_no_ehlo, tc)
 
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
-		int s = fakesmtp(smtppipe[0]);
+		int s = fakesmtp(smtppipe[1]);
 		int c;
 		struct sockaddr_in cl;
 		char *reply;
@@ -1212,8 +1212,8 @@ ATF_TC_BODY(smtp_no_ehlo, tc)
 		dprintf(c, "250 OK\n");
 		exit(0);
 	}
-	close(smtppipe[0]);
-	mygetline(smtppipe[1]);
+	close(smtppipe[1]);
+	mygetline(smtppipe[0]);
 	int sockfd;
 	int ret = initsmtp(&sockfd, "127.0.0.1", 25678, "heloname");
 	ATF_REQUIRE_EQ(ret, 0);
