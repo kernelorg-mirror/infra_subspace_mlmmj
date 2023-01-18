@@ -301,7 +301,7 @@ ATF_TC_BODY(lowercase, tc)
 ATF_TC_BODY(init_sock, tc)
 {
 	int mypipe[2];
-	ATF_REQUIRE(pipe(mypipe) >= 0);
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, mypipe) >= 0);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
 		int s = fakesmtp(mypipe[1]);
@@ -1009,7 +1009,7 @@ ATF_TC_BODY(smtp, tc)
 {
 	int smtppipe[2];
 	char *reply;
-	ATF_REQUIRE(pipe(smtppipe) >= 0);
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
 		dprintf(smtppipe[0], "220 me fake smtp\n");
@@ -1088,7 +1088,7 @@ ATF_TC_BODY(smtp, tc)
 ATF_TC_BODY(init_smtp, tc)
 {
 	int smtppipe[2];
-	ATF_REQUIRE(pipe(smtppipe) >= 0);
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
 		int s = fakesmtp(smtppipe[1]);
@@ -1130,7 +1130,7 @@ ATF_TC_BODY(init_smtp, tc)
 ATF_TC_BODY(smtp_bad_greetings, tc)
 {
 	int smtppipe[2];
-	ATF_REQUIRE(pipe(smtppipe) >= 0);
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
 
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
@@ -1155,7 +1155,7 @@ ATF_TC_BODY(smtp_bad_greetings, tc)
 ATF_TC_BODY(smtp_bad_ehlo, tc)
 {
 	int smtppipe[2];
-	ATF_REQUIRE(pipe(smtppipe) >= 0);
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
 
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
@@ -1184,7 +1184,7 @@ ATF_TC_BODY(smtp_bad_ehlo, tc)
 ATF_TC_BODY(smtp_no_ehlo, tc)
 {
 	int smtppipe[2];
-	ATF_REQUIRE(pipe(smtppipe) >= 0);
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
 
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
