@@ -148,7 +148,7 @@ int main(int argc, char **argv)
 	CHECKFULLPATH(argv[0]);
 
 	bindir = mydirname(argv[0]);
-	xasprintf(&mlmmjsend, "%s/mlmmj-send");
+	xasprintf(&mlmmjsend, "%s/mlmmj-send", bindir);
 	free(bindir);
 
 	while ((opt = getopt(argc, argv, "hdVL:a:n:m:p")) != -1) {
