@@ -1261,7 +1261,7 @@ ATF_TC_BODY(send_mail_0, tc)
 	int smtppipe[2];
 	struct mail mail = {};
 	ATF_REQUIRE_EQ(send_mail(-1, NULL, -1, -1, false), EBADF);
-	ATF_REQUIRE(pipe(smtppipe) >= 0);
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
 		char *reply = mygetline(smtppipe[0]);
@@ -1301,7 +1301,7 @@ ATF_TC_BODY(send_mail_1, tc)
 {
 	int smtppipe[2];
 	struct mail mail = {};
-	ATF_REQUIRE(pipe(smtppipe) >= 0);
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
 		char *reply = mygetline(smtppipe[0]);
@@ -1326,7 +1326,7 @@ ATF_TC_BODY(send_mail_2, tc)
 {
 	int smtppipe[2];
 	struct mail mail = {};
-	ATF_REQUIRE(pipe(smtppipe) >= 0);
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
 		char *reply = mygetline(smtppipe[0]);
@@ -1354,7 +1354,7 @@ ATF_TC_BODY(send_mail_3, tc)
 {
 	int smtppipe[2];
 	struct mail mail = {};
-	ATF_REQUIRE(pipe(smtppipe) >= 0);
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
 		char *reply = mygetline(smtppipe[0]);
@@ -1382,7 +1382,7 @@ ATF_TC_BODY(send_mail_4, tc)
 {
 	int smtppipe[2];
 	struct mail mail = {};
-	ATF_REQUIRE(pipe(smtppipe) >= 0);
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
 		char *reply = mygetline(smtppipe[0]);
@@ -1410,7 +1410,7 @@ ATF_TC_BODY(send_mail_5, tc)
 {
 	int smtppipe[2];
 	struct mail mail = {};
-	ATF_REQUIRE(pipe(smtppipe) >= 0);
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
 		char *reply = mygetline(smtppipe[0]);
@@ -1447,7 +1447,7 @@ ATF_TC_BODY(send_mail_6, tc)
 {
 	int smtppipe[2];
 	struct mail mail = {};
-	ATF_REQUIRE(pipe(smtppipe) >= 0);
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
 		char *reply = mygetline(smtppipe[0]);
@@ -1487,7 +1487,7 @@ ATF_TC_BODY(send_mail_7, tc)
 {
 	int smtppipe[2];
 	struct mail mail = {};
-	ATF_REQUIRE(pipe(smtppipe) >= 0);
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
 		char *reply = mygetline(smtppipe[0]);
@@ -1528,7 +1528,7 @@ ATF_TC_BODY(send_mail_8, tc)
 	int smtppipe[2];
 	struct mail mail = {};
 	struct stat st;
-	ATF_REQUIRE(pipe(smtppipe) >= 0);
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
 		char *reply = mygetline(smtppipe[0]);
