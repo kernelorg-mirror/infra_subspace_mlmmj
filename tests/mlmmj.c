@@ -126,6 +126,8 @@ ATF_TC_WITHOUT_HEAD(incindexfile);
 ATF_TC_WITHOUT_HEAD(log_oper);
 ATF_TC_WITHOUT_HEAD(get_preppedhdrs_from_map);
 ATF_TC_WITHOUT_HEAD(get_preppedhdrs_from_map_1);
+ATF_TC_WITHOUT_HEAD(get_prepped_mailbody_from_map);
+ATF_TC_WITHOUT_HEAD(get_prepped_mailbody_from_map_1);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -1916,6 +1918,48 @@ ATF_TC_BODY(get_preppedhdrs_from_map_1, tc)
 	close(fd);
 }
 
+ATF_TC_BODY(get_prepped_mailbody_from_map, tc)
+{
+	struct stat st;
+	char *body;
+	FILE *f = fopen("./mailfile", "w+");
+
+	fprintf(f, "head1: plop\nhead2\n\nbody\n");
+	fclose(f);
+
+	stat("./mailfile", &st);
+	int fd = open("./mailfile", O_RDONLY);
+	ATF_REQUIRE(fd != -1);
+	char *map = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
+	ATF_REQUIRE(map != NULL);
+	size_t len = 0;
+	ATF_REQUIRE((body = get_prepped_mailbody_from_map(map, st.st_size, &len)) != NULL);
+	ATF_REQUIRE_EQ(len, 8);
+	ATF_REQUIRE(strncmp(body, "\r\nbody\r\n", len) == 0);
+	ATF_REQUIRE_STREQ(body, "\r\nbody\r\n");
+	munmap(map, st.st_size);
+	close(fd);
+}
+
+ATF_TC_BODY(get_prepped_mailbody_from_map_1, tc)
+{
+	struct stat st;
+	FILE *f = fopen("./mailfile", "w+");
+
+	fprintf(f, "head1: plop\nhead2\nbody\n");
+	fclose(f);
+
+	stat("./mailfile", &st);
+	int fd = open("./mailfile", O_RDONLY);
+	ATF_REQUIRE(fd != -1);
+	char *map = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
+	ATF_REQUIRE(map != NULL);
+	size_t len = 0;
+	ATF_REQUIRE(get_prepped_mailbody_from_map(map, st.st_size, &len) == NULL);
+	munmap(map, st.st_size);
+	close(fd);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -1983,6 +2027,8 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, log_oper);
 	ATF_TP_ADD_TC(tp, get_preppedhdrs_from_map);
 	ATF_TP_ADD_TC(tp, get_preppedhdrs_from_map_1);
+	ATF_TP_ADD_TC(tp, get_prepped_mailbody_from_map);
+	ATF_TP_ADD_TC(tp, get_prepped_mailbody_from_map_1);
 
 	return (atf_no_error());
 }

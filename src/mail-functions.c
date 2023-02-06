@@ -77,7 +77,6 @@ int write_rcpt_to(int sockfd, const char *rcpt_addr)
 	return (write_sock(sockfd, "TO", "RCPT TO:<%s>\r\n", rcpt_addr));
 }
 
-
 int write_mailbody_from_map(int sockfd, char *mapstart, size_t size,
 			    const char *tohdr)
 {
@@ -158,7 +157,7 @@ char *get_prepped_mailbody_from_map(char *mapstart, size_t size, size_t *blen)
 	char newlinebuf[3];
 	size_t bodylen, len, n = 0;
 
-	endhdrs = strstr(mapstart, "\n\n");
+	endhdrs = strnstr(mapstart, "\n\n", size);
 	if(endhdrs == NULL)
 		return NULL; /* The map doesn't map a file with a mail */
 
@@ -174,9 +173,9 @@ char *get_prepped_mailbody_from_map(char *mapstart, size_t size, size_t *blen)
 		}
 	}
 
-	retstr = xmalloc(bodylen + n);
+	retstr = xmalloc(bodylen + n +1);
 	*blen = bodylen + n;
-	r = retstr;	
+	r = retstr;
 	
 	for(next = cur = endhdrs; next < mapstart + size; next++) {
 		if(*next == '\n') {
@@ -194,6 +193,7 @@ char *get_prepped_mailbody_from_map(char *mapstart, size_t size, size_t *blen)
 			cur = next + 1;
 		}
 	}
+	retstr[*blen] = '\0';
 
 	return retstr;
 }
