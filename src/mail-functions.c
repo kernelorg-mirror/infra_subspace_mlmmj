@@ -118,13 +118,13 @@ int write_mailbody_from_map(int sockfd, char *mapstart, size_t size,
 	return 0;
 }
 
-char *get_preppedhdrs_from_map(char *mapstart, size_t *hlen)
+char *get_preppedhdrs_from_map(char *mapstart, size_t maplen, size_t *hlen)
 {
 	char *cur, *next, *endhdrs, *retstr, *r;
 	const char newlinebuf[] = "\r\n";
 	size_t hdrlen, n = 0;
 
-	endhdrs = strstr(mapstart, "\n\n");
+	endhdrs = strnstr(mapstart, "\n\n", maplen);
 	if(endhdrs == NULL)
 		return NULL; /* The map doesn't map a file with a mail */
 
@@ -134,7 +134,7 @@ char *get_preppedhdrs_from_map(char *mapstart, size_t *hlen)
 		if(*next == '\n')
 			n++;
 
-	retstr = xmalloc(hdrlen + n);
+	retstr = xmalloc(hdrlen + n + 1);
 	*hlen = hdrlen + n;	
 	r = retstr;	
 
@@ -147,6 +147,7 @@ char *get_preppedhdrs_from_map(char *mapstart, size_t *hlen)
 			cur = next + 1;
 		}
 	}
+	retstr[*hlen] = '\0';
 
 	return retstr;
 }

@@ -35,7 +35,7 @@ int write_rcpt_to(int sockfd, const char *rcpt_addr);
 int write_custom_line(int sockfd, const char *line);
 int write_mailbody_from_map(int sockfd, char *mailmap, size_t mailsize,
 			    const char *tohdr);
-char *get_preppedhdrs_from_map(char *mapstart, size_t *hdrslen);
+char *get_preppedhdrs_from_map(char *mapstart, size_t maplen, size_t *hdrslen);
 char *get_prepped_mailbody_from_map(char *mapstart, size_t size,
 				    size_t *bodylen);
 int write_replyto(int sockfd, const char *replyaddr);

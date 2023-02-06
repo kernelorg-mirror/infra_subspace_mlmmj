@@ -606,7 +606,7 @@ int main(int argc, char **argv)
 	mail.size = st.st_size;
 
 	if(mail.inmem) {
-		mail.hdrs = get_preppedhdrs_from_map(mail.map, &hdrslen);
+		mail.hdrs = get_preppedhdrs_from_map(mail.map, mail.size, &hdrslen);
 		if(mail.hdrs == NULL) {
 			log_error(LOG_ARGS, "Could not prepare headers");
 			exit(EXIT_FAILURE);
