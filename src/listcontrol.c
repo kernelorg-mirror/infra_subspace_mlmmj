@@ -48,69 +48,87 @@
 #include "subscriberfuncs.h"
 #include "utils.h"
 
-enum ctrl_e {
-	CTRL_SUBSCRIBE_DIGEST,
-	CTRL_SUBSCRIBE_NOMAIL,
-	CTRL_SUBSCRIBE_BOTH,
-	CTRL_SUBSCRIBE,
-	CTRL_CONFSUB_DIGEST,
-	CTRL_CONFSUB_NOMAIL,
-	CTRL_CONFSUB_BOTH,
-	CTRL_CONFSUB,
-	CTRL_UNSUBSCRIBE_DIGEST,
-	CTRL_UNSUBSCRIBE_NOMAIL,
-	CTRL_UNSUBSCRIBE,
-	CTRL_CONFUNSUB_DIGEST,
-	CTRL_CONFUNSUB_NOMAIL,
-	CTRL_CONFUNSUB,
-	CTRL_BOUNCES,
-	CTRL_RELEASE,
-	CTRL_REJECT,
-	CTRL_PERMIT,
-	CTRL_OBSTRUCT,
-	CTRL_MODERATE,
-	CTRL_HELP,
-	CTRL_FAQ,
-	CTRL_GET,
-	CTRL_LIST,
-	CTRL_END  /* end marker, must be last */
-};
-
-struct ctrl_command {
-	char *command;
-	unsigned int accepts_parameter;
-};
 
 /* Must match the enum. CAREFUL when using commands that are substrings
  * of other commands. In that case the longest one have to be listed
  * first to match correctly. */
 static struct ctrl_command ctrl_commands[] = {
-	{ "subscribe-digest",   0 },
-	{ "subscribe-nomail",   0 },
-	{ "subscribe-both",     0 },
-	{ "subscribe",          0 },
-	{ "confsub-digest",     1 },
-	{ "confsub-nomail",     1 },
-	{ "confsub-both",       1 },
-	{ "confsub",            1 },
-	{ "unsubscribe-digest", 0 },
-	{ "unsubscribe-nomail", 0 },
-	{ "unsubscribe",        0 },
-	{ "confunsub-digest",   1 },
-	{ "confunsub-nomail",   1 },
-	{ "confunsub",          1 },
-	{ "bounces",            1 },
-	{ "release",            1 },
-	{ "reject",             1 },
-	{ "permit",             1 },
-	{ "obstruct",           1 },
-	{ "moderate",           1 },
-	{ "help",               0 },
-	{ "faq",                0 },
-	{ "get",                1 },
-	{ "list",               0 }
+	{ "subscribe-digest",   0, CTRL_SUBSCRIBE_DIGEST },
+	{ "subscribe-nomail",   0, CTRL_SUBSCRIBE_NOMAIL },
+	{ "subscribe-both",     0, CTRL_SUBSCRIBE_BOTH },
+	{ "subscribe",          0, CTRL_SUBSCRIBE },
+	{ "confsub-digest",     1, CTRL_CONFSUB_DIGEST },
+	{ "confsub-nomail",     1, CTRL_CONFSUB_NOMAIL },
+	{ "confsub-both",       1, CTRL_CONFSUB_BOTH },
+	{ "confsub",            1, CTRL_CONFSUB },
+	{ "unsubscribe-digest", 0, CTRL_UNSUBSCRIBE_DIGEST },
+	{ "unsubscribe-nomail", 0, CTRL_UNSUBSCRIBE_NOMAIL },
+	{ "unsubscribe",        0, CTRL_UNSUBSCRIBE },
+	{ "confunsub-digest",   1, CTRL_CONFUNSUB_DIGEST },
+	{ "confunsub-nomail",   1, CTRL_CONFUNSUB_NOMAIL },
+	{ "confunsub",          1, CTRL_CONFUNSUB },
+	{ "bounces",            1, CTRL_BOUNCES },
+	{ "release",            1, CTRL_RELEASE },
+	{ "reject",             1, CTRL_REJECT },
+	{ "permit",             1, CTRL_PERMIT },
+	{ "obstruct",           1, CTRL_OBSTRUCT },
+	{ "moderate",           1, CTRL_MODERATE },
+	{ "help",               0, CTRL_HELP },
+	{ "faq",                0, CTRL_FAQ },
+	{ "get",                1, CTRL_GET },
+	{ "list",               0, CTRL_LIST }
 };
 
+#ifndef NELEM
+#define NELEM(array) (sizeof(array) / sizeof((array)[0]))
+#endif
+
+struct ctrl_command *
+get_ctrl_command(const char *controlstr, char **param)
+{
+	size_t cmdlen;
+	unsigned int ctrl;
+
+	for (ctrl=0; ctrl < NELEM(ctrl_commands); ctrl++) {
+		cmdlen = strlen(ctrl_commands[ctrl].command);
+		if (strncmp(controlstr, ctrl_commands[ctrl].command, cmdlen)
+		    != 0)
+			continue;
+		if (ctrl_commands[ctrl].accepts_parameter) {
+			if (controlstr[cmdlen] != '-') {
+				errno = 0;
+				log_error(LOG_ARGS, "Command \"%s\""
+					" requires a parameter, but no"
+					" parameter was given."
+					" Ignoring mail",
+					ctrl_commands[ctrl].command);
+				return (NULL);
+			}
+			if (strchr(controlstr + cmdlen + 1, '/')) {
+				errno = 0;
+				log_error(LOG_ARGS, "Slash (/) in"
+					" list control request,"
+					" discarding mail");
+				return (NULL);
+			}
+			*param = xstrdup(controlstr + cmdlen + 1);
+		} else {
+			if (controlstr[cmdlen] != '\0') {
+				errno = 0;
+				log_error(LOG_ARGS, "Command \"%s\""
+					" does not accept a parameter,"
+					" but a parameter was given."
+					" Ignoring mail",
+					ctrl_commands[ctrl].command);
+				return (NULL);
+			}
+			*param = NULL;
+		}
+		return (&ctrl_commands[ctrl]);
+	}
+
+	return (NULL);
+}
 
 int listcontrol(strlist *fromemails, const char *listdir,
 		const char *controlstr, const char *mlmmjsub,
@@ -125,14 +143,13 @@ int listcontrol(strlist *fromemails, const char *listdir,
 	struct stat stbuf;
 	bool closedlist, closedlistsub, nosubconfirm, subonlyget;
 	int tmpfd, noget;
-	size_t cmdlen;
-	unsigned int ctrl;
 	strlist *owners;
 	text *txt;
 	char *queuefilename;
 	const char *subtype = NULL;
 	const char *subtypename = NULL;
 	bounce_t bret;
+	struct ctrl_command *cc;
 
 	/* A closed list doesn't allow subscribtion and unsubscription */
 	closedlist = statctrl(ctrlfd, "closedlist");
@@ -147,51 +164,11 @@ int listcontrol(strlist *fromemails, const char *listdir,
 	log_error(LOG_ARGS, "tll_front(*fromemails) = [%s]\n",
 			tll_front(*fromemails));
 #endif
-	for (ctrl=0; ctrl<CTRL_END; ctrl++) {
-		cmdlen = strlen(ctrl_commands[ctrl].command);
-		if (strncmp(controlstr, ctrl_commands[ctrl].command, cmdlen)
-				== 0) {
+	cc = get_ctrl_command(controlstr, &param);
+	if (cc == NULL)
+		return (-1);
 
-			if (ctrl_commands[ctrl].accepts_parameter) {
-				if (controlstr[cmdlen] != '-') {
-					errno = 0;
-					log_error(LOG_ARGS, "Command \"%s\""
-						" requires a parameter, but no"
-						" parameter was given."
-						" Ignoring mail",
-						ctrl_commands[ctrl].command);
-					return -1;
-                                }
-				param = xstrdup(controlstr + cmdlen + 1);
-				MY_ASSERT(param);
-				if (strchr(param, '/')) {
-					errno = 0;
-					log_error(LOG_ARGS, "Slash (/) in"
-						" list control request,"
-						" discarding mail");
-					return -1;
-				}
-
-			} else {
-				if (controlstr[cmdlen] != '\0') {
-					errno = 0;
-					log_error(LOG_ARGS, "Command \"%s\""
-						" does not accept a parameter,"
-						" but a parameter was given."
-						" Ignoring mail",
-						ctrl_commands[ctrl].command);
-					return -1;
-				}
-				param = NULL;
-			}
-
-			break;
-
-		}
-	}
-	
-	/* Only allow mails with bad From: header to be bounce mails */
-	if(tll_length(*fromemails) != 1 && ctrl != CTRL_BOUNCES) {
+	if(tll_length(*fromemails) != 1 && cc->type != CTRL_BOUNCES) {
 		errno = 0;
 		log_error(LOG_ARGS, "Ignoring mail with invalid From: "
 				"which was not a bounce: %d", tll_length(*fromemails));
@@ -199,10 +176,10 @@ int listcontrol(strlist *fromemails, const char *listdir,
 	}
 
 	/* We only need the control mail when bouncing, to save bounced msg */
-	if(ctrl != CTRL_BOUNCES)
+	if(cc->type != CTRL_BOUNCES)
 		unlink(mailname);
 
-	switch (ctrl) {
+	switch (cc->type) {
 
 	/* listname+subscribe-digest@domain.tld */
 	case CTRL_SUBSCRIBE_DIGEST:

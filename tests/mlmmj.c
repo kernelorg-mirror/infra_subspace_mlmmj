@@ -60,6 +60,7 @@
 #include "ctrlvalues.h"
 #include "incindexfile.h"
 #include "log_oper.h"
+#include "listcontrol.h"
 
 ATF_TC_WITHOUT_HEAD(random_int);
 ATF_TC_WITHOUT_HEAD(chomp);
@@ -128,6 +129,7 @@ ATF_TC_WITHOUT_HEAD(get_preppedhdrs_from_map);
 ATF_TC_WITHOUT_HEAD(get_preppedhdrs_from_map_1);
 ATF_TC_WITHOUT_HEAD(get_prepped_mailbody_from_map);
 ATF_TC_WITHOUT_HEAD(get_prepped_mailbody_from_map_1);
+ATF_TC_WITHOUT_HEAD(get_ctrl_command);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -1960,6 +1962,35 @@ ATF_TC_BODY(get_prepped_mailbody_from_map_1, tc)
 	close(fd);
 }
 
+ATF_TC_BODY(get_ctrl_command, tc)
+{
+	char *param = NULL;
+	struct ctrl_command *ctrl;
+
+	ATF_REQUIRE(get_ctrl_command("plop", &param) == NULL);
+	ATF_REQUIRE(param == NULL);
+	ctrl = get_ctrl_command("list", &param);
+	ATF_REQUIRE(ctrl != NULL);
+	ATF_REQUIRE(ctrl->type == CTRL_LIST);
+	ATF_REQUIRE(param == NULL);
+	ctrl = get_ctrl_command("list-", &param);
+	ATF_REQUIRE(ctrl == NULL);
+	ctrl = get_ctrl_command("get", &param);
+	ATF_REQUIRE(ctrl == NULL);
+	ctrl = get_ctrl_command("get-", &param);
+	ATF_REQUIRE(ctrl != NULL);
+	ATF_REQUIRE(param != NULL);
+	ATF_REQUIRE_STREQ(param, "");
+	free(param);
+	ctrl = get_ctrl_command("get-1", &param);
+	ATF_REQUIRE(ctrl != NULL);
+	ATF_REQUIRE(param != NULL);
+	ATF_REQUIRE_STREQ(param, "1");
+	free(param);
+	ctrl = get_ctrl_command("get-a/b", &param);
+	ATF_REQUIRE(ctrl == NULL);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -2029,6 +2060,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, get_preppedhdrs_from_map_1);
 	ATF_TP_ADD_TC(tp, get_prepped_mailbody_from_map);
 	ATF_TP_ADD_TC(tp, get_prepped_mailbody_from_map_1);
+	ATF_TP_ADD_TC(tp, get_ctrl_command);
 
 	return (atf_no_error());
 }

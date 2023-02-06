@@ -26,6 +26,41 @@
 
 #include "mlmmj.h"
 
+enum ctrl_e {
+	CTRL_SUBSCRIBE_DIGEST,
+	CTRL_SUBSCRIBE_NOMAIL,
+	CTRL_SUBSCRIBE_BOTH,
+	CTRL_SUBSCRIBE,
+	CTRL_CONFSUB_DIGEST,
+	CTRL_CONFSUB_NOMAIL,
+	CTRL_CONFSUB_BOTH,
+	CTRL_CONFSUB,
+	CTRL_UNSUBSCRIBE_DIGEST,
+	CTRL_UNSUBSCRIBE_NOMAIL,
+	CTRL_UNSUBSCRIBE,
+	CTRL_CONFUNSUB_DIGEST,
+	CTRL_CONFUNSUB_NOMAIL,
+	CTRL_CONFUNSUB,
+	CTRL_BOUNCES,
+	CTRL_RELEASE,
+	CTRL_REJECT,
+	CTRL_PERMIT,
+	CTRL_OBSTRUCT,
+	CTRL_MODERATE,
+	CTRL_HELP,
+	CTRL_FAQ,
+	CTRL_GET,
+	CTRL_LIST,
+};
+
+struct ctrl_command {
+	char *command;
+	unsigned int accepts_parameter;
+	enum ctrl_e type;
+};
+
+struct ctrl_command *get_ctrl_command(const char *controlstr, char **param);
+
 int listcontrol(strlist *fromemails, const char *listdir,
 		const char *controlstr, const char *mlmmjsub,
 		const char *mlmmjunsub, const char *mlmmjsend,
