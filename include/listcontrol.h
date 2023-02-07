@@ -55,7 +55,9 @@ enum ctrl_e {
 
 struct ctrl_command {
 	char *command;
-	unsigned int accepts_parameter;
+	bool accepts_parameter;
+	bool valid_when_closed_list;
+	bool valid_when_closed_sub;
 	enum ctrl_e type;
 };
 

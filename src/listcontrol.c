@@ -52,31 +52,35 @@
 /* Must match the enum. CAREFUL when using commands that are substrings
  * of other commands. In that case the longest one have to be listed
  * first to match correctly. */
+
+/* A closed list doesn't allow subscribtion and unsubscription
+   A closed list "sub" only dissallows subscription, not unsub. */
+
 static struct ctrl_command ctrl_commands[] = {
-	{ "subscribe-digest",   0, CTRL_SUBSCRIBE_DIGEST },
-	{ "subscribe-nomail",   0, CTRL_SUBSCRIBE_NOMAIL },
-	{ "subscribe-both",     0, CTRL_SUBSCRIBE_BOTH },
-	{ "subscribe",          0, CTRL_SUBSCRIBE },
-	{ "confsub-digest",     1, CTRL_CONFSUB_DIGEST },
-	{ "confsub-nomail",     1, CTRL_CONFSUB_NOMAIL },
-	{ "confsub-both",       1, CTRL_CONFSUB_BOTH },
-	{ "confsub",            1, CTRL_CONFSUB },
-	{ "unsubscribe-digest", 0, CTRL_UNSUBSCRIBE_DIGEST },
-	{ "unsubscribe-nomail", 0, CTRL_UNSUBSCRIBE_NOMAIL },
-	{ "unsubscribe",        0, CTRL_UNSUBSCRIBE },
-	{ "confunsub-digest",   1, CTRL_CONFUNSUB_DIGEST },
-	{ "confunsub-nomail",   1, CTRL_CONFUNSUB_NOMAIL },
-	{ "confunsub",          1, CTRL_CONFUNSUB },
-	{ "bounces",            1, CTRL_BOUNCES },
-	{ "release",            1, CTRL_RELEASE },
-	{ "reject",             1, CTRL_REJECT },
-	{ "permit",             1, CTRL_PERMIT },
-	{ "obstruct",           1, CTRL_OBSTRUCT },
-	{ "moderate",           1, CTRL_MODERATE },
-	{ "help",               0, CTRL_HELP },
-	{ "faq",                0, CTRL_FAQ },
-	{ "get",                1, CTRL_GET },
-	{ "list",               0, CTRL_LIST }
+	{ "subscribe-digest",   false, false, false, CTRL_SUBSCRIBE_DIGEST },
+	{ "subscribe-nomail",   false, false, false, CTRL_SUBSCRIBE_NOMAIL },
+	{ "subscribe-both",     false, false, false, CTRL_SUBSCRIBE_BOTH },
+	{ "subscribe",          false, false, false , CTRL_SUBSCRIBE },
+	{ "confsub-digest",     true , false, true , CTRL_CONFSUB_DIGEST },
+	{ "confsub-nomail",     true , false, true , CTRL_CONFSUB_NOMAIL },
+	{ "confsub-both",       true , false, true , CTRL_CONFSUB_BOTH },
+	{ "confsub",            true , false, true , CTRL_CONFSUB },
+	{ "unsubscribe-digest", false, false, true , CTRL_UNSUBSCRIBE_DIGEST },
+	{ "unsubscribe-nomail", false, false, true , CTRL_UNSUBSCRIBE_NOMAIL },
+	{ "unsubscribe",        false, false, true , CTRL_UNSUBSCRIBE },
+	{ "confunsub-digest",   true , false, true ,CTRL_CONFUNSUB_DIGEST },
+	{ "confunsub-nomail",   true , false, true ,CTRL_CONFUNSUB_NOMAIL },
+	{ "confunsub",          true , false, true ,CTRL_CONFUNSUB },
+	{ "bounces",            true , true , true ,CTRL_BOUNCES },
+	{ "release",            true , true , true ,CTRL_RELEASE },
+	{ "reject",             true , true , true ,CTRL_REJECT },
+	{ "permit",             true , true , true ,CTRL_PERMIT },
+	{ "obstruct",           true , true , true ,CTRL_OBSTRUCT },
+	{ "moderate",           true , true , true ,CTRL_MODERATE },
+	{ "help",               false, true , true ,CTRL_HELP },
+	{ "faq",                false, true , true ,CTRL_FAQ },
+	{ "get",                true , true , true ,CTRL_GET },
+	{ "list",               false, true , true ,CTRL_LIST }
 };
 
 #ifndef NELEM
@@ -141,7 +145,7 @@ int listcontrol(strlist *fromemails, const char *listdir,
 	char *omit = NULL;
 	char *c, *archivefilename, *sendfilename;
 	struct stat stbuf;
-	bool closedlist, closedlistsub, nosubconfirm, subonlyget;
+	bool nosubconfirm, subonlyget;
 	int tmpfd, noget;
 	strlist *owners;
 	text *txt;
@@ -151,14 +155,8 @@ int listcontrol(strlist *fromemails, const char *listdir,
 	bounce_t bret;
 	struct ctrl_command *cc;
 
-	/* A closed list doesn't allow subscribtion and unsubscription */
-	closedlist = statctrl(ctrlfd, "closedlist");
-
-	/* A closed list "sub" only dissallows subscription, not unsub. */
-	closedlistsub = statctrl(ctrlfd, "closedlistsub");
-
 	nosubconfirm = statctrl(ctrlfd, "nosubconfirm");
-	
+
 #if 0
 	log_error(LOG_ARGS, "controlstr = [%s]\n", controlstr);
 	log_error(LOG_ARGS, "tll_front(*fromemails) = [%s]\n",
@@ -171,24 +169,31 @@ int listcontrol(strlist *fromemails, const char *listdir,
 	if(tll_length(*fromemails) != 1 && cc->type != CTRL_BOUNCES) {
 		errno = 0;
 		log_error(LOG_ARGS, "Ignoring mail with invalid From: "
-				"which was not a bounce: %d", tll_length(*fromemails));
+			"which was not a bounce: %d", tll_length(*fromemails));
 		return -1;
 	}
 
 	/* We only need the control mail when bouncing, to save bounced msg */
-	if(cc->type != CTRL_BOUNCES)
+	if (cc->type != CTRL_BOUNCES)
 		unlink(mailname);
 
+	if (statctrl(ctrlfd, "closedlist") && !cc->valid_when_closed_list) {
+		errno = 0;
+		log_error(LOG_ARGS, "A %s request was sent to a closed list. "
+		    "Ignoring mail", cc->command);
+		return -1;
+	}
+
+	if (statctrl(ctrlfd, "closedlistsub") && !cc->valid_when_closed_sub) {
+		errno = 0;
+		log_error(LOG_ARGS, "A %s request was sent to a subscription "
+		    "closed list. Ignoring mail", cc->command);
+		return -1;
+	}
 	switch (cc->type) {
 
 	/* listname+subscribe-digest@domain.tld */
 	case CTRL_SUBSCRIBE_DIGEST:
-		if (closedlist || closedlistsub) {
-			errno = 0;
-			log_error(LOG_ARGS, "A subscribe-digest request was"
-				" sent to a closed list. Ignoring mail");
-			return -1;
-		}
 		if (!strchr(tll_front(*fromemails), '@')) {
 			/* Not a valid From: address */
 			errno = 0;
@@ -224,12 +229,6 @@ int listcontrol(strlist *fromemails, const char *listdir,
 
 	/* listname+subscribe-nomail@domain.tld */
 	case CTRL_SUBSCRIBE_NOMAIL:
-		if (closedlist || closedlistsub) {
-			errno = 0;
-			log_error(LOG_ARGS, "A subscribe-nomail request was"
-				" sent to a closed list. Ignoring mail");
-			return -1;
-		}
 		if (!strchr(tll_front(*fromemails), '@')) {
 			/* Not a valid From: address */
 			errno = 0;
@@ -265,12 +264,6 @@ int listcontrol(strlist *fromemails, const char *listdir,
 
 	/* listname+subscribe-both@domain.tld */
 	case CTRL_SUBSCRIBE_BOTH:
-		if (closedlist || closedlistsub) {
-			errno = 0;
-			log_error(LOG_ARGS, "A subscribe-both request was"
-				" sent to a closed list. Ignoring mail");
-			return -1;
-		}
 		if (!strchr(tll_front(*fromemails), '@')) {
 			/* Not a valid From: address */
 			errno = 0;
@@ -306,12 +299,6 @@ int listcontrol(strlist *fromemails, const char *listdir,
 
 	/* listname+subscribe@domain.tld */
 	case CTRL_SUBSCRIBE:
-		if (closedlist || closedlistsub) {
-			errno = 0;
-			log_error(LOG_ARGS, "A subscribe request was"
-				" sent to a closed list. Ignoring mail");
-			return -1;
-		}
 		if (!strchr(tll_front(*fromemails), '@')) {
 			/* Not a valid From: address */
 			errno = 0;
@@ -392,12 +379,6 @@ int listcontrol(strlist *fromemails, const char *listdir,
 	case CTRL_UNSUBSCRIBE_NOMAIL:
 	/* listname+unsubscribe@domain.tld */
 	case CTRL_UNSUBSCRIBE:
-		if (closedlist) {
-			errno = 0;
-			log_error(LOG_ARGS, "An unsubscribe request was"
-				" sent to a closed list. Ignoring mail");
-			return -1;
-		}
 		if (!strchr(tll_front(*fromemails), '@')) {
 			/* Not a valid From: address */
 			errno = 0;
@@ -415,12 +396,6 @@ int listcontrol(strlist *fromemails, const char *listdir,
 
 	/* listname+unsubconf-digest-COOKIE@domain.tld */
 	case CTRL_CONFUNSUB_DIGEST:
-		if (closedlist) {
-			errno = 0;
-			log_error(LOG_ARGS, "An unsubconf-digest request was"
-				" sent to a closed list. Ignoring mail");
-			return -1;
-		}
 		conffilename = concatstr(3, listdir, "/unsubconf/", param);
 		free(param);
 		if((tmpfd = open(conffilename, O_RDONLY)) < 0) {
@@ -443,12 +418,6 @@ int listcontrol(strlist *fromemails, const char *listdir,
 
 	/* listname+unsubconf-nomail-COOKIE@domain.tld */
 	case CTRL_CONFUNSUB_NOMAIL:
-		if (closedlist) {
-			errno = 0;
-			log_error(LOG_ARGS, "An unsubconf-nomail request was"
-				" sent to a closed list. Ignoring mail");
-			return -1;
-		}
 		conffilename = concatstr(3, listdir, "/unsubconf/", param);
 		free(param);
 		if((tmpfd = open(conffilename, O_RDONLY)) < 0) {
@@ -471,12 +440,6 @@ int listcontrol(strlist *fromemails, const char *listdir,
 
 	/* listname+unsubconf-COOKIE@domain.tld */
 	case CTRL_CONFUNSUB:
-		if (closedlist) {
-			errno = 0;
-			log_error(LOG_ARGS, "An unsubconf request was"
-				" sent to a closed list. Ignoring mail");
-			return -1;
-		}
 		conffilename = concatstr(3, listdir, "/unsubconf/", param);
 		free(param);
 		if((tmpfd = open(conffilename, O_RDONLY)) < 0) {
