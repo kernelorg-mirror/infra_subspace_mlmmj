@@ -54,6 +54,7 @@
 #include "log_oper.h"
 #include "unistr.h"
 #include "chomp.h"
+#include "mlmmj-process.h"
 #include "utils.h"
 
 enum action {
