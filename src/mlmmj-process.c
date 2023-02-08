@@ -353,53 +353,6 @@ static enum action do_access(strlist *rule_strs, strlist *hdrs,
 }
 
 
-static int addrmatch(const char *listaddr, const char *addr,
-		const char *listdelim, char **recipextra)
-{
-	char *delim, *atsign;
-	size_t len;
-
-	if (!addr)
-		return 0;
-
-	if(strcasecmp(listaddr, addr) == 0) {
-		if (recipextra)
-			*recipextra = NULL;
-		return 1;
-	}
-
-	if (!listdelim)
-		return 0;
-
-	delim = strstr(addr, listdelim);
-	if (!delim)
-		return 0;
-
-	len = delim - addr;
-	if(strncasecmp(listaddr, addr, len) != 0)
-		return 0;
-	if(*(listaddr + len) != '@')
-		return 0;
-
-	delim += strlen(listdelim);
-
-	atsign = strrchr(delim, '@');
-	if (!atsign)
-		return 0;
-
-	if(strcasecmp(listaddr + len + 1, atsign + 1) != 0)
-		return 0;
-
-	if (recipextra) {
-		len = atsign - delim;
-		*recipextra = (char *)xmalloc(len + 1);
-		strncpy(*recipextra, delim, len);
-		(*recipextra)[len] = '\0';
-	}
-
-	return 1;
-}
-
 
 static void print_help(const char *prg)
 {
@@ -592,13 +545,12 @@ int main(int argc, char **argv)
 	}
 
 	recipextra = get_recipextra_from_env(ctrlfd);
-	if (recipextra == NULL)
+	if (recipextra == NULL) {
 		findaddress = true;
-	addr_in_to_or_cc = !statctrl(ctrlfd, "tocc");
-
-	if (findaddress) {
 		listdelim = getlistdelim(ctrlfd);
 	}
+	addr_in_to_or_cc = !statctrl(ctrlfd, "tocc");
+
 	if(addr_in_to_or_cc || findaddress) {
 		listaddrs = ctrlvalues(ctrlfd, "listaddress");
 		tll_foreach(dtemails, it) {

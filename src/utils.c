@@ -232,3 +232,49 @@ get_recipextra_from_env(int ctrlfd)
 	}
 	return (NULL);
 }
+
+bool
+addrmatch(const char *listaddr, const char *addr,
+    const char *listdelim, char **recipextra)
+{
+	char *delim, *atsign;
+	size_t len;
+
+	if (recipextra)
+		*recipextra = NULL;
+
+	if (addr == NULL)
+		return (false);
+
+	if(strcasecmp(listaddr, addr) == 0)
+		return (true);
+
+	if (listdelim == NULL)
+		return (false);
+
+	delim = strstr(addr, listdelim);
+	if (delim == NULL)
+		return (false);
+
+	len = delim - addr;
+	if(strncasecmp(listaddr, addr, len) != 0)
+		return (false);
+	if(*(listaddr + len) != '@')
+		return (false);
+
+	delim += strlen(listdelim);
+
+	atsign = strrchr(delim, '@');
+	if (!atsign)
+		return (false);
+
+	if(strcasecmp(listaddr + len + 1, atsign + 1) != 0)
+		return (false);
+
+	if (recipextra) {
+		len = atsign - delim;
+		*recipextra = xstrndup(delim, len);
+	}
+
+	return (true);
+}

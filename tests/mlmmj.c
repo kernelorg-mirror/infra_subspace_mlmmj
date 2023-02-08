@@ -135,6 +135,7 @@ ATF_TC_WITHOUT_HEAD(get_recipextra_from_env_none);
 ATF_TC_WITHOUT_HEAD(get_recipextra_from_env_qmail);
 ATF_TC_WITHOUT_HEAD(get_recipextra_from_env_postfix);
 ATF_TC_WITHOUT_HEAD(get_recipextra_from_env_exim);
+ATF_TC_WITHOUT_HEAD(addrmatch);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -2037,6 +2038,27 @@ ATF_TC_BODY(get_recipextra_from_env_exim, tc)
 	free(str);
 }
 
+ATF_TC_BODY(addrmatch, tc)
+{
+	char *extra;
+
+	ATF_REQUIRE(addrmatch("lists@test.org", "lists@test.org", "+", &extra));
+	ATF_REQUIRE(extra == NULL);
+
+	ATF_REQUIRE(!addrmatch("lists@test.org", NULL, "+", &extra));
+	ATF_REQUIRE(!addrmatch("lists@test.org", "nope@test.org", "+", &extra));
+	ATF_REQUIRE(!addrmatch("lists@test.org", "nope@test.org", NULL, &extra));
+	ATF_REQUIRE(addrmatch("lists@test.org", "lists+@test.org", "+", &extra));
+	ATF_REQUIRE_STREQ(extra, "");
+	ATF_REQUIRE(!addrmatch("lists@test.org", "list+@test.org", "+", &extra));
+	ATF_REQUIRE(!addrmatch("lists@test.org", "lists+@bla.org", "+", &extra));
+	ATF_REQUIRE(!addrmatch("lists@test.org", "bla+@test.org", "+", &extra));
+	ATF_REQUIRE(!addrmatch("lists@test.org", "list+@bla.org", "+", &extra));
+	ATF_REQUIRE(!addrmatch("lists@test.org", "list+test.org", "+", &extra));
+	ATF_REQUIRE(addrmatch("lists@test.org", "lists+value@test.org", "+", &extra));
+	ATF_REQUIRE_STREQ(extra, "value");
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -2111,6 +2133,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, get_recipextra_from_env_qmail);
 	ATF_TP_ADD_TC(tp, get_recipextra_from_env_postfix);
 	ATF_TP_ADD_TC(tp, get_recipextra_from_env_exim);
+	ATF_TP_ADD_TC(tp, addrmatch);
 
 	return (atf_no_error());
 }

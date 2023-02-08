@@ -24,3 +24,4 @@
 #pragma once
 
 char *get_recipextra_from_env(int ctrlfd);
+bool addrmatch(const char *listaddr, const char *addr, const char *listdelim, char **recipextra);
