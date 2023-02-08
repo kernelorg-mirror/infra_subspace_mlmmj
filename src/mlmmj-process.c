@@ -352,8 +352,6 @@ static enum action do_access(strlist *rule_strs, strlist *hdrs,
 	return DENY;
 }
 
-
-
 static void print_help(const char *prg)
 {
 	printf("Usage: %s -L /path/to/list\n"
