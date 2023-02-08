@@ -9,3 +9,4 @@ atf_test_program{name='mlmmj-maintd'}
 atf_test_program{name='mlmmj-sub'}
 atf_test_program{name='mlmmj-bounce'}
 atf_test_program{name='mlmmj-list'}
+atf_test_program{name='mlmmj-process'}
