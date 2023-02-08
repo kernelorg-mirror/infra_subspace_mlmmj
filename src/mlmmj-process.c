@@ -371,7 +371,7 @@ int main(int argc, char **argv)
 	enum modreason modreason;
 	int hdrfd, footfd, rawmailfd, donemailfd, omitfd;
 	bool addr_in_to_or_cc, notmetoo;
-	int intocc = 0, findaddress = 0;
+	bool findaddress = false, intocc = false;
 	int maxmailsize = 0;
 	bool subonlypost, modonlypost, modnonsubposts, foundaddr = 0;
 	char *listdir = NULL, *mailfile = NULL, *donemailname = NULL;
@@ -574,7 +574,7 @@ int main(int argc, char **argv)
 				if(addrmatch(la->item, it->item,
 				listdelim,
 				recipextra != NULL ? NULL : &recipextra)) {
-					intocc = 1;
+					intocc = true;
 					break;
 				}
 			}
@@ -585,7 +585,7 @@ int main(int argc, char **argv)
 					if(addrmatch(la->item, it->item,
 						listdelim,
 					   recipextra != NULL ? NULL : &recipextra)) {
-						intocc = 1;
+						intocc = true;
 						break;
 					}
 				}
