@@ -2049,7 +2049,7 @@ ATF_TC_BODY(addrmatch, tc)
 	ATF_REQUIRE(!addrmatch("lists@test.org", "nope@test.org", "+", &extra));
 	ATF_REQUIRE(!addrmatch("lists@test.org", "nope@test.org", NULL, &extra));
 	ATF_REQUIRE(addrmatch("lists@test.org", "lists+@test.org", "+", &extra));
-	ATF_REQUIRE_STREQ(extra, "");
+	ATF_REQUIRE(extra == NULL);
 	ATF_REQUIRE(!addrmatch("lists@test.org", "list+@test.org", "+", &extra));
 	ATF_REQUIRE(!addrmatch("lists@test.org", "lists+@bla.org", "+", &extra));
 	ATF_REQUIRE(!addrmatch("lists@test.org", "bla+@test.org", "+", &extra));

@@ -273,7 +273,8 @@ addrmatch(const char *listaddr, const char *addr,
 
 	if (recipextra) {
 		len = atsign - delim;
-		*recipextra = xstrndup(delim, len);
+		if (len > 0)
+			*recipextra = xstrndup(delim, len);
 	}
 
 	return (true);
