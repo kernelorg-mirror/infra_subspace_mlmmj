@@ -553,8 +553,9 @@ int main(int argc, char **argv)
 		listaddrs = ctrlvalues(ctrlfd, "listaddress");
 		tll_foreach(dtemails, it) {
 			tll_foreach(*listaddrs, la) {
-				if(addrmatch(la->item, it->item,
-						listdelim, &recipextra)) {
+				if (addrmatch(la->item, it->item,
+				    listdelim,
+				    recipextra != NULL ? NULL : &recipextra)) {
 					findaddress = 0;
 					free(listdelim);
 					listdelim = NULL;
@@ -567,7 +568,8 @@ int main(int argc, char **argv)
 		tll_foreach(toemails, it) {
 			tll_foreach(*listaddrs, la) {
 				if(addrmatch(la->item, it->item,
-						listdelim, &recipextra)) {
+				listdelim,
+				recipextra != NULL ? NULL : &recipextra)) {
 					intocc = 1;
 					break;
 				}
@@ -577,7 +579,8 @@ int main(int argc, char **argv)
 			tll_foreach(ccemails, it) {
 				tll_foreach(*listaddrs, la) {
 					if(addrmatch(la->item, it->item,
-						listdelim, &recipextra)) {
+						listdelim,
+					   recipextra != NULL ? NULL : &recipextra)) {
 						intocc = 1;
 						break;
 					}
