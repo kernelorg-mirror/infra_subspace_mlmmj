@@ -551,6 +551,10 @@ int main(int argc, char **argv)
 
 	if(addr_in_to_or_cc || findaddress) {
 		listaddrs = ctrlvalues(ctrlfd, "listaddress");
+		if (listaddrs == NULL) {
+			log_error(LOG_ARGS, "list address is not defined");
+			err(EXIT_FAILURE, "list address is not defined");
+		}
 		tll_foreach(dtemails, it) {
 			tll_foreach(*listaddrs, la) {
 				if (addrmatch(la->item, it->item,
