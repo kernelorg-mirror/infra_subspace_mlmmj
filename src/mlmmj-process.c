@@ -515,7 +515,7 @@ int main(int argc, char **argv)
 		err(EXIT_FAILURE, "Cannot open(%s)", listdir);
 	ctrlfd = openat(listfd, "control", O_DIRECTORY|O_CLOEXEC);
 	if (ctrlfd == -1)
-		err(EXIT_FAILURE, "Cannot open(%s/control", listdir);
+		err(EXIT_FAILURE, "Cannot open(%s/control)", listdir);
 
         do {
                 free(donemailname);
