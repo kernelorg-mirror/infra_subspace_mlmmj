@@ -1,6 +1,6 @@
-/* Copyright (C) 2003, 2003, 2004 Mads Martin Joergensen <mmj at mmj.dk>
- *
- * $Id$
+/*
+ * Copyright (C) 2003, 2003, 2004 Mads Martin Joergensen <mmj at mmj.dk>
+ * Copyright (C) 2023 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -590,27 +590,9 @@ int main(int argc, char **argv)
 		find_email_adr(readhdrs[4].values[i], &dtemails);
 	}
 
-	/* address extension (the "foo" part of "user+foo@domain.tld") */
-	if((envstr = getenv("DEFAULT")) != NULL) {
-		/* qmail */
-		recipextra = xstrdup(envstr);
-	} else if((envstr = getenv("EXTENSION")) != NULL) {
-		/* postfix */
-		recipextra = xstrdup(envstr);
-	} else if((envstr = getenv("LOCAL_PART_SUFFIX")) != NULL) {
-		/* exim */
-		listdelim = getlistdelim(ctrlfd);
-		if (strncmp(envstr, listdelim, strlen(listdelim)) == 0) {
-			recipextra = xstrdup(envstr + strlen(listdelim));
-		} else {
-			recipextra = xstrdup(envstr);
-		}
-		free(listdelim);
-		listdelim = NULL;
-	} else {
-		findaddress = 1;
-	}
-
+	recipextra = get_recipextra_from_env(ctrlfd);
+	if (recipextra == NULL)
+		findaddress = true;
 	addrtocc = !statctrl(ctrlfd, "tocc");
 
 	if (findaddress) {

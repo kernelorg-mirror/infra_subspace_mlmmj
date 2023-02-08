@@ -34,6 +34,7 @@
 
 #include "xmalloc.h"
 #include "utils.h"
+#include "getlistdelim.h"
 
 extern char **environ;
 
@@ -205,4 +206,29 @@ lock(int fd, bool wr)
 		return (false);
 	}
 	return (true);
+}
+
+char *
+get_recipextra_from_env(int ctrlfd)
+{
+	const char *envstr;
+	char *listdelim, *recipextra;
+
+	/* address extension (the "foo" part of "user+foo@domain.tld") */
+	/* qmail */
+	if((envstr = getenv("DEFAULT")) != NULL)
+		return (xstrdup(envstr));
+	/* postfix */
+	if((envstr = getenv("EXTENSION")) != NULL)
+		return (xstrdup(envstr));
+	/* exim */
+	if ((envstr = getenv("LOCAL_PART_SUFFIX")) != NULL) {
+		listdelim = getlistdelim(ctrlfd);
+		if (strncmp(envstr, listdelim, strlen(listdelim)) == 0)
+			recipextra = xstrdup(envstr + strlen(listdelim));
+		else
+			recipextra = xstrdup(envstr);
+		return (recipextra);
+	}
+	return (NULL);
 }

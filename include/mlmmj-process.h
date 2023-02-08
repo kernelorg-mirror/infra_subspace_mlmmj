@@ -1,6 +1,6 @@
-/* Copyright (C) 2002, 2003 Mads Martin Joergensen <mmj at mmj.dk>
- *
- * $Id$
+/*
+ * Copyright (C) 2002, 2003 Mads Martin Joergensen <mmj at mmj.dk>
+ * Copyright (C) 2023 Baptiste Daroussin <bapt@FreeBSd.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -21,8 +21,6 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef MMJML_PROCESS_H
-#define MMJML_PROCESS_H
+#pragma once
 
-
-#endif /* MMJML_PROCESS_H */
+char *get_recipextra_from_env(int ctrlfd);

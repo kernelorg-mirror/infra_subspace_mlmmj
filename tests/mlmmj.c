@@ -61,6 +61,7 @@
 #include "incindexfile.h"
 #include "log_oper.h"
 #include "listcontrol.h"
+#include "mlmmj-process.h"
 
 ATF_TC_WITHOUT_HEAD(random_int);
 ATF_TC_WITHOUT_HEAD(chomp);
@@ -130,6 +131,10 @@ ATF_TC_WITHOUT_HEAD(get_preppedhdrs_from_map_1);
 ATF_TC_WITHOUT_HEAD(get_prepped_mailbody_from_map);
 ATF_TC_WITHOUT_HEAD(get_prepped_mailbody_from_map_1);
 ATF_TC_WITHOUT_HEAD(get_ctrl_command);
+ATF_TC_WITHOUT_HEAD(get_recipextra_from_env_none);
+ATF_TC_WITHOUT_HEAD(get_recipextra_from_env_qmail);
+ATF_TC_WITHOUT_HEAD(get_recipextra_from_env_postfix);
+ATF_TC_WITHOUT_HEAD(get_recipextra_from_env_exim);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -1991,6 +1996,47 @@ ATF_TC_BODY(get_ctrl_command, tc)
 	ATF_REQUIRE(ctrl == NULL);
 }
 
+ATF_TC_BODY(get_recipextra_from_env_none, tc)
+{
+	ATF_REQUIRE(get_recipextra_from_env(-1) == NULL);
+}
+
+ATF_TC_BODY(get_recipextra_from_env_qmail, tc)
+{
+	char *str;
+	setenv("DEFAULT", "value", 1);
+
+	str = get_recipextra_from_env(-1);
+	ATF_REQUIRE_STREQ(str, "value");
+	free(str);
+}
+
+ATF_TC_BODY(get_recipextra_from_env_postfix, tc)
+{
+	char *str;
+
+	setenv("EXTENSION", "value", 1);
+	str = get_recipextra_from_env(-1);
+	ATF_REQUIRE_STREQ(str, "value");
+	free(str);
+}
+
+ATF_TC_BODY(get_recipextra_from_env_exim, tc)
+{
+	char *str;
+
+	setenv("LOCAL_PART_SUFFIX", "+value", 1);
+	str = get_recipextra_from_env(-1);
+	ATF_REQUIRE_STREQ(str, "value");
+	free(str);
+
+	/* no valid delimiter */
+	setenv("LOCAL_PART_SUFFIX", "=value", 1);
+	str = get_recipextra_from_env(-1);
+	ATF_REQUIRE_STREQ(str, "=value");
+	free(str);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -2061,6 +2107,10 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, get_prepped_mailbody_from_map);
 	ATF_TP_ADD_TC(tp, get_prepped_mailbody_from_map_1);
 	ATF_TP_ADD_TC(tp, get_ctrl_command);
+	ATF_TP_ADD_TC(tp, get_recipextra_from_env_none);
+	ATF_TP_ADD_TC(tp, get_recipextra_from_env_qmail);
+	ATF_TP_ADD_TC(tp, get_recipextra_from_env_postfix);
+	ATF_TP_ADD_TC(tp, get_recipextra_from_env_exim);
 
 	return (atf_no_error());
 }
