@@ -422,8 +422,7 @@ int main(int argc, char **argv)
 	int intocc = 0, findaddress = 0;
 	int maxmailsize = 0;
 	bool subonlypost, modonlypost, modnonsubposts, foundaddr = 0;
-	char *listdir = NULL, *mailfile = NULL, *headerfilename = NULL;
-	char *footerfilename = NULL, *donemailname = NULL;
+	char *listdir = NULL, *mailfile = NULL, *donemailname = NULL;
 	char *randomstr = NULL, *mqueuename, *omitfilename;
 	char *mlmmjsend, *mlmmjsub, *mlmmjunsub;
 	char *bindir, *subjectprefix, *discardname, *listaddr, *listdelim = NULL;
@@ -545,14 +544,10 @@ int main(int argc, char **argv)
 
 	/* hdrfd is checked in do_all_the_voodoo_here(), because the
 	 * customheaders file might not exist */
-	headerfilename = concatstr(2, listdir, "/control/customheaders");
-	hdrfd = open(headerfilename, O_RDONLY);
-	free(headerfilename);
+	hdrfd = openat(ctrlfd, "customheaders", O_RDONLY);
 
 	/* footfd is checked in do_all_the_voodoo_here(), see above */
-	footerfilename = concatstr(2, listdir, "/control/footer");
-	footfd = open(footerfilename, O_RDONLY);
-	free(footerfilename);
+	footfd = openat(ctrlfd, "footer", O_RDONLY);
 
 	delheaders = ctrlvalues(ctrlfd, "delheaders");
 	if(delheaders == NULL)
