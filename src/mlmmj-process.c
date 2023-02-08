@@ -419,7 +419,7 @@ int main(int argc, char **argv)
 	int i, opt, noprocess = 0, moderated = 0, send = 0;
 	enum modreason modreason;
 	int hdrfd, footfd, rawmailfd, donemailfd, omitfd;
-	bool addrtocc, notmetoo;
+	bool addr_in_to_or_cc, notmetoo;
 	int intocc = 0, findaddress = 0;
 	int maxmailsize = 0;
 	bool subonlypost, modonlypost, modnonsubposts, foundaddr = 0;
@@ -594,12 +594,12 @@ int main(int argc, char **argv)
 	recipextra = get_recipextra_from_env(ctrlfd);
 	if (recipextra == NULL)
 		findaddress = true;
-	addrtocc = !statctrl(ctrlfd, "tocc");
+	addr_in_to_or_cc = !statctrl(ctrlfd, "tocc");
 
 	if (findaddress) {
 		listdelim = getlistdelim(ctrlfd);
 	}
-	if(addrtocc || findaddress) {
+	if(addr_in_to_or_cc || findaddress) {
 		listaddrs = ctrlvalues(ctrlfd, "listaddress");
 		tll_foreach(dtemails, it) {
 			tll_foreach(*listaddrs, la) {
@@ -613,7 +613,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	if(addrtocc || findaddress) {
+	if(addr_in_to_or_cc || findaddress) {
 		tll_foreach(toemails, it) {
 			tll_foreach(*listaddrs, la) {
 				if(addrmatch(la->item, it->item,
@@ -832,7 +832,7 @@ int main(int argc, char **argv)
 
 	unlink(mailfile);
 
-	if(addrtocc && !intocc) {
+	if(addr_in_to_or_cc && !intocc) {
 		/* Don't send a mail about denial to the list, but silently
 		 * discard and exit. Also don't in case of it being turned off
 		 */
