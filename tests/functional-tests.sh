@@ -11,6 +11,7 @@ discard_body()
 	mlmmjrecv=$(command -v mlmmj-receive)
 	mlmmjmaint=$(command -v mlmmj-maintd)
 	init_ml list
+	echo "list@test" > list/control/listaddress
 	here=$(pwd)
 
 	atf_check -s exit:0 $mlmmjrecv -L list -F <<-EOF
