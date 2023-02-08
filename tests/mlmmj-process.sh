@@ -10,6 +10,7 @@ tests_init \
 	basic_3 \
 	basic_4 \
 	basic_5 \
+	addr_in_to_cc
 
 mlmmjprocess=$(command -v mlmmj-process)
 usage_body()
@@ -63,4 +64,20 @@ basic_5_body()
 	mkdir -p plop/control
 	mkdir -p plop/queue
 	atf_check -s exit:1 $mlmmjprocess -L plop -m meh
+}
+
+addr_in_to_cc_body()
+{
+	init_ml list
+cat > mailfile <<EOF
+Return-Path: sender@yeah
+From: sender@yeah
+Bcc: list@test
+EOF
+	echo "list@test" > list/control/listaddress
+	atf_check -s exit:0 $mlmmjprocess -L list -m mailfile
+	rm list/queue/*.reciptto
+	rm list/queue/*.mailfrom
+	rmdir list/queue/discarded
+	atf_check -o match:".*The message from <sender@yeah> with subject \"\" was unable to be delivered.*" cat list/queue/*
 }
