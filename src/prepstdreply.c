@@ -136,6 +136,7 @@ struct text {
 struct memory_lines_state {
 	char *lines;
 	char *pos;
+	char *end;
 };
 
 
@@ -147,61 +148,48 @@ struct file_lines_state {
 };
 
 
-memory_lines_state *init_memory_lines(const char *lines)
+memory_lines_state *
+init_memory_lines(const char *lines)
 {
-	memory_lines_state *s = xmalloc(sizeof(memory_lines_state));
-	size_t len;
+	memory_lines_state *s = xcalloc(1, sizeof(memory_lines_state));
+	char *l;
 
-	/* Ensure there *is* a trailing newline */
-	s->pos = NULL;
-	len = strlen(lines);
-	if (lines[len-1] == '\n') {
-		s->lines = xstrdup(lines);
-		return s;
-	}
-	s->lines = xmalloc((len + 2) * sizeof(char));
-	strcpy(s->lines, lines);
-	s->lines[len] = '\n';
-	s->lines[len+1] = '\0';
-	return s;
+	l = s->lines = xstrdup(lines);
+	s->end = s->lines + strlen(s->lines);
+	while (strsep(&l, "\n"));
+
+	return (s);
 }
 
-
-void rewind_memory_lines(void *state)
+void
+rewind_memory_lines(void *state)
 {
 	memory_lines_state *s = (memory_lines_state *)state;
 	if (s == NULL) return;
 	s->pos = NULL;
 }
 
-
-const char *get_memory_line(void *state)
+const char *
+get_memory_line(void *state)
 {
 	memory_lines_state *s = (memory_lines_state *)state;
-	char *line, *pos;
-
 	if (s == NULL) return NULL;
 
-	if (s->pos != NULL) *s->pos++ = '\n';
-	else s->pos = s->lines;
-
-	line = s->pos;
-	pos = line;
-
-	if (*pos == '\0') {
-		s->pos = NULL;
-		return NULL;
+	if (s->pos == NULL) {
+		s->pos = s->lines;
+		return (s->pos);
 	}
-
-	while (*pos != '\n') pos++;
-	*pos = '\0';
-
-	s->pos = pos;
-	return line;
+ 
+	s->pos += strlen(s->pos);
+	if (s->pos >= s->end)
+		return (NULL);
+	while (s->pos[0] == '\0' && s->pos < s->end)
+		s->pos++;
+	return (s->pos);
 }
 
-
-void finish_memory_lines(memory_lines_state *s)
+void
+finish_memory_lines(memory_lines_state *s)
 {
 	if (s == NULL) return;
 	free(s->lines);

@@ -62,6 +62,7 @@
 #include "log_oper.h"
 #include "listcontrol.h"
 #include "mlmmj-process.h"
+#include "prepstdreply.h"
 
 ATF_TC_WITHOUT_HEAD(random_int);
 ATF_TC_WITHOUT_HEAD(chomp);
@@ -139,6 +140,7 @@ ATF_TC_WITHOUT_HEAD(addrmatch);
 ATF_TC_WITHOUT_HEAD(get_subcookie_content);
 ATF_TC_WITHOUT_HEAD(ml_list);
 ATF_TC_WITHOUT_HEAD(gen_addr);
+ATF_TC_WITHOUT_HEAD(memory_lines);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -2174,6 +2176,29 @@ ATF_TC_BODY(gen_addr, tc)
 	free(var);
 }
 
+ATF_TC_BODY(memory_lines, tc)
+{
+	finish_memory_lines(NULL);
+	memory_lines_state *s = init_memory_lines("plop");
+	ATF_REQUIRE_STREQ(get_memory_line(s), "plop");
+	finish_memory_lines(s);
+
+	s = init_memory_lines("plop\n");
+	ATF_REQUIRE_STREQ(get_memory_line(s), "plop");
+	finish_memory_lines(s);
+
+	s = init_memory_lines("line1\nline2\nline3");
+	ATF_REQUIRE_STREQ(get_memory_line(s), "line1");
+	ATF_REQUIRE_STREQ(get_memory_line(s), "line2");
+	ATF_REQUIRE_STREQ(get_memory_line(s), "line3");
+	ATF_REQUIRE_EQ(get_memory_line(s), NULL);
+
+	rewind_memory_lines(NULL);
+	rewind_memory_lines(s);
+	ATF_REQUIRE_STREQ(get_memory_line(s), "line1");
+	ATF_REQUIRE_STREQ(get_memory_line(s), "line2");
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -2252,6 +2277,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, get_subcookie_content);
 	ATF_TP_ADD_TC(tp, ml_list);
 	ATF_TP_ADD_TC(tp, gen_addr);
+	ATF_TP_ADD_TC(tp, memory_lines);
 
 	return (atf_no_error());
 }
