@@ -38,6 +38,7 @@
 #include "strgen.h"
 #include "log_error.h"
 #include "utils.h"
+#include "xmalloc.h"
 
 extern char *optarg;
 
@@ -69,9 +70,12 @@ int main(int argc, char **argv)
 	
 	log_set_name(argv[0]);
 
-	bindir = mydirname(argv[0]);
-	mlmmjprocess = concatstr(2, bindir, "/mlmmj-process");
-	free(bindir);
+	mlmmjprocess = getenv("MLMMJPROCESS");
+	if (mlmmjprocess == NULL) {
+		bindir = mydirname(argv[0]);
+		xasprintf(&mlmmjprocess, "%s/mlmmj-process", bindir);
+		free(bindir);
+	}
 	
 	while ((opt = getopt(argc, argv, "hPVL:s:e:F")) != -1) {
 		switch(opt) {
