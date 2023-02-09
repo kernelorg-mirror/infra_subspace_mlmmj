@@ -51,11 +51,6 @@
 #include "chomp.h"
 #include "utils.h"
 
-#define set_addr_cmd(addr, _ml, _cmd) \
-    xasprintf(&addr, "%s%s%s@%s", (_ml)->name, (_ml)->delim, _cmd, (_ml)->fqdn)
-#define set_addr_cmd_cookie(addr, _ml, _cmd, _cookie) \
-    xasprintf(&addr, "%s%s%s%s@%s", (_ml)->name, (_ml)->delim, _cmd, _cookie, (_ml)->fqdn);
-
 static void moderate_sub(struct ml *ml, const char *subaddr,
 		const char *mlmmjsend, enum subtype typesub,
 		enum subreason reasonsub)
@@ -128,10 +123,10 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 		mods = concatstr(2, ml->dir, "/control/owner");
 	}
 
-	set_addr_cmd(from, ml, "owner");
+	gen_addr(from, ml, "owner");
 	xasprintf(&to, "%s-moderators@%s", ml->name, ml->fqdn);
-	set_addr_cmd_cookie(replyto, ml, "permit-", cookie);
-	set_addr_cmd_cookie(obstruct, ml, "obstruct-", cookie);
+	gen_addr_cookie(replyto, ml, "permit-", cookie);
+	gen_addr_cookie(obstruct, ml, "obstruct-", cookie);
 	free(cookie);
 	tll_foreach(*submods, sm) {
 		printf("%s", sm->item);
@@ -193,7 +188,7 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 	
 	/* send mail to requester that the list is submod'ed */
 
-	set_addr_cmd(from, ml, "bounces-help");
+	gen_addr(from, ml, "bounces-help");
 
 	txt = open_text(ml->dir,
 			"wait", "sub",
@@ -286,7 +281,7 @@ void confirm_sub(struct ml *ml, const char *subaddr,
 	text *txt;
 	char *queuefilename, *fromaddr, *listtext;
 
-	set_addr_cmd(fromaddr, ml, "bounces-help");
+	gen_addr(fromaddr, ml, "bounces-help");
 
 	switch(typesub) {
 		default:
@@ -328,8 +323,8 @@ void notify_sub(struct ml *ml, const char *subaddr,
 	text *txt;
 	char *queuefilename = NULL, *listtext = NULL;
 
-	set_addr_cmd(fromaddr, ml, "bounces-help");
-	set_addr_cmd(tostr, ml, "owner");
+	gen_addr(fromaddr, ml, "bounces-help");
+	gen_addr(tostr, ml, "owner");
 
 	switch(typesub) {
 		default:
@@ -404,7 +399,7 @@ void generate_subconfirm(struct ml *ml, const char *subaddr,
 
 	close(subconffd);
 
-	set_addr_cmd_cookie(fromaddr, ml, "bounces-confsub-", randomstr);
+	gen_addr_cookie(fromaddr, ml, "bounces-confsub-", randomstr);
 
 	switch(typesub) {
 		default:
@@ -427,7 +422,7 @@ void generate_subconfirm(struct ml *ml, const char *subaddr,
 			break;
 	}
 
-	set_addr_cmd_cookie(confirmaddr, ml, tmpstr, randomstr);
+	gen_addr_cookie(confirmaddr, ml, tmpstr, randomstr);
 	free(randomstr);
 	free(tmpstr);
 
@@ -477,7 +472,7 @@ void generate_subscribed(struct ml *ml, const char *subaddr,
 	text *txt;
 	char *queuefilename, *fromaddr;
 
-	set_addr_cmd(fromaddr, ml, "bounceshelp");
+	gen_addr(fromaddr, ml, "bounceshelp");
 	txt = open_text(ml->dir,
 			"deny", "sub", "subbed", subtype_strs[typesub],
 			"sub-subscribed");

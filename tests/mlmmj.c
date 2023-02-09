@@ -138,6 +138,7 @@ ATF_TC_WITHOUT_HEAD(get_recipextra_from_env_exim);
 ATF_TC_WITHOUT_HEAD(addrmatch);
 ATF_TC_WITHOUT_HEAD(get_subcookie_content);
 ATF_TC_WITHOUT_HEAD(ml_list);
+ATF_TC_WITHOUT_HEAD(gen_addr);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -2154,6 +2155,25 @@ ATF_TC_BODY(ml_list, tc)
 	atf_utils_wait(p, 0, "", "");
 }
 
+ATF_TC_BODY(gen_addr, tc)
+{
+	char *var = NULL;
+	struct ml ml;
+
+	init_ml(true);
+	ml_init(&ml);
+	ml.dir = "list";
+	ml_open(&ml, false);
+
+	gen_addr(var, &ml, "bla");
+	ATF_REQUIRE_STREQ(var, "test+bla@test");
+	free(var);
+
+	gen_addr_cookie(var, &ml, "bla", "cookie");
+	ATF_REQUIRE_STREQ(var, "test+blacookie@test");
+	free(var);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -2231,6 +2251,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, addrmatch);
 	ATF_TP_ADD_TC(tp, get_subcookie_content);
 	ATF_TP_ADD_TC(tp, ml_list);
+	ATF_TP_ADD_TC(tp, gen_addr);
 
 	return (atf_no_error());
 }
