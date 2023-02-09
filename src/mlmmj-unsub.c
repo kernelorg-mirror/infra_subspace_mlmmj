@@ -49,23 +49,13 @@
 #include "prepstdreply.h"
 #include "utils.h"
 
-void confirm_unsub(const char *listdir, const char *listaddr,
-		   const char *listdelim, const char *subaddr,
-		   const char *mlmmjsend,
-		   enum subtype typesub, enum subreason reasonsub, int listfd,
-		   int ctrlfd)
+void confirm_unsub(struct ml *ml, const char *subaddr, const char *mlmmjsend,
+		   enum subtype typesub, enum subreason reasonsub)
 {
 	text *txt;
-	char *queuefilename, *fromaddr, *listname, *listfqdn, *listtext;
+	char *queuefilename, *fromaddr, *listtext;
 
-	listname = genlistname(listaddr);
-	listfqdn = genlistfqdn(listaddr);
-
-	xasprintf(&fromaddr, "%s%sbounces-help@%s", listname, listdelim,
-	    listfqdn);
-
-	free(listname);
-	free(listfqdn);
+	gen_addr(fromaddr, ml, "bounces-help");
 
 	switch(typesub) {
 		default:
@@ -80,39 +70,30 @@ void confirm_unsub(const char *listdir, const char *listaddr,
 			break;
 	}
 
-	txt = open_text(listdir, "finish", "unsub",
+	txt = open_text(ml->dir, "finish", "unsub",
 			subreason_strs[reasonsub], subtype_strs[typesub],
 			listtext);
 	free(listtext);
 	MY_ASSERT(txt);
 	register_unformatted(txt, "subaddr", subaddr);
-	queuefilename = prepstdreply(txt, listdir,
-			"$helpaddr$", subaddr, NULL, listfd, ctrlfd);
+	queuefilename = prepstdreply(txt, ml->dir,
+			"$helpaddr$", subaddr, NULL, ml->fd, ml->ctrlfd);
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
-	exec_or_die(mlmmjsend, "-l", "1", "-L", listdir, "-T", subaddr, "-F",
+	exec_or_die(mlmmjsend, "-l", "1", "-L", ml->dir, "-T", subaddr, "-F",
 	    fromaddr, "-m", queuefilename, NULL);
 }
 
-void notify_unsub(const char *listdir, const char *listaddr,
-		  const char *listdelim, const char *subaddr,
-		  const char *mlmmjsend,
-		  enum subtype typesub, enum subreason reasonsub, int listfd, int ctrlfd)
+void notify_unsub(struct ml *ml, const char *subaddr, const char *mlmmjsend,
+		  enum subtype typesub, enum subreason reasonsub)
 {
-        char *listfqdn, *listname, *fromaddr, *tostr;
+        char *fromaddr, *tostr;
 	text *txt;
         char *queuefilename = NULL, *listtext;
 
-        listname = genlistname(listaddr);
-        listfqdn = genlistfqdn(listaddr);
-
-	xasprintf(&fromaddr, "%s%sbounces-help@%s", listname, listdelim,
-	    listfqdn);
-	xasprintf(&tostr, "%s%sowner@%s", listname, listdelim, listfqdn);
-
-	free(listname);
-	free(listfqdn);
+	gen_addr(fromaddr, ml, "bounces-help");
+	gen_addr(tostr, ml, "owner");
 
 	switch(typesub) {
 		default:
@@ -127,42 +108,38 @@ void notify_unsub(const char *listdir, const char *listaddr,
 			break;
 	}
 	
-	txt = open_text(listdir, "notify", "unsub",
+	txt = open_text(ml->dir, "notify", "unsub",
 			subreason_strs[reasonsub], subtype_strs[typesub],
 			listtext);
 	free(listtext);
 	MY_ASSERT(txt);
 	register_unformatted(txt, "subaddr", subaddr);
 	register_unformatted(txt, "oldsub", subaddr); /* DEPRECATED */
-	queuefilename = prepstdreply(txt, listdir,
-			"$listowner$", "$listowner$", NULL, listfd, ctrlfd);
+	queuefilename = prepstdreply(txt, ml->dir,
+			"$listowner$", "$listowner$", NULL, ml->fd, ml->ctrlfd);
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
-	exec_or_die(mlmmjsend, "-l", "1", "-L", listdir, "-T", tostr, "-F",
+	exec_or_die(mlmmjsend, "-l", "1", "-L", ml->dir, "-T", tostr, "-F",
 	    fromaddr, "-m", queuefilename, NULL);
 }
 
 
-void generate_unsubconfirm(const char *listdir, const char *listaddr,
-			   const char *listdelim, const char *subaddr,
+void generate_unsubconfirm(struct ml *ml, const char *subaddr,
 			   const char *mlmmjsend,
-			   enum subtype typesub, enum subreason reasonsub, int listfd, int ctrlfd)
+			   enum subtype typesub, enum subreason reasonsub)
 {
-	char *confirmaddr, *listname, *listfqdn, *tmpstr;
+	char *confirmaddr, *tmpstr;
 	text *txt;
 	char *queuefilename, *fromaddr;
 	char *randomstr = NULL, *confirmfilename = NULL, *listtext;
 	int subconffd;
 
-	listname = genlistname(listaddr);
-	listfqdn = genlistfqdn(listaddr);
-
         do {
 		free(confirmfilename);
 		free(randomstr);
 		randomstr = random_str();
-		xasprintf(&confirmfilename, "%s/unsubconf/%s", listdir,
+		xasprintf(&confirmfilename, "%s/unsubconf/%s", ml->dir,
 		    randomstr);
 
                 subconffd = open(confirmfilename, O_RDWR|O_CREAT|O_EXCL,
@@ -188,8 +165,7 @@ void generate_unsubconfirm(const char *listdir, const char *listaddr,
 
 	close(subconffd);
 
-	xasprintf(&fromaddr, "%s%sbounces-confunsub-%s@%s", listname, listdelim,
-	    randomstr, listfqdn);
+	gen_addr_cookie(fromaddr, ml, "bounces-confunsub", randomstr);
 
 	switch(typesub) {
 		default:
@@ -207,13 +183,12 @@ void generate_unsubconfirm(const char *listdir, const char *listaddr,
 			break;
 	}
 
-	xasprintf(&confirmaddr, "%s%s%s%s@%s", listname, listdelim, tmpstr,
-	    randomstr, listfqdn);
+	gen_addr_cookie(confirmaddr, ml, tmpstr, randomstr);
 
 	free(randomstr);
 	free(tmpstr);
 
-	txt = open_text(listdir, "confirm", "unsub",
+	txt = open_text(ml->dir, "confirm", "unsub",
 			subreason_strs[reasonsub], subtype_strs[typesub],
 			listtext);
 	free(listtext);
@@ -221,15 +196,12 @@ void generate_unsubconfirm(const char *listdir, const char *listaddr,
 	register_unformatted(txt, "subaddr", subaddr);
 	register_unformatted(txt, "confaddr", confirmaddr); /* DEPRECATED */
 	register_unformatted(txt, "confirmaddr", confirmaddr);
-	queuefilename = prepstdreply(txt, listdir,
-			"$helpaddr$", subaddr, confirmaddr, listfd, ctrlfd);
+	queuefilename = prepstdreply(txt, ml->dir,
+			"$helpaddr$", subaddr, confirmaddr, ml->fd, ml->ctrlfd);
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
-	free(listname);
-	free(listfqdn);
-
-	exec_or_die(mlmmjsend, "-l", "1", "-L", listdir, "-T", subaddr,
+	exec_or_die(mlmmjsend, "-l", "1", "-L", ml->dir, "-T", subaddr,
 	    "-F", fromaddr, "-m", queuefilename, NULL);
 }
 
@@ -255,33 +227,24 @@ static void print_help(const char *prg)
 	exit(EXIT_SUCCESS);
 }
 
-static void generate_notsubscribed(const char *listdir, const char *subaddr,
-	const char *mlmmjsend, enum subtype typesub, const char *listaddr,
-	const char *listdelim, int listfd, int ctrlfd)
+static void generate_notsubscribed(struct ml *ml, const char *subaddr,
+	const char *mlmmjsend, enum subtype typesub)
 {
 	text *txt;
-	char *queuefilename, *fromaddr, *listname, *listfqdn;
+	char *queuefilename, *fromaddr;
 
-	listname = genlistname(listaddr);
-	listfqdn = genlistfqdn(listaddr);
-
-	xasprintf(&fromaddr, "%s%sbounces-help@%s", listname, listdelim,
-	    listfqdn);
-
-	txt = open_text(listdir,
+	gen_addr(fromaddr, ml, "bounces-help");
+	txt = open_text(ml->dir,
 			"deny", "unsub", "unsubbed", subtype_strs[typesub],
 			"unsub-notsubscribed");
 	MY_ASSERT(txt);
 	register_unformatted(txt, "subaddr", subaddr);
-	queuefilename = prepstdreply(txt, listdir,
-			"$helpaddr$", subaddr, NULL, listfd, ctrlfd);
+	queuefilename = prepstdreply(txt, ml->dir,
+			"$helpaddr$", subaddr, NULL, ml->fd, ml->fd);
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
-	free(listname);
-	free(listfqdn);
-
-	exec_or_die(mlmmjsend, "-l", "1", "-L", listdir, "-T", subaddr,
+	exec_or_die(mlmmjsend, "-l", "1", "-L", ml->dir, "-T", subaddr,
 	    "-F", fromaddr, "-m", queuefilename, NULL);
 }
 
@@ -293,7 +256,7 @@ int main(int argc, char **argv)
 	int changeuid = 1, quiet = 0;
 	int nogennotsubscribed = 0;
 	int status;
-	char *listaddr, *listdelim, *listdir = NULL, *address = NULL;
+	char *address = NULL;
 	char *mlmmjsend, *bindir;
 	const char *subdir;
 	enum subtype typesub = SUB_ALL;
@@ -301,9 +264,10 @@ int main(int argc, char **argv)
 	uid_t uid;
 	struct stat st;
 	pid_t pid, childpid;
-	int listfd, ctrlfd;
+	struct ml ml;
 
 	CHECKFULLPATH(argv[0]);
+	ml_init(&ml);
 	
 	log_set_name(argv[0]);
 
@@ -314,7 +278,7 @@ int main(int argc, char **argv)
 	while ((opt = getopt(argc, argv, "hcCdenNVUL:a:sqrR")) != -1) {
 		switch(opt) {
 		case 'L':
-			listdir = optarg;
+			ml.dir = optarg;
 			break;
 		case 'a':
 			if (strchr(optarg, '@') == NULL)
@@ -360,13 +324,12 @@ int main(int argc, char **argv)
 			exit(0);
 		}
 	}
-	if(listdir == 0 || address == 0) {
+	if(ml.dir == 0 || address == 0) {
 		errx(EXIT_FAILURE, "You have to specify -L and -a\n"
 		    "%s -h for help", argv[0]);
 	}
-	listfd = open_listdir(listdir, false);
-	if ((ctrlfd = openat(listfd, "control", O_DIRECTORY|O_CLOEXEC)) == -1)
-		errx(EXIT_FAILURE, "Cannot open(%s/control)", listdir);
+	if (!ml_open(&ml, false))
+		exit(EXIT_FAILURE);
 
 	if(digest + nomail + normal > 1) {
 		errx(EXIT_FAILURE, "Specify at most one of -d, -n and -N\n"
@@ -393,14 +356,12 @@ int main(int argc, char **argv)
 
 	/* Make the address lowercase */
 	address = lowercase(address);
-	listaddr = getlistaddr(ctrlfd);
-	listdelim = getlistdelim(ctrlfd);
 
 	if(changeuid) {
 		uid = getuid();
-		if(!uid && fstat(listfd, &st) == 0 && uid != st.st_uid) {
+		if(!uid && fstat(ml.fd, &st) == 0 && uid != st.st_uid) {
 			printf("Changing to uid %d, owner of %s.\n",
-					(int)st.st_uid, listdir);
+					(int)st.st_uid, ml.dir);
 			if(setuid(st.st_uid) < 0) {
 				perror("setuid");
 				fprintf(stderr, "Continuing as uid %d\n",
@@ -410,11 +371,11 @@ int main(int argc, char **argv)
 	}
 
 	if (typesub == SUB_ALL) {
-		subbed = is_subbed(listfd, address, false) != SUB_NONE;
+		subbed = is_subbed(ml.fd, address, false) != SUB_NONE;
 	} else {
-		int subdirfd = open_subscriber_directory(listfd, typesub, &subdir);
+		int subdirfd = open_subscriber_directory(ml.fd, typesub, &subdir);
 		if (subdirfd == -1) {
-			log_error(LOG_ARGS, "Could not opendir(%s/%s)", listdir, subdir);
+			log_error(LOG_ARGS, "Could not opendir(%s/%s)", ml.dir, subdir);
 			exit(EXIT_FAILURE);
 		}
 		subbed = is_subbed_in(subdirfd, subdir, address);
@@ -422,28 +383,22 @@ int main(int argc, char **argv)
 
 	if(!subbed) {
 		/* Address is not subscribed */
-		if(!nogennotsubscribed) {
-			generate_notsubscribed(listdir, address, mlmmjsend,
-			    typesub, listaddr, listdelim, listfd, ctrlfd);
-		}
-
+		if(!nogennotsubscribed)
+			generate_notsubscribed(&ml, address, mlmmjsend, typesub);
 		exit(EXIT_SUCCESS);
 	}
 
 	if(unsubconfirm)
-		generate_unsubconfirm(listdir, listaddr, listdelim, address,
-				mlmmjsend, typesub, reasonsub, listfd, ctrlfd);
+		generate_unsubconfirm(&ml, address, mlmmjsend, typesub, reasonsub);
 
-	unsubscribe(listfd, address, typesub);
+	unsubscribe(ml.fd, address, typesub);
 
 	if(confirmunsub) {
 		childpid = fork();
 
 		if(childpid < 0) {
 			log_error(LOG_ARGS, "Could not fork");
-			confirm_unsub(listdir, listaddr, listdelim,
-					address, mlmmjsend,
-					typesub, reasonsub, listfd, ctrlfd);
+			confirm_unsub(&ml, address, mlmmjsend, typesub, reasonsub);
 		}
 
 		if(childpid > 0) {
@@ -454,21 +409,16 @@ int main(int argc, char **argv)
 
 		/* child confirms subscription */
 		if(childpid == 0)
-			confirm_unsub(listdir, listaddr, listdelim,
-					address, mlmmjsend,
-					typesub, reasonsub, listfd, ctrlfd);
+			confirm_unsub(&ml, address, mlmmjsend, typesub, reasonsub);
 	}
 
-	notifysub = !quiet && statctrl(ctrlfd, "notifysub");
+	notifysub = !quiet && statctrl(ml.ctrlfd, "notifysub");
 
         /* Notify list owner about subscription */
         if (notifysub)
-                notify_unsub(listdir, listaddr, listdelim, address, mlmmjsend,
-				typesub, reasonsub, listfd, ctrlfd);
+                notify_unsub(&ml, address, mlmmjsend, typesub, reasonsub);
 
 	free(address);
-	free(listaddr);
-	free(listdelim);
 	free(mlmmjsend);
 
 	return EXIT_SUCCESS;
