@@ -153,7 +153,6 @@ get_subcookie_content(int listfd, bool unsub, const char *param)
 	f = fdopen(fd, "r");
 	if (getline(&line, &linecap, f) > 0) {
 		chomp(line);
-		chomp(line);
 		fclose(f);
 		unlinkat(dfd, param, 0);
 		return (line);
