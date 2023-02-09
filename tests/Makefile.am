@@ -28,7 +28,8 @@ test_scripts =	mlmmj-send.sh \
 		mlmmj-sub.sh \
 		mlmmj-bounce.sh \
 		mlmmj-list.sh \
-		mlmmj-process.sh
+		mlmmj-process.sh \
+		mlmmj-receive.sh
 check_SCRIPTS=	$(test_scripts:.sh=)
 SUFFIXES=	.sh
 
