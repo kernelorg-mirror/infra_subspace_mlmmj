@@ -28,7 +28,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <ctype.h>
 
 #include "xmalloc.h"
@@ -143,8 +142,7 @@ int listcontrol(strlist *fromemails, const char *listdir,
 	char *param = NULL, *moderatefilename, *gatekeepfilename;
 	char *omitfilename;
 	char *omit = NULL;
-	char *c, *archivefilename, *sendfilename;
-	struct stat stbuf;
+	char *c, *archivefilename, *sendfilename, *tosend;
 	bool nosubconfirm, subonlyget;
 	int tmpfd, noget;
 	strlist *owners;
@@ -475,8 +473,8 @@ int listcontrol(strlist *fromemails, const char *listdir,
 			goto permit;
 		}
 
-		moderatefilename = concatstr(3, listdir, "/moderation/", param);
-		if(stat(moderatefilename, &stbuf) < 0) {
+		xasprintf(&moderatefilename, "moderation/%s", param);
+		if (faccessat(listfd, moderatefilename, F_OK, 0) < 0) {
 			free(moderatefilename);
 			/* no mail to moderate */
 			errno = 0;
@@ -486,16 +484,16 @@ int listcontrol(strlist *fromemails, const char *listdir,
 			return -1;
 		}
 
-		sendfilename = concatstr(2, moderatefilename, ".sending");
+		xasprintf(&sendfilename, "%s.sending", moderatefilename);
 		/* Rename it to avoid mail being sent twice */
-		if(rename(moderatefilename, sendfilename) < 0) {
+		if(renameat(listfd, moderatefilename, listfd, sendfilename) < 0) {
 			log_error(LOG_ARGS, "Could not rename to .sending");
 			exit(EXIT_FAILURE);
 		}
 
-		omitfilename = concatstr(2, moderatefilename, ".omit");
-		if(stat(omitfilename, &stbuf) == 0) {
-			tmpfd = open(omitfilename, O_RDONLY);
+		xasprintf(&omitfilename, "%s.omit", moderatefilename);
+		if(faccessat(listfd, omitfilename, F_OK, 0) == 0) {
+			tmpfd = openat(listfd, omitfilename, O_RDONLY);
 			if(tmpfd < 0) {
 				log_error(LOG_ARGS, "Could not open %s",
 						omitfilename);
@@ -504,7 +502,7 @@ int listcontrol(strlist *fromemails, const char *listdir,
 				close(tmpfd);
 				chomp(omit);
 			}
-			unlink(omitfilename);
+			unlinkat(listfd, omitfilename, 0);
 			free(omitfilename);
 		}
 
@@ -513,16 +511,17 @@ int listcontrol(strlist *fromemails, const char *listdir,
 		log_oper(listfd, OPLOGFNAME, "%s released %s",
 				tll_front(*fromemails), param);
 
+		xasprintf(&tosend, "%s/sendfilename", listdir);
 		if (omit != NULL)
 			exec_or_die(mlmmjsend, "-L", listdir, "-o", omit,
-			    "-m", sendfilename, NULL);
-		exec_or_die(mlmmjsend, "-L", listdir, "-m", sendfilename, NULL);
+			    "-m", tosend, NULL);
+		exec_or_die(mlmmjsend, "-L", listdir, "-m", tosend, NULL);
 		break;
 
 	/* listname+reject-COOKIE@domain.tld */
 	case CTRL_REJECT:
-		moderatefilename = concatstr(3, listdir, "/moderation/", param);
-		if(stat(moderatefilename, &stbuf) < 0) {
+		xasprintf(&moderatefilename, "moderation/%s", param);
+		if (faccessat(listfd, moderatefilename, F_OK, 0) < 0) {
 			free(moderatefilename);
 			/* no mail to moderate */
 			errno = 0;
@@ -534,7 +533,7 @@ int listcontrol(strlist *fromemails, const char *listdir,
 		log_oper(listfd, OPLOGFNAME, "%s rejected %s",
 			tll_front(*fromemails), param);
 		free(param);
-		if (unlink(moderatefilename) != 0) {
+		if (unlinkat(listfd, moderatefilename, 0) != 0) {
 			log_error(LOG_ARGS, "Could not unlink %s",
 					moderatefilename);
 			free(moderatefilename);
@@ -546,9 +545,8 @@ int listcontrol(strlist *fromemails, const char *listdir,
 	/* listname+permit-COOKIE@domain.tld */
 	case CTRL_PERMIT:
 permit:
-		gatekeepfilename = concatstr(3, listdir,
-				"/moderation/subscribe", param);
-		if(stat(gatekeepfilename, &stbuf) < 0) {
+		xasprintf(&gatekeepfilename, "moderation/subscribe%s", param);
+		if (faccessat(listfd, gatekeepfilename, F_OK, 0) < 0) {
 			free(gatekeepfilename);
 			/* no mail to moderate */
 			errno = 0;
@@ -564,9 +562,8 @@ permit:
 
 	/* listname+obstruct-COOKIE@domain.tld */
 	case CTRL_OBSTRUCT:
-		gatekeepfilename = concatstr(3, listdir,
-				"/moderation/subscribe", param);
-		if(stat(gatekeepfilename, &stbuf) < 0) {
+		xasprintf(&gatekeepfilename, "moderation/subscribe%s", param);
+		if (faccessat(listfd, gatekeepfilename, F_OK, 0) < 0) {
 			free(gatekeepfilename);
 			/* no mail to moderate */
 			errno = 0;
@@ -578,9 +575,9 @@ permit:
 		log_oper(listfd, OPLOGFNAME, "%s obstructed %s",
 			tll_front(*fromemails), param);
 		free(param);
-		if (unlink(gatekeepfilename) != 0) {
-			log_error(LOG_ARGS, "Could not unlink %s",
-					gatekeepfilename);
+		if (unlinkat(listfd, gatekeepfilename, 0) != 0) {
+			log_error(LOG_ARGS, "Could not unlink %s/%s",
+			    listdir, gatekeepfilename);
 			free(gatekeepfilename);
 			exit(EXIT_FAILURE);
 		}
@@ -661,9 +658,8 @@ permit:
 				return -1;
 			}
 		}
-		archivefilename = concatstr(3, listdir, "/archive/",
-						param);
-		if(stat(archivefilename, &stbuf) < 0) {
+		archivefilename = concatstr(3, listdir, "/archive/", param);
+		if(access(archivefilename, R_OK) < 0) {
 			log_error(LOG_ARGS, "Unable to open archive file");
 			exit(EXIT_FAILURE);
 		}
