@@ -62,6 +62,7 @@ int main(int argc, char **argv)
 	char *randomstr = random_str();
 	char *mlmmjprocess, *bindir;
 	int fd, opt, noprocess = 0, nofork = 0;
+	int incfd, listfd;
 	struct stat st;
 	uid_t uid;
 	pid_t childpid;
@@ -125,17 +126,21 @@ int main(int argc, char **argv)
 			exit(EXIT_FAILURE);
 		}
 	}
-	
-	infilename = concatstr(3, listdir, "/incoming/", randomstr);
-	free(randomstr);
-	fd = open(infilename, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
+	listfd = open(listdir, O_DIRECTORY|O_CLOEXEC);
+	if (listfd == -1)
+		err(EXIT_FAILURE, "Cannot open(%s)", listdir);
+	incfd = openat(listfd, "incoming", O_DIRECTORY|O_CLOEXEC);
+	if (incfd == -1)
+		err(EXIT_FAILURE, "Cannot open(%s/incoming)", listdir);
+
+	fd = openat(incfd, randomstr, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
 	while(fd < 0 && errno == EEXIST) {
-		free(infilename);
-		randomstr = random_str();
-		infilename = concatstr(3, listdir, "/incoming/", randomstr);
 		free(randomstr);
-		fd = open(infilename, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
+		randomstr = random_str();
+		fd = openat(incfd, randomstr, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
 	}
+	xasprintf(&infilename, "%s/incoming/%s", listdir, randomstr);
+	free(randomstr);
 
 	if(fd < 0) {
 		log_error(LOG_ARGS, "could not create mail file in "
@@ -143,7 +148,7 @@ int main(int argc, char **argv)
 		free(infilename);
 		exit(EXIT_FAILURE);
 	}
-	
+
 	if(dumpfd2fd(STDIN_FILENO, fd) != 0) {
 		log_error(LOG_ARGS, "Could not receive mail");
 		exit(EXIT_FAILURE);

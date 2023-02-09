@@ -26,7 +26,7 @@ basics_body()
 	atf_check -s exit:0 -o "inline:$helptxt" $mlmmjreceive -h
 	echo test@mlmmjtest > ml/control/listaddress
 	rm -rf ml/incoming
-	atf_check -s exit:1 $mlmmjreceive -L ml -e bla -s meh -P <<EOF
+	atf_check -s exit:1 -e inline:"mlmmj-receive: Cannot open(ml/incoming): No such file or directory\n" $mlmmjreceive -L ml -e bla -s meh -P <<EOF
 EOF
 	mkdir ml/incoming
 	atf_check -s exit:0 $mlmmjreceive -L ml -e bla -s meh -P <<EOF
