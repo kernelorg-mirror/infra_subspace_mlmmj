@@ -142,6 +142,7 @@ ATF_TC_WITHOUT_HEAD(ml_list);
 ATF_TC_WITHOUT_HEAD(gen_addr);
 ATF_TC_WITHOUT_HEAD(memory_lines);
 ATF_TC_WITHOUT_HEAD(text_0);
+ATF_TC_WITHOUT_HEAD(text_1);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -2234,6 +2235,70 @@ ATF_TC_BODY(text_0, tc)
 	}
 }
 
+ATF_TC_BODY(text_1, tc)
+{
+	struct ml ml;
+	FILE *f = fopen("intext", "w+");
+	fprintf(f, "Subject: huhu\n"
+	   "plop\n"
+	   "$$\n"
+	   "$listaddr$\n"
+	   "$list+$\n"
+	   "$listowner$\n"
+	   "$helpaddr$\n"
+	   "$faqaddr$\n"
+	   "$listgetN$\n"
+	   "$listunsubaddr$\n"
+	   "$nomailunsubaddr$\n"
+	   "$digestunsubaddr$\n"
+	   "$listsubaddr$\n"
+	   "$digestsubaddr$\n"
+	   "$nomailsubaddr$\n"
+	   );
+	fclose(f);
+	int fd = open("intext", O_RDONLY);
+	text *txt = open_text_fd(fd);
+	ATF_REQUIRE(txt != NULL);
+	int tofd = open("totext", O_CREAT|O_WRONLY, 0644);
+	init_ml(true);
+	ml_init(&ml);
+	ml.dir = "list";
+	ATF_REQUIRE(ml_open(&ml, false));
+	ATF_REQUIRE(prepstdreply_to(txt, ml.dir, "me@fqdn.org", "to@plop.org", "bla@me.org", ml.fd, ml.ctrlfd, tofd, "Message-Id: <fake>"));
+	close_text(txt);
+	fsync(tofd);
+	close(tofd);
+	close(fd);
+	if (!atf_utils_compare_file("totext", "Subject: huhu\n"
+		"From: me@fqdn.org\n"
+		"To: to@plop.org\n"
+		"Message-Id: <fake>\n"
+		"Message-Id: <fake>\n"
+		"MIME-Version: 1.0\n"
+		"Content-Type: text/plain; charset=utf-8\n"
+		"Content-Transfer-Encoding: 8bit\n"
+		"Reply-To: bla@me.org\n"
+		"\n"
+		"plop\n"
+		"$\n"
+		"test@test\n"
+		"test+\n"
+		"test+owner@test\n"
+		"test+help@test\n"
+		"test+faq@test\n"
+		"test+get-N@test\n"
+		"test+unsubscribe@test\n"
+		"test+unsubscribe-nomail@test\n"
+		"test+unsubscribe-digest@test\n"
+		"test+subscribe@test\n"
+		"test+subscribe-digest@test\n"
+		"test+subscribe-nomail@test\n"
+		)) {
+		atf_utils_cat_file("totext", "");
+		atf_tc_fail("Unexpected output");
+	}
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -2314,6 +2379,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, gen_addr);
 	ATF_TP_ADD_TC(tp, memory_lines);
 	ATF_TP_ADD_TC(tp, text_0);
+	ATF_TP_ADD_TC(tp, text_1);
 
 	return (atf_no_error());
 }

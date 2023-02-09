@@ -349,45 +349,41 @@ static void substitute_one(char **line_p, char **pos_p, int *width_p,
 		/* DEPRECATED: use $list$@$domain$ instead */
 		value = xstrdup(listaddr);
 	} else if(strcmp(token, "list+") == 0) {
-		value = concatstr(2, listname, listdelim);
+		xasprintf(&value, "%s%s", listname, listdelim);
 	} else if(strcmp(token, "list") == 0) {
 		value = xstrdup(listname);
 	} else if(strcmp(token, "domain") == 0) {
 		value = xstrdup(fqdn);
 	} else if(strcmp(token, "listowner") == 0) {
 		/* DEPRECATED: use $list+$owner@$domain$ instead */
-		value = concatstr(4, listname, listdelim, "owner@", fqdn);
+		xasprintf(&value, "%s%sowner@%s", listname, listdelim, fqdn);
 	} else if(strcmp(token, "helpaddr") == 0) {
 		/* DEPRECATED: use $list+$help@$domain$ instead */
-		value = concatstr(4, listname, listdelim, "help@", fqdn);
+		xasprintf(&value, "%s%shelp@%s", listname, listdelim, fqdn);
 	} else if(strcmp(token, "faqaddr") == 0) {
 		/* DEPRECATED: use $list+$faq@$domain$ instead */
-		value = concatstr(4, listname, listdelim, "faq@", fqdn);
+		xasprintf(&value, "%s%sfaq@%s", listname, listdelim, fqdn);
 	} else if(strcmp(token, "listgetN") == 0) {
 		/* DEPRECATED: use $list+$get-N@$domain$ instead */
-		value = concatstr(4, listname, listdelim, "get-N@", fqdn);
+		xasprintf(&value, "%s%sget-N@%s", listname, listdelim, fqdn);
 	} else if(strcmp(token, "listunsubaddr") == 0) {
 		/* DEPRECATED: use $list+$unsubscribe@$domain$ instead */
-		value = concatstr(4, listname, listdelim, "unsubscribe@", fqdn);
+		xasprintf(&value, "%s%sunsubscribe@%s", listname, listdelim, fqdn);
 	} else if(strcmp(token, "digestunsubaddr") == 0) {
 		/* DEPRECATED: use $list+$unsubscribe-digest@$domain$ instead */
-		value = concatstr(4, listname, listdelim,
-				  "unsubscribe-digest@", fqdn);
+		xasprintf(&value, "%s%sunsubscribe-digest@%s", listname, listdelim, fqdn);
 	} else if(strcmp(token, "nomailunsubaddr") == 0) {
 		/* DEPRECATED: use $list+$unsubscribe-nomail@$domain$ instead */
-		value = concatstr(4, listname, listdelim,
-				  "unsubscribe-nomail@", fqdn);
+		xasprintf(&value, "%s%sunsubscribe-nomail@%s", listname, listdelim, fqdn);
 	} else if(strcmp(token, "listsubaddr") == 0) {
 		/* DEPRECATED: use $list+$subscribe@$domain$ instead */
-		value = concatstr(4, listname, listdelim, "subscribe@", fqdn);
+		xasprintf(&value, "%s%ssubscribe@%s", listname, listdelim, fqdn);
 	} else if(strcmp(token, "digestsubaddr") == 0) {
 		/* DEPRECATED: use $list+$subscribe-digest@$domain$ instead */
-		value = concatstr(4, listname, listdelim, "subscribe-digest@",
-				  fqdn);
+		xasprintf(&value, "%s%ssubscribe-digest@%s", listname, listdelim, fqdn);
 	} else if(strcmp(token, "nomailsubaddr") == 0) {
 		/* DEPRECATED: use $list+$subscribe-nomail@$domain$ instead */
-		value = concatstr(4, listname, listdelim, "subscribe-nomail@",
-				  fqdn);
+		xasprintf(&value, "%s%ssubscribe-nomail@%s", listname, listdelim, fqdn);
 	} else if(strncmp(token, "control ", 8) == 0) {
 		token = filename_token(token + 8);
 		if (token != NULL) value = ctrlcontent(ctrlfd, token);
@@ -1579,10 +1575,10 @@ prepstdreply_to(text *txt, const char *listdir, const char *from, const char *to
 	}
 
 	tmp = substitute(from, listaddr, listdelim, listfd, ctrlfd, txt);
-	headers[0] = concatstr(2, "From: ", tmp);
+	xasprintf(&headers[0], "From: %s", tmp);
 	free(tmp);
 	tmp = substitute(to, listaddr, listdelim, listfd, ctrlfd, txt);
-	headers[1] = concatstr(2, "To: ", tmp);
+	xasprintf(&headers[1], "To: %s", tmp);
 	free(tmp);
 	if (msgid)
 		headers[2] = xstrdup(msgid);
@@ -1601,7 +1597,7 @@ prepstdreply_to(text *txt, const char *listdir, const char *from, const char *to
 
 	if(replyto) {
 		tmp = substitute(replyto, listaddr, listdelim, listfd, ctrlfd, txt);
-		headers[8] = concatstr(2, "Reply-To: ", tmp);
+		xasprintf(&headers[8], "Reply-To: %s", tmp);
 		free(tmp);
 	}
 
@@ -1654,7 +1650,7 @@ prepstdreply_to(text *txt, const char *listdir, const char *from, const char *to
 			if (strncasecmp(line, "Subject:", len) == 0) {
 				tmp = unistr_utf8_to_header(tmp);
 				free(line);
-				line = concatstr(2, "Subject: ", tmp);
+				xasprintf(&line, "Subject: %s", tmp);
 				free(tmp);
 			}
 			if(dprintf(tofd, "%s\n", line) < 0) {
