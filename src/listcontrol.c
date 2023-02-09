@@ -34,7 +34,6 @@
 #include "mlmmj.h"
 #include "listcontrol.h"
 #include "getlistdelim.h"
-#include "strgen.h"
 #include "prepstdreply.h"
 #include "send_help.h"
 #include "send_list.h"
@@ -658,7 +657,7 @@ permit:
 				return -1;
 			}
 		}
-		archivefilename = concatstr(3, listdir, "/archive/", param);
+		xasprintf(&archivefilename, "%s/archive/%s", listdir, param);
 		if(access(archivefilename, R_OK) < 0) {
 			log_error(LOG_ARGS, "Unable to open archive file");
 			exit(EXIT_FAILURE);
