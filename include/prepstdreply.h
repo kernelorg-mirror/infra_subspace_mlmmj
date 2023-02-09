@@ -53,8 +53,9 @@ void finish_file_lines(file_lines_state *s);
 char *substitute(const char *line, const char *listaddr, const char *listdelim,
 		int listfd, int ctrlfd, text *txt);
 
-text *open_text_file(const char *listdir, const char *filename);
-text *open_text(const char *listdir, const char *purpose, const char *action,
+text *open_text_fd(int fd);
+text *open_text_file(int listfd, const char *filename);
+text *open_text(int listfd, const char *purpose, const char *action,
 		   const char *reason, const char *type, const char *compat);
 void register_unformatted(text *txt, const char *token, const char *subst);
 void register_originalmail(text *txt, const char *mailname);

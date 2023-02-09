@@ -453,10 +453,31 @@ char *substitute(const char *line, const char *listaddr, const char *listdelim,
 	return new;
 }
 
-
-text *open_text_file(const char *listdir, const char *filename)
+text *open_text_file(int listfd, const char *filename)
 {
 	char *tmp;
+	int fd;
+
+	xasprintf(&tmp, "text/%s", filename);
+	fd = openat(listfd, tmp, O_RDONLY);
+	free(tmp);
+	if (fd == -1) {
+		xasprintf(&tmp, DEFAULTTEXTDIR"/default/%s", filename);
+		fd = open(tmp, O_RDONLY);
+		free(tmp);
+	}
+	if (fd == -1) {
+		xasprintf(&tmp, DEFAULTTEXTDIR"/en/%s", filename);
+		fd = open(tmp, O_RDONLY);
+		free(tmp);
+	}
+	if (fd == -1)
+		return (NULL);
+	return (open_text_fd(fd));
+}
+
+text *open_text_fd(int fd)
+{
 	text *txt;
 
 	txt = xcalloc(1, sizeof(text));
@@ -464,27 +485,12 @@ text *open_text_file(const char *listdir, const char *filename)
 	txt->src->limit = -1;
 	txt->wrapmode = WRAP_WORD;
 	txt->widthreckoning = WIDTH_THIN;
+	txt->src->fd = fd;
 
-	tmp = concatstr(3, listdir, "/text/", filename);
-	txt->src->fd = open(tmp, O_RDONLY);
-	free(tmp);
-	if (txt->src->fd >= 0) return txt;
-
-	tmp = concatstr(2, DEFAULTTEXTDIR "/default/", filename);
-	txt->src->fd = open(tmp, O_RDONLY);
-	free(tmp);
-	if (txt->src->fd >= 0) return txt;
-
-	tmp = concatstr(2, DEFAULTTEXTDIR "/en/", filename);
-	txt->src->fd = open(tmp, O_RDONLY);
-	free(tmp);
-	if (txt->src->fd >= 0) return txt;
-
-	return NULL;
+	return (txt);
 }
 
-
-text *open_text(const char *listdir, const char *purpose, const char *action,
+text *open_text(int listfd, const char *purpose, const char *action,
 		   const char *reason, const char *type, const char *compat)
 {
 	size_t filenamelen, len;
@@ -494,23 +500,23 @@ text *open_text(const char *listdir, const char *purpose, const char *action,
 	filename = concatstr(7,purpose,"-",action,"-",reason,"-",type);
 	filenamelen = strlen(filename);
 	do {
-		if ((txt = open_text_file(listdir, filename)) != NULL) break;
+		if ((txt = open_text_file(listfd, filename)) != NULL) break;
 		len = type ? strlen(type) : 0;
 		filename[filenamelen-len-1] = '\0';
-		if ((txt = open_text_file(listdir, filename)) != NULL) break;
+		if ((txt = open_text_file(listfd, filename)) != NULL) break;
 		filename[filenamelen-len-1] = '-';
 		filenamelen -= len + 1;
 		len = reason ? strlen(reason) : 0;
 		filename[filenamelen-len-1] = '\0';
-		if ((txt = open_text_file(listdir, filename)) != NULL) break;
+		if ((txt = open_text_file(listfd, filename)) != NULL) break;
 		filename[filenamelen-len-1] = '-';
 		filenamelen -= len + 1;
 		len = action ? strlen(action) : 0;
 		filename[filenamelen-len-1] = '\0';
-		if ((txt = open_text_file(listdir, filename)) != NULL) break;
+		if ((txt = open_text_file(listfd, filename)) != NULL) break;
 		filename[filenamelen-len-1] = '-';
 		filenamelen -= len + 1;
-		if ((txt = open_text_file(listdir, compat)) != NULL) {
+		if ((txt = open_text_file(listfd, compat)) != NULL) {
 			free(filename);
 			filename = xstrdup(compat);
 			break;

@@ -159,7 +159,7 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 	gen_addr(from, ml, "owner");
 	xasprintf(&to, "%s-moderators@%s", ml->name, ml->fqdn);
 
-	txt = open_text(ml->dir, "moderate", "post",
+	txt = open_text(ml->fd, "moderate", "post",
 			modreason_strs[modreason], NULL, "moderation");
 	MY_ASSERT(txt);
 	register_unformatted(txt, "subject", subject);
@@ -183,7 +183,7 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 	if (notifymod) {
 		free(queuefilename);
 		/* send mail to poster that the list is moderated */
-		txt = open_text(ml->dir, "wait", "post",
+		txt = open_text(ml->fd, "wait", "post",
 				modreason_strs[modreason], NULL, "moderation-poster");
 		MY_ASSERT(txt);
 		register_unformatted(txt, "subject", subject);
@@ -698,7 +698,7 @@ int main(int argc, char **argv)
 			}
 
 			gen_addr(fromaddr, &ml, "bounces-help");
-			txt = open_text(ml.dir, "deny", "post",
+			txt = open_text(ml.fd, "deny", "post",
 					"maxmailsize", NULL, "maxmailsize");
 			MY_ASSERT(txt);
 			register_unformatted(txt, "subject", subject);
@@ -754,7 +754,7 @@ int main(int argc, char **argv)
 			exit(EXIT_SUCCESS);
 		}
 		gen_addr(fromaddr, &ml, "bounces-help");
-		txt = open_text(ml.dir, "deny", "post",
+		txt = open_text(ml.fd, "deny", "post",
 				"tocc", NULL, "notintocc");
 		MY_ASSERT(txt);
 		register_unformatted(txt, "subject", subject);
@@ -791,7 +791,7 @@ int main(int argc, char **argv)
 				exit(EXIT_SUCCESS);
 			}
 			gen_addr(fromaddr, &ml, "bounces-help");
-			txt = open_text(ml.dir, "deny", "post",
+			txt = open_text(ml.fd, "deny", "post",
 					"access", NULL, "access");
 			MY_ASSERT(txt);
 			register_unformatted(txt, "subject", subject);
@@ -889,10 +889,10 @@ int main(int argc, char **argv)
 			    }
 			    gen_addr(fromaddr, &ml, "bounces-help");
 			    if (subonlypost) {
-				txt = open_text(ml.dir, "deny", "post",
+				txt = open_text(ml.fd, "deny", "post",
 					"subonlypost", NULL, "subonlypost");
 			    } else if (modonlypost) {
-				txt = open_text(ml.dir, "deny", "post",
+				txt = open_text(ml.fd, "deny", "post",
 					"modonlypost", NULL, NULL);
 			    }
 			    MY_ASSERT(txt);

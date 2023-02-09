@@ -282,7 +282,7 @@ int send_digest(const char *listdir, int firstindex, int lastindex,
 	listfqdn = genlistfqdn(listaddr);
 	listdelim = getlistdelim(ctrlfd);
 	
-	txt = open_text_file(listdir, "digest");
+	txt = open_text_file(listfd, "digest");
 	if (txt == NULL) {
 		log_error(LOG_ARGS, "Could not open listtext 'digest'");
 		goto fallback_subject;

@@ -70,7 +70,7 @@ void confirm_unsub(struct ml *ml, const char *subaddr, const char *mlmmjsend,
 			break;
 	}
 
-	txt = open_text(ml->dir, "finish", "unsub",
+	txt = open_text(ml->fd, "finish", "unsub",
 			subreason_strs[reasonsub], subtype_strs[typesub],
 			listtext);
 	free(listtext);
@@ -108,7 +108,7 @@ void notify_unsub(struct ml *ml, const char *subaddr, const char *mlmmjsend,
 			break;
 	}
 	
-	txt = open_text(ml->dir, "notify", "unsub",
+	txt = open_text(ml->fd, "notify", "unsub",
 			subreason_strs[reasonsub], subtype_strs[typesub],
 			listtext);
 	free(listtext);
@@ -188,7 +188,7 @@ void generate_unsubconfirm(struct ml *ml, const char *subaddr,
 	free(randomstr);
 	free(tmpstr);
 
-	txt = open_text(ml->dir, "confirm", "unsub",
+	txt = open_text(ml->fd, "confirm", "unsub",
 			subreason_strs[reasonsub], subtype_strs[typesub],
 			listtext);
 	free(listtext);
@@ -234,7 +234,7 @@ static void generate_notsubscribed(struct ml *ml, const char *subaddr,
 	char *queuefilename, *fromaddr;
 
 	gen_addr(fromaddr, ml, "bounces-help");
-	txt = open_text(ml->dir,
+	txt = open_text(ml->fd,
 			"deny", "unsub", "unsubbed", subtype_strs[typesub],
 			"unsub-notsubscribed");
 	MY_ASSERT(txt);

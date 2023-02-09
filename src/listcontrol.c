@@ -203,7 +203,7 @@ int listcontrol(strlist *fromemails, const char *listdir,
 			errno = 0;
 			log_error(LOG_ARGS, "A subscribe-digest request was"
 				" denied");
-			txt = open_text(listdir, "deny", "sub", "disabled",
+			txt = open_text(listfd, "deny", "sub", "disabled",
 					"digest", "sub-deny-digest");
 			MY_ASSERT(txt);
 			register_unformatted(txt, "subaddr",
@@ -238,7 +238,7 @@ int listcontrol(strlist *fromemails, const char *listdir,
 			errno = 0;
 			log_error(LOG_ARGS, "A subscribe-nomail request was"
 				" denied");
-			txt = open_text(listdir, "deny", "sub", "disabled",
+			txt = open_text(listfd, "deny", "sub", "disabled",
 					"nomail", "sub-deny-nomail");
 			MY_ASSERT(txt);
 			register_unformatted(txt, "subaddr",
@@ -273,7 +273,7 @@ int listcontrol(strlist *fromemails, const char *listdir,
 			errno = 0;
 			log_error(LOG_ARGS, "A subscribe-both request was"
 				" denied");
-			txt = open_text(listdir, "deny", "sub", "disabled",
+			txt = open_text(listfd, "deny", "sub", "disabled",
 					"both", "sub-deny-digest");
 			MY_ASSERT(txt);
 			register_unformatted(txt, "subaddr",
@@ -595,7 +595,7 @@ permit:
 		}
 		log_oper(listfd, OPLOGFNAME, "%s requested help",
 				tll_front(*fromemails));
-		txt = open_text(listdir, "help", NULL, NULL, NULL, "listhelp");
+		txt = open_text(listfd, "help", NULL, NULL, NULL, "listhelp");
 		MY_ASSERT(txt);
 		queuefilename = prepstdreply(txt, listdir,
 				"$listowner$", tll_front(*fromemails), NULL, listfd, ctrlfd);
@@ -617,7 +617,7 @@ permit:
                }
                log_oper(listfd, OPLOGFNAME, "%s requested faq",
                                tll_front(*fromemails));
-		txt = open_text(listdir, "faq", NULL, NULL, NULL, "listfaq");
+		txt = open_text(listfd, "faq", NULL, NULL, NULL, "listfaq");
 		MY_ASSERT(txt);
 		queuefilename = prepstdreply(txt, listdir,
 				"$listowner$", tll_front(*fromemails), NULL, listfd, ctrlfd);

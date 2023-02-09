@@ -137,7 +137,7 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 	mls = init_memory_lines(moderators);
 	free(moderators);
 
-	txt = open_text(ml->dir,
+	txt = open_text(ml->fd,
 			"gatekeep", "sub",
 			subreason_strs[reasonsub], subtype_strs[typesub],
 			"submod-moderator");
@@ -190,7 +190,7 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 
 	gen_addr(from, ml, "bounces-help");
 
-	txt = open_text(ml->dir,
+	txt = open_text(ml->fd,
 			"wait", "sub",
 			subreason_strs[reasonsub], subtype_strs[typesub],
 			"submod-requester");
@@ -300,7 +300,7 @@ void confirm_sub(struct ml *ml, const char *subaddr,
 			break;
 	}
 
-	txt = open_text(ml->dir, "finish", "sub",
+	txt = open_text(ml->fd, "finish", "sub",
 			subreason_strs[reasonsub], subtype_strs[typesub],
 			listtext);
 	free(listtext);
@@ -343,7 +343,7 @@ void notify_sub(struct ml *ml, const char *subaddr,
 			break;
 	}
 
-	txt = open_text(ml->dir, "notify", "sub",
+	txt = open_text(ml->fd, "notify", "sub",
 			subreason_strs[reasonsub], subtype_strs[typesub],
 			listtext);
 	free(listtext);
@@ -426,7 +426,7 @@ void generate_subconfirm(struct ml *ml, const char *subaddr,
 	free(randomstr);
 	free(tmpstr);
 
-	txt = open_text(ml->dir, "confirm", "sub",
+	txt = open_text(ml->fd, "confirm", "sub",
 			subreason_strs[reasonsub], subtype_strs[typesub],
 			listtext);
 	free(listtext);
@@ -473,7 +473,7 @@ void generate_subscribed(struct ml *ml, const char *subaddr,
 	char *queuefilename, *fromaddr;
 
 	gen_addr(fromaddr, ml, "bounceshelp");
-	txt = open_text(ml->dir,
+	txt = open_text(ml->fd,
 			"deny", "sub", "subbed", subtype_strs[typesub],
 			"sub-subscribed");
 	MY_ASSERT(txt);

@@ -179,7 +179,7 @@ void send_list(const char *listdir, const char *emailaddr,
 	free(digestdir);
 	free(nomaildir);
 
-	txt = open_text(listdir, "list", NULL, NULL, subtype_strs[SUB_ALL],
+	txt = open_text(listfd, "list", NULL, NULL, subtype_strs[SUB_ALL],
 			"listsubs");
 	MY_ASSERT(txt);
 	register_formatted(txt, "listsubs",
