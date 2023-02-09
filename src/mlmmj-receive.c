@@ -68,13 +68,10 @@ int main(int argc, char **argv)
 	
 	log_set_name(argv[0]);
 
-	mlmmjprocess = getenv("MLMMJPROCESS");
-	if (mlmmjprocess == NULL) {
-		bindir = mydirname(argv[0]);
-		xasprintf(&mlmmjprocess, "%s/mlmmj-process", bindir);
-		free(bindir);
-	}
-	
+	bindir = mydirname(argv[0]);
+	xasprintf(&mlmmjprocess, "%s/mlmmj-process", bindir);
+	free(bindir);
+
 	while ((opt = getopt(argc, argv, "hPVL:s:e:F")) != -1) {
 		switch(opt) {
 		case 'h':
