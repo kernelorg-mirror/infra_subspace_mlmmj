@@ -39,7 +39,7 @@
 #include "wrappers.h"
 #include "log_error.h"
 
-char *random_str()
+char *random_str(void)
 {
 	char *dest;
 
@@ -98,7 +98,7 @@ char *concatstr(int count, ...)
         return retstr;
 }
 
-char *hostnamestr()
+char *hostnamestr(void)
 {
 	struct hostent *hostlookup;
 	char *hostname = NULL;
