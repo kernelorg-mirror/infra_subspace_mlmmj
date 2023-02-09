@@ -91,7 +91,7 @@ basics_body()
  -V: Print version
 "
 	atf_check -s exit:1 -e "inline:mlmmj-list: You have to specify -L\nmlmmj-list -h for help\n" mlmmj-list
-	atf_check -s exit:1 -e "inline:mlmmj-list: Unable to open(nonexisting): No such file or directory\n" mlmmj-list -L nonexisting
+	atf_check -s exit:1 -e "inline:mlmmj-list: Cannot open(nonexisting): No such file or directory\n" mlmmj-list -L nonexisting
 	mkdir ml
 	atf_check -s exit:1 -e "inline:mlmmj-list: Unable to open(ml/subscribers.d): No such file or directory\n" mlmmj-list -L ml
 	atf_check -s exit:0 -o "match:mlmmj-list version .*" mlmmj-list -V

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Baptiste Daroussin <bapt@FreeBSD.org>
+ * Copyright (C) 2021-2023 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -32,6 +32,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <err.h>
 
 #include "mlmmj.h"
 #include "utils.h"
@@ -502,4 +503,30 @@ char *dsnparseaddr(const char *mailname)
 		free(line);
 	}
 	return addr;
+}
+
+int
+open_listdir(const char *listdir, bool usercheck)
+{
+	struct stat st;
+	uid_t uid;
+	int fd;
+
+	fd = open(listdir, O_DIRECTORY|O_CLOEXEC);
+	if (fd == -1)
+		err(EXIT_FAILURE, "Cannot open(%s)", listdir);
+	if (!usercheck)
+		return (fd);
+	if (fstat(fd, &st) != 0) {
+		log_error(LOG_ARGS, "Cannot stat %s", listdir);
+		errx(EXIT_FAILURE, "Cannot stat %s", listdir);
+	}
+	uid = getuid();
+	if (uid && uid != st.st_uid) {
+		log_error(LOG_ARGS, "Have to invoke either as root or as the "
+		    "user owning listdir");
+		errx(EXIT_FAILURE, "Have to invoke either as root or as the "
+		    "user owning listdir");
+	}
+	return (fd);
 }

@@ -62,8 +62,6 @@ int main(int argc, char **argv)
 	char *mlmmjprocess, *bindir;
 	int fd, opt, noprocess = 0, nofork = 0;
 	int incfd, listfd;
-	struct stat st;
-	uid_t uid;
 	pid_t childpid;
 
 	CHECKFULLPATH(argv[0]);
@@ -108,26 +106,7 @@ int main(int argc, char **argv)
 		    "%s -h for help", argv[0]);
 	}
 
-	/* Lets make sure no random user tries to send mail to the list */
-	if(listdir) {
-		if(stat(listdir, &st) == 0) {
-			uid = getuid();
-			if(uid && uid != st.st_uid) {
-				log_error(LOG_ARGS,
-					"Have to invoke either as root "
-					"or as the user owning listdir "
-					"Invoked with uid = [%d]", (int)uid);
-				errx(EXIT_FAILURE, "Have to invoke either as root "
-					"or as the user owning listdir");
-			}
-		} else {
-			log_error(LOG_ARGS, "Could not stat %s", listdir);
-			exit(EXIT_FAILURE);
-		}
-	}
-	listfd = open(listdir, O_DIRECTORY|O_CLOEXEC);
-	if (listfd == -1)
-		err(EXIT_FAILURE, "Cannot open(%s)", listdir);
+	listfd = open_listdir(listdir, true);
 	incfd = openat(listfd, "incoming", O_DIRECTORY|O_CLOEXEC);
 	if (incfd == -1)
 		err(EXIT_FAILURE, "Cannot open(%s/incoming)", listdir);

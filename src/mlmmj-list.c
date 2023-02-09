@@ -124,9 +124,7 @@ int main(int argc, char **argv)
 		errx(EXIT_FAILURE, "You have to specify -L\n"
 		    "%s -h for help", argv[0]);
 	}
-	if ((listfd = open(listdir, O_DIRECTORY|O_CLOEXEC)) == -1)
-		err(EXIT_FAILURE, "Unable to open(%s)", listdir);
-
+	listfd = open_listdir(listdir, false);
 	subdirfd = open_subscriber_directory(listfd, typesub, &subdir);
 	if (subdirfd == -1 && subdir != NULL)
 		err(EXIT_FAILURE, "Unable to open(%s/%s)", listdir, subdir);

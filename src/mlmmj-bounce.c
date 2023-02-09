@@ -185,8 +185,7 @@ int main(int argc, char **argv)
 		errx(EXIT_FAILURE, "You have to specify -L, -a or -d and -n or -p\n"
 		    "%s -h for help", argv[0]);
 	}
-	if ((listfd = open(listdir, O_DIRECTORY|O_CLOEXEC)) == -1)
-		errx(EXIT_FAILURE, "Cannot open(%s)", listdir);
+	listfd = open_listdir(listdir, false);
 	if ((ctrlfd = openat(listfd, "control", O_DIRECTORY|O_CLOEXEC)) == -1)
 		err(EXIT_FAILURE, "Cannot open(%s/control)", listdir);
 

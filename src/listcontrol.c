@@ -462,7 +462,7 @@ int listcontrol(strlist *fromemails, const char *listdir,
 
 	/* listname+bounces-INDEX-user=example.tld@domain.tld */
 	case CTRL_BOUNCES:
-		listfd = open(listdir, O_DIRECTORY);
+		listfd = open_listdir(listdir, false);
 		bouncenr = param;
 		c = strchr(param, '-');
 		if (!c) { /* Exec with dsn parsing, since the addr is missing */

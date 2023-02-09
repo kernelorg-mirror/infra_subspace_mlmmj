@@ -385,7 +385,6 @@ int main(int argc, char **argv)
 	char *subject = NULL, *posteraddr = NULL;
 	char *envstr, *efrom;
 	struct stat st;
-	uid_t uid;
 	strlist fromemails = tll_init();
 	strlist originalfromemails = tll_init();
 	strlist toemails = tll_init();
@@ -445,25 +444,7 @@ int main(int argc, char **argv)
 		    "%s -h for help", argv[0]);
 	}
 
-	/* Lets make sure no random user tries to send mail to the list */
-	if(listdir) {
-		if(stat(listdir, &st) == 0) {
-			uid = getuid();
-			if(uid && uid != st.st_uid) {
-				log_error(LOG_ARGS,
-					"Have to invoke either as root "
-					"or as the user owning listdir");
-				errx(EXIT_FAILURE, "Have to invoke either as root "
-					"or as the user owning listdir");
-			}
-		} else {
-			log_error(LOG_ARGS, "Could not stat %s", listdir);
-			exit(EXIT_FAILURE);
-		}
-	}
-	listfd = open(listdir, O_DIRECTORY|O_CLOEXEC);
-	if (listfd == -1)
-		err(EXIT_FAILURE, "Cannot open(%s)", listdir);
+	listfd = open_listdir(listdir, true);
 	ctrlfd = openat(listfd, "control", O_DIRECTORY|O_CLOEXEC);
 	if (ctrlfd == -1)
 		err(EXIT_FAILURE, "Cannot open(%s/control)", listdir);

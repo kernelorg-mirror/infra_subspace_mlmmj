@@ -44,7 +44,7 @@ $mlmmjprocess -h for help
 
 basic_2_body()
 {
-	atf_check -s exit:1 $mlmmjprocess -L plop -m meh
+	atf_check -s exit:1 -e inline:"mlmmj-process: Cannot open(plop): No such file or directory\n" $mlmmjprocess -L plop -m meh
 }
 
 basic_3_body()

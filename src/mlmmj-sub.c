@@ -648,8 +648,7 @@ int main(int argc, char **argv)
 		errx(EXIT_FAILURE, "You have to specify -L\n"
 		    "%s -h for help", argv[0]);
 	}
-	if ((listfd = open(listdir, O_DIRECTORY|O_CLOEXEC)) == -1)
-		errx(EXIT_FAILURE, "Cannot open(%s)", listdir);
+	listfd = open_listdir(listdir, false);
 	if ((ctrlfd = openat(listfd, "control", O_DIRECTORY|O_CLOEXEC)) == -1)
 		errx(EXIT_FAILURE, "Cannot open(%s/control)", listdir);
 
@@ -690,7 +689,7 @@ int main(int argc, char **argv)
 
 	if(changeuid) {
 		uid = getuid();
-		if(!uid && stat(listdir, &st) == 0 && uid != st.st_uid) {
+		if(!uid && fstat(listfd, &st) == 0 && uid != st.st_uid) {
 			printf("Changing to uid %d, owner of %s.\n",
 					(int)st.st_uid, listdir);
 			if(setuid(st.st_uid) < 0) {
