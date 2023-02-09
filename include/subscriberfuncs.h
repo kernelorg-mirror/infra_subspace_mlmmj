@@ -29,5 +29,6 @@
 bool find_subscriber(int fd, const char *address);
 int is_subbed_in(int fd, const char *subddirname, const char *address);
 enum subtype is_subbed(int listfd, const char *address, bool both);
+char *get_subcookie_content(int listfd, bool unsub, const char *param);
 
 #endif /* SUBSCRIBERFUNC_H */

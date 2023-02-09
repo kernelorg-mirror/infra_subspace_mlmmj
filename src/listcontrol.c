@@ -140,7 +140,7 @@ int listcontrol(strlist *fromemails, const char *listdir,
 		const char *mailname, int listfd, int ctrlfd)
 {
 	char *bouncenr, *tmpstr;
-	char *param = NULL, *conffilename, *moderatefilename, *gatekeepfilename;
+	char *param = NULL, *moderatefilename, *gatekeepfilename;
 	char *omitfilename;
 	char *omit = NULL;
 	char *c, *archivefilename, *sendfilename;
@@ -332,9 +332,8 @@ int listcontrol(strlist *fromemails, const char *listdir,
 			subtype = "-b";
 			subtypename = "both";
 		}
-		conffilename = concatstr(3, listdir, "/subconf/", param);
-		free(param);
-		if((tmpfd = open(conffilename, O_RDONLY)) < 0) {
+		tmpstr = get_subcookie_content(listfd, false, param);
+		if (tmpstr == NULL) {
 			/* invalid COOKIE */
 			errno = 0;
 			log_error(LOG_ARGS, "A subconf request was"
@@ -342,9 +341,6 @@ int listcontrol(strlist *fromemails, const char *listdir,
 				" Ignoring mail");
 			return -1;
 		}
-		tmpstr = mygetline(tmpfd);
-		chomp(tmpstr);
-		close(tmpfd);
 		log_oper(listfd, OPLOGFNAME, "mlmmj-sub: %s confirmed"
 			" subscription to %s", tmpstr, subtypename);
 		exec_or_die(mlmmjsub, "-L", listdir, "-a", tmpstr, "-n",
@@ -353,9 +349,8 @@ int listcontrol(strlist *fromemails, const char *listdir,
 
 	/* listname+subconf-COOKIE@domain.tld */
 	case CTRL_CONFSUB:
-		conffilename = concatstr(3, listdir, "/subconf/", param);
-		free(param);
-		if((tmpfd = open(conffilename, O_RDONLY)) < 0) {
+		tmpstr = get_subcookie_content(listfd, false, param);
+		if (tmpstr == NULL) {
 			/* invalid COOKIE */
 			errno = 0;
 			log_error(LOG_ARGS, "A subconf request was"
@@ -363,10 +358,6 @@ int listcontrol(strlist *fromemails, const char *listdir,
 				" Ignoring mail");
 			return -1;
 		}
-		tmpstr = mygetline(tmpfd);
-		chomp(tmpstr);
-		close(tmpfd);
-		unlink(conffilename);
 		log_oper(listfd, OPLOGFNAME, "mlmmj-sub: %s confirmed"
 			" subscription to regular list", tmpstr);
 		exec_or_die(mlmmjsub, "-L", listdir, "-a", tmpstr,
@@ -396,9 +387,8 @@ int listcontrol(strlist *fromemails, const char *listdir,
 
 	/* listname+unsubconf-digest-COOKIE@domain.tld */
 	case CTRL_CONFUNSUB_DIGEST:
-		conffilename = concatstr(3, listdir, "/unsubconf/", param);
-		free(param);
-		if((tmpfd = open(conffilename, O_RDONLY)) < 0) {
+		tmpstr = get_subcookie_content(listfd, true, param);
+		if (tmpstr == NULL) {
 			/* invalid COOKIE */
 			errno = 0;
 			log_error(LOG_ARGS, "An unsubconf-digest request was"
@@ -406,10 +396,6 @@ int listcontrol(strlist *fromemails, const char *listdir,
 				" Ignoring mail");
 			return -1;
 		}
-		tmpstr = mygetline(tmpfd);
-		close(tmpfd);
-		chomp(tmpstr);
-		unlink(conffilename);
 		log_oper(listfd, OPLOGFNAME, "mlmmj-unsub: %s confirmed"
 			" unsubscribe from digest", tmpstr);
 		exec_or_die(mlmmjunsub, "-L", listdir, "-a", tmpstr, "-d",
@@ -418,9 +404,8 @@ int listcontrol(strlist *fromemails, const char *listdir,
 
 	/* listname+unsubconf-nomail-COOKIE@domain.tld */
 	case CTRL_CONFUNSUB_NOMAIL:
-		conffilename = concatstr(3, listdir, "/unsubconf/", param);
-		free(param);
-		if((tmpfd = open(conffilename, O_RDONLY)) < 0) {
+		tmpstr = get_subcookie_content(listfd, true, param);
+		if (tmpstr == NULL) {
 			/* invalid COOKIE */
 			errno = 0;
 			log_error(LOG_ARGS, "An unsubconf-nomail request was"
@@ -428,10 +413,6 @@ int listcontrol(strlist *fromemails, const char *listdir,
 				" Ignoring mail");
 			return -1;
 		}
-		tmpstr = mygetline(tmpfd);
-		close(tmpfd);
-		chomp(tmpstr);
-		unlink(conffilename);
 		log_oper(listfd, OPLOGFNAME, "mlmmj-unsub: %s confirmed"
 			" unsubscribe from nomail", tmpstr);
 		exec_or_die(mlmmjunsub, "-L", listdir, "-a", tmpstr, "-n",
@@ -440,9 +421,8 @@ int listcontrol(strlist *fromemails, const char *listdir,
 
 	/* listname+unsubconf-COOKIE@domain.tld */
 	case CTRL_CONFUNSUB:
-		conffilename = concatstr(3, listdir, "/unsubconf/", param);
-		free(param);
-		if((tmpfd = open(conffilename, O_RDONLY)) < 0) {
+		tmpstr = get_subcookie_content(listfd, true, param);
+		if (tmpstr == NULL) {
 			/* invalid COOKIE */
 			errno = 0;
 			log_error(LOG_ARGS, "An unsubconf request was"
@@ -450,10 +430,6 @@ int listcontrol(strlist *fromemails, const char *listdir,
 				" Ignoring mail");
 			return -1;
 		}
-		tmpstr = mygetline(tmpfd);
-		close(tmpfd);
-		chomp(tmpstr);
-		unlink(conffilename);
 		log_oper(listfd, OPLOGFNAME, "mlmmj-unsub: %s confirmed"
 			" unsubscribe from regular list", tmpstr);
 		exec_or_die(mlmmjunsub, "-L", listdir, "-a", tmpstr, "-R", "-c",

@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2003 Mads Martin Joergensen <mmj at mmj.dk>
- * Copyright (C) 2022 Baptiste Daroussin <bapt@FreeBSD.org>
+ * Copyright (C) 2022-2023 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <dirent.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #include "mlmmj.h"
 #include "subscriberfuncs.h"
@@ -130,4 +131,34 @@ is_subbed(int listfd, const char *address, bool both)
 		return SUB_NOMAIL;
 
 	return (typesub);
+}
+
+char *
+get_subcookie_content(int listfd, bool unsub, const char *param)
+{
+	int dfd, fd;
+	FILE *f;
+	char *line = NULL;
+	size_t linecap = 0;
+
+	dfd = openat(listfd, unsub ? "unsubconf" : "subconf", O_DIRECTORY|O_CLOEXEC);
+	if (dfd == -1) {
+		log_error(LOG_ARGS, "Cannot open %ssubconf Ignoring mail", unsub ? "un" : "");
+		return (NULL);
+	}
+	fd = openat(dfd, param, O_RDONLY);
+	close(dfd);
+	if (fd == -1)
+		return (NULL);
+	f = fdopen(fd, "r");
+	if (getline(&line, &linecap, f) > 0) {
+		chomp(line);
+		chomp(line);
+		fclose(f);
+		unlinkat(dfd, param, 0);
+		return (line);
+	}
+	fclose(f);
+
+	return (NULL);
 }

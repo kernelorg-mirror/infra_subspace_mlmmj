@@ -136,6 +136,7 @@ ATF_TC_WITHOUT_HEAD(get_recipextra_from_env_qmail);
 ATF_TC_WITHOUT_HEAD(get_recipextra_from_env_postfix);
 ATF_TC_WITHOUT_HEAD(get_recipextra_from_env_exim);
 ATF_TC_WITHOUT_HEAD(addrmatch);
+ATF_TC_WITHOUT_HEAD(get_subcookie_content);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -2059,6 +2060,29 @@ ATF_TC_BODY(addrmatch, tc)
 	ATF_REQUIRE_STREQ(extra, "value");
 }
 
+ATF_TC_BODY(get_subcookie_content, tc)
+{
+	FILE *f;
+	init_ml(true);
+
+	int fd = open("list", O_DIRECTORY);
+	ATF_REQUIRE(fd != -1);
+
+	rmdir("list/unsubconf");
+	ATF_REQUIRE(get_subcookie_content(fd, true, "test") == NULL);
+	mkdir("list/unsubconf", 0755);
+	rmdir("list/subconf");
+	ATF_REQUIRE(get_subcookie_content(fd, false, "test") == NULL);
+	mkdir("list/subconf", 0755);
+	ATF_REQUIRE(get_subcookie_content(fd, false, "test") == NULL);
+	fclose(fopen("list/subconf/test", "w+"));
+	ATF_REQUIRE(get_subcookie_content(fd, false, "test") == NULL);
+	f = fopen("list/subconf/test", "w+");
+	fprintf(f, "bla\nplop\n");
+	fclose(f);
+	ATF_REQUIRE_STREQ(get_subcookie_content(fd, false, "test"), "bla");
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -2134,6 +2158,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, get_recipextra_from_env_postfix);
 	ATF_TP_ADD_TC(tp, get_recipextra_from_env_exim);
 	ATF_TP_ADD_TC(tp, addrmatch);
+	ATF_TP_ADD_TC(tp, get_subcookie_content);
 
 	return (atf_no_error());
 }
