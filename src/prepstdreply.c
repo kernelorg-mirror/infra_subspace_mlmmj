@@ -1556,7 +1556,7 @@ void close_text(text *txt)
 
 bool
 prepstdreply_to(text *txt, const char *listdir, const char *from, const char *to,
-    const char *replyto, int listfd, int ctrlfd, int tofd)
+    const char *replyto, int listfd, int ctrlfd, int tofd, const char *msgid)
 {
 	bool ret = false;
 	char *tmp, *line;
@@ -1584,9 +1584,15 @@ prepstdreply_to(text *txt, const char *listdir, const char *from, const char *to
 	tmp = substitute(to, listaddr, listdelim, listfd, ctrlfd, txt);
 	headers[1] = concatstr(2, "To: ", tmp);
 	free(tmp);
-	headers[2] = genmsgid(listfqdn);
+	if (msgid)
+		headers[2] = xstrdup(msgid);
+	else
+		headers[2] = genmsgid(listfqdn);
 	chomp(headers[2]);
-	headers[3] = gendatestr();
+	if (msgid)
+		headers[3] = xstrdup(msgid);
+	else
+		headers[3] = gendatestr();
 	chomp(headers[3]);
 	headers[4] = xstrdup("Subject: mlmmj administrivia");
 	headers[5] = xstrdup("MIME-Version: 1.0");
@@ -1730,7 +1736,7 @@ char *prepstdreply(text *txt, const char *listdir,
 		free(txt);
 		return NULL;
 	}
-	if (!prepstdreply_to(txt, listdir, from, to, replyto, listfd, ctrlfd, outfd))
+	if (!prepstdreply_to(txt, listdir, from, to, replyto, listfd, ctrlfd, outfd, NULL))
 		return (NULL);
 	return (retstr);
 }

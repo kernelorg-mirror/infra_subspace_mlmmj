@@ -141,6 +141,7 @@ ATF_TC_WITHOUT_HEAD(get_subcookie_content);
 ATF_TC_WITHOUT_HEAD(ml_list);
 ATF_TC_WITHOUT_HEAD(gen_addr);
 ATF_TC_WITHOUT_HEAD(memory_lines);
+ATF_TC_WITHOUT_HEAD(text_0);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -2199,6 +2200,40 @@ ATF_TC_BODY(memory_lines, tc)
 	ATF_REQUIRE_STREQ(get_memory_line(s), "line2");
 }
 
+ATF_TC_BODY(text_0, tc)
+{
+	struct ml ml;
+	FILE *f = fopen("intext", "w+");
+	fprintf(f, "plop\n");
+	fclose(f);
+	int fd = open("intext", O_RDONLY);
+	text *txt = open_text_fd(fd);
+	ATF_REQUIRE(txt != NULL);
+	int tofd = open("totext", O_CREAT|O_WRONLY, 0644);
+	init_ml(true);
+	ml_init(&ml);
+	ml.dir = "list";
+	ATF_REQUIRE(ml_open(&ml, false));
+	ATF_REQUIRE(prepstdreply_to(txt, ml.dir, "me@fqdn.org", "to@plop.org", NULL, ml.fd, ml.ctrlfd, tofd, "Message-Id: <fake>"));
+	close_text(txt);
+	fsync(tofd);
+	close(tofd);
+	close(fd);
+	if (!atf_utils_compare_file("totext", "From: me@fqdn.org\n"
+		"To: to@plop.org\n"
+		"Message-Id: <fake>\n"
+		"Message-Id: <fake>\n"
+		"Subject: mlmmj administrivia\n"
+		"MIME-Version: 1.0\n"
+		"Content-Type: text/plain; charset=utf-8\n"
+		"Content-Transfer-Encoding: 8bit\n"
+		"\n"
+		"plop\n")) {
+		atf_utils_cat_file("totext", "");
+		atf_tc_fail("Unexpected output");
+	}
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -2278,6 +2313,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, ml_list);
 	ATF_TP_ADD_TC(tp, gen_addr);
 	ATF_TP_ADD_TC(tp, memory_lines);
+	ATF_TP_ADD_TC(tp, text_0);
 
 	return (atf_no_error());
 }

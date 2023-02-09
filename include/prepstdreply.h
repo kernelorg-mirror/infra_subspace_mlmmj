@@ -66,7 +66,7 @@ void register_formatted(text *txt, const char *token,
 char *get_processed_text_line(text *txt, int headers,
 		const char *listaddr, const char *listdelim, const char *listdir, int listfd, int ctrlfd);
 bool prepstdreply_to(text *txt, const char *listdir,
-		const char *from, const char *to, const char *replyto, int listfd, int ctrlfd, int tofd);
+		const char *from, const char *to, const char *replyto, int listfd, int ctrlfd, int tofd, const char *messageid);
 char *prepstdreply(text *txt, const char *listdir,
 		const char *from, const char *to, const char *replyto, int listfd, int ctrlfd);
 void close_text(text *txt);
