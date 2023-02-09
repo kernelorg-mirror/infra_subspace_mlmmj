@@ -61,7 +61,8 @@ void confirm_unsub(const char *listdir, const char *listaddr,
 	listname = genlistname(listaddr);
 	listfqdn = genlistfqdn(listaddr);
 
-	fromaddr = concatstr(4, listname, listdelim, "bounces-help@", listfqdn);
+	xasprintf(&fromaddr, "%s%sbounces-help@%s", listname, listdelim,
+	    listfqdn);
 
 	free(listname);
 	free(listfqdn);
@@ -106,8 +107,9 @@ void notify_unsub(const char *listdir, const char *listaddr,
         listname = genlistname(listaddr);
         listfqdn = genlistfqdn(listaddr);
 
-        fromaddr = concatstr(4, listname, listdelim, "bounces-help@", listfqdn);
-	tostr = concatstr(4, listname, listdelim, "owner@", listfqdn);
+	xasprintf(&fromaddr, "%s%sbounces-help@%s", listname, listdelim,
+	    listfqdn);
+	xasprintf(&tostr, "%s%sowner@%s", listname, listdelim, listfqdn);
 
 	free(listname);
 	free(listfqdn);
@@ -160,8 +162,8 @@ void generate_unsubconfirm(const char *listdir, const char *listaddr,
 		free(confirmfilename);
 		free(randomstr);
 		randomstr = random_str();
-                confirmfilename = concatstr(3, listdir, "/unsubconf/",
-					    randomstr);
+		xasprintf(&confirmfilename, "%s/unsubconf/%s", listdir,
+		    randomstr);
 
                 subconffd = open(confirmfilename, O_RDWR|O_CREAT|O_EXCL,
 						  S_IRUSR|S_IWUSR);
@@ -186,8 +188,8 @@ void generate_unsubconfirm(const char *listdir, const char *listaddr,
 
 	close(subconffd);
 
-	fromaddr = concatstr(6, listname, listdelim, "bounces-confunsub-",
-				randomstr, "@", listfqdn);
+	xasprintf(&fromaddr, "%s%sbounces-confunsub-%s@%s", listname, listdelim,
+	    randomstr, listfqdn);
 
 	switch(typesub) {
 		default:
@@ -205,8 +207,8 @@ void generate_unsubconfirm(const char *listdir, const char *listaddr,
 			break;
 	}
 
-	confirmaddr = concatstr(6, listname, listdelim, tmpstr, randomstr, "@",
-				listfqdn);
+	xasprintf(&confirmaddr, "%s%s%s%s@%s", listname, listdelim, tmpstr,
+	    randomstr, listfqdn);
 
 	free(randomstr);
 	free(tmpstr);
@@ -263,7 +265,8 @@ static void generate_notsubscribed(const char *listdir, const char *subaddr,
 	listname = genlistname(listaddr);
 	listfqdn = genlistfqdn(listaddr);
 
-	fromaddr = concatstr(4, listname, listdelim, "bounces-help@", listfqdn);
+	xasprintf(&fromaddr, "%s%sbounces-help@%s", listname, listdelim,
+	    listfqdn);
 
 	txt = open_text(listdir,
 			"deny", "unsub", "unsubbed", subtype_strs[typesub],
@@ -305,7 +308,7 @@ int main(int argc, char **argv)
 	log_set_name(argv[0]);
 
 	bindir = mydirname(argv[0]);
-	mlmmjsend = concatstr(2, bindir, "/mlmmj-send");
+	xasprintf(&mlmmjsend, "%s/mlmmj-send", bindir);
 	free(bindir);
 
 	while ((opt = getopt(argc, argv, "hcCdenNVUL:a:sqrR")) != -1) {
