@@ -56,6 +56,7 @@ basic_3_body()
 basic_4_body()
 {
 	mkdir -p plop/control
+	echo "test@test" > plop/control/listaddress
 	atf_check -s exit:1 $mlmmjprocess -L plop -m meh
 }
 
@@ -63,6 +64,7 @@ basic_5_body()
 {
 	mkdir -p plop/control
 	mkdir -p plop/queue
+	echo "test@test" > plop/control/listaddress
 	atf_check -s exit:1 $mlmmjprocess -L plop -m meh
 }
 

@@ -91,20 +91,17 @@ static char *modreason_strs[] = {
 };
 
 
-static int is_moderator(const char *listdir, const char *address,
+static int is_moderator(int listfd, const char *address,
 		char **moderators) {
-	char *buf, *tmp, *moderatorsfilename;
+	char *buf, *tmp;
 	int moderatorsfd, foundaddr = 0;
 
-	moderatorsfilename = concatstr(2, listdir, "/control/moderators");
-	if((moderatorsfd = open(moderatorsfilename, O_RDONLY)) < 0) {
-		log_error(LOG_ARGS, "Could not open '%s'", moderatorsfilename);
-		free(moderatorsfilename);
+	if((moderatorsfd = openat(listfd, "control/moderators", O_RDONLY)) < 0) {
+		log_error(LOG_ARGS, "Could not open 'control/moderators'");
 		exit(EXIT_FAILURE);
 	}
-	free(moderatorsfilename);
 
-	while((buf = mygetline(moderatorsfd))) {
+	while ((buf = mygetline(moderatorsfd))) {
 		chomp(buf);
 		if(address && strcasecmp(buf, address) == 0) {
 			foundaddr = 1;
@@ -127,30 +124,28 @@ static int is_moderator(const char *listdir, const char *address,
 }
 
 
-static void newmoderated(const char *listdir, const char *mailfilename,
+static void newmoderated(struct ml *ml, const char *mailfilename,
 		  const char *mlmmjsend, const char *efromsender,
 		  const char *subject, const char *posteraddr,
-		  enum modreason modreason, int listfd, int ctrlfd)
+		  enum modreason modreason)
 {
-	char *from, *listfqdn, *listname, *moderators = NULL;
-	char *replyto, *listaddr = getlistaddr(ctrlfd), *listdelim;
+	char *from, *moderators = NULL;
+	char *replyto, *reject, *to;
 	text *txt;
 	memory_lines_state *mls;
 	char *queuefilename = NULL;
 	const char *efromismod = NULL;
-	const char *mailbasename = mybasename(mailfilename), *to, *reject;
+	const char *mailbasename = mybasename(mailfilename);
 	int notifymod = 0;
 #if 0
 	printf("mailfilename = [%s], mailbasename = [%s]\n", mailfilename,
 			                                     mailbasename);
 #endif
-	listfqdn = genlistfqdn(listaddr);
-	listname = genlistname(listaddr);
 
-	if(statctrl(ctrlfd, "ifmodsendonlymodmoderate"))
+	if(statctrl(ml->ctrlfd, "ifmodsendonlymodmoderate"))
 		efromismod = efromsender;
 
-	if(!is_moderator(listdir, efromismod, &moderators))
+	if(!is_moderator(ml->fd, efromismod, &moderators))
 		efromismod = NULL;
 
 	if(efromismod) mls = init_memory_lines(efromismod);
@@ -158,20 +153,13 @@ static void newmoderated(const char *listdir, const char *mailfilename,
 
 	free(moderators);
 
-	listdelim = getlistdelim(ctrlfd);
-	replyto = concatstr(6, listname, listdelim, "release-", mailbasename,
-			    "@", listfqdn);
-	reject = concatstr(6, listname, listdelim, "reject-", mailbasename,
-			    "@", listfqdn);
+	gen_addr_cookie(replyto, ml, "release-", mailbasename);
+	gen_addr_cookie(reject, ml, "reject-", mailbasename);
 
-	from = concatstr(4, listname, listdelim, "owner@", listfqdn);
-	to = concatstr(3, listname, "-moderators@", listfqdn); /* FIXME JFA: Should this be converted? Why, why not? */
+	gen_addr(from, ml, "owner");
+	xasprintf(&to, "%s-moderators@%s", ml->name, ml->fqdn);
 
-	free(listdelim);
-	free(listname);
-	free(listfqdn);
-
-	txt = open_text(listdir, "moderate", "post",
+	txt = open_text(ml->dir, "moderate", "post",
 			modreason_strs[modreason], NULL, "moderation");
 	MY_ASSERT(txt);
 	register_unformatted(txt, "subject", subject);
@@ -183,19 +171,19 @@ static void newmoderated(const char *listdir, const char *mailfilename,
 	register_formatted(txt, "moderators",
 			rewind_memory_lines, get_memory_line, mls);
 	register_originalmail(txt, mailfilename);
-	queuefilename = prepstdreply(txt, listdir, "$listowner$", to, replyto,
-	    listfd, ctrlfd);
+	queuefilename = prepstdreply(txt, ml->dir, "$listowner$", to, replyto,
+	    ml->fd, ml->ctrlfd);
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
 	/* we might need to exec more than one mlmmj-send */
 	
-	notifymod = !efromismod && statctrl(ctrlfd,"notifymod");
+	notifymod = !efromismod && statctrl(ml->ctrlfd,"notifymod");
 
 	if (notifymod) {
 		free(queuefilename);
 		/* send mail to poster that the list is moderated */
-		txt = open_text(listdir, "wait", "post",
+		txt = open_text(ml->dir, "wait", "post",
 				modreason_strs[modreason], NULL, "moderation-poster");
 		MY_ASSERT(txt);
 		register_unformatted(txt, "subject", subject);
@@ -204,21 +192,21 @@ static void newmoderated(const char *listdir, const char *mailfilename,
 		register_formatted(txt, "moderators",
 				rewind_memory_lines, get_memory_line, mls);
 		register_originalmail(txt, mailfilename);
-		queuefilename = prepstdreply(txt, listdir,
-				"$listowner$", efromsender, NULL, listfd, ctrlfd);
+		queuefilename = prepstdreply(txt, ml->dir,
+				"$listowner$", efromsender, NULL, ml->fd, ml->ctrlfd);
 		MY_ASSERT(queuefilename);
 		close_text(txt);
 
 		finish_memory_lines(mls);
 
-		exec_and_wait(mlmmjsend, "-l", "1", "-L", listdir, "-F", from,
+		exec_and_wait(mlmmjsend, "-l", "1", "-L", ml->dir, "-F", from,
 		    "-m", queuefilename, "-T", efromsender, NULL);
 	}
 
 	if (efromismod)
-		exec_or_die(mlmmjsend, "-l", "1", "-L", listdir, "-F", from,
+		exec_or_die(mlmmjsend, "-l", "1", "-L", ml->dir, "-F", from,
 		    "-m", queuefilename, "-T", efromsender, NULL);
-	exec_or_die(mlmmjsend, "-l", "2", "-L", listdir, "-F", from,
+	exec_or_die(mlmmjsend, "-l", "2", "-L", ml->dir, "-F", from,
 	    "-m", queuefilename, NULL);
 }
 
@@ -374,11 +362,11 @@ int main(int argc, char **argv)
 	bool findaddress = false, intocc = false;
 	int maxmailsize = 0;
 	bool subonlypost, modonlypost, modnonsubposts, foundaddr = 0;
-	char *listdir = NULL, *mailfile = NULL, *donemailname = NULL;
+	char *mailfile = NULL, *donemailname = NULL;
 	char *randomstr = NULL, *mqueuename, *omitfilename;
 	char *mlmmjsend, *mlmmjsub, *mlmmjunsub;
-	char *bindir, *subjectprefix, *discardname, *listaddr, *listdelim = NULL;
-	char *listfqdn, *listname, *fromaddr;
+	char *bindir, *subjectprefix, *discardname;
+	char *fromaddr;
 	text *txt;
 	char *queuefilename, *recipextra = NULL, *owner = NULL;
 	char *maxmailsizestr;
@@ -407,9 +395,10 @@ int main(int argc, char **argv)
 		{ "X-Original-From:", 0, NULL },
 		{ NULL, 0, NULL }
 	};
-	int listfd, ctrlfd;
+	struct ml ml;
 
 	CHECKFULLPATH(argv[0]);
+	ml_init(&ml);
 
 	log_set_name(argv[0]);
 
@@ -422,7 +411,7 @@ int main(int argc, char **argv)
 	while ((opt = getopt(argc, argv, "hVPm:L:")) != -1) {
 		switch(opt) {
 		case 'L':
-			listdir = optarg;
+			ml.dir = optarg;
 			break;
 		case 'm':
 			mailfile = optarg;
@@ -439,23 +428,19 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if(listdir == NULL || mailfile == NULL) {
+	if(ml.dir == NULL || mailfile == NULL) {
 		errx(EXIT_FAILURE, "You have to specify -L and -m\n"
 		    "%s -h for help", argv[0]);
 	}
 
-	listfd = open_listdir(listdir, true);
-	if (listfd == -1)
+	if (!ml_open(&ml, true))
 		exit(EXIT_FAILURE);
-	ctrlfd = openat(listfd, "control", O_DIRECTORY|O_CLOEXEC);
-	if (ctrlfd == -1)
-		err(EXIT_FAILURE, "Cannot open(%s/control)", listdir);
 
         do {
                 free(donemailname);
                 free(randomstr);
                 randomstr = random_str();
-                donemailname = concatstr(3, listdir, "/queue/", randomstr);
+                donemailname = concatstr(3, ml.dir, "/queue/", randomstr);
 
                 donemailfd = open(donemailname, O_RDWR|O_CREAT|O_EXCL,
 						S_IRUSR|S_IWUSR);
@@ -479,19 +464,19 @@ int main(int argc, char **argv)
 
 	/* hdrfd is checked in do_all_the_voodoo_here(), because the
 	 * customheaders file might not exist */
-	hdrfd = openat(ctrlfd, "customheaders", O_RDONLY);
+	hdrfd = openat(ml.ctrlfd, "customheaders", O_RDONLY);
 
 	/* footfd is checked in do_all_the_voodoo_here(), see above */
-	footfd = openat(ctrlfd, "footer", O_RDONLY);
+	footfd = openat(ml.ctrlfd, "footer", O_RDONLY);
 
-	delheaders = ctrlvalues(ctrlfd, "delheaders");
+	delheaders = ctrlvalues(ml.ctrlfd, "delheaders");
 	if(delheaders == NULL)
 		delheaders = xcalloc(1, sizeof(*delheaders));
 
 	tll_push_back(*delheaders, xstrdup("From "));
 	tll_push_back(*delheaders, xstrdup("Return-Path:"));
 
-	subjectprefix = ctrlvalue(ctrlfd, "prefix");
+	subjectprefix = ctrlvalue(ml.ctrlfd, "prefix");
 
 	if(do_all_the_voodoo_here(rawmailfd, donemailfd, hdrfd, footfd,
 				delheaders, readhdrs,
@@ -525,15 +510,14 @@ int main(int argc, char **argv)
 		find_email_adr(readhdrs[4].values[i], &dtemails);
 	}
 
-	recipextra = get_recipextra_from_env(ctrlfd);
+	recipextra = get_recipextra_from_env(ml.ctrlfd);
 	if (recipextra == NULL) {
 		findaddress = true;
-		listdelim = getlistdelim(ctrlfd);
 	}
-	addr_in_to_or_cc = !statctrl(ctrlfd, "tocc");
+	addr_in_to_or_cc = !statctrl(ml.ctrlfd, "tocc");
 
 	if(addr_in_to_or_cc || findaddress) {
-		listaddrs = ctrlvalues(ctrlfd, "listaddress");
+		listaddrs = ctrlvalues(ml.ctrlfd, "listaddress");
 		if (listaddrs == NULL) {
 			log_error(LOG_ARGS, "list address is not defined");
 			err(EXIT_FAILURE, "list address is not defined");
@@ -541,11 +525,9 @@ int main(int argc, char **argv)
 		tll_foreach(dtemails, it) {
 			tll_foreach(*listaddrs, la) {
 				if (addrmatch(la->item, it->item,
-				    listdelim,
+				    ml.delim,
 				    recipextra != NULL ? NULL : &recipextra)) {
 					findaddress = 0;
-					free(listdelim);
-					listdelim = NULL;
 					break;
 				}
 			}
@@ -555,7 +537,7 @@ int main(int argc, char **argv)
 		tll_foreach(toemails, it) {
 			tll_foreach(*listaddrs, la) {
 				if(addrmatch(la->item, it->item,
-				listdelim,
+				ml.delim,
 				recipextra != NULL ? NULL : &recipextra)) {
 					intocc = true;
 					break;
@@ -566,17 +548,13 @@ int main(int argc, char **argv)
 			tll_foreach(ccemails, it) {
 				tll_foreach(*listaddrs, la) {
 					if(addrmatch(la->item, it->item,
-						listdelim,
+						ml.delim,
 					   recipextra != NULL ? NULL : &recipextra)) {
 						intocc = true;
 						break;
 					}
 				}
 			}
-	}
-	if (listdelim) {
-		free(listdelim);
-		listdelim = NULL;
 	}
 	if (listaddrs)
 		tll_free_and_free(*listaddrs, free);
@@ -603,8 +581,7 @@ int main(int argc, char **argv)
 		tll_foreach(fromemails, it)
 			printf("fromemails.emaillist[] = %s\n",
 					it->item);
-		discardname = concatstr(3, listdir,
-				"/queue/discarded/", randomstr);
+		xasprintf(&discardname, "%s/queue/discarded/%s", ml.dir, randomstr);
 		log_error(LOG_ARGS, "Discarding %s due to invalid From:",
 				mailfile);
 		tll_foreach(fromemails, it)
@@ -646,7 +623,7 @@ int main(int argc, char **argv)
 	if (!subject) subject = xstrdup("");
 
 	if(recipextra) {
-		owner = concatstr(2, listdir, "/control/owner");
+		xasprintf(&owner, "%s/control/owner", ml.dir);
 		if(owner && strcmp(recipextra, "owner") == 0) {
 			/* Why is this here, and not in listcontrol() ?
 			 * -- mortenp 20060409 */
@@ -675,10 +652,10 @@ int main(int argc, char **argv)
 			close(rawmailfd);
 			close(donemailfd);
 			unlink(mailfile);
-			log_oper(listfd, OPLOGFNAME, "mlmmj-process: sending"
+			log_oper(ml.fd, OPLOGFNAME, "mlmmj-process: sending"
 					" mail from %s to owner",
 					efrom);
-			exec_or_die(mlmmjsend, "-l", "4", "-L", listdir, "-F",
+			exec_or_die(mlmmjsend, "-l", "4", "-L", ml.dir, "-F",
 			    efrom, "-s", owner, "-a", "-m", donemailname, NULL);
 		}
 #if 0
@@ -689,18 +666,16 @@ int main(int argc, char **argv)
 			testfrom = &originalfromemails;
 		else
 			testfrom = &fromemails;
-		listcontrol(testfrom, listdir, recipextra,
+		listcontrol(testfrom, ml.dir, recipextra,
 			    mlmmjsub, mlmmjunsub, mlmmjsend,
-			    donemailname, listfd, ctrlfd);
+			    donemailname, ml.fd, ml.fd);
 
 		return EXIT_SUCCESS;
 	}
 
-	listaddr = getlistaddr(ctrlfd);
-
 	/* checking incoming mail's size */
-	maxmailsize = ctrlsizet(ctrlfd, "maxmailsize", 0);
-	maxmailsizestr = ctrlvalue(ctrlfd, "maxmailsize");
+	maxmailsize = ctrlsizet(ml.ctrlfd, "maxmailsize", 0);
+	maxmailsizestr = ctrlvalue(ml.ctrlfd, "maxmailsize");
 	if(maxmailsizestr) {
 		maxmailsize = atol(maxmailsizestr);
 		if(stat(donemailname, &st) < 0) {
@@ -710,7 +685,7 @@ int main(int argc, char **argv)
 
 		if(st.st_size > maxmailsize) {
 
-			if (statctrl(ctrlfd, "nomaxmailsizedenymails")) {
+			if (statctrl(ml.ctrlfd, "nomaxmailsizedenymails")) {
 				errno = 0;
 				log_error(LOG_ARGS, "Discarding %s due to"
 						" size limit (%d bytes too big)",
@@ -722,30 +697,23 @@ int main(int argc, char **argv)
 				exit(EXIT_SUCCESS);
 			}
 
-			listdelim = getlistdelim(ctrlfd);
-			listname = genlistname(listaddr);
-			listfqdn = genlistfqdn(listaddr);
-			fromaddr = concatstr(4, listname, listdelim,
-					"bounces-help@", listfqdn);
-			txt = open_text(listdir, "deny", "post",
+			gen_addr(fromaddr, &ml, "bounces-help");
+			txt = open_text(ml.dir, "deny", "post",
 					"maxmailsize", NULL, "maxmailsize");
 			MY_ASSERT(txt);
 			register_unformatted(txt, "subject", subject);
 			register_unformatted(txt, "posteraddr", posteraddr);
 			register_unformatted(txt, "maxmailsize", maxmailsizestr);
 			register_originalmail(txt, donemailname);
-			queuefilename = prepstdreply(txt, listdir,
-			    "$listowner$", posteraddr, NULL, listfd, ctrlfd);
+			queuefilename = prepstdreply(txt, ml.dir,
+			    "$listowner$", posteraddr, NULL, ml.fd, ml.fd);
 			MY_ASSERT(queuefilename);
 			close_text(txt);
-			free(listdelim);
-			free(listname);
-			free(listfqdn);
 			unlink(donemailname);
 			unlink(mailfile);
 			free(donemailname);
 			free(maxmailsizestr);
-			exec_or_die(mlmmjsend, "-l", "1", "-L", listdir, "-T",
+			exec_or_die(mlmmjsend, "-l", "1", "-L", ml.dir, "-T",
 			    posteraddr, "-F", fromaddr, "-m", queuefilename,
 			    NULL);
 		}
@@ -755,9 +723,7 @@ int main(int argc, char **argv)
 
 	if(strcmp(efrom, "") == 0) { /* don't send mails with <> in From
 					     to the list */
-		discardname = concatstr(3, listdir,
-				"/queue/discarded/",
-				randomstr);
+		xasprintf(&discardname, "%s/queue/discardrd/%s", ml.dir, randomstr);
 		errno = 0;
 		log_error(LOG_ARGS, "Discarding %s due to missing envelope"
 				" from address", mailfile);
@@ -776,94 +742,77 @@ int main(int argc, char **argv)
 		/* Don't send a mail about denial to the list, but silently
 		 * discard and exit. Also don't in case of it being turned off
 		 */
-		if ((strcasecmp(listaddr, posteraddr) == 0) ||
-				statctrl(ctrlfd, "notoccdenymails")) {
+		if ((strcasecmp(ml.addr, posteraddr) == 0) ||
+				statctrl(ml.ctrlfd, "notoccdenymails")) {
 			log_error(LOG_ARGS, "Discarding %s because list"
 					" address was not in To: or Cc:,"
 					" and From: was the list or"
 					" notoccdenymails was set",
 					mailfile);
-			free(listaddr);
 			unlink(donemailname);
 			free(donemailname);
 			exit(EXIT_SUCCESS);
 		}
-		listdelim = getlistdelim(ctrlfd);
-		listname = genlistname(listaddr);
-		listfqdn = genlistfqdn(listaddr);
-		fromaddr = concatstr(4, listname, listdelim, "bounces-help@",
-				     listfqdn);
-		txt = open_text(listdir, "deny", "post",
+		gen_addr(fromaddr, &ml, "bounces-help");
+		txt = open_text(ml.dir, "deny", "post",
 				"tocc", NULL, "notintocc");
 		MY_ASSERT(txt);
 		register_unformatted(txt, "subject", subject);
 		register_unformatted(txt, "posteraddr", posteraddr);
 		register_originalmail(txt, donemailname);
-		queuefilename = prepstdreply(txt, listdir,
-		    "$listowner$", posteraddr, NULL, listfd, ctrlfd);
+		queuefilename = prepstdreply(txt, ml.dir,
+		    "$listowner$", posteraddr, NULL, ml.fd, ml.ctrlfd);
 		MY_ASSERT(queuefilename)
 		close_text(txt);
-		free(listdelim);
-		free(listname);
-		free(listfqdn);
 		unlink(donemailname);
 		free(donemailname);
-		exec_or_die(mlmmjsend, "-l", "1", "-L", listdir, "-T",
+		exec_or_die(mlmmjsend, "-l", "1", "-L", ml.dir, "-T",
 		    posteraddr, "-F", fromaddr, "-m", queuefilename, NULL);
 	}
 
-	access_rules = ctrlvalues(ctrlfd, "access");
+	access_rules = ctrlvalues(ml.ctrlfd, "access");
 	if (access_rules != NULL) {
 		enum action accret;
 		/* Don't send a mail about denial to the list, but silently
 		 * discard and exit. Also do this in case it's turned off */
 		accret = do_access(access_rules, &allheaders,
-					posteraddr, listfd);
+					posteraddr, ml.fd);
 		if (accret == DENY) {
-			if ((strcasecmp(listaddr, posteraddr) == 0) ||
-				    statctrl(ctrlfd, "noaccessdenymails")) {
+			if ((strcasecmp(ml.addr, posteraddr) == 0) ||
+				    statctrl(ml.ctrlfd, "noaccessdenymails")) {
 				log_error(LOG_ARGS, "Discarding %s because"
 					" it was denied by an access"
 					" rule, and From: was the list"
 					" address or noaccessdenymails"
 					" was set",
 					mailfile);
-				free(listaddr);
 				unlink(donemailname);
 				free(donemailname);
 				exit(EXIT_SUCCESS);
 			}
-			listdelim = getlistdelim(ctrlfd);
-			listname = genlistname(listaddr);
-			listfqdn = genlistfqdn(listaddr);
-			fromaddr = concatstr(4, listname, listdelim,
-					"bounces-help@", listfqdn);
-			txt = open_text(listdir, "deny", "post",
+			gen_addr(fromaddr, &ml, "bounces-help");
+			txt = open_text(ml.dir, "deny", "post",
 					"access", NULL, "access");
 			MY_ASSERT(txt);
 			register_unformatted(txt, "subject", subject);
 			register_unformatted(txt, "posteraddr", posteraddr);
 			register_originalmail(txt, donemailname);
-			queuefilename = prepstdreply(txt, listdir,
-					"$listowner$", posteraddr, NULL, listfd, ctrlfd);
+			queuefilename = prepstdreply(txt, ml.dir,
+					"$listowner$", posteraddr, NULL, ml.fd, ml.ctrlfd);
 			MY_ASSERT(queuefilename)
 			close_text(txt);
-			free(listaddr);
-			free(listdelim);
-			free(listname);
-			free(listfqdn);
 			unlink(donemailname);
 			free(donemailname);
 			free(randomstr);
-			exec_or_die(mlmmjsend, "-l", "1", "-L", listdir, "-T",
+			exec_or_die(mlmmjsend, "-l", "1", "-L", ml.dir, "-T",
 			    posteraddr, "-F", fromaddr, "-m", queuefilename,
 			    NULL);
 		} else if (accret == MODERATE) {
 			moderated = 1;
 			modreason = ACCESS;
 		} else if (accret == DISCARD) {
-	                discardname = concatstr(3, listdir,
-                                "/queue/discarded/", randomstr);
+			xasprintf(&discardname, "%s/queue/discardrd/%s", ml.dir,
+			    randomstr);
 			free(randomstr);
                 	if(rename(donemailname, discardname) < 0) {
 				log_error(LOG_ARGS, "could not rename(%s,%s)",
@@ -882,7 +831,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	list_rules = ctrlvalues(ctrlfd, "send");
+	list_rules = ctrlvalues(ml.ctrlfd, "send");
 	if (list_rules != NULL) {
 		tll_foreach(*list_rules, lr) {
 			if (strcasecmp(posteraddr, lr->item) == 0) {
@@ -892,9 +841,9 @@ int main(int argc, char **argv)
 		}
 	}
 
-	subonlypost = statctrl(ctrlfd, "subonlypost");
-	modonlypost = statctrl(ctrlfd, "modonlypost");
-	modnonsubposts = statctrl(ctrlfd, "modnonsubposts");
+	subonlypost = statctrl(ml.ctrlfd, "subonlypost");
+	modonlypost = statctrl(ml.ctrlfd, "modonlypost");
+	modnonsubposts = statctrl(ml.ctrlfd, "modnonsubposts");
 	/* modnonsubposts implies subonlypost if modonlypost is not set */
 	if (modnonsubposts && !modonlypost) subonlypost = 1;
 
@@ -904,21 +853,20 @@ int main(int argc, char **argv)
 		char *testaddr = posteraddr;
 		if (tll_length(originalfromemails) > 0)
 			testaddr = tll_front(originalfromemails);
-		if (strcasecmp(listaddr, testaddr) == 0) {
+		if (strcasecmp(ml.addr, testaddr) == 0) {
 			log_error(LOG_ARGS, "Discarding %s because"
 					" there are sender restrictions but"
 					" From: was the list address",
 					mailfile);
-			free(listaddr);
 			unlink(donemailname);
 			free(donemailname);
 			exit(EXIT_SUCCESS);
 		}
 		if(subonlypost) {
-			foundaddr = (is_subbed(listfd, testaddr, 0) !=
+			foundaddr = (is_subbed(ml.fd, testaddr, 0) !=
 					SUB_NONE);
 		} else if (modonlypost) {
-			foundaddr = is_moderator(listdir, testaddr, NULL);
+			foundaddr = is_moderator(ml.fd, testaddr, NULL);
 		}
 		if(!foundaddr) {
 			if(modnonsubposts) {
@@ -929,44 +877,35 @@ int main(int argc, char **argv)
 				modreason = MODNONMODPOSTS;
 			} else {
 			    if((subonlypost &&
-				    statctrl(ctrlfd, "nosubonlydenymails")) ||
+				    statctrl(ml.ctrlfd, "nosubonlydenymails")) ||
 				    (modonlypost &&
-				    statctrl(ctrlfd, "nomodonlydenymails"))) {
+				    statctrl(ml.ctrlfd, "nomodonlydenymails"))) {
 				log_error(LOG_ARGS, "Discarding %s because"
 					" no{sub|mod}onlydenymails was set",
 					mailfile);
-				free(listaddr);
 				unlink(donemailname);
 				free(donemailname);
 				exit(EXIT_SUCCESS);
 			    }
-			    listdelim = getlistdelim(ctrlfd);
-			    listname = genlistname(listaddr);
-			    listfqdn = genlistfqdn(listaddr);
-			    fromaddr = concatstr(4, listname, listdelim,
-				    "bounces-help@", listfqdn);
+			    gen_addr(fromaddr, &ml, "bounces-help");
 			    if (subonlypost) {
-				txt = open_text(listdir, "deny", "post",
+				txt = open_text(ml.dir, "deny", "post",
 					"subonlypost", NULL, "subonlypost");
 			    } else if (modonlypost) {
-				txt = open_text(listdir, "deny", "post",
+				txt = open_text(ml.dir, "deny", "post",
 					"modonlypost", NULL, NULL);
 			    }
 			    MY_ASSERT(txt);
 			    register_unformatted(txt, "subject", subject);
 			    register_unformatted(txt, "posteraddr", testaddr);
 			    register_originalmail(txt, donemailname);
-			    queuefilename = prepstdreply(txt, listdir,
-				    "$listowner$", testaddr, NULL, listfd, ctrlfd);
+			    queuefilename = prepstdreply(txt, ml.dir,
+				    "$listowner$", testaddr, NULL, ml.fd, ml.ctrlfd);
 			    MY_ASSERT(queuefilename)
 			    close_text(txt);
-			    free(listaddr);
-			    free(listdelim);
-			    free(listname);
-			    free(listfqdn);
 			    unlink(donemailname);
 			    free(donemailname);
-				exec_or_die(mlmmjsend, "-L", listdir, "-l", "1",
+				exec_or_die(mlmmjsend, "-L", ml.dir, "-l", "1",
 				    "-T", testaddr, "-F", fromaddr, "-m",
 				    queuefilename, NULL);
 			}
@@ -974,17 +913,16 @@ int main(int argc, char **argv)
 	}
 
 	if(!send && !moderated) {
-		if(statctrl(ctrlfd, "moderated")) {
+		if(statctrl(ml.ctrlfd, "moderated")) {
 			moderated = 1;
 			modreason = MODERATED;
 		}
 	}
 
-	notmetoo = statctrl(ctrlfd, "notmetoo");
+	notmetoo = statctrl(ml.ctrlfd, "notmetoo");
 
 	if(moderated) {
-		mqueuename = concatstr(3, listdir, "/moderation/",
-				       randomstr);
+		xasprintf(&mqueuename, "%s/moderation/%s", ml.dir, randomstr);
 		free(randomstr);
 		if(rename(donemailname, mqueuename) < 0) {
 			log_error(LOG_ARGS, "could not rename(%s,%s)",
@@ -1014,9 +952,8 @@ int main(int argc, char **argv)
 			fsync(omitfd);
 			close(omitfd);
 		}
-		newmoderated(listdir, mqueuename,
-				mlmmjsend, efrom, subject, posteraddr,
-				modreason, listfd, ctrlfd);
+		newmoderated(&ml, mqueuename, mlmmjsend, efrom, subject,
+		    posteraddr, modreason);
 		return EXIT_SUCCESS;
 	}
 
@@ -1029,7 +966,7 @@ int main(int argc, char **argv)
 	}
 
 	if (notmetoo)
-		exec_or_die(mlmmjsend, "-L", listdir, "-o", posteraddr,
+		exec_or_die(mlmmjsend, "-L", ml.dir, "-o", posteraddr,
 		    "-m", donemailname, NULL);
-	exec_or_die(mlmmjsend, "-L", listdir, "-m", donemailname, NULL);
+	exec_or_die(mlmmjsend, "-L", ml.dir, "-m", donemailname, NULL);
 }
