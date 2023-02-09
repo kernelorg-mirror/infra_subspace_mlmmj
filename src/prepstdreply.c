@@ -1554,41 +1554,20 @@ void close_text(text *txt)
 	free(txt);
 }
 
-
-char *prepstdreply(text *txt, const char *listdir,
-		   const char *from, const char *to, const char *replyto, int listfd,  int ctrlfd)
+bool
+prepstdreply_to(text *txt, const char *listdir, const char *from, const char *to,
+    const char *replyto, int listfd, int ctrlfd, int tofd)
 {
-	size_t len, i;
-	int outfd;
-	char *listaddr, *listdelim, *tmp, *retstr = NULL;
-	char *listfqdn, *line;
-	char *str;
+	bool ret = false;
+	char *tmp, *line;
+	int i;
+	size_t len;
+	char *listaddr, *listdelim, *listfqdn, *str;
 	char *headers[10] = { NULL }; /* relies on NULL to flag end */
 
 	listaddr = getlistaddr(ctrlfd);
 	listdelim = getlistdelim(ctrlfd);
 	listfqdn = genlistfqdn(listaddr);
-
-	do {
-		tmp = random_str();
-		if (retstr)
-			free(retstr);
-		retstr = concatstr(3, listdir, "/queue/", tmp);
-		free(tmp);
-
-		outfd = open(retstr, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
-
-	} while ((outfd < 0) && (errno == EEXIST));
-	
-	if(outfd < 0) {
-		log_error(LOG_ARGS, "Could not open std mail %s", retstr);
-		free(listaddr);
-		free(listdelim);
-		free(listfqdn);
-		free(retstr);
-		free(txt);
-		return NULL;
-	}
 
 	for (i=0; i<6; i++) { 
 		tmp = xstrdup("randomN");
@@ -1636,11 +1615,9 @@ char *prepstdreply(text *txt, const char *listdir,
 		if (*line == ' ' || *line == '\t') {
 			/* line beginning with linear whitespace is a
 			   continuation of previous header line */
-			if(dprintf(outfd, "%s\n", line) < 0) {
+			if(dprintf(tofd, "%s\n", line) < 0) {
 				log_error(LOG_ARGS, "Could not write std mail");
 				free(line);
-				free(retstr);
-				retstr = NULL;
 				goto freeandreturn;
 			}
 		} else {
@@ -1674,11 +1651,9 @@ char *prepstdreply(text *txt, const char *listdir,
 				line = concatstr(2, "Subject: ", tmp);
 				free(tmp);
 			}
-			if(dprintf(outfd, "%s\n", line) < 0) {
+			if(dprintf(tofd, "%s\n", line) < 0) {
 				log_error(LOG_ARGS, "Could not write std mail");
 				free(line);
-				free(retstr);
-				retstr = NULL;
 				goto freeandreturn;
 			}
 		}
@@ -1687,23 +1662,19 @@ char *prepstdreply(text *txt, const char *listdir,
 	}
 
 	for (i=0; headers[i] != NULL; i++) {
-		if(dprintf(outfd, "%s\n", headers[i]) < 0) {
+		if(dprintf(tofd, "%s\n", headers[i]) < 0) {
 			log_error(LOG_ARGS, "Could not write std mail");
 			if (line)
 				free(line);
-			free(retstr);
-			retstr = NULL;
 			goto freeandreturn;
 		}
 	}
 
 	/* end the headers */
-	if(dprintf(outfd, "\n") < 0) {
+	if(dprintf(tofd, "\n") < 0) {
 		log_error(LOG_ARGS, "Could not write std mail");
 		if (line)
 			free(line);
-		free(retstr);
-		retstr = NULL;
 		goto freeandreturn;
 	}
 
@@ -1712,11 +1683,9 @@ char *prepstdreply(text *txt, const char *listdir,
 				listdir, listfd, ctrlfd);
 	}
 	while(line) {
-			if(dprintf(outfd, "%s\n", line) < 0) {
+			if(dprintf(tofd, "%s\n", line) < 0) {
 				free(str);
 				log_error(LOG_ARGS, "Could not write std mail");
-				free(retstr);
-				retstr = NULL;
 				goto freeandreturn;
 			}
 		free(line);
@@ -1724,13 +1693,44 @@ char *prepstdreply(text *txt, const char *listdir,
 				listdir, listfd, ctrlfd);
 	}
 
-	fsync(outfd);
-	close(outfd);
+	fsync(tofd);
+	close(tofd);
+
+	ret = true;
 
 freeandreturn:
 	free(listaddr);
 	free(listdelim);
 	free(listfqdn);
 
-	return retstr;
+	return ret;
+}
+
+char *prepstdreply(text *txt, const char *listdir,
+		   const char *from, const char *to, const char *replyto, int listfd,  int ctrlfd)
+{
+	int outfd;
+	char *tmp, *retstr = NULL;
+
+
+	do {
+		tmp = random_str();
+		if (retstr)
+			free(retstr);
+		retstr = concatstr(3, listdir, "/queue/", tmp);
+		free(tmp);
+
+		outfd = open(retstr, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
+
+	} while ((outfd < 0) && (errno == EEXIST));
+	
+	if(outfd < 0) {
+		log_error(LOG_ARGS, "Could not open std mail %s", retstr);
+		free(retstr);
+		free(txt);
+		return NULL;
+	}
+	if (!prepstdreply_to(txt, listdir, from, to, replyto, listfd, ctrlfd, outfd))
+		return (NULL);
+	return (retstr);
 }
