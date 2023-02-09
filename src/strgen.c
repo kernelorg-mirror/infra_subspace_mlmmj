@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2003 Mads Martin Joergensen <mmj at mmj.dk>
- * Copyright (C) 2022 Baptiste Daroussin <bapt@FreeBSD.org>
+ * Copyright (C) 2022-2023 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -261,4 +261,23 @@ decode_qp(const char *qpstr)
 	fclose(bufp);
 
 	return (buffer);
+}
+
+bool
+splitlistaddr(const char *listaddr, char **listname, const char **listfqdn)
+{
+	char *allocated, *walk;
+	allocated = xstrdup(listaddr);
+
+	walk = strchr(allocated, '@');
+	if (walk == NULL) {
+		free(allocated);
+		return (false);
+	}
+	*walk = '\0';
+	walk++;
+	*listname = allocated;
+	*listfqdn = walk;
+
+	return (true);
 }

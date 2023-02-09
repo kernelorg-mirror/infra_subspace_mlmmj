@@ -59,6 +59,16 @@
 #define OPLOGFNAME "mlmmj.operation.log" /* logfile to log operations */
 #define OPLOGSIZE 524288
 
+struct ml {
+	const char *dir;
+	char *delim;
+	char *name;
+	const char *fqdn;
+	char *addr;
+	int fd;
+	int ctrlfd;
+};
+
 typedef tll(char *) strlist;
 
 typedef enum bounce {
@@ -110,6 +120,9 @@ bounce_t bouncemail(int listfd, const char *theaddress, const char *identifier);
 void save_lastbouncedmsg(int listfd, const char *address, const char *mailname);
 char *dsnparseaddr(const char *mailname);
 int open_listdir(const char *listdir, bool usercheck);
+void ml_init(struct ml *ml);
+bool ml_open(struct ml *ml, bool checkuser);
+void ml_close(struct ml *ml);
 
 #define MY_ASSERT(expression) if (!(expression)) { \
 			errno = 0; \

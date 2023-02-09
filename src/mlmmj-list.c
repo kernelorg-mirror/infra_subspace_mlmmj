@@ -125,6 +125,8 @@ int main(int argc, char **argv)
 		    "%s -h for help", argv[0]);
 	}
 	listfd = open_listdir(listdir, false);
+	if (listfd == -1)
+		exit(EXIT_FAILURE);
 	subdirfd = open_subscriber_directory(listfd, typesub, &subdir);
 	if (subdirfd == -1 && subdir != NULL)
 		err(EXIT_FAILURE, "Unable to open(%s/%s)", listdir, subdir);

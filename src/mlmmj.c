@@ -34,6 +34,8 @@
 #include <unistd.h>
 #include <err.h>
 
+#include "getlistaddr.h"
+#include "getlistdelim.h"
 #include "mlmmj.h"
 #include "utils.h"
 #include "log_error.h"
@@ -43,6 +45,8 @@
 #include "mygetline.h"
 #include "subscriberfuncs.h"
 #include "find_email_adr.h"
+#include "strgen.h"
+#include "ctrlvalue.h"
 
 bool
 parse_lastdigest(char *line, long *lastindex, time_t *lasttime,
@@ -513,8 +517,10 @@ open_listdir(const char *listdir, bool usercheck)
 	int fd;
 
 	fd = open(listdir, O_DIRECTORY|O_CLOEXEC);
-	if (fd == -1)
-		err(EXIT_FAILURE, "Cannot open(%s)", listdir);
+	if (fd == -1) {
+		warn("Cannot open(%s)", listdir);
+		return (-1);
+	}
 	if (!usercheck)
 		return (fd);
 	if (fstat(fd, &st) != 0) {
@@ -529,4 +535,61 @@ open_listdir(const char *listdir, bool usercheck)
 		    "user owning listdir");
 	}
 	return (fd);
+}
+
+void
+ml_init(struct ml *ml)
+{
+	ml->dir = NULL;
+	ml->fd = -1;
+	ml->ctrlfd = -1;
+	ml->delim = NULL;
+	ml->addr = NULL;
+	ml->fqdn = NULL;
+	ml->name = NULL;
+}
+
+bool
+ml_open(struct ml *ml, bool checkuser)
+{
+	if (ml->dir == NULL)
+		return (false);
+
+	ml->fd = open_listdir(ml->dir, checkuser);
+	if (ml->fd == -1)
+		return (false);
+	ml->ctrlfd = openat(ml->fd, "control", O_DIRECTORY|O_CLOEXEC);
+	if (ml->ctrlfd == -1) {
+		warn("Cannot open(%s/control)", ml->dir);
+		ml_close(ml);
+		return (false);
+	}
+
+	ml->addr = ctrlvalue(ml->ctrlfd, "listaddress");
+	if (ml->addr == NULL) {
+		warnx("Missing list address");
+		ml_close(ml);
+		return (false);
+	}
+	ml->delim = getlistdelim(ml->ctrlfd);
+	if (!splitlistaddr(ml->addr, &ml->name, &ml->fqdn)) {
+		warnx("%s: is not a valid mailing list address, "
+		    "missing '@'", ml->addr);
+		ml_close(ml);
+		return (false);
+	}
+
+	return (true);
+}
+
+void
+ml_close(struct ml *ml)
+{
+	free(ml->delim);
+	free(ml->addr);
+	free(ml->name);
+	if (ml->fd != -1)
+		close(ml->fd);
+	if (ml->ctrlfd != -1)
+		close(ml->ctrlfd);
 }

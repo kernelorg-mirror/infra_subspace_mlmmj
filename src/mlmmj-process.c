@@ -445,6 +445,8 @@ int main(int argc, char **argv)
 	}
 
 	listfd = open_listdir(listdir, true);
+	if (listfd == -1)
+		exit(EXIT_FAILURE);
 	ctrlfd = openat(listfd, "control", O_DIRECTORY|O_CLOEXEC);
 	if (ctrlfd == -1)
 		err(EXIT_FAILURE, "Cannot open(%s/control)", listdir);

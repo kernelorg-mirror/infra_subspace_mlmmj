@@ -1,6 +1,6 @@
-/* Copyright (C) 2002, 2003 Mads Martin Joergensen <mmj at mmj.dk>
- *
- * $Id$
+/*
+ * Copyright (C) 2002, 2003 Mads Martin Joergensen <mmj at mmj.dk>
+ * Copyright (C) 2023 Mads Martin Joergensen <mmj at mmj.dk>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -24,6 +24,8 @@
 #ifndef STRGEN_H
 #define STRGEN_H
 
+#include <stdbool.h>
+
 char *random_str(void);
 char *random_plus_addr(const char *addr);
 char *genlistname(const char *listaddr);
@@ -35,5 +37,6 @@ const char *mybasename(const char *path);
 char *genmsgid(const char *fqdn);
 char *gendatestr(void);
 char *decode_qp(const char *qpstr);
+bool splitlistaddr(const char *listaddr, char **listname, const char **listfqdn);
 
 #endif /* STRGEN_H */

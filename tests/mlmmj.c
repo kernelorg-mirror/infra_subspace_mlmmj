@@ -137,6 +137,7 @@ ATF_TC_WITHOUT_HEAD(get_recipextra_from_env_postfix);
 ATF_TC_WITHOUT_HEAD(get_recipextra_from_env_exim);
 ATF_TC_WITHOUT_HEAD(addrmatch);
 ATF_TC_WITHOUT_HEAD(get_subcookie_content);
+ATF_TC_WITHOUT_HEAD(ml_list);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -2083,6 +2084,76 @@ ATF_TC_BODY(get_subcookie_content, tc)
 	ATF_REQUIRE_STREQ(get_subcookie_content(fd, false, "test"), "bla");
 }
 
+ATF_TC_BODY(ml_list, tc)
+{
+	struct ml list;
+	ml_init(&list);
+	ATF_CHECK(ml_open(&list, false) == false);
+	list.dir = "list";
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		ATF_CHECK(ml_open(&list, false) == false);
+		exit(0);
+	}
+	atf_utils_wait(p, 0, "", "mlmmj: Cannot open(list): No such file or directory\n");
+
+	init_ml(false);
+	rmdir("list/control");
+	ml_init(&list);
+	list.dir = "list";
+	p = atf_utils_fork();
+	if (p == 0) {
+		ATF_CHECK(ml_open(&list, false) == false);
+		exit (0);
+	}
+	atf_utils_wait(p, 0, "", "mlmmj: Cannot open(list/control): No such file or directory\n");
+	mkdir("list/control", 0755);
+
+	ml_init(&list);
+	list.dir = "list";
+	p = atf_utils_fork();
+	if (p == 0) {
+		ATF_CHECK(ml_open(&list, false) == false);
+		exit (0);
+	}
+
+	atf_utils_wait(p, 0, "", "mlmmj: Missing list address\n");
+	FILE *fp = fopen("list/control/listaddress", "w+");
+	ATF_CHECK(fp != NULL);
+	fputs("test", fp);
+	fflush(fp);
+	ml_init(&list);
+	list.dir = "list";
+	p = atf_utils_fork();
+	if (p == 0) {
+		ATF_CHECK(ml_open(&list, false) == false);
+		exit (0);
+	}
+	atf_utils_wait(p, 0, "", "mlmmj: test: is not a valid mailing list address, missing '@'\n");
+
+	rewind(fp);
+	ftruncate(fileno(fp), 0);
+	fputs("test@test", fp);
+	fclose(fp);
+	ml_init(&list);
+	list.dir = "list";
+	p = atf_utils_fork();
+	if (p == 0) {
+		ATF_CHECK(ml_open(&list, false) == true);
+		ATF_CHECK_STREQ_MSG(list.delim, "+", "Invalid delimiter");
+
+		fp = fopen("list/control/delimiter", "w");
+		fputs("#bla#", fp);
+		fclose(fp);
+		ml_init(&list);
+		list.dir = "list";
+		ATF_CHECK(ml_open(&list, false) == true);
+		ATF_CHECK_STREQ_MSG(list.delim, "#bla#", "Invalid delimiter");
+		exit (0);
+	}
+	atf_utils_wait(p, 0, "", "");
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -2159,6 +2230,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, get_recipextra_from_env_exim);
 	ATF_TP_ADD_TC(tp, addrmatch);
 	ATF_TP_ADD_TC(tp, get_subcookie_content);
+	ATF_TP_ADD_TC(tp, ml_list);
 
 	return (atf_no_error());
 }
