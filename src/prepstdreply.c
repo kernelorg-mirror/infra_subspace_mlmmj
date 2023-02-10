@@ -46,13 +46,12 @@
 #include "getlistdelim.h"
 #include "unistr.h"
 
-
 struct substitution;
 typedef struct substitution substitution;
+
 struct substitution {
 	char *token;
 	char *subst;
-	substitution *next;
 };
 
 
@@ -120,7 +119,7 @@ struct text {
 	char *reason;
 	char *type;
 	source *src;
-	substitution *substs;
+	tll(struct substitution *) substs;
 	char *mailname;
 	formatted *fmts;
 	int wrapindent;
@@ -348,13 +347,12 @@ static void substitute_one(char **line_p, char **pos_p, int *width_p,
 		/* DEPRECATED: use %originalmail% instead */
 		value = xstrdup(" %originalmail 100%");
 	} else {
-		subst = txt->substs;
-		while (subst != NULL) {
+		tll_foreach(txt->substs, it) {
+			subst = it->item;
 			if(strcmp(token, subst->token) == 0) {
 				value = xstrdup(subst->subst);
 				break;
 			}
-			subst = subst->next;
 		}
 	}
 
@@ -497,8 +495,7 @@ void register_unformatted(text *txt, const char *token, const char *replacement)
 	substitution * subst = xmalloc(sizeof(substitution));
 	subst->token = xstrdup(token);
 	subst->subst = xstrdup(replacement);
-	subst->next = txt->substs;
-	txt->substs = subst;
+	tll_push_back(txt->substs, subst);
 }
 
 void
@@ -1514,22 +1511,22 @@ char *get_processed_text_line(text *txt, int headers,
 	}
 }
 
+static void
+substitution_free(struct substitution *subst)
+{
+	free(subst->token);
+	free(subst->subst);
+	free(subst);
+}
 
 void close_text(text *txt)
 {
-	substitution *subst;
 	formatted *fmt;
 	conditional *cond;
 	while (txt->src != NULL) {
 		close_source(txt);
 	}
-	while (txt->substs != NULL) {
-		subst = txt->substs;
-		free(subst->token);
-		free(subst->subst);
-		txt->substs = txt->substs->next;
-		free(subst);
-	}
+	tll_free_and_free(txt->substs, substitution_free);
 	if (txt->mailname != NULL) free(txt->mailname);
 	while (txt->fmts != NULL) {
 		fmt = txt->fmts;
