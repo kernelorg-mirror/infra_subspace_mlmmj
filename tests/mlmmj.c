@@ -2329,6 +2329,9 @@ ATF_TC_BODY(file_lines, tc)
 	finish_file_lines(s);
 
 	s = init_file_lines("file", '\0');
+	finish_file_lines(s);
+
+	s = init_file_lines("file", '\0');
 	ATF_REQUIRE(s != NULL);
 	ATF_REQUIRE(get_file_line(s) == NULL);
 	rewind_file_lines(s);
@@ -2336,6 +2339,7 @@ ATF_TC_BODY(file_lines, tc)
 	ATF_REQUIRE_STREQ(get_file_line(s), "line2");
 	ATF_REQUIRE_STREQ(get_file_line(s), "line3: meh");
 	ATF_REQUIRE(get_file_line(s) == NULL);
+	rewind_file_lines(s);
 	finish_file_lines(s);
 
 	rewind_file_lines(NULL);

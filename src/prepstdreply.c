@@ -134,9 +134,10 @@ struct memory_lines_state {
 
 struct file_lines_state {
 	char *filename;
-	int fd;
+	FILE *fp;
 	char truncate;
 	char *line;
+	size_t linecap;
 };
 
 
@@ -193,7 +194,6 @@ file_lines_state *init_file_lines(const char *filename, char truncate)
 {
 	file_lines_state *s = xcalloc(1, sizeof(file_lines_state));
 	s->filename = xstrdup(filename);
-	s->fd = -1;
 	s->truncate = truncate;
 	return s;
 }
@@ -204,49 +204,37 @@ void rewind_file_lines(void *state)
 	file_lines_state *s = (file_lines_state *)state;
 	if (s == NULL) return;
 	if (s->filename != NULL) {
-		s->fd = open(s->filename, O_RDONLY);
+		s->fp = fopen(s->filename, "r");
 		free(s->filename);
 		s->filename = NULL;
 	}
-	if (s->fd >= 0) {
-		if(lseek(s->fd, 0, SEEK_SET) < 0) {
-			log_error(LOG_ARGS, "Could not seek to start of file");
-			close(s->fd);
-			s->fd = -1;
-		}
-	}
+	if (s->fp != NULL)
+		rewind(s->fp);
 }
 
 const char *get_file_line(void *state)
 {
 	file_lines_state *s = (file_lines_state *)state;
 	char *end;
-	if (s == NULL) return NULL;
-	if (s->line != NULL) {
-		free(s->line);
-		s->line = NULL;
+	if (s == NULL) return (NULL);
+	if (s->fp == NULL) return (NULL);
+	if (getline(&s->line, &s->linecap, s->fp) <= 0)
+		return (NULL);
+	if (s->truncate != '\0') {
+		end = strchr(s->line, s->truncate);
+		if (end == NULL) return NULL;
+		*end = '\0';
+	} else {
+		chomp(s->line);
 	}
-	if (s->fd >= 0) {
-		s->line = mygetline(s->fd);
-		if (s->line == NULL) return NULL;
-		if (s->truncate != '\0') {
-			end = strchr(s->line, s->truncate);
-			if (end == NULL) return NULL;
-			*end = '\0';
-		} else {
-			chomp(s->line);
-		}
-		return s->line;
-	}
-	return NULL;
+	return s->line;
 }
-
 
 void finish_file_lines(file_lines_state *s)
 {
 	if (s == NULL) return;
 	if (s->line != NULL) free(s->line);
-	if (s->fd >= 0) close(s->fd);
+	if (s->fp != NULL) fclose(s->fp);
 	if (s->filename != NULL) free(s->filename);
 	free(s);
 }
