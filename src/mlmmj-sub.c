@@ -318,51 +318,6 @@ void confirm_sub(struct ml *ml, const char *subaddr,
 	    fromaddr, "-m", queuefilename, NULL);
 }
 
-void notify_sub(struct ml *ml, const char *subaddr,
-		const char *mlmmjsend, enum subtype typesub,
-		enum subreason reasonsub)
-{
-	char *fromaddr, *tostr;
-	text *txt;
-	char *queuefilename = NULL, *listtext = NULL;
-
-	gen_addr(fromaddr, ml, "bounces-help");
-	gen_addr(tostr, ml, "owner");
-
-	switch(typesub) {
-		default:
-		case SUB_NORMAL:
-			listtext = xstrdup("notifysub");
-			break;
-		case SUB_DIGEST:
-			listtext = xstrdup("notifysub-digest");
-			break;
-		case SUB_NOMAIL:
-			listtext = xstrdup("notifysub-nomail");
-			break;
-		case SUB_BOTH:
-			/* No legacy list text as feature didn't exist. */
-			listtext = xstrdup("notifysub");
-			break;
-	}
-
-	txt = open_text(ml->fd, "notify", "sub",
-			subreason_strs[reasonsub], subtype_strs[typesub],
-			listtext);
-	free(listtext);
-	MY_ASSERT(txt);
-	register_default_unformatted(txt, ml->delim, ml->addr);
-	register_unformatted(txt, "subaddr", subaddr);
-	register_unformatted(txt, "newsub", subaddr); /* DEPRECATED */
-	queuefilename = prepstdreply(txt, ml->dir,
-			"$listowner$", "$listowner$", NULL, ml->fd, ml->ctrlfd);
-	MY_ASSERT(queuefilename);
-	close_text(txt);
-
-	exec_or_die(mlmmjsend, "-l", "1", "-L", ml->dir, "-T", tostr,
-	    "-F", fromaddr, "-m", queuefilename, NULL);
-}
-
 void generate_subconfirm(struct ml *ml, const char *subaddr,
 			 const char *mlmmjsend, enum subtype typesub,
 			 enum subreason reasonsub)
@@ -549,7 +504,7 @@ int main(int argc, char **argv)
 	log_set_name(argv[0]);
 
 	bindir = mydirname(argv[0]);
-	mlmmjsend = concatstr(2, bindir, "/mlmmj-send");
+	xasprintf(&mlmmjsend, "%s/mlmmj-send", bindir);
 	free(bindir);
 
 	while ((opt = getopt(argc, argv, "hbcCdfm:nsVUL:a:qrR")) != -1) {
