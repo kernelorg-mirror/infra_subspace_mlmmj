@@ -1,6 +1,6 @@
-/* Copyright (C) 2005 Mads Martin Joergensen <mmj at mmj.dk>
- *
- * $Id$
+/*
+ * Copyright (C) 2005 Mads Martin Joergensen <mmj at mmj.dk>
+ * Copyright (C) 2023 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -21,10 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef SEND_LIST_H
-#define SEND_LIST_H
+#pragma once
 
-void send_list(const char *listdir, const char *emailaddr,
-	       const char *mlmmjsend, int ctrlfd, int listfd);
+#include "mlmmj.h"
 
-#endif
+void send_list(struct ml *ml, const char *emailaddr, const char *mlmmjsend);

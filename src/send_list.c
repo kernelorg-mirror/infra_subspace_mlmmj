@@ -1,6 +1,6 @@
-/* Copyright (C) 2005 Mads Martin Joergensen <mmj at mmj.dk>
- *
- * $Id$
+/*
+ * Copyright (C) 2005 Mads Martin Joergensen <mmj at mmj.dk>
+ * Copyright (C) 2023 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -34,8 +34,6 @@
 #include "mlmmj.h"
 #include "send_list.h"
 #include "strgen.h"
-#include "getlistaddr.h"
-#include "getlistdelim.h"
 #include "log_error.h"
 #include "chomp.h"
 #include "wrappers.h"
@@ -152,26 +150,19 @@ static void print_subs(int fd, subs_list_state *s)
 }
 
 
-void send_list(const char *listdir, const char *emailaddr,
-	       const char *mlmmjsend, int ctrlfd, int listfd)
+void send_list(struct ml *ml, const char *emailaddr, const char *mlmmjsend)
 {
 	text *txt;
 	subs_list_state *normalsls, *digestsls, *nomailsls;
-	char *queuefilename, *listaddr, *listdelim, *listname, *listfqdn;
+	char *queuefilename;
 	char *fromaddr, *subdir, *nomaildir, *digestdir;
 	int fd;
 
-	listaddr = getlistaddr(ctrlfd);
-	listdelim = getlistdelim(ctrlfd);
-	listname = genlistname(listaddr);
-	listfqdn = genlistfqdn(listaddr);
+	gen_addr(fromaddr, ml, "bounces-help");
 
-	fromaddr = concatstr(4, listname, listdelim, "bounces-help@", listfqdn);
-	free(listdelim);
-
-	subdir = concatstr(2, listdir, "/subscribers.d/");
-	digestdir = concatstr(2, listdir, "/digesters.d/");
-	nomaildir = concatstr(2, listdir, "/nomailsubs.d/");
+	subdir = concatstr(2, ml->dir, "/subscribers.d/");
+	digestdir = concatstr(2, ml->dir, "/digesters.d/");
+	nomaildir = concatstr(2, ml->dir, "/nomailsubs.d/");
 	normalsls = init_subs_list(subdir);
 	digestsls = init_subs_list(digestdir);
 	nomailsls = init_subs_list(nomaildir);
@@ -179,10 +170,10 @@ void send_list(const char *listdir, const char *emailaddr,
 	free(digestdir);
 	free(nomaildir);
 
-	txt = open_text(listfd, "list", NULL, NULL, subtype_strs[SUB_ALL],
+	txt = open_text(ml->fd, "list", NULL, NULL, subtype_strs[SUB_ALL],
 			"listsubs");
 	MY_ASSERT(txt);
-	register_default_unformatted(txt, listdelim, listaddr);
+	register_default_unformatted(txt, ml->delim, ml->addr);
 	register_formatted(txt, "listsubs",
 			rewind_subs_list, get_sub, normalsls);
 	register_formatted(txt, "normalsubs",
@@ -191,8 +182,8 @@ void send_list(const char *listdir, const char *emailaddr,
 			rewind_subs_list, get_sub, digestsls);
 	register_formatted(txt, "nomailsubs",
 			rewind_subs_list, get_sub, nomailsls);
-	queuefilename = prepstdreply(txt, listdir, "$listowner$", emailaddr,
-	    NULL, listfd, ctrlfd);
+	queuefilename = prepstdreply(txt, ml->dir, "$listowner$", emailaddr,
+	    NULL, ml->fd, ml->ctrlfd);
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
@@ -216,10 +207,7 @@ void send_list(const char *listdir, const char *emailaddr,
 	finish_subs_list(normalsls);
 	finish_subs_list(digestsls);
 	finish_subs_list(nomailsls);
-	free(listaddr);
-	free(listname);
-	free(listfqdn);
 
-	exec_or_die(mlmmjsend, "-l", "1", "-L", listdir, "-T", emailaddr, "-F",
+	exec_or_die(mlmmjsend, "-l", "1", "-L", ml->dir, "-T", emailaddr, "-F",
 	    fromaddr, "-m", queuefilename, NULL);
 }

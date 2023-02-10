@@ -698,7 +698,7 @@ permit:
 				" Ignoring mail");
 			return -1;
 		} else {
-			send_list(ml->dir, owner, mlmmjsend, ml->fd,ml->ctrlfd);
+			send_list(ml, owner, mlmmjsend);
 		}
 		if (owners != NULL)
 			tll_free_and_free(*owners, free);
