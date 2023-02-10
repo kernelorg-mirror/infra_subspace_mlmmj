@@ -42,8 +42,6 @@
 #include "utils.h"
 
 
-struct subs_list_state;
-typedef struct subs_list_state subs_list_state;
 struct subs_list_state {
 	char *dirname;
 	DIR *dirp;
@@ -53,9 +51,9 @@ struct subs_list_state {
 };
 
 
-static subs_list_state *init_subs_list(const char *dirname)
+struct subs_list_state *init_subs_list(const char *dirname)
 {
-	subs_list_state *s = xmalloc(sizeof(subs_list_state));
+	struct subs_list_state *s = xmalloc(sizeof(struct subs_list_state));
 	s->dirname = xstrdup(dirname);
 	s->dirp = NULL;
 	s->fd = -1;
@@ -65,9 +63,9 @@ static subs_list_state *init_subs_list(const char *dirname)
 }
 
 
-static void rewind_subs_list(void *state)
+void rewind_subs_list(void *state)
 {
-	subs_list_state *s = (subs_list_state *)state;
+	struct subs_list_state *s = (struct subs_list_state *)state;
 	if (s == NULL) return;
 	if (s->dirp != NULL) closedir(s->dirp);
 	s->dirp = opendir(s->dirname);
@@ -78,9 +76,9 @@ static void rewind_subs_list(void *state)
 }
 
 
-static const char *get_sub(void *state)
+const char *get_sub(void *state)
 {
-	subs_list_state *s = (subs_list_state *)state;
+	struct subs_list_state *s = (struct subs_list_state *)state;
 	char *filename;
 	struct dirent *dp;
 
@@ -126,7 +124,7 @@ static const char *get_sub(void *state)
 }
 
 
-static void finish_subs_list(subs_list_state *s)
+void finish_subs_list(struct subs_list_state *s)
 {
 	if (s == NULL) return;
 	if (s->line != NULL) free(s->line);
@@ -137,7 +135,7 @@ static void finish_subs_list(subs_list_state *s)
 }
 
 
-static void print_subs(int fd, subs_list_state *s)
+void print_subs(int fd, struct subs_list_state *s)
 {
 	const char *sub;
 	rewind_subs_list(s);
@@ -153,7 +151,7 @@ static void print_subs(int fd, subs_list_state *s)
 void send_list(struct ml *ml, const char *emailaddr, const char *mlmmjsend)
 {
 	text *txt;
-	subs_list_state *normalsls, *digestsls, *nomailsls;
+	struct subs_list_state *normalsls, *digestsls, *nomailsls;
 	char *queuefilename;
 	char *fromaddr, *subdir, *nomaildir, *digestdir;
 	int fd;
