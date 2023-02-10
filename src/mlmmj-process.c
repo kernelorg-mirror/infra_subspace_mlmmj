@@ -44,7 +44,6 @@
 #include "strgen.h"
 #include "do_all_the_voodoo_here.h"
 #include "log_error.h"
-#include "mygetline.h"
 #include "statctrl.h"
 #include "ctrlvalue.h"
 #include "ctrlvalues.h"
@@ -56,6 +55,7 @@
 #include "chomp.h"
 #include "mlmmj-process.h"
 #include "utils.h"
+#include "xstring.h"
 
 enum action {
 	ALLOW,
@@ -91,35 +91,39 @@ static char *modreason_strs[] = {
 };
 
 
-static int is_moderator(int listfd, const char *address,
+static bool is_moderator(int listfd, const char *address,
 		char **moderators) {
-	char *buf, *tmp;
+	char *line = NULL;
+	size_t linecap = 0;
 	int moderatorsfd, foundaddr = 0;
+	xstring *str = NULL;
+	FILE *fp;
 
 	if((moderatorsfd = openat(listfd, "control/moderators", O_RDONLY)) < 0) {
 		log_error(LOG_ARGS, "Could not open 'control/moderators'");
 		exit(EXIT_FAILURE);
 	}
+	fp = fdopen(moderatorsfd, "r");
 
-	while ((buf = mygetline(moderatorsfd))) {
-		chomp(buf);
-		if(address && strcasecmp(buf, address) == 0) {
-			foundaddr = 1;
-			if (!moderators) {
-				close(moderatorsfd);
-				free(buf);
-				return foundaddr;
-			}
+	while (getline(&line, &linecap, fp) > 0) {
+		chomp(line);
+		if(address && strcasecmp(line, address) == 0) {
+			foundaddr = true;
+			if (moderators == NULL)
+				goto out;
 		}
 		if (moderators) {
-			tmp = *moderators;
-			*moderators = concatstr(3, *moderators, buf, "\n");
-			free(tmp);
+			if (str == NULL)
+				str = xstring_new();
+			fprintf(str->fp, "%s\n", line);
 		}
-		free(buf);
 	}
 
-	close(moderatorsfd);
+	if (moderators)
+		*moderators = xstring_get(str);
+out:
+	free(line);
+	fclose(fp);
 	return foundaddr;
 }
 
@@ -363,7 +367,7 @@ int main(int argc, char **argv)
 	bool addr_in_to_or_cc, notmetoo;
 	bool findaddress = false, intocc = false;
 	int maxmailsize = 0;
-	bool subonlypost, modonlypost, modnonsubposts, foundaddr = 0;
+	bool subonlypost, modonlypost, modnonsubposts, foundaddr = false;
 	char *mailfile = NULL, *donemailname = NULL;
 	char *randomstr = NULL, *mqueuename, *omitfilename;
 	char *mlmmjsend, *mlmmjsub, *mlmmjunsub;
