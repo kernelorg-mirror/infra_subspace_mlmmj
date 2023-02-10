@@ -46,9 +46,6 @@
 #include "getlistdelim.h"
 #include "unistr.h"
 
-struct substitution;
-typedef struct substitution substitution;
-
 struct substitution {
 	char *token;
 	char *subst;
@@ -325,7 +322,7 @@ static void substitute_one(char **line_p, char **pos_p, int *width_p,
 	char *token = pos + 1;
 	char *endpos;
 	char *value = NULL;
-	substitution *subst;
+	struct substitution *subst;
 
 	endpos = strchr(token, '$');
 	if (endpos == NULL) {
@@ -492,7 +489,7 @@ void close_source(text *txt)
 
 void register_unformatted(text *txt, const char *token, const char *replacement)
 {
-	substitution * subst = xmalloc(sizeof(substitution));
+	struct substitution * subst = xmalloc(sizeof(struct substitution));
 	subst->token = xstrdup(token);
 	subst->subst = xstrdup(replacement);
 	tll_push_back(txt->substs, subst);
