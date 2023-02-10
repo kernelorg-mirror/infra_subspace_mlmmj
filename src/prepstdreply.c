@@ -189,24 +189,11 @@ finish_memory_lines(memory_lines_state *s)
 }
 
 
-file_lines_state *init_file_lines(const char *filename)
+file_lines_state *init_file_lines(const char *filename, char truncate)
 {
-	file_lines_state *s = xmalloc(sizeof(file_lines_state));
-
+	file_lines_state *s = xcalloc(1, sizeof(file_lines_state));
 	s->filename = xstrdup(filename);
 	s->fd = -1;
-
-	s->truncate = '\0';
-	s->line = NULL;
-	return s;
-}
-
-
-file_lines_state *init_truncated_file_lines(const char *filename, char truncate)
-{
-	file_lines_state *s;
-	s = init_file_lines(filename);
-	if (s == NULL) return NULL;
 	s->truncate = truncate;
 	return s;
 }
@@ -229,7 +216,6 @@ void rewind_file_lines(void *state)
 		}
 	}
 }
-
 
 const char *get_file_line(void *state)
 {

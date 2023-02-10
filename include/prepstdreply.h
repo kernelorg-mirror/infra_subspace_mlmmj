@@ -45,8 +45,7 @@ void rewind_memory_lines(void *state);
 const char *get_memory_line(void *state);
 void finish_memory_lines(memory_lines_state *s);
 
-file_lines_state *init_file_lines(const char *filename);
-file_lines_state *init_truncated_file_lines(const char *filename, char truncate);
+file_lines_state *init_file_lines(const char *filename, char truncate);
 void rewind_file_lines(void *state);
 const char *get_file_line(void *state);
 void finish_file_lines(file_lines_state *s);
