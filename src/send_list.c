@@ -43,22 +43,22 @@
 
 
 struct subs_list_state {
+	int listfd;
 	char *dirname;
 	DIR *dirp;
-	int fd;
+	FILE *fp;
+	int dfd;
 	char *line;
-	int used;
+	size_t linecap;
+	bool used;
 };
 
 
-struct subs_list_state *init_subs_list(const char *dirname)
+struct subs_list_state *init_subs_list(int listfd, const char *dirname)
 {
-	struct subs_list_state *s = xmalloc(sizeof(struct subs_list_state));
+	struct subs_list_state *s = xcalloc(1, sizeof(struct subs_list_state));
+	s->listfd = listfd;
 	s->dirname = xstrdup(dirname);
-	s->dirp = NULL;
-	s->fd = -1;
-	s->line = NULL;
-	s->used = 0;
 	return s;
 }
 
@@ -68,19 +68,18 @@ void rewind_subs_list(void *state)
 	struct subs_list_state *s = (struct subs_list_state *)state;
 	if (s == NULL) return;
 	if (s->dirp != NULL) closedir(s->dirp);
-	s->dirp = opendir(s->dirname);
-	if(s->dirp == NULL) {
+	s->dfd = openat(s->listfd, s->dirname, O_DIRECTORY|O_CLOEXEC);
+	if (s->dfd == -1 || (s->dirp = fdopendir(s->dfd)) == NULL)
 		log_error(LOG_ARGS, "Could not opendir(%s);\n", s->dirname);
-	}
-	s->used = 1;
+	s->used = true;
 }
 
 
 const char *get_sub(void *state)
 {
 	struct subs_list_state *s = (struct subs_list_state *)state;
-	char *filename;
 	struct dirent *dp;
+	int fd;
 
 	if (s == NULL) return NULL;
 	if (s->dirp == NULL) return NULL;
@@ -91,7 +90,7 @@ const char *get_sub(void *state)
 	}
 
 	for (;;) {
-		if (s->fd == -1) {
+		if (s->fp == NULL) {
 			dp = readdir(s->dirp);
 			if (dp == NULL) {
 				closedir(s->dirp);
@@ -99,36 +98,31 @@ const char *get_sub(void *state)
 				return NULL;
 			}
 			if ((strcmp(dp->d_name, "..") == 0) ||
-					(strcmp(dp->d_name, ".") == 0))
+			    (strcmp(dp->d_name, ".") == 0))
 					continue;
-			filename = concatstr(2, s->dirname, dp->d_name);
-			s->fd = open(filename, O_RDONLY);
-			if(s->fd < 0) {
+			fd = openat(s->dfd, dp->d_name, O_RDONLY);
+			if(fd < 0 || (s->fp = fdopen(fd, "r")) == NULL) {
 				log_error(LOG_ARGS,
-						"Could not open %s for reading",
-						filename);
-				free(filename);
+				    "Could not open %s/%s for reading",
+				    s->dirname, dp->d_name);
 				continue;
 			}
-			free(filename);
 		}
-		s->line = mygetline(s->fd);
-		if (s->line == NULL) {
-			close(s->fd);
-			s->fd = -1;
-			continue;
+		if (getline(&s->line, &s->linecap, s->fp) <= 0) {
+				fclose(s->fp);
+				s->fp = NULL;
+				continue;
 		}
 		chomp(s->line);
-		return s->line;
+		return (s->line);
 	}
 }
-
 
 void finish_subs_list(struct subs_list_state *s)
 {
 	if (s == NULL) return;
 	if (s->line != NULL) free(s->line);
-	if (s->fd != -1) close(s->fd);
+	if (s->fp != NULL) fclose(s->fp);
 	if (s->dirp != NULL) closedir(s->dirp);
 	free(s->dirname);
 	free(s);
@@ -139,12 +133,8 @@ void print_subs(int fd, struct subs_list_state *s)
 {
 	const char *sub;
 	rewind_subs_list(s);
-	while ((sub = get_sub(s)) != NULL) {
-		if (dprintf(fd, "%s", sub) < 0) {
-			log_error(LOG_ARGS, "error writing subs list");
-		}
-		dprintf(fd, "\n");
-	}
+	while ((sub = get_sub(s)) != NULL)
+		dprintf(fd, "%s\n", sub);
 }
 
 
@@ -152,21 +142,14 @@ void send_list(struct ml *ml, const char *emailaddr, const char *mlmmjsend)
 {
 	text *txt;
 	struct subs_list_state *normalsls, *digestsls, *nomailsls;
-	char *queuefilename;
-	char *fromaddr, *subdir, *nomaildir, *digestdir;
+	char *queuefilename, *fromaddr;
 	int fd;
 
 	gen_addr(fromaddr, ml, "bounces-help");
 
-	subdir = concatstr(2, ml->dir, "/subscribers.d/");
-	digestdir = concatstr(2, ml->dir, "/digesters.d/");
-	nomaildir = concatstr(2, ml->dir, "/nomailsubs.d/");
-	normalsls = init_subs_list(subdir);
-	digestsls = init_subs_list(digestdir);
-	nomailsls = init_subs_list(nomaildir);
-	free(subdir);
-	free(digestdir);
-	free(nomaildir);
+	normalsls = init_subs_list(ml->fd, "subscribers.d");
+	digestsls = init_subs_list(ml->fd, "digesters.d");
+	nomailsls = init_subs_list(ml->fd, "nomailsubs.d");
 
 	txt = open_text(ml->fd, "list", NULL, NULL, subtype_strs[SUB_ALL],
 			"listsubs");

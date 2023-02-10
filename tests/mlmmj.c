@@ -2360,9 +2360,11 @@ ATF_TC_BODY(list_subs, tc)
 
 	fp = fopen("list/subscribers.d/b", "w+");
 	fclose(fp);
+	ml.dir = "list";
 	ml_open(&ml, false);
-	struct subs_list_state *s = init_subs_list("list/subscribers.d/");
+	struct subs_list_state *s = init_subs_list(ml.fd, "subscribers.d");
 	rewind_subs_list(NULL);
+	ATF_REQUIRE(get_sub(s) == NULL);
 	rewind_subs_list(s);
 	ATF_REQUIRE(get_sub(NULL) == NULL);
 	ATF_REQUIRE_STREQ(get_sub(s), "auser1");
@@ -2372,12 +2374,25 @@ ATF_TC_BODY(list_subs, tc)
 	int fd = open("output", O_WRONLY|O_CREAT, 0644);
 	print_subs(fd, s);
 	close(fd);
-	finish_subs_list(s);
-
 	if (!atf_utils_compare_file("output", "auser1\nauser2\n")) {
 		atf_utils_cat_file("output", "");
 		atf_tc_fail("Unexpected output, expected");
 	}
+	rewind_subs_list(s);
+	rewind_subs_list(s);
+	ATF_REQUIRE_STREQ(get_sub(s), "auser1");
+	ATF_REQUIRE_STREQ(get_sub(s), "auser2");
+	ATF_REQUIRE(get_sub(s) == NULL);
+	finish_subs_list(s);
+	s = init_subs_list(ml.fd, "subscribers.d");
+	finish_subs_list(s);
+	s = init_subs_list(ml.fd, "subscribers.d");
+	rewind_subs_list(s);
+	finish_subs_list(s);
+	s = init_subs_list(ml.fd, "subscribers.d");
+	rewind_subs_list(s);
+	ATF_REQUIRE_STREQ(get_sub(s), "auser1");
+	finish_subs_list(s);
 }
 
 ATF_TP_ADD_TCS(tp)
