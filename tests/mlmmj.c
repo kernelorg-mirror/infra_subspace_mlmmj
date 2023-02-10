@@ -146,6 +146,7 @@ ATF_TC_WITHOUT_HEAD(text_0);
 ATF_TC_WITHOUT_HEAD(text_1);
 ATF_TC_WITHOUT_HEAD(file_lines);
 ATF_TC_WITHOUT_HEAD(list_subs);
+ATF_TC_WITHOUT_HEAD(notify_sub);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -2395,6 +2396,117 @@ ATF_TC_BODY(list_subs, tc)
 	finish_subs_list(s);
 }
 
+ATF_TC_BODY(notify_sub, tc)
+{
+	int fd;
+	char *dir, *content;
+	const char *path, *pattern;
+	init_ml(true);
+	struct ml ml;
+	ml_init(&ml);
+	ml.dir = "list";
+	ml_open(&ml, false);
+	rmdir("list/text");
+	xasprintf(&dir, "%s/../listtexts/en",
+	    atf_tc_get_config_var(tc, "srcdir"));
+
+	symlink(dir, "list/text");
+
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		notify_sub(&ml, "test@plop", "/bin/echo", SUB_NORMAL,
+		    SUB_ADMIN);
+	}
+	atf_utils_wait(p, 0, "save:plop.txt", "");
+	fd = open("plop.txt", O_RDONLY);
+	content = atf_utils_readline(fd);
+	close(fd);
+	pattern = "-l 1 -L list -T test+owner@test -F test+bounces-help@test -m list/queue/";
+	if (strncmp(content, pattern, strlen(pattern)) != 0)
+		atf_tc_fail("Invalid command: '%s'", content);
+	path = strrchr(content, ' ');
+	ATF_REQUIRE(path != NULL);
+	path++;
+	if (!atf_utils_grep_file(".*The address <test@plop> has been subscribed to the normal.*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+	atf_utils_cat_file(path, "");
+	if (!atf_utils_grep_file(".*because an administrator commanded it.*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+
+	p = atf_utils_fork();
+	if (p == 0) {
+		notify_sub(&ml, "test@plop", "/bin/echo", SUB_DIGEST,
+		    SUB_ADMIN);
+	}
+	atf_utils_wait(p, 0, "save:plop.txt", "");
+	fd = open("plop.txt", O_RDONLY);
+	content = atf_utils_readline(fd);
+	close(fd);
+	pattern = "-l 1 -L list -T test+owner@test -F test+bounces-help@test -m list/queue/";
+	if (strncmp(content, pattern, strlen(pattern)) != 0)
+		atf_tc_fail("Invalid command: '%s'", content);
+	path = strrchr(content, ' ');
+	path++;
+	if (!atf_utils_grep_file(".*The address <test@plop> has been subscribed to the digest.*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+	if (!atf_utils_grep_file(".*because an administrator commanded it.*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+
+	p = atf_utils_fork();
+	if (p == 0) {
+		notify_sub(&ml, "test@plop", "/bin/echo", SUB_NOMAIL,
+		    SUB_CONFIRM);
+	}
+	atf_utils_wait(p, 0, "save:plop.txt", "");
+	fd = open("plop.txt", O_RDONLY);
+	content = atf_utils_readline(fd);
+	close(fd);
+	pattern = "-l 1 -L list -T test+owner@test -F test+bounces-help@test -m list/queue/";
+	if (strncmp(content, pattern, strlen(pattern)) != 0)
+		atf_tc_fail("Invalid command: '%s'", content);
+	path = strrchr(content, ' ');
+	path++;
+	if (!atf_utils_grep_file(".*The address <test@plop> has been subscribed to the no-mail.*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+	if (!atf_utils_grep_file(".*because a request to join was confirmed.*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+
+	p = atf_utils_fork();
+	if (p == 0) {
+		notify_sub(&ml, "test@plop", "/bin/echo", SUB_BOTH,
+		    SUB_REQUEST);
+	}
+	atf_utils_wait(p, 0, "save:plop.txt", "");
+	fd = open("plop.txt", O_RDONLY);
+	content = atf_utils_readline(fd);
+	close(fd);
+	pattern = "-l 1 -L list -T test+owner@test -F test+bounces-help@test -m list/queue/";
+	if (strncmp(content, pattern, strlen(pattern)) != 0)
+		atf_tc_fail("Invalid command: '%s'", content);
+	path = strrchr(content, ' ');
+	path++;
+	if (!atf_utils_grep_file(".*The address <test@plop> has been subscribed to the version.*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+	if (!atf_utils_grep_file(".*because a request to join was received.*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -2478,6 +2590,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, text_1);
 	ATF_TP_ADD_TC(tp, file_lines);
 	ATF_TP_ADD_TC(tp, list_subs);
+	ATF_TP_ADD_TC(tp, notify_sub);
 
 	return (atf_no_error());
 }
