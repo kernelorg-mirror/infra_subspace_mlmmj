@@ -143,6 +143,7 @@ ATF_TC_WITHOUT_HEAD(gen_addr);
 ATF_TC_WITHOUT_HEAD(memory_lines);
 ATF_TC_WITHOUT_HEAD(text_0);
 ATF_TC_WITHOUT_HEAD(text_1);
+ATF_TC_WITHOUT_HEAD(file_lines);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -2300,6 +2301,48 @@ ATF_TC_BODY(text_1, tc)
 	}
 }
 
+ATF_TC_BODY(file_lines, tc)
+{
+	FILE *f = fopen("file", "w+");
+	fprintf(f, "line1\nline2\n");
+	fclose(f);
+
+	file_lines_state *s = init_file_lines("file", ':');
+	ATF_REQUIRE(s != NULL);
+	ATF_REQUIRE(get_file_line(s) == NULL);
+	rewind_file_lines(s);
+	ATF_REQUIRE(get_file_line(s) == NULL);
+	finish_file_lines(s);
+
+	f = fopen("file", "w+");
+	fprintf(f, "line1: plop\nline2\nline3: meh");
+	fclose(f);
+
+	s = init_file_lines("file", ':');
+	ATF_REQUIRE(s != NULL);
+	ATF_REQUIRE(get_file_line(s) == NULL);
+	rewind_file_lines(s);
+	ATF_REQUIRE_STREQ(get_file_line(s), "line1");
+	ATF_REQUIRE(get_file_line(s) == NULL);
+	ATF_REQUIRE_STREQ(get_file_line(s), "line3");
+	ATF_REQUIRE(get_file_line(s) == NULL);
+	finish_file_lines(s);
+
+	s = init_file_lines("file", '\0');
+	ATF_REQUIRE(s != NULL);
+	ATF_REQUIRE(get_file_line(s) == NULL);
+	rewind_file_lines(s);
+	ATF_REQUIRE_STREQ(get_file_line(s), "line1: plop");
+	ATF_REQUIRE_STREQ(get_file_line(s), "line2");
+	ATF_REQUIRE_STREQ(get_file_line(s), "line3: meh");
+	ATF_REQUIRE(get_file_line(s) == NULL);
+	finish_file_lines(s);
+
+	rewind_file_lines(NULL);
+	ATF_REQUIRE(get_file_line(NULL) == NULL);
+	finish_file_lines(NULL);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -2381,6 +2424,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, memory_lines);
 	ATF_TP_ADD_TC(tp, text_0);
 	ATF_TP_ADD_TC(tp, text_1);
+	ATF_TP_ADD_TC(tp, file_lines);
 
 	return (atf_no_error());
 }
