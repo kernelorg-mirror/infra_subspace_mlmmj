@@ -668,9 +668,9 @@ int main(int argc, char **argv)
 			testfrom = &originalfromemails;
 		else
 			testfrom = &fromemails;
-		listcontrol(testfrom, ml.dir, recipextra,
+		listcontrol(testfrom, &ml, recipextra,
 			    mlmmjsub, mlmmjunsub, mlmmjsend,
-			    donemailname, ml.fd, ml.fd);
+			    donemailname);
 
 		return EXIT_SUCCESS;
 	}
