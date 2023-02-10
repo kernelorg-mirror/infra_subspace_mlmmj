@@ -34,6 +34,7 @@
 #include "mlmmj.h"
 #include "listcontrol.h"
 #include "getlistdelim.h"
+#include "getlistaddr.h"
 #include "prepstdreply.h"
 #include "send_help.h"
 #include "send_list.h"
@@ -149,6 +150,8 @@ int listcontrol(strlist *fromemails, const char *listdir,
 	char *queuefilename;
 	const char *subtype = NULL;
 	const char *subtypename = NULL;
+	char *listaddr = getlistaddr(ctrlfd);
+	char *listdelim = getlistdelim(ctrlfd);
 	bounce_t bret;
 	struct ctrl_command *cc;
 
@@ -206,6 +209,7 @@ int listcontrol(strlist *fromemails, const char *listdir,
 			txt = open_text(listfd, "deny", "sub", "disabled",
 					"digest", "sub-deny-digest");
 			MY_ASSERT(txt);
+			register_default_unformatted(txt, listdelim, listaddr);
 			register_unformatted(txt, "subaddr",
 					tll_front(*fromemails));
 			queuefilename = prepstdreply(txt, listdir,
@@ -241,6 +245,7 @@ int listcontrol(strlist *fromemails, const char *listdir,
 			txt = open_text(listfd, "deny", "sub", "disabled",
 					"nomail", "sub-deny-nomail");
 			MY_ASSERT(txt);
+			register_default_unformatted(txt, listdelim, listaddr);
 			register_unformatted(txt, "subaddr",
 					tll_front(*fromemails));
 			queuefilename = prepstdreply(txt, listdir,
@@ -276,6 +281,7 @@ int listcontrol(strlist *fromemails, const char *listdir,
 			txt = open_text(listfd, "deny", "sub", "disabled",
 					"both", "sub-deny-digest");
 			MY_ASSERT(txt);
+			register_default_unformatted(txt, listdelim, listaddr);
 			register_unformatted(txt, "subaddr",
 					tll_front(*fromemails));
 			queuefilename = prepstdreply(txt, listdir,
@@ -597,6 +603,7 @@ permit:
 				tll_front(*fromemails));
 		txt = open_text(listfd, "help", NULL, NULL, NULL, "listhelp");
 		MY_ASSERT(txt);
+		register_default_unformatted(txt, listdelim, listaddr);
 		queuefilename = prepstdreply(txt, listdir,
 				"$listowner$", tll_front(*fromemails), NULL, listfd, ctrlfd);
 		MY_ASSERT(queuefilename);
@@ -619,6 +626,7 @@ permit:
                                tll_front(*fromemails));
 		txt = open_text(listfd, "faq", NULL, NULL, NULL, "listfaq");
 		MY_ASSERT(txt);
+		register_default_unformatted(txt, listdelim, listaddr);
 		queuefilename = prepstdreply(txt, listdir,
 				"$listowner$", tll_front(*fromemails), NULL, listfd, ctrlfd);
 		MY_ASSERT(queuefilename);

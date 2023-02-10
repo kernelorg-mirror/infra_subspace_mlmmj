@@ -142,6 +142,7 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 			subreason_strs[reasonsub], subtype_strs[typesub],
 			"submod-moderator");
 	MY_ASSERT(txt);
+	register_default_unformatted(txt, ml->delim, ml->addr);
 	register_unformatted(txt, "subaddr", subaddr);
 	register_unformatted(txt, "moderateaddr", replyto); /* DEPRECATED */
 	register_unformatted(txt, "permitaddr", replyto);
@@ -195,6 +196,7 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 			subreason_strs[reasonsub], subtype_strs[typesub],
 			"submod-requester");
 	MY_ASSERT(txt);
+	register_default_unformatted(txt, ml->delim, ml->addr);
 	register_unformatted(txt, "subaddr", subaddr);
 	register_unformatted(txt, "moderators", "%gatekeepers"); /* DEPRECATED */
 	register_formatted(txt, "gatekeepers",
@@ -305,6 +307,7 @@ void confirm_sub(struct ml *ml, const char *subaddr,
 			listtext);
 	free(listtext);
 	MY_ASSERT(txt);
+	register_default_unformatted(txt, ml->delim, ml->addr);
 	register_unformatted(txt, "subaddr", subaddr);
 	queuefilename = prepstdreply(txt, ml->dir,
 			"$helpaddr$", subaddr, NULL, ml->fd, ml->fd);
@@ -348,6 +351,7 @@ void notify_sub(struct ml *ml, const char *subaddr,
 			listtext);
 	free(listtext);
 	MY_ASSERT(txt);
+	register_default_unformatted(txt, ml->delim, ml->addr);
 	register_unformatted(txt, "subaddr", subaddr);
 	register_unformatted(txt, "newsub", subaddr); /* DEPRECATED */
 	queuefilename = prepstdreply(txt, ml->dir,
@@ -431,6 +435,7 @@ void generate_subconfirm(struct ml *ml, const char *subaddr,
 			listtext);
 	free(listtext);
 	MY_ASSERT(txt);
+	register_default_unformatted(txt, ml->delim, ml->addr);
 	register_unformatted(txt, "subaddr", subaddr);
 	register_unformatted(txt, "confaddr", confirmaddr); /* DEPRECATED */
 	register_unformatted(txt, "confirmaddr", confirmaddr);
@@ -477,6 +482,7 @@ void generate_subscribed(struct ml *ml, const char *subaddr,
 			"deny", "sub", "subbed", subtype_strs[typesub],
 			"sub-subscribed");
 	MY_ASSERT(txt);
+	register_default_unformatted(txt, ml->delim, ml->addr);
 	register_unformatted(txt, "subaddr", subaddr);
 	queuefilename = prepstdreply(txt, ml->dir,
 			"$helpaddr$", subaddr, NULL, ml->fd, ml->fd);

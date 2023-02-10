@@ -182,6 +182,7 @@ void send_list(const char *listdir, const char *emailaddr,
 	txt = open_text(listfd, "list", NULL, NULL, subtype_strs[SUB_ALL],
 			"listsubs");
 	MY_ASSERT(txt);
+	register_default_unformatted(txt, listdelim, listaddr);
 	register_formatted(txt, "listsubs",
 			rewind_subs_list, get_sub, normalsls);
 	register_formatted(txt, "normalsubs",

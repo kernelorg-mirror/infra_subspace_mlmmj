@@ -316,7 +316,6 @@ static char *numeric_token(char *token)
 
 
 static void substitute_one(char **line_p, char **pos_p, int *width_p,
-			const char *listaddr, const char *listdelim,
 			int listfd, int ctrlfd, text *txt)
 {
 	/* It is important for this function to leave the length of the
@@ -326,7 +325,6 @@ static void substitute_one(char **line_p, char **pos_p, int *width_p,
 	char *pos = *pos_p;
 	char *token = pos + 1;
 	char *endpos;
-	char *fqdn, *listname;
 	char *value = NULL;
 	substitution *subst;
 
@@ -340,51 +338,7 @@ static void substitute_one(char **line_p, char **pos_p, int *width_p,
 	*pos = '\0';
 	*endpos = '\0';
 
-	fqdn = genlistfqdn(listaddr);
-	listname = genlistname(listaddr);
-
-	if(strcmp(token, "") == 0) {
-		value = xstrdup("$");
-	} else if(strcmp(token, "listaddr") == 0) {
-		/* DEPRECATED: use $list$@$domain$ instead */
-		value = xstrdup(listaddr);
-	} else if(strcmp(token, "list+") == 0) {
-		xasprintf(&value, "%s%s", listname, listdelim);
-	} else if(strcmp(token, "list") == 0) {
-		value = xstrdup(listname);
-	} else if(strcmp(token, "domain") == 0) {
-		value = xstrdup(fqdn);
-	} else if(strcmp(token, "listowner") == 0) {
-		/* DEPRECATED: use $list+$owner@$domain$ instead */
-		xasprintf(&value, "%s%sowner@%s", listname, listdelim, fqdn);
-	} else if(strcmp(token, "helpaddr") == 0) {
-		/* DEPRECATED: use $list+$help@$domain$ instead */
-		xasprintf(&value, "%s%shelp@%s", listname, listdelim, fqdn);
-	} else if(strcmp(token, "faqaddr") == 0) {
-		/* DEPRECATED: use $list+$faq@$domain$ instead */
-		xasprintf(&value, "%s%sfaq@%s", listname, listdelim, fqdn);
-	} else if(strcmp(token, "listgetN") == 0) {
-		/* DEPRECATED: use $list+$get-N@$domain$ instead */
-		xasprintf(&value, "%s%sget-N@%s", listname, listdelim, fqdn);
-	} else if(strcmp(token, "listunsubaddr") == 0) {
-		/* DEPRECATED: use $list+$unsubscribe@$domain$ instead */
-		xasprintf(&value, "%s%sunsubscribe@%s", listname, listdelim, fqdn);
-	} else if(strcmp(token, "digestunsubaddr") == 0) {
-		/* DEPRECATED: use $list+$unsubscribe-digest@$domain$ instead */
-		xasprintf(&value, "%s%sunsubscribe-digest@%s", listname, listdelim, fqdn);
-	} else if(strcmp(token, "nomailunsubaddr") == 0) {
-		/* DEPRECATED: use $list+$unsubscribe-nomail@$domain$ instead */
-		xasprintf(&value, "%s%sunsubscribe-nomail@%s", listname, listdelim, fqdn);
-	} else if(strcmp(token, "listsubaddr") == 0) {
-		/* DEPRECATED: use $list+$subscribe@$domain$ instead */
-		xasprintf(&value, "%s%ssubscribe@%s", listname, listdelim, fqdn);
-	} else if(strcmp(token, "digestsubaddr") == 0) {
-		/* DEPRECATED: use $list+$subscribe-digest@$domain$ instead */
-		xasprintf(&value, "%s%ssubscribe-digest@%s", listname, listdelim, fqdn);
-	} else if(strcmp(token, "nomailsubaddr") == 0) {
-		/* DEPRECATED: use $list+$subscribe-nomail@$domain$ instead */
-		xasprintf(&value, "%s%ssubscribe-nomail@%s", listname, listdelim, fqdn);
-	} else if(strncmp(token, "control ", 8) == 0) {
+	if(strncmp(token, "control ", 8) == 0) {
 		token = filename_token(token + 8);
 		if (token != NULL) value = ctrlcontent(ctrlfd, token);
 	} else if(strncmp(token, "text ", 5) == 0) {
@@ -420,13 +374,10 @@ static void substitute_one(char **line_p, char **pos_p, int *width_p,
 		(*pos_p)++;
 		(*width_p)++;
 	}
-	free(fqdn);
-	free(listname);
 }
 
 
-char *substitute(const char *line, const char *listaddr, const char *listdelim,
-		int listfd, int ctrlfd, text *txt)
+char *substitute(const char *line, int listfd, int ctrlfd, text *txt)
 {
 	char *new;
 	char *pos;
@@ -437,8 +388,7 @@ char *substitute(const char *line, const char *listaddr, const char *listdelim,
 
 	while (*pos != '\0') {
 		if (*pos == '$') {
-			substitute_one(&new, &pos, &width,
-					listaddr, listdelim, listfd, ctrlfd, txt);
+			substitute_one(&new, &pos, &width, listfd, ctrlfd, txt);
 			/* The function sets up for the next character
 			 * to process, so continue straight away. */
 			continue;
@@ -551,6 +501,53 @@ void register_unformatted(text *txt, const char *token, const char *replacement)
 	txt->substs = subst;
 }
 
+void
+register_default_unformatted(text *txt, const char *listdelim,
+    const char *listaddr)
+{
+	char *listname, *fqdn, *tmp;
+
+	fqdn = genlistfqdn(listaddr);
+	listname = genlistname(listaddr);
+
+	register_unformatted(txt, "", "$");
+	register_unformatted(txt, "listaddr", listaddr);
+	xasprintf(&tmp, "%s%s", listname, listdelim);
+	register_unformatted(txt, "list+", tmp);
+	register_unformatted(txt, "list", listname);
+	register_unformatted(txt, "domain", fqdn);
+	free(tmp);
+	xasprintf(&tmp, "%s%sowner@%s", listname, listdelim, fqdn);
+	register_unformatted(txt, "listowner", tmp);
+	free(tmp);
+	xasprintf(&tmp, "%s%shelp@%s", listname, listdelim, fqdn);
+	register_unformatted(txt, "helpaddr", tmp);
+	free(tmp);
+	xasprintf(&tmp, "%s%sfaq@%s", listname, listdelim, fqdn);
+	register_unformatted(txt, "faqaddr", tmp);
+	free(tmp);
+	xasprintf(&tmp, "%s%sget-N@%s", listname, listdelim, fqdn);
+	register_unformatted(txt, "listgetN", tmp);
+	free(tmp);
+	xasprintf(&tmp, "%s%sunsubscribe@%s", listname, listdelim, fqdn);
+	register_unformatted(txt, "listunsubaddr", tmp);
+	free(tmp);
+	xasprintf(&tmp, "%s%sunsubscribe-digest@%s", listname, listdelim, fqdn);
+	register_unformatted(txt, "digestunsubaddr", tmp);
+	free(tmp);
+	xasprintf(&tmp, "%s%sunsubscribe-nomail@%s", listname, listdelim, fqdn);
+	register_unformatted(txt, "nomailunsubaddr", tmp);
+	free(tmp);
+	xasprintf(&tmp, "%s%ssubscribe@%s", listname, listdelim, fqdn);
+	register_unformatted(txt, "listsubaddr", tmp);
+	free(tmp);
+	xasprintf(&tmp, "%s%ssubscribe-digest@%s", listname, listdelim, fqdn);
+	register_unformatted(txt, "digestsubaddr", tmp);
+	free(tmp);
+	xasprintf(&tmp, "%s%ssubscribe-nomail@%s", listname, listdelim, fqdn);
+	register_unformatted(txt, "nomailsubaddr", tmp);
+	free(tmp);
+}
 
 void register_originalmail(text *txt, const char *mailname)
 {
@@ -1058,7 +1055,6 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 
 
 char *get_processed_text_line(text *txt, int headers,
-		const char *listaddr, const char *listdelim,
 		const char *listdir, int listfd, int ctrlfd)
 {
 	char *line;
@@ -1319,8 +1315,7 @@ char *get_processed_text_line(text *txt, int headers,
 				continue;
 			} else if (*pos == '$' && txt->skip == NULL) {
 				if (peeking) break;
-				substitute_one(&line, &pos, &width, listaddr,
-						listdelim, listfd, ctrlfd, txt);
+				substitute_one(&line, &pos, &width, listfd, ctrlfd, txt);
 				if (len != pos - line) {
 					/* Cancel any break inhibition if the
 					 * length changed (which will be
@@ -1574,10 +1569,10 @@ prepstdreply_to(text *txt, const char *listdir, const char *from, const char *to
 		free(str);
 	}
 
-	tmp = substitute(from, listaddr, listdelim, listfd, ctrlfd, txt);
+	tmp = substitute(from, listfd, ctrlfd, txt);
 	xasprintf(&headers[0], "From: %s", tmp);
 	free(tmp);
-	tmp = substitute(to, listaddr, listdelim, listfd, ctrlfd, txt);
+	tmp = substitute(to, listfd, ctrlfd, txt);
 	xasprintf(&headers[1], "To: %s", tmp);
 	free(tmp);
 	if (msgid)
@@ -1596,14 +1591,13 @@ prepstdreply_to(text *txt, const char *listdir, const char *from, const char *to
 	headers[7] = xstrdup("Content-Transfer-Encoding: 8bit");
 
 	if(replyto) {
-		tmp = substitute(replyto, listaddr, listdelim, listfd, ctrlfd, txt);
+		tmp = substitute(replyto, listfd, ctrlfd, txt);
 		xasprintf(&headers[8], "Reply-To: %s", tmp);
 		free(tmp);
 	}
 
 	for(;;) {
-		line = get_processed_text_line(txt, 1, listaddr, listdelim,
-				listdir, listfd, ctrlfd);
+		line = get_processed_text_line(txt, 1, listdir, listfd, ctrlfd);
 		if (!line) {
 			log_error(LOG_ARGS, "No body in listtext");
 			break;
@@ -1681,8 +1675,7 @@ prepstdreply_to(text *txt, const char *listdir, const char *from, const char *to
 	}
 
 	if (line == NULL) {
-		line = get_processed_text_line(txt, 0, listaddr, listdelim,
-				listdir, listfd, ctrlfd);
+		line = get_processed_text_line(txt, 0, listdir, listfd, ctrlfd);
 	}
 	while(line) {
 			if(dprintf(tofd, "%s\n", line) < 0) {
@@ -1691,8 +1684,7 @@ prepstdreply_to(text *txt, const char *listdir, const char *from, const char *to
 				goto freeandreturn;
 			}
 		free(line);
-		line = get_processed_text_line(txt, 0, listaddr, listdelim,
-				listdir, listfd, ctrlfd);
+		line = get_processed_text_line(txt, 0, listdir, listfd, ctrlfd);
 	}
 
 	fsync(tofd);

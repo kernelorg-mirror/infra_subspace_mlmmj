@@ -89,6 +89,7 @@ void do_probe(const char *listdir, const char *mlmmjsend, const char *addr,
 
 	txt = open_text(listfd, "probe", NULL, NULL, NULL, "bounce-probe");
 	MY_ASSERT(txt);
+	register_default_unformatted(txt, listdelim, listaddr);
 	register_unformatted(txt, "bouncenumbers", "%bouncenumbers%"); /* DEPRECATED */
 	fls = init_truncated_file_lines(addr, 0, ':');
 	register_formatted(txt, "bouncenumbers",

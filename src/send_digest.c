@@ -287,6 +287,7 @@ int send_digest(const char *listdir, int firstindex, int lastindex,
 		log_error(LOG_ARGS, "Could not open listtext 'digest'");
 		goto fallback_subject;
 	}
+	register_default_unformatted(txt, listdelim, listaddr);
 
 	snprintf(buf, sizeof(buf), "%d", firstindex);
 	register_unformatted(txt, "digestfirst", buf);
@@ -310,8 +311,7 @@ int send_digest(const char *listdir, int firstindex, int lastindex,
 	register_formatted(txt, "digestthreads", rewind_thread_list,
 			get_thread_list_line, tls);
 
-	line = get_processed_text_line(txt, 1, listaddr, listdelim, listdir,
-	    listfd, ctrlfd);
+	line = get_processed_text_line(txt, 1, listdir, listfd, ctrlfd);
 
 	if (line == NULL) {
 		log_error(LOG_ARGS, "No content in digest listtext");
@@ -338,8 +338,7 @@ int send_digest(const char *listdir, int firstindex, int lastindex,
 		free(line);
 
 		/* Skip the empty line after the subject */
-		line = get_processed_text_line(txt, 1, listaddr, listdelim,
-				listdir, listfd, ctrlfd);
+		line = get_processed_text_line(txt, 1, listdir, listfd, ctrlfd);
 		if (line == NULL || *line != '\0') {
 			log_error(LOG_ARGS, "Too many headers "
 					"in digest listtext");
@@ -432,8 +431,7 @@ errdighdrs:
 		}
 
 		for (;;) {
-			line = get_processed_text_line(txt, 0, listaddr, listdelim,
-					listdir, listfd, ctrlfd);
+			line = get_processed_text_line(txt, 0, listdir, listfd, ctrlfd);
 			if (line == NULL) break;
 			if(dprintf(fd, "%s\n", line) < 0) {
 				free(line);

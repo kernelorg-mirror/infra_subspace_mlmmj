@@ -162,6 +162,7 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 	txt = open_text(ml->fd, "moderate", "post",
 			modreason_strs[modreason], NULL, "moderation");
 	MY_ASSERT(txt);
+	register_default_unformatted(txt, ml->delim, ml->addr);
 	register_unformatted(txt, "subject", subject);
 	register_unformatted(txt, "posteraddr", posteraddr);
 	register_unformatted(txt, "moderateaddr", replyto); /* DEPRECATED */
@@ -186,6 +187,7 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 		txt = open_text(ml->fd, "wait", "post",
 				modreason_strs[modreason], NULL, "moderation-poster");
 		MY_ASSERT(txt);
+		register_default_unformatted(txt, ml->delim, ml->addr);
 		register_unformatted(txt, "subject", subject);
 		register_unformatted(txt, "posteraddr", posteraddr);
 		register_unformatted(txt, "moderators", "%moderators%"); /* DEPRECATED */
@@ -701,6 +703,7 @@ int main(int argc, char **argv)
 			txt = open_text(ml.fd, "deny", "post",
 					"maxmailsize", NULL, "maxmailsize");
 			MY_ASSERT(txt);
+			register_default_unformatted(txt, ml.delim, ml.addr);
 			register_unformatted(txt, "subject", subject);
 			register_unformatted(txt, "posteraddr", posteraddr);
 			register_unformatted(txt, "maxmailsize", maxmailsizestr);
@@ -757,6 +760,7 @@ int main(int argc, char **argv)
 		txt = open_text(ml.fd, "deny", "post",
 				"tocc", NULL, "notintocc");
 		MY_ASSERT(txt);
+		register_default_unformatted(txt, ml.delim, ml.addr);
 		register_unformatted(txt, "subject", subject);
 		register_unformatted(txt, "posteraddr", posteraddr);
 		register_originalmail(txt, donemailname);
@@ -794,6 +798,7 @@ int main(int argc, char **argv)
 			txt = open_text(ml.fd, "deny", "post",
 					"access", NULL, "access");
 			MY_ASSERT(txt);
+			register_default_unformatted(txt, ml.delim, ml.addr);
 			register_unformatted(txt, "subject", subject);
 			register_unformatted(txt, "posteraddr", posteraddr);
 			register_originalmail(txt, donemailname);
@@ -896,6 +901,7 @@ int main(int argc, char **argv)
 					"modonlypost", NULL, NULL);
 			    }
 			    MY_ASSERT(txt);
+			    register_default_unformatted(txt, ml.delim, ml.addr);
 			    register_unformatted(txt, "subject", subject);
 			    register_unformatted(txt, "posteraddr", testaddr);
 			    register_originalmail(txt, donemailname);

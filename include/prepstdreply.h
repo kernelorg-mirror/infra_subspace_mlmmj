@@ -52,8 +52,7 @@ void rewind_file_lines(void *state);
 const char *get_file_line(void *state);
 void finish_file_lines(file_lines_state *s);
 
-char *substitute(const char *line, const char *listaddr, const char *listdelim,
-		int listfd, int ctrlfd, text *txt);
+char *substitute(const char *line, int listfd, int ctrlfd, text *txt);
 
 text *open_text_fd(int fd);
 text *open_text_file(int listfd, const char *filename);
@@ -64,11 +63,12 @@ void register_originalmail(text *txt, const char *mailname);
 void register_formatted(text *txt, const char *token,
 		rewind_function rew, get_function get, void * state);
 char *get_processed_text_line(text *txt, int headers,
-		const char *listaddr, const char *listdelim, const char *listdir, int listfd, int ctrlfd);
+		const char *listdir, int listfd, int ctrlfd);
 bool prepstdreply_to(text *txt, const char *listdir,
 		const char *from, const char *to, const char *replyto, int listfd, int ctrlfd, int tofd, const char *messageid);
 char *prepstdreply(text *txt, const char *listdir,
 		const char *from, const char *to, const char *replyto, int listfd, int ctrlfd);
 void close_text(text *txt);
+void register_default_unformatted(text *txt, const char *listdelim, const char *listaddr);
 
 #endif /* PREPSTDREPLY_H */
