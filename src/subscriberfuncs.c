@@ -171,7 +171,8 @@ void notify_sub(struct ml *ml, const char *subaddr,
 {
 	char *fromaddr, *tostr;
 	text *txt;
-	char *queuefilename = NULL, *listtext = NULL;
+	char *queuefilename = NULL;
+	const char *listtext = NULL;
 
 	gen_addr(fromaddr, ml, "bounces-help");
 	gen_addr(tostr, ml, "owner");
@@ -179,24 +180,23 @@ void notify_sub(struct ml *ml, const char *subaddr,
 	switch(typesub) {
 		default:
 		case SUB_NORMAL:
-			listtext = xstrdup("notifysub");
+			listtext = "notifysub";
 			break;
 		case SUB_DIGEST:
-			listtext = xstrdup("notifysub-digest");
+			listtext = "notifysub-digest";
 			break;
 		case SUB_NOMAIL:
-			listtext = xstrdup("notifysub-nomail");
+			listtext = "notifysub-nomail";
 			break;
 		case SUB_BOTH:
 			/* No legacy list text as feature didn't exist. */
-			listtext = xstrdup("notifysub");
+			listtext = "notifysub";
 			break;
 	}
 
 	txt = open_text(ml->fd, "notify", "sub",
 			subreason_strs[reasonsub], subtype_strs[typesub],
 			listtext);
-	free(listtext);
 	MY_ASSERT(txt);
 	register_default_unformatted(txt, ml->delim, ml->addr);
 	register_unformatted(txt, "subaddr", subaddr);
