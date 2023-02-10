@@ -409,9 +409,9 @@ int main(int argc, char **argv)
 	log_set_name(argv[0]);
 
 	bindir = mydirname(argv[0]);
-	mlmmjsend = concatstr(2, bindir, "/mlmmj-send");
-	mlmmjsub = concatstr(2, bindir, "/mlmmj-sub");
-	mlmmjunsub = concatstr(2, bindir, "/mlmmj-unsub");
+	xasprintf(&mlmmjsend, "%s/mlmmj-send", bindir);
+	xasprintf(&mlmmjsub, "%s/mlmmj-sub", bindir);
+	xasprintf(&mlmmjunsub, "%s/mlmmj-unsub", bindir);
 	free(bindir);
 
 	while ((opt = getopt(argc, argv, "hVPm:L:")) != -1) {
@@ -446,7 +446,7 @@ int main(int argc, char **argv)
                 free(donemailname);
                 free(randomstr);
                 randomstr = random_str();
-                donemailname = concatstr(3, ml.dir, "/queue/", randomstr);
+		xasprintf(&donemailname, "%s/queue/%s", ml.dir, randomstr);
 
                 donemailfd = open(donemailname, O_RDWR|O_CREAT|O_EXCL,
 						S_IRUSR|S_IWUSR);
@@ -943,7 +943,7 @@ int main(int argc, char **argv)
 		}
 		free(donemailname);
 		if (notmetoo) {
-			omitfilename = concatstr(2, mqueuename, ".omit");
+			xasprintf(&omitfilename, "%s.omit", mqueuename);
 			omitfd = open(omitfilename, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
 			if (omitfd < 0) {
 				log_error(LOG_ARGS, "could not open %s",
