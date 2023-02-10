@@ -51,15 +51,11 @@ struct substitution {
 	char *subst;
 };
 
-
-struct formatted;
-typedef struct formatted formatted;
 struct formatted {
 	char *token;
 	rewind_function rew;
 	get_function get;
 	void *state;
-	formatted *next;
 };
 
 
@@ -75,7 +71,7 @@ struct source {
 	int prefixwidth;
 	char *suffix;
 	int fd;
-	formatted *fmt;
+	struct formatted *fmt;
 	int transparent;
 	int limit;
 };
@@ -118,7 +114,7 @@ struct text {
 	source *src;
 	tll(struct substitution *) substs;
 	char *mailname;
-	formatted *fmts;
+	tll(struct formatted *) fmts;
 	int wrapindent;
 	int wrapwidth;
 	enum wrap_mode wrapmode;
@@ -552,13 +548,12 @@ void register_originalmail(text *txt, const char *mailname)
 void register_formatted(text *txt, const char *token,
 		rewind_function rew, get_function get, void *state)
 {
-	formatted * fmt = xmalloc(sizeof(formatted));
+	struct formatted * fmt = xmalloc(sizeof(struct formatted));
 	fmt->token = xstrdup(token);
 	fmt->rew = rew;
 	fmt->get = get;
 	fmt->state = state;
-	fmt->next = txt->fmts;
-	txt->fmts = fmt;
+	tll_push_back(txt->fmts, fmt);
 }
 
 
@@ -622,7 +617,7 @@ static void begin_new_source_file(text *txt, char **line_p, char **pos_p,
 
 
 static void begin_new_formatted_source(text *txt, char **line_p, char **pos_p,
-		int *width_p, char *suffix, formatted *fmt, int transparent) {
+		int *width_p, char *suffix, struct formatted *fmt, int transparent) {
 	char *line = *line_p;
 	char *pos = *pos_p;
 	const char *str;
@@ -790,7 +785,7 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 	char *endpos;
 	char *filename;
 	int limit;
-	formatted *fmt;
+	struct formatted *fmt;
 	conditional *cond;
 	int swallow;
 
@@ -1029,14 +1024,13 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 		return 0;
 	}
 
-	fmt = txt->fmts;
-	while (fmt != NULL) {
+	tll_foreach(txt->fmts, it) {
+		fmt = it->item;
 		if (strcmp(token, fmt->token) == 0) {
 			begin_new_formatted_source(txt, line_p, pos_p, width_p,
 					endpos + 1, fmt, 0);
 			return 0;
 		}
-		fmt = fmt->next;
 	}
 
 	/* No recognised directive; just advance through the string. */
@@ -1516,21 +1510,22 @@ substitution_free(struct substitution *subst)
 	free(subst);
 }
 
+static void
+formatted_free(struct formatted *fmt)
+{
+	free(fmt->token);
+	free(fmt);
+}
+
 void close_text(text *txt)
 {
-	formatted *fmt;
 	conditional *cond;
 	while (txt->src != NULL) {
 		close_source(txt);
 	}
 	tll_free_and_free(txt->substs, substitution_free);
 	if (txt->mailname != NULL) free(txt->mailname);
-	while (txt->fmts != NULL) {
-		fmt = txt->fmts;
-		free(fmt->token);
-		txt->fmts = txt->fmts->next;
-		free(fmt);
-	}
+	tll_free_and_free(txt->fmts, formatted_free);
 	while (txt->cond != NULL) {
 		cond = txt->cond;
 		txt->cond = txt->cond->outer;
