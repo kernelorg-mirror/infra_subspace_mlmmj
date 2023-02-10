@@ -40,6 +40,7 @@
 #include "atf-c/macros.h"
 #include "atf-c/utils.h"
 #include "mlmmj.h"
+#include "send_list.h"
 #include "xmalloc.h"
 #include "wrappers.h"
 #include "chomp.h"
@@ -144,6 +145,7 @@ ATF_TC_WITHOUT_HEAD(memory_lines);
 ATF_TC_WITHOUT_HEAD(text_0);
 ATF_TC_WITHOUT_HEAD(text_1);
 ATF_TC_WITHOUT_HEAD(file_lines);
+ATF_TC_WITHOUT_HEAD(list_subs);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -2347,6 +2349,37 @@ ATF_TC_BODY(file_lines, tc)
 	finish_file_lines(NULL);
 }
 
+ATF_TC_BODY(list_subs, tc)
+{
+	struct ml ml;
+	init_ml(true);
+	ml_init(&ml);
+	FILE *fp = fopen("list/subscribers.d/a", "w+");
+	fprintf(fp, "auser1\nauser2");
+	fclose(fp);
+
+	fp = fopen("list/subscribers.d/b", "w+");
+	fclose(fp);
+	ml_open(&ml, false);
+	struct subs_list_state *s = init_subs_list("list/subscribers.d/");
+	rewind_subs_list(NULL);
+	rewind_subs_list(s);
+	ATF_REQUIRE(get_sub(NULL) == NULL);
+	ATF_REQUIRE_STREQ(get_sub(s), "auser1");
+	ATF_REQUIRE_STREQ(get_sub(s), "auser2");
+	ATF_REQUIRE(get_sub(s) == NULL);
+	finish_subs_list(NULL);
+	int fd = open("output", O_WRONLY|O_CREAT, 0644);
+	print_subs(fd, s);
+	close(fd);
+	finish_subs_list(s);
+
+	if (!atf_utils_compare_file("output", "auser1\nauser2\n")) {
+		atf_utils_cat_file("output", "");
+		atf_tc_fail("Unexpected output, expected");
+	}
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -2429,6 +2462,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, text_0);
 	ATF_TP_ADD_TC(tp, text_1);
 	ATF_TP_ADD_TC(tp, file_lines);
+	ATF_TP_ADD_TC(tp, list_subs);
 
 	return (atf_no_error());
 }
