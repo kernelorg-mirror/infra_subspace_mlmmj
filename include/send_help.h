@@ -1,6 +1,6 @@
-/* Copyright (C) 2004 Mads Martin Joergensen <mmj at mmj.dk>
- *
- * $Id$
+/*
+ * Copyright (C) 2004 Mads Martin Joergensen <mmj at mmj.dk>
+ * Copyright (C) 2023 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -21,10 +21,7 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef SEND_HELP_H
-#define SEND_HELP_H
+#pragma once
 
-void send_help(const char *listdir, const char *queuefilename,
-		const char *emailaddr, const char *mlmmjsend, int ctrlfd);
-
-#endif
+void send_help(struct ml *ml, const char *queuefilename,
+               const char *emailaddr, const char *mlmmjsend);

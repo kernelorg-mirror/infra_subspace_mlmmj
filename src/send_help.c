@@ -1,6 +1,6 @@
-/* Copyright (C) 2003 Mads Martin Joergensen <mmj at mmj.dk>
- *
- * $Id$
+/*
+ * Copyright (C) 2003 Mads Martin Joergensen <mmj at mmj.dk>
+ * Copyright (C) 2023 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -21,45 +21,18 @@
  * IN THE SOFTWARE.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-
 #include "mlmmj.h"
 #include "send_help.h"
-#include "strgen.h"
-#include "find_email_adr.h"
-#include "getlistaddr.h"
-#include "getlistdelim.h"
-#include "log_error.h"
-#include "chomp.h"
-#include "wrappers.h"
-#include "mygetline.h"
-#include "prepstdreply.h"
 #include "utils.h"
+#include "xmalloc.h"
 
-void send_help(const char *listdir, const char *queuefilename,
-		const char *emailaddr, const char *mlmmjsend, int ctrlfd)
+void send_help(struct ml *ml, const char *queuefilename,
+		const char *emailaddr, const char *mlmmjsend)
 {
-	char *listaddr, *listdelim, *listname, *listfqdn;
 	char *fromaddr;
 
-	listaddr = getlistaddr(ctrlfd);
-	listdelim = getlistdelim(ctrlfd);
-	listname = genlistname(listaddr);
-	listfqdn = genlistfqdn(listaddr);
+	gen_addr(fromaddr, ml, "bounces-help");
 
-	fromaddr = concatstr(4, listname, listdelim, "bounces-help@", listfqdn);
-
-	free(listname);
-	free(listdelim);
-	free(listfqdn);
-	free(listaddr);
-
-	exec_or_die(mlmmjsend, "-l", "1", "-L", listdir, "-T", emailaddr,
+	exec_or_die(mlmmjsend, "-l", "1", "-L", ml->dir, "-T", emailaddr,
 	    "-F", fromaddr, "-m", queuefilename, NULL);
 }
