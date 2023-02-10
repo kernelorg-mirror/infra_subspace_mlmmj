@@ -2415,7 +2415,7 @@ ATF_TC_BODY(notify_sub, tc)
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
 		notify_sub(&ml, "test@plop", "/bin/echo", SUB_NORMAL,
-		    SUB_ADMIN);
+		    SUB_ADMIN, true);
 	}
 	atf_utils_wait(p, 0, "save:plop.txt", "");
 	fd = open("plop.txt", O_RDONLY);
@@ -2440,7 +2440,7 @@ ATF_TC_BODY(notify_sub, tc)
 	p = atf_utils_fork();
 	if (p == 0) {
 		notify_sub(&ml, "test@plop", "/bin/echo", SUB_DIGEST,
-		    SUB_ADMIN);
+		    SUB_ADMIN, true);
 	}
 	atf_utils_wait(p, 0, "save:plop.txt", "");
 	fd = open("plop.txt", O_RDONLY);
@@ -2463,7 +2463,7 @@ ATF_TC_BODY(notify_sub, tc)
 	p = atf_utils_fork();
 	if (p == 0) {
 		notify_sub(&ml, "test@plop", "/bin/echo", SUB_NOMAIL,
-		    SUB_CONFIRM);
+		    SUB_CONFIRM, true);
 	}
 	atf_utils_wait(p, 0, "save:plop.txt", "");
 	fd = open("plop.txt", O_RDONLY);
@@ -2486,7 +2486,7 @@ ATF_TC_BODY(notify_sub, tc)
 	p = atf_utils_fork();
 	if (p == 0) {
 		notify_sub(&ml, "test@plop", "/bin/echo", SUB_BOTH,
-		    SUB_REQUEST);
+		    SUB_REQUEST, true);
 	}
 	atf_utils_wait(p, 0, "save:plop.txt", "");
 	fd = open("plop.txt", O_RDONLY);
@@ -2502,6 +2502,100 @@ ATF_TC_BODY(notify_sub, tc)
 		atf_tc_fail("invalid file");
 	}
 	if (!atf_utils_grep_file(".*because a request to join was received.*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+
+	p = atf_utils_fork();
+	if (p == 0) {
+		notify_sub(&ml, "test@plop", "/bin/echo", SUB_NORMAL,
+		    SUB_ADMIN, false);
+	}
+	atf_utils_wait(p, 0, "save:plop.txt", "");
+	fd = open("plop.txt", O_RDONLY);
+	content = atf_utils_readline(fd);
+	close(fd);
+	pattern = "-l 1 -L list -T test+owner@test -F test+bounces-help@test -m list/queue/";
+	if (strncmp(content, pattern, strlen(pattern)) != 0)
+		atf_tc_fail("Invalid command: '%s'", content);
+	path = strrchr(content, ' ');
+	ATF_REQUIRE(path != NULL);
+	path++;
+	if (!atf_utils_grep_file(".*The address <test@plop> has been unsubscribed from the list.*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+	atf_utils_cat_file(path, "");
+	if (!atf_utils_grep_file(".*administrator commanded it.*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+
+	p = atf_utils_fork();
+	if (p == 0) {
+		notify_sub(&ml, "test@plop", "/bin/echo", SUB_DIGEST,
+		    SUB_ADMIN, false);
+	}
+	atf_utils_wait(p, 0, "save:plop.txt", "");
+	fd = open("plop.txt", O_RDONLY);
+	content = atf_utils_readline(fd);
+	close(fd);
+	pattern = "-l 1 -L list -T test+owner@test -F test+bounces-help@test -m list/queue/";
+	if (strncmp(content, pattern, strlen(pattern)) != 0)
+		atf_tc_fail("Invalid command: '%s'", content);
+	path = strrchr(content, ' ');
+	path++;
+	if (!atf_utils_grep_file(".*The address <test@plop> has been unsubscribed from the list.*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+	if (!atf_utils_grep_file(".*administrator commanded it.*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+
+	p = atf_utils_fork();
+	if (p == 0) {
+		notify_sub(&ml, "test@plop", "/bin/echo", SUB_NOMAIL,
+		    SUB_CONFIRM, false);
+	}
+	atf_utils_wait(p, 0, "save:plop.txt", "");
+	fd = open("plop.txt", O_RDONLY);
+	content = atf_utils_readline(fd);
+	close(fd);
+	pattern = "-l 1 -L list -T test+owner@test -F test+bounces-help@test -m list/queue/";
+	if (strncmp(content, pattern, strlen(pattern)) != 0)
+		atf_tc_fail("Invalid command: '%s'", content);
+	path = strrchr(content, ' ');
+	path++;
+	if (!atf_utils_grep_file(".*The address <test@plop> has been unsubscribed from the list.*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+	if (!atf_utils_grep_file(".*request to unsubscribe was confirmed.*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+
+	p = atf_utils_fork();
+	if (p == 0) {
+		notify_sub(&ml, "test@plop", "/bin/echo", SUB_BOTH,
+		    SUB_REQUEST, false);
+	}
+	atf_utils_wait(p, 0, "save:plop.txt", "");
+	fd = open("plop.txt", O_RDONLY);
+	content = atf_utils_readline(fd);
+	close(fd);
+	pattern = "-l 1 -L list -T test+owner@test -F test+bounces-help@test -m list/queue/";
+	if (strncmp(content, pattern, strlen(pattern)) != 0)
+		atf_tc_fail("Invalid command: '%s'", content);
+	path = strrchr(content, ' ');
+	path++;
+	if (!atf_utils_grep_file(".*The address <test@plop> has been unsubscribed from the list.*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+	if (!atf_utils_grep_file(".*request to unsubscribe was received.*", path)) {
 		atf_utils_cat_file(path, "");
 		atf_tc_fail("invalid file");
 	}

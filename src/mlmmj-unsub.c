@@ -86,47 +86,6 @@ void confirm_unsub(struct ml *ml, const char *subaddr, const char *mlmmjsend,
 	    fromaddr, "-m", queuefilename, NULL);
 }
 
-void notify_unsub(struct ml *ml, const char *subaddr, const char *mlmmjsend,
-		  enum subtype typesub, enum subreason reasonsub)
-{
-        char *fromaddr, *tostr;
-	text *txt;
-        char *queuefilename = NULL, *listtext;
-
-	gen_addr(fromaddr, ml, "bounces-help");
-	gen_addr(tostr, ml, "owner");
-
-	switch(typesub) {
-		default:
-		case SUB_NORMAL:
-			listtext = xstrdup("notifyunsub");
-			break;
-		case SUB_DIGEST:
-			listtext = xstrdup("notifyunsub-digest");
-			break;
-		case SUB_NOMAIL:
-			listtext = xstrdup("notifyunsub-nomail");
-			break;
-	}
-	
-	txt = open_text(ml->fd, "notify", "unsub",
-			subreason_strs[reasonsub], subtype_strs[typesub],
-			listtext);
-	free(listtext);
-	MY_ASSERT(txt);
-	register_default_unformatted(txt, ml->delim, ml->addr);
-	register_unformatted(txt, "subaddr", subaddr);
-	register_unformatted(txt, "oldsub", subaddr); /* DEPRECATED */
-	queuefilename = prepstdreply(txt, ml->dir,
-			"$listowner$", "$listowner$", NULL, ml->fd, ml->ctrlfd);
-	MY_ASSERT(queuefilename);
-	close_text(txt);
-
-	exec_or_die(mlmmjsend, "-l", "1", "-L", ml->dir, "-T", tostr, "-F",
-	    fromaddr, "-m", queuefilename, NULL);
-}
-
-
 void generate_unsubconfirm(struct ml *ml, const char *subaddr,
 			   const char *mlmmjsend,
 			   enum subtype typesub, enum subreason reasonsub)
@@ -420,7 +379,7 @@ int main(int argc, char **argv)
 
         /* Notify list owner about subscription */
         if (notifysub)
-                notify_unsub(&ml, address, mlmmjsend, typesub, reasonsub);
+                notify_sub(&ml, address, mlmmjsend, typesub, reasonsub, false);
 
 	free(address);
 	free(mlmmjsend);

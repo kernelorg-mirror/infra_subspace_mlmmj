@@ -32,5 +32,5 @@ enum subtype is_subbed(int listfd, const char *address, bool both);
 char *get_subcookie_content(int listfd, bool unsub, const char *param);
 void notify_sub(struct ml *ml, const char *subaddr,
 		const char *mlmmjsend, enum subtype typesub,
-		enum subreason reasonsub);
+		enum subreason reasonsub, bool sub);
 #endif /* SUBSCRIBERFUNC_H */

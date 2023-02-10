@@ -167,7 +167,7 @@ get_subcookie_content(int listfd, bool unsub, const char *param)
 
 void notify_sub(struct ml *ml, const char *subaddr,
 		const char *mlmmjsend, enum subtype typesub,
-		enum subreason reasonsub)
+		enum subreason reasonsub, bool sub)
 {
 	char *fromaddr, *tostr;
 	text *txt;
@@ -180,13 +180,13 @@ void notify_sub(struct ml *ml, const char *subaddr,
 	switch(typesub) {
 		default:
 		case SUB_NORMAL:
-			listtext = "notifysub";
+			listtext = sub ? "notifysub" : "notifyunsub";
 			break;
 		case SUB_DIGEST:
-			listtext = "notifysub-digest";
+			listtext = sub ? "notifysub-digest": "notifyunsub-digest";
 			break;
 		case SUB_NOMAIL:
-			listtext = "notifysub-nomail";
+			listtext = sub ? "notifysub-nomail": "notifyunsub-nomail";
 			break;
 		case SUB_BOTH:
 			/* No legacy list text as feature didn't exist. */
@@ -194,13 +194,13 @@ void notify_sub(struct ml *ml, const char *subaddr,
 			break;
 	}
 
-	txt = open_text(ml->fd, "notify", "sub",
+	txt = open_text(ml->fd, "notify", sub? "sub":"unsub",
 			subreason_strs[reasonsub], subtype_strs[typesub],
 			listtext);
 	MY_ASSERT(txt);
 	register_default_unformatted(txt, ml->delim, ml->addr);
 	register_unformatted(txt, "subaddr", subaddr);
-	register_unformatted(txt, "newsub", subaddr); /* DEPRECATED */
+	register_unformatted(txt, sub ? "newsub" : "oldsub", subaddr); /* DEPRECATED */
 	queuefilename = prepstdreply(txt, ml->dir,
 			"$listowner$", "$listowner$", NULL, ml->fd, ml->ctrlfd);
 	MY_ASSERT(queuefilename);
