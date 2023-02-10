@@ -91,7 +91,7 @@ void do_probe(const char *listdir, const char *mlmmjsend, const char *addr,
 	MY_ASSERT(txt);
 	register_default_unformatted(txt, listdelim, listaddr);
 	register_unformatted(txt, "bouncenumbers", "%bouncenumbers%"); /* DEPRECATED */
-	fls = init_truncated_file_lines(addr, 0, ':');
+	fls = init_truncated_file_lines(addr, ':');
 	register_formatted(txt, "bouncenumbers",
 			rewind_file_lines, get_file_line, fls);
 	queuefilename = prepstdreply(txt, listdir, "$listowner$", myaddr, NULL, listfd, ctrlfd);

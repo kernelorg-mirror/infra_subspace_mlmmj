@@ -1,8 +1,8 @@
-/* Copyright (C) 2004 Mads Martin Joergensen <mmj at mmj.dk>
+/*
+ * Copyright (C) 2004 Mads Martin Joergensen <mmj at mmj.dk>
  * Copyright (C) 2007 Morten K. Poulsen <morten at afdelingp.dk>
  * Copyright (C) 2011 Ben Schmidt <mail_ben_schmidt at yahoo.com.au>
- *
- * $Id$
+ * Copyright (C) 2023 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -189,21 +189,12 @@ finish_memory_lines(memory_lines_state *s)
 }
 
 
-file_lines_state *init_file_lines(const char *filename, int open_now)
+file_lines_state *init_file_lines(const char *filename)
 {
 	file_lines_state *s = xmalloc(sizeof(file_lines_state));
 
-	if (open_now) {
-		s->fd = open(filename, O_RDONLY);
-		s->filename = NULL;
-		if (s->fd < 0) {
-			free(s);
-			return NULL;
-		}
-	} else {
-		s->filename = xstrdup(filename);
-		s->fd = -1;
-	}
+	s->filename = xstrdup(filename);
+	s->fd = -1;
 
 	s->truncate = '\0';
 	s->line = NULL;
@@ -211,11 +202,10 @@ file_lines_state *init_file_lines(const char *filename, int open_now)
 }
 
 
-file_lines_state *init_truncated_file_lines(const char *filename, int open_now,
-		char truncate)
+file_lines_state *init_truncated_file_lines(const char *filename, char truncate)
 {
 	file_lines_state *s;
-	s = init_file_lines(filename, open_now);
+	s = init_file_lines(filename);
 	if (s == NULL) return NULL;
 	s->truncate = truncate;
 	return s;
