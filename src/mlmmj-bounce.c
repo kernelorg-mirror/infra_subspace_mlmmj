@@ -1,6 +1,6 @@
-/* Copyright (C) 2004 Morten K. Poulsen <morten at afdelingp.dk>
- *
- * $Id$
+/*
+ * Copyright (C) 2004 Morten K. Poulsen <morten at afdelingp.dk>
+ * Copyright (C) 2023 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -52,29 +52,18 @@
 #include "utils.h"
 
 
-void do_probe(const char *listdir, const char *mlmmjsend, const char *addr,
-    int listfd, int ctrlfd)
+void do_probe(struct ml *ml, const char *mlmmjsend, const char *addr)
 {
 	text *txt;
 	file_lines_state *fls;
-	char *myaddr, *from, *a, *queuefilename, *listaddr;
-	char *listfqdn, *listname, *probefile, *listdelim = getlistdelim(ctrlfd);
+	char *myaddr, *from, *a, *queuefilename;
+	char *probefile;
 	int fd;
 	time_t t;
 
 	myaddr = lowercase(addr);
 
-	listaddr = getlistaddr(ctrlfd);
-	listname = genlistname(listaddr);
-	listfqdn = genlistfqdn(listaddr);
-
-	xasprintf(&from, "%s%sbounces-probe-%s@%s", listname, listdelim, myaddr,
-	    listfqdn);
-
-	free(listaddr);
-	free(listdelim);
-	free(listfqdn);
-	free(listname);
+	gen_addr_cookie(from, ml, "bounces-probe-", myaddr)
 
 	a = strrchr(myaddr, '=');
 	if (!a) {
@@ -86,23 +75,23 @@ void do_probe(const char *listdir, const char *mlmmjsend, const char *addr,
 	}
 	*a = '@';
 
-	txt = open_text(listfd, "probe", NULL, NULL, NULL, "bounce-probe");
+	txt = open_text(ml->fd, "probe", NULL, NULL, NULL, "bounce-probe");
 	MY_ASSERT(txt);
-	register_default_unformatted(txt, listdelim, listaddr);
+	register_default_unformatted(txt, ml->delim, ml->addr);
 	register_unformatted(txt, "bouncenumbers", "%bouncenumbers%"); /* DEPRECATED */
 	fls = init_file_lines(addr, ':');
 	register_formatted(txt, "bouncenumbers",
 			rewind_file_lines, get_file_line, fls);
-	queuefilename = prepstdreply(txt, listdir, "$listowner$", myaddr, NULL, listfd, ctrlfd);
+	queuefilename = prepstdreply(txt, ml->dir, "$listowner$", myaddr, NULL, ml->fd, ml->ctrlfd);
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
 	finish_file_lines(fls);
 
-	xasprintf(&probefile, "%s/bounce/%s-probe", listdir, addr);
+	xasprintf(&probefile, "bounce/%s-probe", addr);
 	t = time(NULL);
-	unlink(probefile);
-	fd = open(probefile, O_WRONLY|O_TRUNC|O_CREAT, S_IRUSR|S_IWUSR);
+	unlinkat(ml->fd, probefile, 0);
+	fd = openat(ml->fd, probefile, O_WRONLY|O_TRUNC|O_CREAT, S_IRUSR|S_IWUSR);
 	if(fd < 0)
 		log_error(LOG_ARGS, "Could not open %s", probefile);
 	else
@@ -111,7 +100,7 @@ void do_probe(const char *listdir, const char *mlmmjsend, const char *addr,
 
 	free(probefile);
 
-	exec_or_die(mlmmjsend, "-l", "5", "-L", listdir, "-T", myaddr,
+	exec_or_die(mlmmjsend, "-l", "5", "-L", ml->dir, "-T", myaddr,
 	    "-F", from, "-m", queuefilename, NULL);
 }
 
@@ -133,19 +122,18 @@ static void print_help(const char *prg)
 int main(int argc, char **argv)
 {
 	int opt, dsnbounce = 0;
-	char *listdir = NULL, *address = NULL, *number = NULL;
+	char *address = NULL, *number = NULL;
 	const char *thisaddr;
 	char *bindir, *mlmmjsend, *a;
 	const char *mailname = NULL;
 	int probe = 0;
-	struct stat st;
-	uid_t uid;
-	int listfd, ctrlfd;
 	bounce_t bret;
+	struct ml ml;
 
 	log_set_name(argv[0]);
 
 	CHECKFULLPATH(argv[0]);
+	ml_init(&ml);
 
 	bindir = mydirname(argv[0]);
 	xasprintf(&mlmmjsend, "%s/mlmmj-send", bindir);
@@ -154,7 +142,7 @@ int main(int argc, char **argv)
 	while ((opt = getopt(argc, argv, "hdVL:a:n:m:p")) != -1) {
 		switch(opt) {
 		case 'L':
-			listdir = optarg;
+			ml.dir = optarg;
 			break;
 		case 'a':
 			thisaddr = optarg;
@@ -180,32 +168,13 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if(listdir == NULL || (thisaddr == NULL && dsnbounce == 0)
+	if(ml.dir == NULL || (thisaddr == NULL && dsnbounce == 0)
 				|| (number == NULL && probe == 0)) {
 		errx(EXIT_FAILURE, "You have to specify -L, -a or -d and -n or -p\n"
 		    "%s -h for help", argv[0]);
 	}
-	listfd = open_listdir(listdir, false);
-	if ((ctrlfd = openat(listfd, "control", O_DIRECTORY|O_CLOEXEC)) == -1)
-		err(EXIT_FAILURE, "Cannot open(%s/control)", listdir);
-
-
-	/* Lets make sure no random user tries to do bouncehandling */
-	if(listdir) {
-		if(stat(listdir, &st) == 0) {
-			uid = getuid();
-			if(uid && uid != st.st_uid) {
-				log_error(LOG_ARGS,
-					"Have to invoke either as root "
-					"or as the user owning listdir");
-				errx(EXIT_FAILURE, "Have to invoke either as root "
-					"or as the user owning listdir");
-			}
-		} else {
-			log_error(LOG_ARGS, "Could not stat %s", listdir);
-			exit(EXIT_FAILURE);
-		}
-	}
+	if (!ml_open(&ml, true))
+		exit(EXIT_FAILURE);
 
 	if(dsnbounce) {
 		address = dsnparseaddr(mailname);
@@ -230,7 +199,7 @@ int main(int argc, char **argv)
 
 	if (probe) {
 		/* send out a probe */
-		do_probe(listdir, mlmmjsend, thisaddr, listfd, ctrlfd);
+		do_probe(&ml, mlmmjsend, thisaddr);
 		/* do_probe() will never return */
 		exit(EXIT_FAILURE);
 	}
@@ -239,9 +208,9 @@ int main(int argc, char **argv)
 	log_error(LOG_ARGS, "listdir = [%s] address = [%s] number = [%s]", listdir, address, number);
 #endif
 
-	bret = bouncemail(listfd, thisaddr, number);
+	bret = bouncemail(ml.fd, thisaddr, number);
 	if (bret == BOUNCE_DONE && mailname != NULL)
-		save_lastbouncedmsg(listfd, thisaddr, mailname);
+		save_lastbouncedmsg(ml.fd, thisaddr, mailname);
 	free(address);
 	if (bret == BOUNCE_OK && mailname != NULL)
 		unlink(mailname);

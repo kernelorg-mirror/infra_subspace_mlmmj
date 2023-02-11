@@ -498,8 +498,8 @@ run_digests
 unsub_bouncers_0_body()
 {
 	mlmmjmaintd=$(command -v mlmmj-maintd)
-	mkdir lists
 	init_ml list
+	echo "test@test" > list/control/listaddress
 
 	# empty file, it should be ignored
 	touch list/bounce/plop
@@ -550,7 +550,7 @@ unsub_bouncers_4_body()
 	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
 	init_ml list
-
+	echo "test@test" > list/control/listaddress
 	# filename should contain a = to be properly treated
 	echo "a:1234 # plop" > list/bounce/plop
 	atf_check -s exit:0 $mlmmjmaintd -L list -F
@@ -621,6 +621,7 @@ unsub_bouncers_7_body()
 	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
 	init_ml list
+	echo "test@test" > list/control/listaddress
 
 	# keep if recent enough
 	echo "a:$(date +%s) # plop" > list/bounce/plop=meh
