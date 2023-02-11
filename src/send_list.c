@@ -37,7 +37,6 @@
 #include "log_error.h"
 #include "chomp.h"
 #include "wrappers.h"
-#include "mygetline.h"
 #include "prepstdreply.h"
 #include "utils.h"
 

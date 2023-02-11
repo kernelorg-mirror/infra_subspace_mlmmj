@@ -45,7 +45,6 @@
 #include "wrappers.h"
 #include "log_error.h"
 #include "subscriberfuncs.h"
-#include "mygetline.h"
 #include "prepstdreply.h"
 #include "xmalloc.h"
 #include "find_email_adr.h"

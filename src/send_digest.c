@@ -38,7 +38,6 @@
 #include "getlistdelim.h"
 #include "wrappers.h"
 #include "prepstdreply.h"
-#include "mygetline.h"
 #include "gethdrline.h"
 #include "statctrl.h"
 #include "unistr.h"

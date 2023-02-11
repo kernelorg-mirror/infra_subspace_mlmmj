@@ -39,8 +39,6 @@
 #include "mlmmj.h"
 #include "mlmmj-sub.h"
 #include "wrappers.h"
-#include "getlistaddr.h"
-#include "getlistdelim.h"
 #include "strgen.h"
 #include "subscriberfuncs.h"
 #include "log_error.h"

@@ -28,7 +28,6 @@
 
 #include "xmalloc.h"
 #include "mlmmj.h"
-#include "mygetline.h"
 #include "gethdrline.h"
 #include "strgen.h"
 #include "ctrlvalue.h"

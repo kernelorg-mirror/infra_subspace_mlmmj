@@ -57,7 +57,6 @@
 #include "init_sockfd.h"
 #include "strgen.h"
 #include "log_error.h"
-#include "mygetline.h"
 #include "wrappers.h"
 #include "statctrl.h"
 #include "ctrlvalue.h"

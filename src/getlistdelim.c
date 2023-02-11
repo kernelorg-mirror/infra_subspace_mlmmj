@@ -1,6 +1,6 @@
 /*
  * Copyright 2005 Joel Aelwyn <joel@lightbearer.com>
- * Copyright 2005 Baptiste Daroussin <bapt@FreeBSD.org>
+ * Copyright 2023 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -21,19 +21,9 @@
  * IN THE SOFTWARE.
  */
 
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-
 #include "xmalloc.h"
 #include "mlmmj.h"
 #include "getlistdelim.h"
-#include "chomp.h"
-#include "log_error.h"
-#include "mygetline.h"
-#include "strgen.h"
 #include "ctrlvalue.h"
 
 char *getlistdelim(int ctrlfd)
