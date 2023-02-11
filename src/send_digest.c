@@ -34,8 +34,6 @@
 #include "log_error.h"
 #include "strgen.h"
 #include "xmalloc.h"
-#include "getlistaddr.h"
-#include "getlistdelim.h"
 #include "wrappers.h"
 #include "prepstdreply.h"
 #include "gethdrline.h"

@@ -34,7 +34,6 @@
 #include <unistd.h>
 #include <err.h>
 
-#include "getlistaddr.h"
 #include "getlistdelim.h"
 #include "mlmmj.h"
 #include "utils.h"

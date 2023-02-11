@@ -40,9 +40,7 @@
 #include "chomp.h"
 #include "log_error.h"
 #include "wrappers.h"
-#include "getlistaddr.h"
 #include "mlmmj.h"
-#include "getlistdelim.h"
 #include "unistr.h"
 
 struct substitution {

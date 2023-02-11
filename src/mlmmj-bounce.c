@@ -37,8 +37,6 @@
 #include <ctype.h>
 #include <err.h>
 
-#include "getlistaddr.h"
-#include "getlistdelim.h"
 #include "chomp.h"
 #include "mlmmj.h"
 #include "strgen.h"

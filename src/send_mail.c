@@ -26,7 +26,6 @@
 
 #include "checkwait_smtpreply.h"
 #include "mail-functions.h"
-#include "getlistaddr.h"
 #include "getlistdelim.h"
 #include "send_mail.h"
 #include "log_error.h"
