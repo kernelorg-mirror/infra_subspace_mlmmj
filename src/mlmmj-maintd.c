@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2004 Mads Martin Joergensen <mmj at mmj.dk>
- * Copyright (C) 2022 Baptiste Daroussin <bapt@FreeBSD.org>
+ * Copyright (C) 2022-2023 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -347,12 +347,10 @@ static bool
 clean_nolongerbouncing(int dfd, int logfd)
 {
 	DIR *bouncedir;
-	char *filename, *probetimestr, *s;
-	int probefd;
+	char *filename, *s;
 	time_t probetime, t;
 	struct dirent *dp;
 	int fd;
-	const char *errstr;
 	bool ret = true;
 
 	opendirat(dfd, fd, bouncedir, "bounce");
@@ -373,23 +371,9 @@ clean_nolongerbouncing(int dfd, int logfd)
 				continue;
 			}
 
-			probefd = openat(fd, filename, O_RDONLY|O_CLOEXEC);
-			if(probefd < 0) {
+			probetime = ctrltimet(fd, filename, (time_t)-1);
+			if (probetime == (time_t)-1) {
 				free(filename);
-				continue;
-			}
-			probetimestr = mygetline(probefd);
-			if(probetimestr == NULL) {
-				free(filename);
-				continue;
-			}
-			close(probefd);
-			chomp(probetimestr);
-			probetime = strtotimet(probetimestr, &errstr);
-			free(probetimestr);
-			if (errstr != NULL) {
-				free(filename);
-				free(probetimestr);
 				continue;
 			}
 			t = time(NULL);
