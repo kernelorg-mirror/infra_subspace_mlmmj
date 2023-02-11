@@ -338,7 +338,7 @@ ATF_TC_BODY(init_sock, tc)
 		exit(0);
 	}
 	close(mypipe[1]);
-	atf_utils_readline(mypipe[0]);
+	mygetline(mypipe[0]);
 	int sock;
 	do {
 		init_sockfd(&sock, "127.0.0.1", 25678);
@@ -1006,7 +1006,7 @@ ATF_TC_BODY(smtp, tc)
 	if (p == 0) {
 		dprintf(smtppipe[0], "220 me fake smtp\n");
 		/* EHLO */
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		dprintf(smtppipe[0],
 		    "250-hostname.net\n"
 		    "250-PIPELINEING\n"
@@ -1019,31 +1019,31 @@ ATF_TC_BODY(smtp, tc)
 		    "250-SMTPUTF8\n"
 		    "250 CHUNKING\n");
 		/* HELO */
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		dprintf(smtppipe[0],
 		    "250-hostname.net\n");
 		/* MAIL FROM */
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		dprintf(smtppipe[0],
 		    "250 2.1.0 Ok\n");
 		/* RCPT TO */
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		dprintf(smtppipe[0],
 		    "250 2.1.0 Ok\n");
 		/* DATA */
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		dprintf(smtppipe[0],
 		    "354 Send message content; end with <CRLF>.<CRLF>\n");
 		/* DATA */
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		dprintf(smtppipe[0],
 		    "250 2.1.0 Ok\n");
 		/* QUIT */
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		dprintf(smtppipe[0],
 		    "221 2.0.0 Bye\n");
 		/* RSET */
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		dprintf(smtppipe[0],
 		    "250 2.0.0 Ok\n");
 		exit (0);
@@ -1092,7 +1092,7 @@ ATF_TC_BODY(init_smtp, tc)
 		if (c == -1)
 			err(5, "accept()");
 		dprintf(c, "220 me fake smtp\n");
-		reply = atf_utils_readline(c);
+		reply = mygetline(c);
 		printf("%s", reply);
 		dprintf(c,
 			"250-hostname.net\n"
@@ -1105,13 +1105,13 @@ ATF_TC_BODY(init_smtp, tc)
 			"250-DSN\n"
 			"250-SMTPUTF8\n"
 			"250 CHUNKING\n");
-		reply = atf_utils_readline(c);
+		reply = mygetline(c);
 		printf("%s", reply);
 		dprintf(c, "221 2.0.0 bye\n");
 		exit(0);
 	}
 	close(smtppipe[1]);
-	atf_utils_readline(smtppipe[0]);
+	mygetline(smtppipe[0]);
 	int sockfd;
 	int ret = initsmtp(&sockfd, "127.0.0.1", 25678, "heloname");
 	ATF_REQUIRE_EQ(ret, 0);
@@ -1137,7 +1137,7 @@ ATF_TC_BODY(smtp_bad_greetings, tc)
 		exit(0);
 	}
 	close(smtppipe[1]);
-	atf_utils_readline(smtppipe[0]);
+	mygetline(smtppipe[0]);
 	int sockfd;
 	int ret = initsmtp(&sockfd, "127.0.0.1", 25678, "heloname");
 	ATF_REQUIRE_EQ(ret, MLMMJ_CONNECT);
@@ -1160,13 +1160,13 @@ ATF_TC_BODY(smtp_bad_ehlo, tc)
 		if (c == -1)
 			err(5, "accept()");
 		dprintf(c, "220 me fake smtp\n");
-		reply = atf_utils_readline(c);
+		reply = mygetline(c);
 		printf("%s", reply);
 		dprintf(c, "501 nop nope\n");
 		exit(0);
 	}
 	close(smtppipe[1]);
-	atf_utils_readline(smtppipe[0]);
+	mygetline(smtppipe[0]);
 	int sockfd;
 	int ret = initsmtp(&sockfd, "127.0.0.1", 25678, "heloname");
 	ATF_REQUIRE_EQ(ret, MLMMJ_EHLO);
@@ -1189,23 +1189,23 @@ ATF_TC_BODY(smtp_no_ehlo, tc)
 		if (c == -1)
 			err(5, "accept()");
 		dprintf(c, "220 me fake smtp\n");
-		reply = atf_utils_readline(c);
+		reply = mygetline(c);
 		printf("%s", reply);
 		dprintf(c, "801 meh\n");
-		reply = atf_utils_readline(c);
+		reply = mygetline(c);
 		printf("%s", reply);
 		close(c);
 		c = accept(s, (struct sockaddr *) &cl, &clsize);
 		if (c == -1)
 			err(5, "accept()");
 		dprintf(c, "220 me fake smtp\n");
-		reply = atf_utils_readline(c);
+		reply = mygetline(c);
 		printf("%s", reply);
 		dprintf(c, "250 OK\n");
 		exit(0);
 	}
 	close(smtppipe[1]);
-	atf_utils_readline(smtppipe[0]);
+	mygetline(smtppipe[0]);
 	int sockfd;
 	int ret = initsmtp(&sockfd, "127.0.0.1", 25678, "heloname");
 	ATF_REQUIRE_EQ(ret, 0);
@@ -1256,11 +1256,11 @@ ATF_TC_BODY(send_mail_0, tc)
 	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
-		char *reply = atf_utils_readline(smtppipe[0]);
+		char *reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		/* nope */
 		dprintf(smtppipe[0], "550 2.1.0 kO\n");
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		exit(0);
 	}
@@ -1296,13 +1296,13 @@ ATF_TC_BODY(send_mail_1, tc)
 	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
-		char *reply = atf_utils_readline(smtppipe[0]);
+		char *reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		dprintf(smtppipe[0], "250 2.1.0 Ok\n");
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		dprintf(smtppipe[0], "550 2.1.0 OK\n");
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		exit(0);
 	}
@@ -1323,16 +1323,16 @@ ATF_TC_BODY(send_mail_2, tc)
 	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
-		char *reply = atf_utils_readline(smtppipe[0]);
+		char *reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		dprintf(smtppipe[0], "250 2.1.0 Ok\n");
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		dprintf(smtppipe[0], "250 2.1.0 OK\n");
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		dprintf(smtppipe[0], "550 2.1.0 OK\n");
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		exit(0);
 	}
@@ -1353,16 +1353,16 @@ ATF_TC_BODY(send_mail_3, tc)
 	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
-		char *reply = atf_utils_readline(smtppipe[0]);
+		char *reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		dprintf(smtppipe[0], "250 2.1.0 Ok\n");
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		dprintf(smtppipe[0], "250 2.1.0 OK\n");
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		dprintf(smtppipe[0], "550 2.1.0 OK\n");
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		exit(0);
 	}
@@ -1383,16 +1383,16 @@ ATF_TC_BODY(send_mail_4, tc)
 	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
-		char *reply = atf_utils_readline(smtppipe[0]);
+		char *reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		dprintf(smtppipe[0], "250 2.1.0 Ok\n");
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		dprintf(smtppipe[0], "250 2.1.0 OK\n");
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		dprintf(smtppipe[0], "250 2.1.0 OK\n");
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		exit(0);
 	}
@@ -1413,25 +1413,25 @@ ATF_TC_BODY(send_mail_5, tc)
 	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
-		char *reply = atf_utils_readline(smtppipe[0]);
+		char *reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		dprintf(smtppipe[0], "250 2.1.0 Ok\n");
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		dprintf(smtppipe[0], "250 2.1.0 OK\n");
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		dprintf(smtppipe[0], "350 2.1.0 OK\n");
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		dprintf(smtppipe[0], "350 2.1.0 OK\n");
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		exit(0);
 	}
@@ -1452,24 +1452,24 @@ ATF_TC_BODY(send_mail_6, tc)
 	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
-		char *reply = atf_utils_readline(smtppipe[0]);
+		char *reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		dprintf(smtppipe[0], "250 2.1.0 Ok\n");
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		dprintf(smtppipe[0], "250 2.1.0 OK\n");
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		dprintf(smtppipe[0], "350 2.1.0 OK\n");
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		dprintf(smtppipe[0], "250 2.1.0 OK\n");
 		exit(0);
@@ -1492,24 +1492,24 @@ ATF_TC_BODY(send_mail_7, tc)
 	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
-		char *reply = atf_utils_readline(smtppipe[0]);
+		char *reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		dprintf(smtppipe[0], "250 2.1.0 Ok\n");
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		dprintf(smtppipe[0], "250 2.1.0 OK\n");
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		dprintf(smtppipe[0], "350 2.1.0 OK\n");
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		dprintf(smtppipe[0], "250 2.1.0 OK\n");
 		exit(0);
@@ -1533,26 +1533,26 @@ ATF_TC_BODY(send_mail_8, tc)
 	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
-		char *reply = atf_utils_readline(smtppipe[0]);
+		char *reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		dprintf(smtppipe[0], "250 2.1.0 Ok\n");
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		dprintf(smtppipe[0], "250 2.1.0 OK\n");
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		dprintf(smtppipe[0], "350 2.1.0 OK\n");
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
-		reply = atf_utils_readline(smtppipe[0]);
+		reply = mygetline(smtppipe[0]);
 		printf("%s", reply);
 		dprintf(smtppipe[0], "250 2.1.0 OK\n");
 		exit(0);
