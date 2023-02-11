@@ -181,12 +181,8 @@ init_ml(bool complete)
 		ATF_CHECK(mkdirat(fd, listdir[i], 00755) != -1);
 	}
 
-	if (complete) {
-		FILE *f = fopen("list/control/listaddress", "w+");
-		ATF_CHECK(f != NULL);
-		fputs("test@test", f);
-		fclose(f);
-	}
+	if (complete)
+		atf_utils_create_file("list/control/listaddress", "test@test");
 }
 
 static int
@@ -650,9 +646,7 @@ ATF_TC_BODY(write_mailbody_from_map, tc)
 	/* no new lines: ignore */
 	struct stat st;
 	char *start;
-	FILE *f = fopen("myemailbody.txt", "w");
-	fprintf(f, "line");
-	fclose(f);
+	atf_utils_create_file("myemailbody.txt", "line");
 	int fd1 = open("myemailbody.txt", O_RDONLY);
 	fstat(fd1, &st);
 	ATF_REQUIRE((start = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd1, 0)) != NULL);
@@ -667,9 +661,7 @@ ATF_TC_BODY(write_mailbody_from_map, tc)
 	}
 
 	/* With a single new line */
-	f = fopen("myemailbody.txt", "w");
-	fprintf(f, "line\n");
-	fclose(f);
+	atf_utils_create_file("myemailbody.txt", "line\n");
 	fd1 = open("myemailbody.txt", O_RDONLY);
 	fstat(fd1, &st);
 	ATF_REQUIRE((start = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd1, 0)) != NULL);
@@ -684,9 +676,7 @@ ATF_TC_BODY(write_mailbody_from_map, tc)
 	}
 
 	/* With a single new line with a . */
-	f = fopen("myemailbody.txt", "w");
-	fprintf(f, "line\n.");
-	fclose(f);
+	atf_utils_create_file("myemailbody.txt", "line\n.");
 	fd1 = open("myemailbody.txt", O_RDONLY);
 	fstat(fd1, &st);
 	ATF_REQUIRE((start = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd1, 0)) != NULL);
@@ -701,9 +691,7 @@ ATF_TC_BODY(write_mailbody_from_map, tc)
 	}
 
 	/* With a single new line, 2 new lines */
-	f = fopen("myemailbody.txt", "w");
-	fprintf(f, "line\n\n");
-	fclose(f);
+	atf_utils_create_file("myemailbody.txt", "line\n\n");
 	fd1 = open("myemailbody.txt", O_RDONLY);
 	fstat(fd1, &st);
 	ATF_REQUIRE((start = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd1, 0)) != NULL);
@@ -719,9 +707,7 @@ ATF_TC_BODY(write_mailbody_from_map, tc)
 
 
 	/* With a single 2 lines separated by 2 new lines*/
-	f = fopen("myemailbody.txt", "w");
-	fprintf(f, "line\n\nline2\n\n");
-	fclose(f);
+	atf_utils_create_file("myemailbody.txt", "line\n\nline2\n\n");
 	fd1 = open("myemailbody.txt", O_RDONLY);
 	fstat(fd1, &st);
 	ATF_REQUIRE((start = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd1, 0)) != NULL);
@@ -737,9 +723,7 @@ ATF_TC_BODY(write_mailbody_from_map, tc)
 
 
 	/* No to header */
-	f = fopen("myemailbody.txt", "w");
-	fprintf(f, "line\n\nline2\n\n");
-	fclose(f);
+	atf_utils_create_file("myemailbody.txt", "line\n\nline2\n\n");
 	fd1 = open("myemailbody.txt", O_RDONLY);
 	fstat(fd1, &st);
 	ATF_REQUIRE((start = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd1, 0)) != NULL);
@@ -754,9 +738,7 @@ ATF_TC_BODY(write_mailbody_from_map, tc)
 	}
 
 	/* With invalid socket */
-	f = fopen("myemailbody.txt", "w");
-	fprintf(f, "line\n");
-	fclose(f);
+	atf_utils_create_file("myemailbody.txt", "line\n");
 	fd1 = open("myemailbody.txt", O_RDONLY);
 	fstat(fd1, &st);
 	ATF_REQUIRE((start = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd1, 0)) != NULL);
@@ -959,18 +941,9 @@ ATF_TC_BODY(unsubscribe, tc)
 
 	listfd = open("list", O_DIRECTORY);
 
-	f = fopen("list/subscribers.d/j", "w");
-	fputs("john@doe.org", f);
-	fclose(f);
-
-	f = fopen("list/nomailsubs.d/j", "w");
-	fputs("john@doe.org\n", f);
-	fputs("jane@doe.org\n", f);
-	fclose(f);
-
-	f = fopen("list/digesters.d/j", "w");
-	fputs("john@doe.org\n", f);
-	fclose(f);
+	atf_utils_create_file("list/subscribers.d/j", "john@doe.org");
+	atf_utils_create_file("list/nomailsubs.d/j", "john@doe.org\njane@doe.org\n");
+	atf_utils_create_file("list/digesters.d/j", "john@doe.org\n");
 
 	ATF_REQUIRE(unsubscribe(listfd, "john@doe.org", SUB_ALL));
 	ATF_REQUIRE_EQ_MSG(access("list/subscribers.d/j", F_OK), -1, "Not unsubscribed");
@@ -988,18 +961,14 @@ ATF_TC_BODY(unsubscribe, tc)
 	ATF_REQUIRE(!unsubscribe(listfd, "plop@meh", SUB_NORMAL));
 	mkdir("list/subscribers.d", 0755);
 
-	f = fopen("list/nomailsubs.d/j", "w");
-	fclose(f);
+	atf_utils_create_file("list/nomailsubs.d/j", "");
 	chmod("list/nomailsubs.d/j", 0111);
 	ATF_REQUIRE(unsubscribe(listfd, "plop@meh", SUB_NOMAIL));
 	chmod("list/nomailsubs.d/j", 0644);
 	ATF_REQUIRE(unsubscribe(listfd, "plop@meh", SUB_NOMAIL));
 	unlink("list/nomailsubs.d/j");
 
-	f = fopen("list/nomailsubs.d/j", "w");
-	fputs("john@doe.org\n", f);
-	fputs("jane@doe.org\n", f);
-	fclose(f);
+	atf_utils_create_file("list/nomailsubs.d/j", "john@doe.org\njane@doe.org\n");
 	ATF_REQUIRE(unsubscribe(listfd, "plop@meh", SUB_NOMAIL));
 	ATF_REQUIRE(!unsubscribe(-1, "plop@meh", SUB_ALL));
 
@@ -1592,9 +1561,7 @@ ATF_TC_BODY(send_mail_8, tc)
 	mail.to = "plop@meh";
 	mail.from = "test@meh";
 	mail.inmem = false;
-	FILE *f = fopen("mymail.txt", "w+");
-	fprintf(f, "headers\n\nbody\n");
-	fclose(f);
+	atf_utils_create_file("mymail.txt", "headers\n\nbody\n");
 	int fd = open("mymail.txt", O_RDONLY);
 	fstat(fd, &st);
 	mail.size = st.st_size;
@@ -1615,7 +1582,7 @@ ATF_TC_BODY(getlistdelim_0, tc)
 {
 	init_ml(true);
 	int fd = open("list/control", O_RDONLY);
-	fclose(fopen("list/control/delimiter", "w+"));
+	atf_utils_create_file("list/control/delimiter", "");
 	ATF_REQUIRE_STREQ_MSG(getlistdelim(fd), DEFAULT_RECIPDELIM, "Invalid fallback, in case of empty delimiter");
 }
 
@@ -1623,9 +1590,7 @@ ATF_TC_BODY(getlistdelim_1, tc)
 {
 	init_ml(true);
 	int fd = open("list/control", O_RDONLY);
-	FILE *f = fopen("list/control/delimiter", "w+");
-	fprintf(f,"\n");
-	fclose(f);
+	atf_utils_create_file("list/control/delimiter", "\n");
 	ATF_REQUIRE_STREQ_MSG(getlistdelim(fd), DEFAULT_RECIPDELIM, "Invalid fallback, in case of empty delimiter");
 }
 
@@ -1633,9 +1598,7 @@ ATF_TC_BODY(getlistdelim_2, tc)
 {
 	init_ml(true);
 	int fd = open("list/control", O_RDONLY);
-	FILE *f = fopen("list/control/delimiter", "w+");
-	fprintf(f,"mydelim\n");
-	fclose(f);
+	atf_utils_create_file("list/control/delimiter", "mydelim\n");
 	ATF_REQUIRE_STREQ_MSG(getlistdelim(fd), "mydelim", "Invalid delimiter found");
 }
 
@@ -1643,9 +1606,7 @@ ATF_TC_BODY(getlistdelim_3, tc)
 {
 	init_ml(true);
 	int fd = open("list/control", O_RDONLY);
-	FILE *f = fopen("list/control/delimiter", "w+");
-	fprintf(f,"mydelim\nignoreme\n");
-	fclose(f);
+	atf_utils_create_file("list/control/delimiter", "mydelim\nignoreme\n");
 	ATF_REQUIRE_STREQ_MSG(getlistdelim(fd), "mydelim", "Invalid delimiter found");
 }
 
@@ -1653,9 +1614,7 @@ ATF_TC_BODY(getlistdelim_4, tc)
 {
 	init_ml(true);
 	int fd = open("list/control", O_RDONLY);
-	FILE *f = fopen("list/control/delimiter", "w+");
-	fprintf(f,"mydelim");
-	fclose(f);
+	atf_utils_create_file("list/control/delimiter", "mydelim");
 	ATF_REQUIRE_STREQ_MSG(getlistdelim(fd), "mydelim", "Invalid delimiter found");
 }
 
@@ -1669,17 +1628,13 @@ ATF_TC_BODY(getlistaddr, tc)
 		ATF_REQUIRE_EQ_MSG(getlistaddr(fd), NULL, "no control/listaddress file should be null");
 	}
 	atf_utils_wait(p, EXIT_FAILURE, "", "");
-	FILE *f = fopen("list/control/listaddress", "w+");
-	fprintf(f, "plop\n");
-	fclose(f);
+	atf_utils_create_file("list/control/listaddress", "plop\n");
 	p = atf_utils_fork();
 	if (p == 0) {
 		ATF_REQUIRE_EQ_MSG(getlistaddr(fd), NULL, "no control/listaddress file should be null");
 	}
 	atf_utils_wait(p, EXIT_FAILURE, "", "");
-	f = fopen("list/control/listaddress", "w+");
-	fprintf(f, "plop@meh\n");
-	fclose(f);
+	atf_utils_create_file("list/control/listaddress", "plop@meh\n");
 	ATF_REQUIRE_STREQ_MSG(getlistaddr(fd), "plop@meh", "list address not read properly");
 }
 
@@ -1695,7 +1650,7 @@ ATF_TC_BODY(statctrl, tc)
 	mkdir("plop", 0755);
 	int fd = open("plop", O_DIRECTORY);
 	ATF_REQUIRE_EQ(statctrl(fd, "test"), false);
-	fclose(fopen("plop/test", "w+"));
+	atf_utils_create_file("plop/test", "");
 	ATF_REQUIRE_EQ(statctrl(fd, "test"), true);
 }
 
@@ -1714,19 +1669,15 @@ ATF_TC_BODY(getaddrsfromfile, tc)
 {
 	strlist stl = tll_init();
 	ATF_REQUIRE_EQ(getaddrsfromfile(&stl, NULL, 2), -1);
-	fclose(fopen("list", "w+"));
+	atf_utils_create_file("list", "");
 	FILE *fp;
 	fp = fopen("list", "r");
 	ATF_REQUIRE_EQ(getaddrsfromfile(&stl, fp, 2), 0);
 	fclose(fp);
-	FILE *f = fopen("list", "w+");
-	fprintf(f,"\n");
-	fclose(f);
+	atf_utils_create_file("list", "\n");
 	fp = fopen("list", "r");
 	ATF_REQUIRE_EQ(getaddrsfromfile(&stl, fp, 2), 0);
-	f = fopen("list", "w+");
-	fprintf(f,"mail1@fqdn\n");
-	fclose(f);
+	atf_utils_create_file("list", "mail1@fqdn\n");
 	fp = fopen("list", "r");
 	ATF_REQUIRE_EQ(getaddrsfromfile(&stl, fp, 2), 0);
 	fclose(fp);
@@ -1735,9 +1686,7 @@ ATF_TC_BODY(getaddrsfromfile, tc)
 	tll_free_and_free(stl, free);
 	fp = fopen("list", "r");
 	ATF_REQUIRE_EQ(getaddrsfromfile(&stl, fp, 0), -1);
-	f = fopen("list", "w+");
-	fprintf(f,"mail1@fqdn\nmail2@fqdn\nmail3@fqdn");
-	fclose(f);
+	atf_utils_create_file("list", "mail1@fqdn\nmail2@fqdn\nmail3@fqdn");
 	fp = fopen("list", "r");
 	ATF_REQUIRE(getaddrsfromfile(&stl, fp, 2) > 0);
 	ATF_REQUIRE_EQ(tll_length(stl), 2);
@@ -1752,9 +1701,7 @@ ATF_TC_BODY(getaddrsfromfile, tc)
 
 ATF_TC_BODY(dumpfd2fd, tc)
 {
-	FILE *plop = fopen("from", "w");
-	fprintf(plop, "bla\n");
-	fclose(plop);
+	atf_utils_create_file("from", "bla\n");
 
 	int from = open("from", O_RDONLY);
 	int to = open("to.txt", O_WRONLY|O_CREAT|O_TRUNC, 0644);
@@ -1771,9 +1718,7 @@ ATF_TC_BODY(dumpfd2fd, tc)
 
 ATF_TC_BODY(copy_file, tc)
 {
-	FILE * f = fopen("from.txt", "w+");
-	fprintf(f, "bla\n");
-	fclose(f);
+	atf_utils_create_file("from.txt", "bla\n");
 	int from = open("from.txt", O_RDONLY);
 	int to = open("to.txt", O_WRONLY|O_CREAT|O_TRUNC, 0644);
 	int ret = copy_file(from, to, BUFSIZ);
@@ -1788,7 +1733,7 @@ ATF_TC_BODY(copy_file, tc)
 
 ATF_TC_BODY(copy_file_1, tc)
 {
-	fclose(fopen("from.txt", "w+"));
+	atf_utils_create_file("from.txt", "");
 	int to = open("to.txt", O_WRONLY|O_CREAT|O_TRUNC, 0644);
 	int from = open("from.txt", O_RDONLY);
 	int ret = copy_file(from, to, BUFSIZ);
@@ -1803,9 +1748,7 @@ ATF_TC_BODY(copy_file_1, tc)
 
 ATF_TC_BODY(copy_file_2, tc)
 {
-	FILE *f = fopen("from.txt", "w+");
-	fprintf(f, "bla\n");
-	fclose(f);
+	atf_utils_create_file("from.txt", "bla\n");
 	int from = open("from.txt", O_RDONLY);
 	int to = open("to.txt", O_WRONLY|O_CREAT|O_TRUNC, 0644);
 	int ret = copy_file(from, to, 3);
@@ -1825,18 +1768,14 @@ ATF_TC_BODY(controls, tc)
 
 	mkdir("control", 0755);
 	ctrlfd = open("control", O_DIRECTORY);
-	f = fopen("control/listaddress", "w");
-	fprintf(f, "test@test\n");
-	fclose(f);
+	atf_utils_create_file("control/listaddress", "test@test\n");
 	ATF_REQUIRE_EQ(ctrlcontent(-1, "plop"), NULL);
 	ATF_REQUIRE_EQ(ctrlcontent(ctrlfd, "plop"), NULL);
 	ATF_REQUIRE_EQ(ctrlvalues(ctrlfd, "plop"), NULL);
 	ATF_REQUIRE_STREQ(ctrlcontent(ctrlfd, "listaddress"), "test@test\n");
 	ATF_REQUIRE_EQ(ctrltimet(ctrlfd, "listaddress", 0), 0);
 	ATF_REQUIRE_EQ(ctrltimet(ctrlfd, "plop", 0), 0);
-	f = fopen("control/val", "w");
-	fputs("12",f);
-	fclose(f);
+	atf_utils_create_file("control/val", "12");
 	ATF_REQUIRE_EQ(ctrltimet(ctrlfd, "val", 0), 12);
 	ATF_REQUIRE_EQ(ctrllong(ctrlfd, "listaddress", 0), 0);
 	ATF_REQUIRE_EQ(ctrllong(ctrlfd, "plop", 0), 0);
@@ -1848,9 +1787,7 @@ ATF_TC_BODY(controls, tc)
 	ATF_REQUIRE_EQ(ctrlsizet(ctrlfd, "plop", 0), 0);
 	ATF_REQUIRE_EQ(ctrlsizet(ctrlfd, "val", 0), 12);
 
-	f = fopen("control/val", "w");
-	fputs("line1\nline2\n\nline3\n",f);
-	fclose(f);
+	atf_utils_create_file("control/val", "line1\nline2\n\nline3\n");
 	strlist *l = ctrlvalues(ctrlfd, "val");
 	ATF_REQUIRE(l != NULL);
 	ATF_REQUIRE_EQ(tll_length(*l), 3);
@@ -1859,9 +1796,7 @@ ATF_TC_BODY(controls, tc)
 	ATF_REQUIRE_EQ(textcontent(ctrlfd, "text"), NULL);
 	mkdir("control/text",0755);
 	ATF_REQUIRE_EQ(textcontent(ctrlfd, "text"), NULL);
-	f = fopen("control/text/text", "w");
-	fprintf(f, "this is a test");
-	fclose(f);
+	atf_utils_create_file("control/text/text", "this is a test");
 	ATF_REQUIRE_STREQ(textcontent(ctrlfd, "text"), "this is a test");
 }
 
@@ -1871,14 +1806,12 @@ ATF_TC_BODY(incindexfile, tc)
 	int fd = open("list", O_DIRECTORY|O_CLOEXEC);
 	ATF_REQUIRE_EQ(incindexfile(-1), 0);
 	ATF_REQUIRE_EQ(incindexfile(fd), 1);
-	FILE *f = fopen("list/index", "w");
-	fprintf(f, "meh");
-	fclose(f);
+	atf_utils_create_file("list/index", "meh");
 	ATF_REQUIRE_EQ(incindexfile(fd), 0);
 	unlink("list/index");
 	ATF_REQUIRE_EQ(incindexfile(fd), 1);
 	unlink("list/index");
-	fclose(fopen("list/index", "w"));
+	atf_utils_create_file("list/index", "");
 	ATF_REQUIRE_EQ(incindexfile(fd), 1);
 	close(fd);
 }
@@ -1899,10 +1832,7 @@ ATF_TC_BODY(get_preppedhdrs_from_map, tc)
 {
 	struct stat st;
 	char *hdr;
-	FILE *f = fopen("./mailfile", "w+");
-
-	fprintf(f, "head1: plop\nhead2\n\nbody\n");
-	fclose(f);
+	atf_utils_create_file("./mailfile", "head1: plop\nhead2\n\nbody\n");
 
 	stat("./mailfile", &st);
 	int fd = open("./mailfile", O_RDONLY);
@@ -1921,10 +1851,7 @@ ATF_TC_BODY(get_preppedhdrs_from_map, tc)
 ATF_TC_BODY(get_preppedhdrs_from_map_1, tc)
 {
 	struct stat st;
-	FILE *f = fopen("./mailfile", "w+");
-
-	fprintf(f, "head1: plop\nhead2\nbody\n");
-	fclose(f);
+	atf_utils_create_file("./mailfile", "head1: plop\nhead2\nbody\n");
 
 	stat("./mailfile", &st);
 	int fd = open("./mailfile", O_RDONLY);
@@ -1941,10 +1868,7 @@ ATF_TC_BODY(get_prepped_mailbody_from_map, tc)
 {
 	struct stat st;
 	char *body;
-	FILE *f = fopen("./mailfile", "w+");
-
-	fprintf(f, "head1: plop\nhead2\n\nbody\n");
-	fclose(f);
+	atf_utils_create_file("./mailfile", "head1: plop\nhead2\n\nbody\n");
 
 	stat("./mailfile", &st);
 	int fd = open("./mailfile", O_RDONLY);
@@ -1963,10 +1887,7 @@ ATF_TC_BODY(get_prepped_mailbody_from_map, tc)
 ATF_TC_BODY(get_prepped_mailbody_from_map_1, tc)
 {
 	struct stat st;
-	FILE *f = fopen("./mailfile", "w+");
-
-	fprintf(f, "head1: plop\nhead2\nbody\n");
-	fclose(f);
+	atf_utils_create_file("./mailfile", "head1: plop\nhead2\nbody\n");
 
 	stat("./mailfile", &st);
 	int fd = open("./mailfile", O_RDONLY);
@@ -2072,7 +1993,6 @@ ATF_TC_BODY(addrmatch, tc)
 
 ATF_TC_BODY(get_subcookie_content, tc)
 {
-	FILE *f;
 	init_ml(true);
 
 	int fd = open("list", O_DIRECTORY);
@@ -2085,11 +2005,9 @@ ATF_TC_BODY(get_subcookie_content, tc)
 	ATF_REQUIRE(get_subcookie_content(fd, false, "test") == NULL);
 	mkdir("list/subconf", 0755);
 	ATF_REQUIRE(get_subcookie_content(fd, false, "test") == NULL);
-	fclose(fopen("list/subconf/test", "w+"));
+	atf_utils_create_file("list/subconf/test", "");
 	ATF_REQUIRE(get_subcookie_content(fd, false, "test") == NULL);
-	f = fopen("list/subconf/test", "w+");
-	fprintf(f, "bla\nplop\n");
-	fclose(f);
+	atf_utils_create_file("list/subconf/test", "bla\nplop\n");
 	ATF_REQUIRE_STREQ(get_subcookie_content(fd, false, "test"), "bla");
 }
 
@@ -2127,10 +2045,7 @@ ATF_TC_BODY(ml_list, tc)
 	}
 
 	atf_utils_wait(p, 0, "", "mlmmj: Missing list address\n");
-	FILE *fp = fopen("list/control/listaddress", "w+");
-	ATF_CHECK(fp != NULL);
-	fputs("test", fp);
-	fflush(fp);
+	atf_utils_create_file("list/control/listaddress", "test");
 	ml_init(&list);
 	list.dir = "list";
 	p = atf_utils_fork();
@@ -2140,10 +2055,7 @@ ATF_TC_BODY(ml_list, tc)
 	}
 	atf_utils_wait(p, 0, "", "mlmmj: test: is not a valid mailing list address, missing '@'\n");
 
-	rewind(fp);
-	ftruncate(fileno(fp), 0);
-	fputs("test@test", fp);
-	fclose(fp);
+	atf_utils_create_file("list/control/listaddress", "test@test");
 	ml_init(&list);
 	list.dir = "list";
 	p = atf_utils_fork();
@@ -2151,9 +2063,7 @@ ATF_TC_BODY(ml_list, tc)
 		ATF_CHECK(ml_open(&list, false) == true);
 		ATF_CHECK_STREQ_MSG(list.delim, "+", "Invalid delimiter");
 
-		fp = fopen("list/control/delimiter", "w");
-		fputs("#bla#", fp);
-		fclose(fp);
+		atf_utils_create_file("list/control/delimiter", "#bla#");
 		ml_init(&list);
 		list.dir = "list";
 		ATF_CHECK(ml_open(&list, false) == true);
@@ -2208,9 +2118,7 @@ ATF_TC_BODY(memory_lines, tc)
 ATF_TC_BODY(text_0, tc)
 {
 	struct ml ml;
-	FILE *f = fopen("intext", "w+");
-	fprintf(f, "plop\n");
-	fclose(f);
+	atf_utils_create_file("intext", "plop\n");
 	int fd = open("intext", O_RDONLY);
 	text *txt = open_text_fd(fd);
 	ATF_REQUIRE(txt != NULL);
@@ -2242,8 +2150,8 @@ ATF_TC_BODY(text_0, tc)
 ATF_TC_BODY(text_1, tc)
 {
 	struct ml ml;
-	FILE *f = fopen("intext", "w+");
-	fprintf(f, "Subject: huhu\n"
+	atf_utils_create_file("intext",
+	   "Subject: huhu\n"
 	   "plop\n"
 	   "$$\n"
 	   "$listaddr$\n"
@@ -2259,7 +2167,6 @@ ATF_TC_BODY(text_1, tc)
 	   "$digestsubaddr$\n"
 	   "$nomailsubaddr$\n"
 	   );
-	fclose(f);
 	int fd = open("intext", O_RDONLY);
 	text *txt = open_text_fd(fd);
 	ATF_REQUIRE(txt != NULL);
@@ -2306,9 +2213,7 @@ ATF_TC_BODY(text_1, tc)
 
 ATF_TC_BODY(file_lines, tc)
 {
-	FILE *f = fopen("file", "w+");
-	fprintf(f, "line1\nline2\n");
-	fclose(f);
+	atf_utils_create_file("file", "line1\nline2\n");
 
 	file_lines_state *s = init_file_lines("file", ':');
 	ATF_REQUIRE(s != NULL);
@@ -2317,9 +2222,7 @@ ATF_TC_BODY(file_lines, tc)
 	ATF_REQUIRE(get_file_line(s) == NULL);
 	finish_file_lines(s);
 
-	f = fopen("file", "w+");
-	fprintf(f, "line1: plop\nline2\nline3: meh");
-	fclose(f);
+	atf_utils_create_file("file", "line1: plop\nline2\nline3: meh");
 
 	s = init_file_lines("file", ':');
 	ATF_REQUIRE(s != NULL);
@@ -2355,12 +2258,8 @@ ATF_TC_BODY(list_subs, tc)
 	struct ml ml;
 	init_ml(true);
 	ml_init(&ml);
-	FILE *fp = fopen("list/subscribers.d/a", "w+");
-	fprintf(fp, "auser1\nauser2");
-	fclose(fp);
-
-	fp = fopen("list/subscribers.d/b", "w+");
-	fclose(fp);
+	atf_utils_create_file("list/subscribers.d/a", "auser1\nauser2");
+	atf_utils_create_file("list/subscribers.d/b", "");
 	ml.dir = "list";
 	ml_open(&ml, false);
 	struct subs_list_state *s = init_subs_list(ml.fd, "subscribers.d");
