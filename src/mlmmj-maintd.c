@@ -152,7 +152,7 @@ resend_queue(int dfd, int ctrlfd, const char *mlmmjsend, const char *listdir, in
 	char *mailname, *fromname, *toname, *reptoname, *from, *to, *repto;
 	char *ch;
 	struct stat st;
-	int fromfd, tofd, err = 0, qfd;
+	int err = 0, qfd;
 	time_t t, bouncelife;
 	bool ret = true;
 
@@ -193,13 +193,14 @@ resend_queue(int dfd, int ctrlfd, const char *mlmmjsend, const char *listdir, in
 		xasprintf(&toname, "%s.reciptto", dp->d_name);
 		xasprintf(&reptoname, "%s.reply-to", dp->d_name);
 
-		fromfd = openat(qfd, fromname, O_RDONLY);
-		if(fromfd < 0)
+		from = ctrlvalue(qfd, fromname);
+		if (from == NULL)
 			err = errno;
-		tofd = openat(qfd, toname, O_RDONLY);
-
-		if((fromfd < 0 && err == ENOENT) ||
-				(tofd < 0 && errno == ENOENT)) {
+		to = ctrlvalue(qfd, toname);
+		free(fromname);
+		free(toname);
+		if((from == NULL && err == ENOENT) ||
+				(to == NULL && errno == ENOENT)) {
 			/* only delete old files to avoid deleting
 			   mail currently being sent */
 			t = time(NULL);
@@ -213,34 +214,12 @@ resend_queue(int dfd, int ctrlfd, const char *mlmmjsend, const char *listdir, in
 				}
 			}
 			free(mailname);
-			free(fromname);
-			free(toname);
 			free(reptoname);
-			if(fromfd != -1)
-				close(fromfd);
-			if(tofd != -1)
-				close(tofd);
 			continue;
 		}
 
-		from = mygetline(fromfd);
-		chomp(from);
-		close(fromfd);
-		free(fromname);
-		to = mygetline(tofd);
-		chomp(to);
-		close(tofd);
-		free(toname);
-		int rtfd = openat(qfd, reptoname, O_RDONLY);
-		if(rtfd == -1) {
-			free(reptoname);
-			repto = NULL;
-		} else {
-			repto = mygetline(rtfd);
-			chomp(repto);
-			close(rtfd);
-			free(reptoname);
-		}
+		repto = ctrlvalue(qfd, reptoname);
+		free(reptoname);
 
 		/* before we try again, check and see if it's old */
 		bouncelife = ctrltimet(ctrlfd, "bouncelife", BOUNCELIFE);
