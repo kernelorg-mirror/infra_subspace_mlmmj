@@ -372,6 +372,7 @@ digests_0_body()
 	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
 	init_ml lists/ml
+	echo test@mlmmjtest > lists/ml/control/listaddress
 
 	touch lists/ml/control/noarchive
 	atf_check -s exit:0 $mlmmjmaintd -L lists/ml -F
@@ -397,6 +398,7 @@ digests_1_body()
 	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
 	init_ml lists/ml
+	echo test@mlmmjtest > lists/ml/control/listaddress
 
 	touch lists/ml/index
 	atf_check -s exit:0 $mlmmjmaintd -L lists/ml -F
@@ -422,6 +424,7 @@ digests_2_body()
 	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
 	init_ml lists/ml
+	echo test@mlmmjtest > lists/ml/control/listaddress
 
 	chmod -r lists/ml/index
 	atf_check -s exit:0 $mlmmjmaintd -L lists/ml -F
@@ -447,6 +450,7 @@ digests_3_body()
 	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
 	init_ml lists/ml
+	echo test@mlmmjtest > lists/ml/control/listaddress
 
 	echo "-1" > lists/ml/index
 	atf_check -s exit:0 -e match:"An error occured while running digests, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L lists/ml -F
@@ -473,6 +477,7 @@ digests_4_body()
 	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
 	init_ml lists/ml
+	echo test@mlmmjtest > lists/ml/control/listaddress
 
 	echo "0" > lists/ml/index
 	touch lists/ml/lastdigest
@@ -510,8 +515,8 @@ unsub_bouncers_0_body()
 unsub_bouncers_1_body()
 {
 	mlmmjmaintd=$(command -v mlmmj-maintd)
-	mkdir lists
 	init_ml list
+	echo test@mlmmjtest > list/control/listaddress
 
 	# ignore probe files
 	touch list/bounce/plop-probe
@@ -522,8 +527,8 @@ unsub_bouncers_1_body()
 unsub_bouncers_2_body()
 {
 	mlmmjmaintd=$(command -v mlmmj-maintd)
-	mkdir lists
 	init_ml list
+	echo test@mlmmjtest > list/control/listaddress
 
 	# ignore lastmsg files
 	touch list/bounce/plop.lastmsg
@@ -534,8 +539,8 @@ unsub_bouncers_2_body()
 unsub_bouncers_3_body()
 {
 	mlmmjmaintd=$(command -v mlmmj-maintd)
-	mkdir lists
 	init_ml list
+	echo test@mlmmjtest > list/control/listaddress
 
 	# ignore files with a probe out already
 	echo "a:1234 # plop" > list/bounce/plop
@@ -548,7 +553,6 @@ unsub_bouncers_3_body()
 unsub_bouncers_4_body()
 {
 	mlmmjmaintd=$(command -v mlmmj-maintd)
-	mkdir lists
 	init_ml list
 	echo "test@test" > list/control/listaddress
 	# filename should contain a = to be properly treated
@@ -560,8 +564,8 @@ unsub_bouncers_4_body()
 unsub_bouncers_5_body()
 {
 	mlmmjmaintd=$(command -v mlmmj-maintd)
-	mkdir lists
 	init_ml list
+	echo "test@test" > list/control/listaddress
 
 	# Log if invalid format
 	echo "a:a #plop" > list/bounce/plop=meh
@@ -588,8 +592,8 @@ run_digests
 unsub_bouncers_6_body()
 {
 	mlmmjmaintd=$(command -v mlmmj-maintd)
-	mkdir lists
 	init_ml list
+	echo "test@test" > list/control/listaddress
 
 	test $(id -u) = 0 && atf_skip "Can only be run as non-root"
 
@@ -632,8 +636,8 @@ unsub_bouncers_7_body()
 unsub_bouncers_8_body()
 {
 	mlmmjmaintd=$(command -v mlmmj-maintd)
-	mkdir lists
 	init_ml list
+	echo "test@test" > list/control/listaddress
 
 	echo "a:1234 # plop" > list/bounce/plop=meh
 	atf_check -s exit:0 $mlmmjmaintd -L list -F
@@ -643,8 +647,8 @@ unsub_bouncers_8_body()
 unsub_bouncers_9_body()
 {
 	mlmmjmaintd=$(command -v mlmmj-maintd)
-	mkdir lists
 	init_ml list
+	echo "test@test" > list/control/listaddress
 
 	# last message properly cleaned out
 	echo "a:1234 # plop" > list/bounce/plop=meh
@@ -657,8 +661,8 @@ unsub_bouncers_9_body()
 unsub_bouncers_10_body()
 {
 	mlmmjmaintd=$(command -v mlmmj-maintd)
-	mkdir lists
 	init_ml list
+	echo "test@test" > list/control/listaddress
 
 	# has been unsubscribe from regular
 	echo "a:1234 # plop" > list/bounce/plop=meh

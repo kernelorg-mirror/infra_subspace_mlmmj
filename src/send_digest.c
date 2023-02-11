@@ -234,15 +234,15 @@ static void finish_thread_list(thread_list_state * s)
 }
 
 
-int send_digest(const char *listdir, int firstindex, int lastindex,
-		int issue, const char *addr, const char *mlmmjsend, int listfd, int ctrlfd)
+int send_digest(struct ml *ml, int firstindex, int lastindex,
+		int issue, const char *addr, const char *mlmmjsend)
 {
 	int i, fd, archivefd, hdrfd;
 	size_t len;
 	text * txt;
 	char buf[100];
 	char *tmp, *queuename = NULL, *archivename, *subject = NULL, *line = NULL;
-	char *boundary, *listaddr, *listdelim, *listname, *listfqdn;
+	char *boundary;
 	thread_list_state * tls;
 
 	if (addr) {
@@ -258,7 +258,7 @@ int send_digest(const char *listdir, int firstindex, int lastindex,
 	do {
 		tmp = random_str();
 		free(queuename);
-		queuename = concatstr(3, listdir, "/queue/", tmp);
+		xasprintf(&queuename, "%s/queue/%s", ml->dir, tmp);
 		free(tmp);
 		fd = open(queuename, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
 	} while ((fd < 0) && (errno == EEXIST));
@@ -270,23 +270,16 @@ int send_digest(const char *listdir, int firstindex, int lastindex,
 		return -1;
 	}
 
-	tmp = concatstr(2, listdir, "/control/customheaders");
-	hdrfd = open(tmp, O_RDONLY);
-	free(tmp);
+	hdrfd = openat(ml->ctrlfd, "customheaders", O_RDONLY);
 
 	boundary = random_str();
 
-	listaddr = getlistaddr(ctrlfd);
-	listname = genlistname(listaddr);
-	listfqdn = genlistfqdn(listaddr);
-	listdelim = getlistdelim(ctrlfd);
-	
-	txt = open_text_file(listfd, "digest");
+	txt = open_text_file(ml->fd, "digest");
 	if (txt == NULL) {
 		log_error(LOG_ARGS, "Could not open listtext 'digest'");
 		goto fallback_subject;
 	}
-	register_default_unformatted(txt, listdelim, listaddr);
+	register_default_unformatted(txt, ml->delim, ml->addr);
 
 	snprintf(buf, sizeof(buf), "%d", firstindex);
 	register_unformatted(txt, "digestfirst", buf);
@@ -306,11 +299,11 @@ int send_digest(const char *listdir, int firstindex, int lastindex,
 
 	register_unformatted(txt, "digestthreads", "%digestthreads%"); /* DEPRECATED */
 
-	tls = init_thread_list(listdir, firstindex, lastindex);
+	tls = init_thread_list(ml->dir, firstindex, lastindex);
 	register_formatted(txt, "digestthreads", rewind_thread_list,
 			get_thread_list_line, tls);
 
-	line = get_processed_text_line(txt, 1, listdir, listfd, ctrlfd);
+	line = get_processed_text_line(txt, 1, ml->dir, ml->fd, ml->ctrlfd);
 
 	if (line == NULL) {
 		log_error(LOG_ARGS, "No content in digest listtext");
@@ -337,7 +330,7 @@ int send_digest(const char *listdir, int firstindex, int lastindex,
 		free(line);
 
 		/* Skip the empty line after the subject */
-		line = get_processed_text_line(txt, 1, listdir, listfd, ctrlfd);
+		line = get_processed_text_line(txt, 1, ml->dir, ml->fd, ml->ctrlfd);
 		if (line == NULL || *line != '\0') {
 			log_error(LOG_ARGS, "Too many headers "
 					"in digest listtext");
@@ -361,7 +354,7 @@ fallback_subject:
 		}
 		tmp = xstrdup(buf);
 		snprintf(buf, sizeof(buf), "Digest of %s issue %d (%s)",
-				listaddr, issue, tmp);
+				ml->addr, issue, tmp);
 		subject = unistr_utf8_to_header(buf);
 		free(tmp);
 	}
@@ -371,12 +364,10 @@ fallback_subject:
 	    "\nContent-Type: multipart/" DIGESTMIMETYPE "; "
 	    "boundary=%s"
 	    "\nSubject: %s\n",
-	    listname, listdelim, listfqdn, boundary, subject) < 0) {
-		free(listfqdn);
+	    ml->name, ml->delim, ml->fqdn, boundary, subject) < 0) {
 		free(subject);
 		goto errdighdrs;
 	}
-	free(listfqdn);
 	free(subject);
 
 	if(hdrfd >= 0 && dumpfd2fd(hdrfd, fd) < 0) {
@@ -394,9 +385,6 @@ errdighdrs:
 		unlink(queuename);
 		free(boundary);
 		free(queuename);
-		free(listaddr);
-		free(listname);
-		free(listdelim);
 		if (txt != NULL) {
 			close_text(txt);
 			free(line);
@@ -407,7 +395,7 @@ errdighdrs:
 		return -1;
 	}
 
-	if ((txt != NULL) && !statctrl(ctrlfd, "nodigesttext")) {
+	if ((txt != NULL) && !statctrl(ml->ctrlfd, "nodigesttext")) {
 
 		if (dprintf(fd, "\n--%s"
 		    "\nContent-Type: text/plain; charset=UTF-8"
@@ -419,9 +407,6 @@ errdighdrs:
 			unlink(queuename);
 			free(boundary);
 			free(queuename);
-			free(listaddr);
-			free(listname);
-			free(listdelim);
 			if (txt != NULL) {
 				close_text(txt);
 				free(line);
@@ -430,7 +415,7 @@ errdighdrs:
 		}
 
 		for (;;) {
-			line = get_processed_text_line(txt, 0, listdir, listfd, ctrlfd);
+			line = get_processed_text_line(txt, 0, ml->dir, ml->fd, ml->ctrlfd);
 			if (line == NULL) break;
 			if(dprintf(fd, "%s\n", line) < 0) {
 				free(line);
@@ -449,23 +434,19 @@ errdighdrs:
 	}
 
 	if (line != NULL) free(line);
-	free(listaddr);
-	free(listdelim);
 
 	for (i=firstindex; i<=lastindex; i++) {
-		snprintf(buf, sizeof(buf), "%d", i);
-		
-		archivename = concatstr(3, listdir, "/archive/", buf);
-		archivefd = open(archivename, O_RDONLY);
+		xasprintf(&archivename, "archive/%d", i);
+		archivefd = openat(ml->fd, archivename, O_RDONLY);
 		free(archivename);
-		
+
 		if (archivefd < 0)
 			continue;
-		
+
 		if (dprintf(fd, "\n--%s"
 		    "\nContent-Type: message/rfc822"
 		    "\nContent-Disposition: inline; filename=\"%s_%s.eml\"\n\n",
-		    boundary, listname, buf) < 0) {
+		    boundary, ml->name, buf) < 0) {
 			log_error(LOG_ARGS, "Could not write digest part "
 					"headers for archive index %d to "
 					"'%s'", i, queuename);
@@ -475,7 +456,6 @@ errdighdrs:
 			free(boundary);
 			free(tmp);
 			free(queuename);
-			free(listname);
 			return -1;
 		}
 
@@ -488,10 +468,8 @@ errdighdrs:
 			unlink(queuename);
 			free(boundary);
 			free(queuename);
-			free(listname);
 			return -1;
 		}
-		
 		close(archivefd);
 	}
 
@@ -502,15 +480,13 @@ errdighdrs:
 		unlink(queuename);
 		free(boundary);
 		free(queuename);
-		free(listname);
 		return -1;
 	}
 
 	close(fd);
 	free(boundary);
-	free(listname);
 
-	exec_and_wait(mlmmjsend, "-l", "7", "-L", listdir, "-m", queuename,
+	exec_and_wait(mlmmjsend, "-l", "7", "-L", ml->dir, "-m", queuename,
 	    NULL);
 	free(queuename);
 

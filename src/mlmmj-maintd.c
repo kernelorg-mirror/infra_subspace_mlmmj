@@ -145,7 +145,7 @@ clean_unsubconf(int dfd, int logfd)
 }
 
 static bool
-resend_queue(int dfd, int ctrlfd, const char *mlmmjsend, const char *listdir, int logfd)
+resend_queue(struct ml *ml, const char *mlmmjsend, int logfd)
 {
 	DIR *queuedir;
 	struct dirent *dp;
@@ -156,7 +156,7 @@ resend_queue(int dfd, int ctrlfd, const char *mlmmjsend, const char *listdir, in
 	time_t t, bouncelife;
 	bool ret = true;
 
-	opendirat(dfd, qfd, queuedir, "queue");
+	opendirat(ml->fd, qfd, queuedir, "queue");
 
 	while((dp = readdir(queuedir)) != NULL) {
 		if(fstatat(qfd, dp->d_name, &st, 0) < 0) {
@@ -222,7 +222,7 @@ resend_queue(int dfd, int ctrlfd, const char *mlmmjsend, const char *listdir, in
 		free(reptoname);
 
 		/* before we try again, check and see if it's old */
-		bouncelife = ctrltimet(ctrlfd, "bouncelife", BOUNCELIFE);
+		bouncelife = ctrltimet(ml->ctrlfd, "bouncelife", BOUNCELIFE);
 		t = time(NULL);
 		if(t - st.st_mtime > bouncelife) {
 			if (unlinkat(qfd, dp->d_name, 0) == -1) {
@@ -238,11 +238,11 @@ resend_queue(int dfd, int ctrlfd, const char *mlmmjsend, const char *listdir, in
 		}
 
 		if(repto)
-			exec_and_wait(mlmmjsend, "-l", "1", "-L", listdir, "-m",
+			exec_and_wait(mlmmjsend, "-l", "1", "-L", ml->dir, "-m",
 			    mailname, "-F", from, "-T", to, "-R", repto, "-a",
 			    NULL);
 		else
-			exec_and_wait(mlmmjsend, "-l", "1", "-L", listdir, "-m",
+			exec_and_wait(mlmmjsend, "-l", "1", "-L", ml->dir, "-m",
 			    mailname, "-F", from, "-T", to, "-a", NULL);
 	}
 
@@ -252,7 +252,7 @@ resend_queue(int dfd, int ctrlfd, const char *mlmmjsend, const char *listdir, in
 }
 
 static bool
-resend_requeue(int dfd, const char *mlmmjsend, const char *listdir, int logfd)
+resend_requeue(struct ml *ml, const char *mlmmjsend, int logfd)
 {
 	DIR *queuedir;
 	struct dirent *dp;
@@ -263,7 +263,7 @@ resend_requeue(int dfd, const char *mlmmjsend, const char *listdir, int logfd)
 	int fd;
 	bool ret = true;
 
-	opendirat(dfd, fd, queuedir, "requeue");
+	opendirat(ml->fd, fd, queuedir, "requeue");
 	while((dp = readdir(queuedir)) != NULL) {
 		if((strcmp(dp->d_name, "..") == 0) ||
 			(strcmp(dp->d_name, ".") == 0))
@@ -289,7 +289,7 @@ resend_requeue(int dfd, const char *mlmmjsend, const char *listdir, int logfd)
 		/* Explicitly initialize for each mail we examine */
 		fromrequeuedir = false;
 
-		if(faccessat(dfd, archivefilename, F_OK, 0) < 0) {
+		if(faccessat(ml->fd, archivefilename, F_OK, 0) < 0) {
 			/* Might be it's just not moved to the archive
 			 * yet because it's still getting sent, so just
 			 * continue
@@ -301,7 +301,7 @@ resend_requeue(int dfd, const char *mlmmjsend, const char *listdir, int logfd)
 			 */
 			xasprintf(&archivefilename, "requeue/%s/mailfile",
 			    dp->d_name);
-			if(faccessat(dfd, archivefilename, F_OK, 0) < 0) {
+			if(faccessat(ml->fd, archivefilename, F_OK, 0) < 0) {
 				free(archivefilename);
 				continue;
 			}
@@ -310,7 +310,7 @@ resend_requeue(int dfd, const char *mlmmjsend, const char *listdir, int logfd)
 		xasprintf(&subfilename, "%s/subscribers", dp->d_name);
 		if(faccessat(fd, subfilename, F_OK, 0) < 0) {
 			if (fromrequeuedir) {
-				if (unlinkat(dfd, archivefilename, 0) == -1) {
+				if (unlinkat(ml->fd, archivefilename, 0) == -1) {
 					log(" - Cound not remove %s: %s\n",
 					    archivefilename, strerror(errno));
 					ret = false;
@@ -334,7 +334,7 @@ resend_requeue(int dfd, const char *mlmmjsend, const char *listdir, int logfd)
 		}
 		free(subfilename);
 
-		exec_and_wait(mlmmjsend, "-l", "3", "-L", listdir, "-m",
+		exec_and_wait(mlmmjsend, "-l", "3", "-L", ml->dir, "-m",
 		    archivefilename, "-s", subnewname, "-a", "-D", NULL);
 	}
 
@@ -401,7 +401,7 @@ clean_nolongerbouncing(int dfd, int logfd)
 }
 
 static bool
-probe_bouncers(int dfd, const char *mlmmjbounce, const char *listdir, int logfd)
+probe_bouncers(struct ml *ml, const char *mlmmjbounce, int logfd)
 {
 	DIR *bouncedir;
 	char *probefile, *s;
@@ -409,7 +409,7 @@ probe_bouncers(int dfd, const char *mlmmjbounce, const char *listdir, int logfd)
 	int fd;
 	bool ret = true;
 
-	opendirat(dfd, fd, bouncedir, "bounce");
+	opendirat(ml->fd, fd, bouncedir, "bounce");
 	while((dp = readdir(bouncedir)) != NULL) {
 		if((strcmp(dp->d_name, "..") == 0) ||
 		   (strcmp(dp->d_name, ".") == 0))
@@ -439,7 +439,7 @@ probe_bouncers(int dfd, const char *mlmmjbounce, const char *listdir, int logfd)
 		}
 		free(probefile);
 
-		exec_and_wait(mlmmjbounce, "-L", listdir, "-a", dp->d_name,
+		exec_and_wait(mlmmjbounce, "-L", ml->dir, "-a", dp->d_name,
 		    "-p", NULL);
 	}
 	closedir(bouncedir);
@@ -546,7 +546,7 @@ unsub_bouncers(int dfd, int ctrlfd, int logfd)
 }
 
 static bool
-run_digests(int dfd, int ctrlfd, const char *mlmmjsend, const char *listdir, int logfd)
+run_digests(struct ml *ml, const char *mlmmjsend, int logfd)
 {
 	char *s1, *s2;
 	time_t digestinterval, t, lasttime;
@@ -555,19 +555,19 @@ run_digests(int dfd, int ctrlfd, const char *mlmmjsend, const char *listdir, int
 	const char *errstr = NULL;
 	bool ret = false;
 
-	if (statctrl(ctrlfd, "noarchive")) {
+	if (statctrl(ml->ctrlfd, "noarchive")) {
 		log(" - noarchive tunable: skipping digest\n");
 		return (true);
 	}
-	if (faccessat(dfd, "index", R_OK, 0) == -1) {
+	if (faccessat(ml->fd, "index", R_OK, 0) == -1) {
 		log(" - No readable index file: no digest\n");
 		return (true);
 	}
 
-	digestinterval = ctrltimet(ctrlfd, "digestinterval", DIGESTINTERVAL);
-	digestmaxmails = ctrllong(ctrlfd, "digestmaxmail", DIGESTMAXMAILS);
+	digestinterval = ctrltimet(ml->ctrlfd, "digestinterval", DIGESTINTERVAL);
+	digestmaxmails = ctrllong(ml->ctrlfd, "digestmaxmail", DIGESTMAXMAILS);
 
-	fd = openat(dfd, "lastdigest", O_RDWR|O_CREAT, S_IRUSR | S_IWUSR);
+	fd = openat(ml->fd, "lastdigest", O_RDWR|O_CREAT, S_IRUSR | S_IWUSR);
 	if (fd < 0 && !lock(fd, true)) {
 		log(" - Could not open or create 'lastdigest': %s\n",
 		    strerror(errno));
@@ -582,7 +582,7 @@ run_digests(int dfd, int ctrlfd, const char *mlmmjsend, const char *listdir, int
 		return (false);
 	}
 
-	indexfd = openat(dfd, "index", O_RDONLY);
+	indexfd = openat(ml->fd, "index", O_RDONLY);
 	if (indexfd < 0) {
 		log("Could not open'index': %s", strerror(errno));
 		free(s1);
@@ -617,7 +617,7 @@ run_digests(int dfd, int ctrlfd, const char *mlmmjsend, const char *listdir, int
 
 		if (index > lastindex) {
 			lastissue++;
-			send_digest(listdir, lastindex+1, index, lastissue, NULL, mlmmjsend, dfd, ctrlfd);
+			send_digest(ml, lastindex+1, index, lastissue, NULL, mlmmjsend);
 		}
 
 		if (lseek(fd, 0, SEEK_SET) < 0) {
@@ -641,45 +641,18 @@ out:
 	return (ret);
 }
 
-void do_maintenance(int listfd, const char *listdir, const char *mlmmjsend,
-		    const char *mlmmjbounce)
+void do_maintenance(struct ml *ml, const char *mlmmjsend, const char *mlmmjbounce)
 {
 	char *random, *logname;
 	char timenow[64];
-	struct stat st;
 	int logfd;
-	uid_t uid = getuid();
 	time_t t;
-	int ctrlfd;
-
-	if (listfd == -1)
-		return;
-
-	ctrlfd = openat(listfd, "control", O_DIRECTORY|O_CLOEXEC);
-
-	if (fstat(listfd, &st) < 0) {
-		log_error(LOG_ARGS, "Could not stat "
-		    "No maintenance run performed.");
-		return;
-	}
-
-	if(uid == 0) { /* We're root. Do something about it.*/
-		if(setuid(st.st_uid) < 0) {
-			log_error(LOG_ARGS, "Could not setuid listdir owner.");
-			return;
-		}
-	} else if(uid != st.st_uid) {
-		log_error(LOG_ARGS,
-				"User ID not equal to the ID of %s. No "
-				"maintenance run performed.", listdir);
-		return;
-	}
 
 	random = random_str();
 	xasprintf(&logname, "maintdlog-%s", random);
 	free(random);
 
-	logfd = openat(listfd, logname, O_WRONLY|O_EXCL|O_CREAT, S_IRUSR|S_IWUSR);
+	logfd = openat(ml->fd, logname, O_WRONLY|O_EXCL|O_CREAT, S_IRUSR|S_IWUSR);
 	if(logfd == -1) {
 		log_err("Could not open %s: %s", logname, strerror(errno));
 		free(logname);
@@ -692,58 +665,58 @@ void do_maintenance(int listfd, const char *listdir, const char *mlmmjsend,
 		    timenow);
 
 	log("clean_moderation\n");
-	if (!clean_moderation(listfd, ctrlfd, logfd))
+	if (!clean_moderation(ml->fd, ml->ctrlfd, logfd))
 		log_err("An error occured while cleaning moderation, see %s",
 		    MAINTD_LOGFILE);
 
 	log("clean_discarded\n");
-	if (!clean_discarded(listfd, logfd))
+	if (!clean_discarded(ml->fd, logfd))
 		log_err("An error occured while cleaning discarded mails, see "
 		    "%s", MAINTD_LOGFILE);
 
 	log("clean_subconf\n");
-	if (!clean_subconf(listfd, logfd))
+	if (!clean_subconf(ml->fd, logfd))
 		log_err("An error occured while cleaning subscribtion "
 		    "confirmations, mails, see %s", MAINTD_LOGFILE);
 
 	log("clean_unsubconf\n");
-	if (!clean_unsubconf(listfd, logfd))
+	if (!clean_unsubconf(ml->fd, logfd))
 		log_err("An error occured while cleaning unsubscribtion "
 		    "confirmations, mails, see %s", MAINTD_LOGFILE);
 
 	log("resend_queue\n");
-	if (!resend_queue(listfd, ctrlfd, mlmmjsend, listdir, logfd))
+	if (!resend_queue(ml, mlmmjsend, logfd))
 		log_err("An error occured while resending queued mails, see %s",
 		    MAINTD_LOGFILE);
 
 	log("resend_requeue\n");
-	if (!resend_requeue(listfd, mlmmjsend, listdir, logfd))
+	if (!resend_requeue(ml, mlmmjsend, logfd))
 		log_err("An error occured while resending requeued mails, see "
 		    "%s", MAINTD_LOGFILE);
 
 	log("clean_nolongerbouncing\n");
-	if (!clean_nolongerbouncing(listfd, logfd))
+	if (!clean_nolongerbouncing(ml->fd, logfd))
 		log_err("An error occured while cleaning no longer bouncing "
 		   "traces, see %s", MAINTD_LOGFILE);
 
 	log("unsub_bouncers\n");
-	if (!unsub_bouncers(listfd, ctrlfd, logfd))
+	if (!unsub_bouncers(ml->fd, ml->ctrlfd, logfd))
 		log_err("An error occured while unsubscribing bouncing emails, "
 		    "see %s", MAINTD_LOGFILE);
 
 	log("probe_bouncers\n");
-	if (!probe_bouncers(listfd, mlmmjbounce, listdir, logfd))
+	if (!probe_bouncers(ml, mlmmjbounce, logfd))
 		log_err("An error occured while sending probes for bouncers, "
 		    "see %s", MAINTD_LOGFILE);
 
 	log("run_digests\n");
-	if (!run_digests(listfd, ctrlfd, mlmmjsend, listdir, logfd))
+	if (!run_digests(ml, mlmmjsend, logfd))
 		log_err("An error occured while running digests, see %s",
 		   MAINTD_LOGFILE);
 
 	close(logfd);
 
-	if (renameat(listfd, logname, listfd, MAINTD_LOGFILE) < 0)
+	if (renameat(ml->fd, logname, ml->fd, MAINTD_LOGFILE) < 0)
 		log_error(LOG_ARGS, "Could not rename(%s,%s)",
 				logname, MAINTD_LOGFILE);
 
@@ -809,9 +782,14 @@ int main(int argc, char **argv)
 
 	while(1) {
 		if(listdir) {
+			struct ml ml;
+			ml_init(&ml);
+			ml.dir = listdir;
 			log_set_namef("%s(%s)", argv[0], listdir);
-			int fd = open(listdir, O_DIRECTORY|O_CLOEXEC);
-			do_maintenance(fd, listdir, mlmmjsend, mlmmjbounce);
+			if (!ml_open(&ml, true))
+				goto mainsleep;
+			do_maintenance(&ml, mlmmjsend, mlmmjbounce);
+			ml_close(&ml);
 			goto mainsleep;
 		}
 
@@ -826,23 +804,21 @@ int main(int argc, char **argv)
 		}
 
 		while((dp = readdir(dirp)) != NULL) {
+			char *l;
 			if((strcmp(dp->d_name, "..") == 0) ||
 					(strcmp(dp->d_name, ".") == 0))
 				continue;
 
-			int fd = openat(dfd, dp->d_name,  O_DIRECTORY);
-			if (fd == -1)
-				continue;
-
-			if (faccessat(fd, "control/listaddress", F_OK, 0) <0)
-				continue;
-
-			char *l;
 			xasprintf(&l, "%s/%s", dirlists, dp->d_name);
 			log_set_namef("%s(%s)", argv[0], l);
-			do_maintenance(fd, l, mlmmjsend, mlmmjbounce);
+			struct ml ml;
+			ml_init(&ml);
+			ml.dir = l;
+			if (!ml_open(&ml, true))
+				continue;
+			do_maintenance(&ml, mlmmjsend, mlmmjbounce);
+			ml_close(&ml);
 			free(l);
-			close(fd);
 		}
 
 		closedir(dirp);

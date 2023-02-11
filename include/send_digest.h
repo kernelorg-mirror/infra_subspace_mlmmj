@@ -1,6 +1,6 @@
-/* Copyright (C) 2004 Morten K. Poulsen <morten at afdelingp.dk>
- *
- * $Id$
+/*
+ * Copyright (C) 2004 Morten K. Poulsen <morten at afdelingp.dk>
+ * Copyright (C) 2023 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -21,10 +21,7 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef SEND_DIGEST_H
-#define SEND_DIGEST_H
+#pragma once
 
-int send_digest(const char *listdir, int lastindex, int index,
-		int issue, const char *addr, const char *mlmmjsend, int listfd, int ctrlfd);
-
-#endif /* SEND_DIGEST_H */
+int send_digest(struct ml *ml, int lastindex, int index,
+		int issue, const char *addr, const char *mlmmjsend);
