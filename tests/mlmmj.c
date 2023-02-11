@@ -2127,7 +2127,7 @@ ATF_TC_BODY(text_0, tc)
 	ml_init(&ml);
 	ml.dir = "list";
 	ATF_REQUIRE(ml_open(&ml, false));
-	ATF_REQUIRE(prepstdreply_to(txt, ml.dir, "me@fqdn.org", "to@plop.org", NULL, ml.fd, ml.ctrlfd, tofd, "Message-Id: <fake>"));
+	ATF_REQUIRE(prepstdreply_to(txt, &ml, "me@fqdn.org", "to@plop.org", NULL, tofd, "Message-Id: <fake>"));
 	close_text(txt);
 	fsync(tofd);
 	close(tofd);
@@ -2175,8 +2175,8 @@ ATF_TC_BODY(text_1, tc)
 	ml_init(&ml);
 	ml.dir = "list";
 	ATF_REQUIRE(ml_open(&ml, false));
-	register_default_unformatted(txt, ml.delim, ml.addr);
-	ATF_REQUIRE(prepstdreply_to(txt, ml.dir, "me@fqdn.org", "to@plop.org", "bla@me.org", ml.fd, ml.ctrlfd, tofd, "Message-Id: <fake>"));
+	register_default_unformatted(txt, &ml);
+	ATF_REQUIRE(prepstdreply_to(txt, &ml, "me@fqdn.org", "to@plop.org", "bla@me.org", tofd, "Message-Id: <fake>"));
 	close_text(txt);
 	fsync(tofd);
 	close(tofd);

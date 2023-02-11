@@ -458,49 +458,45 @@ void register_unformatted(text *txt, const char *token, const char *replacement)
 }
 
 void
-register_default_unformatted(text *txt, const char *listdelim,
-    const char *listaddr)
+register_default_unformatted(text *txt, struct ml *ml)
 {
-	char *listname, *fqdn, *tmp;
-
-	fqdn = genlistfqdn(listaddr);
-	listname = genlistname(listaddr);
+	char *tmp;
 
 	register_unformatted(txt, "", "$");
-	register_unformatted(txt, "listaddr", listaddr);
-	xasprintf(&tmp, "%s%s", listname, listdelim);
+	register_unformatted(txt, "listaddr", ml->addr);
+	xasprintf(&tmp, "%s%s", ml->name, ml->delim);
 	register_unformatted(txt, "list+", tmp);
-	register_unformatted(txt, "list", listname);
-	register_unformatted(txt, "domain", fqdn);
+	register_unformatted(txt, "list", ml->name);
+	register_unformatted(txt, "domain", ml->fqdn);
 	free(tmp);
-	xasprintf(&tmp, "%s%sowner@%s", listname, listdelim, fqdn);
+	gen_addr(tmp, ml, "owner");
 	register_unformatted(txt, "listowner", tmp);
 	free(tmp);
-	xasprintf(&tmp, "%s%shelp@%s", listname, listdelim, fqdn);
+	gen_addr(tmp, ml, "help");
 	register_unformatted(txt, "helpaddr", tmp);
 	free(tmp);
-	xasprintf(&tmp, "%s%sfaq@%s", listname, listdelim, fqdn);
+	gen_addr(tmp, ml, "faq");
 	register_unformatted(txt, "faqaddr", tmp);
 	free(tmp);
-	xasprintf(&tmp, "%s%sget-N@%s", listname, listdelim, fqdn);
+	gen_addr(tmp, ml, "get-N");
 	register_unformatted(txt, "listgetN", tmp);
 	free(tmp);
-	xasprintf(&tmp, "%s%sunsubscribe@%s", listname, listdelim, fqdn);
+	gen_addr(tmp, ml, "unsubscribe");
 	register_unformatted(txt, "listunsubaddr", tmp);
 	free(tmp);
-	xasprintf(&tmp, "%s%sunsubscribe-digest@%s", listname, listdelim, fqdn);
+	gen_addr(tmp, ml, "unsubscribe-digest");
 	register_unformatted(txt, "digestunsubaddr", tmp);
 	free(tmp);
-	xasprintf(&tmp, "%s%sunsubscribe-nomail@%s", listname, listdelim, fqdn);
+	gen_addr(tmp, ml, "unsubscribe-nomail");
 	register_unformatted(txt, "nomailunsubaddr", tmp);
 	free(tmp);
-	xasprintf(&tmp, "%s%ssubscribe@%s", listname, listdelim, fqdn);
+	gen_addr(tmp, ml, "subscribe");
 	register_unformatted(txt, "listsubaddr", tmp);
 	free(tmp);
-	xasprintf(&tmp, "%s%ssubscribe-digest@%s", listname, listdelim, fqdn);
+	gen_addr(tmp, ml, "subscribe-digest");
 	register_unformatted(txt, "digestsubaddr", tmp);
 	free(tmp);
-	xasprintf(&tmp, "%s%ssubscribe-nomail@%s", listname, listdelim, fqdn);
+	gen_addr(tmp, ml, "subscribe-nomail");
 	register_unformatted(txt, "nomailsubaddr", tmp);
 	free(tmp);
 }
@@ -1497,19 +1493,15 @@ void close_text(text *txt)
 }
 
 bool
-prepstdreply_to(text *txt, const char *listdir, const char *from, const char *to,
-    const char *replyto, int listfd, int ctrlfd, int tofd, const char *msgid)
+prepstdreply_to(text *txt, struct ml *ml, const char *from, const char *to,
+    const char *replyto, int tofd, const char *msgid)
 {
 	bool ret = false;
 	char *tmp, *line;
 	int i;
 	size_t len;
-	char *listaddr, *listdelim, *listfqdn, *str;
+	char *str;
 	char *headers[10] = { NULL }; /* relies on NULL to flag end */
-
-	listaddr = getlistaddr(ctrlfd);
-	listdelim = getlistdelim(ctrlfd);
-	listfqdn = genlistfqdn(listaddr);
 
 	for (i=0; i<6; i++) { 
 		tmp = xstrdup("randomN");
@@ -1520,16 +1512,16 @@ prepstdreply_to(text *txt, const char *listdir, const char *from, const char *to
 		free(str);
 	}
 
-	tmp = substitute(from, listfd, ctrlfd, txt);
+	tmp = substitute(from, ml->fd, ml->ctrlfd, txt);
 	xasprintf(&headers[0], "From: %s", tmp);
 	free(tmp);
-	tmp = substitute(to, listfd, ctrlfd, txt);
+	tmp = substitute(to, ml->fd, ml->ctrlfd, txt);
 	xasprintf(&headers[1], "To: %s", tmp);
 	free(tmp);
 	if (msgid)
 		headers[2] = xstrdup(msgid);
 	else
-		headers[2] = genmsgid(listfqdn);
+		headers[2] = genmsgid(ml->fqdn);
 	chomp(headers[2]);
 	if (msgid)
 		headers[3] = xstrdup(msgid);
@@ -1542,13 +1534,13 @@ prepstdreply_to(text *txt, const char *listdir, const char *from, const char *to
 	headers[7] = xstrdup("Content-Transfer-Encoding: 8bit");
 
 	if(replyto) {
-		tmp = substitute(replyto, listfd, ctrlfd, txt);
+		tmp = substitute(replyto, ml->fd, ml->fd, txt);
 		xasprintf(&headers[8], "Reply-To: %s", tmp);
 		free(tmp);
 	}
 
 	for(;;) {
-		line = get_processed_text_line(txt, 1, listdir, listfd, ctrlfd);
+		line = get_processed_text_line(txt, 1, ml->dir, ml->fd, ml->fd);
 		if (!line) {
 			log_error(LOG_ARGS, "No body in listtext");
 			break;
@@ -1626,7 +1618,7 @@ prepstdreply_to(text *txt, const char *listdir, const char *from, const char *to
 	}
 
 	if (line == NULL) {
-		line = get_processed_text_line(txt, 0, listdir, listfd, ctrlfd);
+		line = get_processed_text_line(txt, 0, ml->dir, ml->fd, ml->ctrlfd);
 	}
 	while(line) {
 			if(dprintf(tofd, "%s\n", line) < 0) {
@@ -1635,7 +1627,7 @@ prepstdreply_to(text *txt, const char *listdir, const char *from, const char *to
 				goto freeandreturn;
 			}
 		free(line);
-		line = get_processed_text_line(txt, 0, listdir, listfd, ctrlfd);
+		line = get_processed_text_line(txt, 0, ml->dir, ml->fd, ml->ctrlfd);
 	}
 
 	fsync(tofd);
@@ -1644,15 +1636,11 @@ prepstdreply_to(text *txt, const char *listdir, const char *from, const char *to
 	ret = true;
 
 freeandreturn:
-	free(listaddr);
-	free(listdelim);
-	free(listfqdn);
 
 	return ret;
 }
 
-char *prepstdreply(text *txt, const char *listdir,
-		   const char *from, const char *to, const char *replyto, int listfd,  int ctrlfd)
+char *prepstdreply(text *txt, struct ml *ml, const char *from, const char *to, const char *replyto)
 {
 	int outfd;
 	char *tmp, *retstr = NULL;
@@ -1662,7 +1650,7 @@ char *prepstdreply(text *txt, const char *listdir,
 		tmp = random_str();
 		if (retstr)
 			free(retstr);
-		retstr = concatstr(3, listdir, "/queue/", tmp);
+		xasprintf(&retstr, "%s/queue/%s", ml->dir, tmp);
 		free(tmp);
 
 		outfd = open(retstr, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
@@ -1675,7 +1663,7 @@ char *prepstdreply(text *txt, const char *listdir,
 		free(txt);
 		return NULL;
 	}
-	if (!prepstdreply_to(txt, listdir, from, to, replyto, listfd, ctrlfd, outfd, NULL))
+	if (!prepstdreply_to(txt, ml, from, to, replyto, outfd, NULL))
 		return (NULL);
 	return (retstr);
 }

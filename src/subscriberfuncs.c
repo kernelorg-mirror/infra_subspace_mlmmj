@@ -198,11 +198,10 @@ void notify_sub(struct ml *ml, const char *subaddr,
 			subreason_strs[reasonsub], subtype_strs[typesub],
 			listtext);
 	MY_ASSERT(txt);
-	register_default_unformatted(txt, ml->delim, ml->addr);
+	register_default_unformatted(txt, ml);
 	register_unformatted(txt, "subaddr", subaddr);
 	register_unformatted(txt, sub ? "newsub" : "oldsub", subaddr); /* DEPRECATED */
-	queuefilename = prepstdreply(txt, ml->dir,
-			"$listowner$", "$listowner$", NULL, ml->fd, ml->ctrlfd);
+	queuefilename = prepstdreply(txt, ml, "$listowner$", "$listowner$", NULL);
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 

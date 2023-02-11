@@ -77,12 +77,12 @@ void do_probe(struct ml *ml, const char *mlmmjsend, const char *addr)
 
 	txt = open_text(ml->fd, "probe", NULL, NULL, NULL, "bounce-probe");
 	MY_ASSERT(txt);
-	register_default_unformatted(txt, ml->delim, ml->addr);
+	register_default_unformatted(txt, ml);
 	register_unformatted(txt, "bouncenumbers", "%bouncenumbers%"); /* DEPRECATED */
 	fls = init_file_lines(addr, ':');
 	register_formatted(txt, "bouncenumbers",
 			rewind_file_lines, get_file_line, fls);
-	queuefilename = prepstdreply(txt, ml->dir, "$listowner$", myaddr, NULL, ml->fd, ml->ctrlfd);
+	queuefilename = prepstdreply(txt, ml, "$listowner$", myaddr, NULL);
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 

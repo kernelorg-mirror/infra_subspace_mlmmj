@@ -279,7 +279,7 @@ int send_digest(struct ml *ml, int firstindex, int lastindex,
 		log_error(LOG_ARGS, "Could not open listtext 'digest'");
 		goto fallback_subject;
 	}
-	register_default_unformatted(txt, ml->delim, ml->addr);
+	register_default_unformatted(txt, ml);
 
 	snprintf(buf, sizeof(buf), "%d", firstindex);
 	register_unformatted(txt, "digestfirst", buf);

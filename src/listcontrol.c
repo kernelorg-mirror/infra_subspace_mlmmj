@@ -205,12 +205,12 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 			txt = open_text(ml->fd, "deny", "sub", "disabled",
 					"digest", "sub-deny-digest");
 			MY_ASSERT(txt);
-			register_default_unformatted(txt, ml->delim, ml->addr);
+			register_default_unformatted(txt, ml);
 			register_unformatted(txt, "subaddr",
 					tll_front(*fromemails));
-			queuefilename = prepstdreply(txt, ml->dir,
+			queuefilename = prepstdreply(txt, ml,
 					"$listowner$",
-					tll_front(*fromemails), NULL, ml->fd, ml->ctrlfd);
+					tll_front(*fromemails), NULL);
 			MY_ASSERT(queuefilename);
 			close_text(txt);
 			send_help(ml, queuefilename,
@@ -241,13 +241,12 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 			txt = open_text(ml->fd, "deny", "sub", "disabled",
 					"nomail", "sub-deny-nomail");
 			MY_ASSERT(txt);
-			register_default_unformatted(txt, ml->delim, ml->addr);
+			register_default_unformatted(txt, ml);
 			register_unformatted(txt, "subaddr",
 					tll_front(*fromemails));
-			queuefilename = prepstdreply(txt, ml->dir,
+			queuefilename = prepstdreply(txt, ml,
 					"$listowner$",
-					tll_front(*fromemails), NULL, ml->fd,
-					ml->ctrlfd);
+					tll_front(*fromemails), NULL);
 			MY_ASSERT(queuefilename);
 			close_text(txt);
 			send_help(ml, queuefilename,
@@ -278,12 +277,12 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 			txt = open_text(ml->fd, "deny", "sub", "disabled",
 					"both", "sub-deny-digest");
 			MY_ASSERT(txt);
-			register_default_unformatted(txt, ml->delim, ml->addr);
+			register_default_unformatted(txt, ml);
 			register_unformatted(txt, "subaddr",
 					tll_front(*fromemails));
-			queuefilename = prepstdreply(txt, ml->dir,
+			queuefilename = prepstdreply(txt, ml,
 					"$listowner$",
-					tll_front(*fromemails), NULL, ml->fd,ml->ctrlfd);
+					tll_front(*fromemails), NULL);
 			MY_ASSERT(queuefilename);
 			close_text(txt);
 			send_help(ml, queuefilename,
@@ -599,9 +598,9 @@ permit:
 				tll_front(*fromemails));
 		txt = open_text(ml->fd, "help", NULL, NULL, NULL, "listhelp");
 		MY_ASSERT(txt);
-		register_default_unformatted(txt, ml->delim, ml->addr);
-		queuefilename = prepstdreply(txt, ml->dir,
-				"$listowner$", tll_front(*fromemails), NULL, ml->fd,ml->ctrlfd);
+		register_default_unformatted(txt, ml);
+		queuefilename = prepstdreply(txt, ml,
+				"$listowner$", tll_front(*fromemails), NULL);
 		MY_ASSERT(queuefilename);
 		close_text(txt);
 		send_help(ml, queuefilename,
@@ -622,9 +621,9 @@ permit:
                                tll_front(*fromemails));
 		txt = open_text(ml->fd, "faq", NULL, NULL, NULL, "listfaq");
 		MY_ASSERT(txt);
-		register_default_unformatted(txt, ml->delim, ml->addr);
-		queuefilename = prepstdreply(txt, ml->dir,
-				"$listowner$", tll_front(*fromemails), NULL, ml->fd,ml->ctrlfd);
+		register_default_unformatted(txt, ml);
+		queuefilename = prepstdreply(txt, ml,
+				"$listowner$", tll_front(*fromemails), NULL);
 		MY_ASSERT(queuefilename);
 		close_text(txt);
 		send_help(ml, queuefilename,

@@ -153,7 +153,7 @@ void send_list(struct ml *ml, const char *emailaddr, const char *mlmmjsend)
 	txt = open_text(ml->fd, "list", NULL, NULL, subtype_strs[SUB_ALL],
 			"listsubs");
 	MY_ASSERT(txt);
-	register_default_unformatted(txt, ml->delim, ml->addr);
+	register_default_unformatted(txt, ml);
 	register_formatted(txt, "listsubs",
 			rewind_subs_list, get_sub, normalsls);
 	register_formatted(txt, "normalsubs",
@@ -162,8 +162,7 @@ void send_list(struct ml *ml, const char *emailaddr, const char *mlmmjsend)
 			rewind_subs_list, get_sub, digestsls);
 	register_formatted(txt, "nomailsubs",
 			rewind_subs_list, get_sub, nomailsls);
-	queuefilename = prepstdreply(txt, ml->dir, "$listowner$", emailaddr,
-	    NULL, ml->fd, ml->ctrlfd);
+	queuefilename = prepstdreply(txt, ml, "$listowner$", emailaddr, NULL);
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 

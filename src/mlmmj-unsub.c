@@ -72,10 +72,9 @@ void confirm_unsub(struct ml *ml, const char *subaddr, const char *mlmmjsend,
 			listtext);
 	free(listtext);
 	MY_ASSERT(txt);
-	register_default_unformatted(txt, ml->delim, ml->addr);
+	register_default_unformatted(txt, ml);
 	register_unformatted(txt, "subaddr", subaddr);
-	queuefilename = prepstdreply(txt, ml->dir,
-			"$helpaddr$", subaddr, NULL, ml->fd, ml->ctrlfd);
+	queuefilename = prepstdreply(txt, ml, "$helpaddr$", subaddr, NULL);
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
@@ -151,12 +150,11 @@ void generate_unsubconfirm(struct ml *ml, const char *subaddr,
 			listtext);
 	free(listtext);
 	MY_ASSERT(txt);
-	register_default_unformatted(txt, ml->delim, ml->addr);
+	register_default_unformatted(txt, ml);
 	register_unformatted(txt, "subaddr", subaddr);
 	register_unformatted(txt, "confaddr", confirmaddr); /* DEPRECATED */
 	register_unformatted(txt, "confirmaddr", confirmaddr);
-	queuefilename = prepstdreply(txt, ml->dir,
-			"$helpaddr$", subaddr, confirmaddr, ml->fd, ml->ctrlfd);
+	queuefilename = prepstdreply(txt, ml, "$helpaddr$", subaddr, confirmaddr);
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
@@ -197,10 +195,9 @@ static void generate_notsubscribed(struct ml *ml, const char *subaddr,
 			"deny", "unsub", "unsubbed", subtype_strs[typesub],
 			"unsub-notsubscribed");
 	MY_ASSERT(txt);
-	register_default_unformatted(txt, ml->delim, ml->addr);
+	register_default_unformatted(txt, ml);
 	register_unformatted(txt, "subaddr", subaddr);
-	queuefilename = prepstdreply(txt, ml->dir,
-			"$helpaddr$", subaddr, NULL, ml->fd, ml->fd);
+	queuefilename = prepstdreply(txt, ml, "$helpaddr$", subaddr, NULL);
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 

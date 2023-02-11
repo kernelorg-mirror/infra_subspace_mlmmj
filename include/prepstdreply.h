@@ -26,6 +26,7 @@
 #define PREPSTDREPLY_H
 
 #include <stdbool.h>
+#include "mlmmj.h"
 
 struct text;
 typedef struct text text;
@@ -62,11 +63,11 @@ void register_formatted(text *txt, const char *token,
 		rewind_function rew, get_function get, void * state);
 char *get_processed_text_line(text *txt, int headers,
 		const char *listdir, int listfd, int ctrlfd);
-bool prepstdreply_to(text *txt, const char *listdir,
-		const char *from, const char *to, const char *replyto, int listfd, int ctrlfd, int tofd, const char *messageid);
-char *prepstdreply(text *txt, const char *listdir,
-		const char *from, const char *to, const char *replyto, int listfd, int ctrlfd);
+bool prepstdreply_to(text *txt, struct ml *ml,
+		const char *from, const char *to, const char *replyto, int tofd, const char *messageid);
+char *prepstdreply(text *txt, struct ml *ml,
+		const char *from, const char *to, const char *replyto);
 void close_text(text *txt);
-void register_default_unformatted(text *txt, const char *listdelim, const char *listaddr);
+void register_default_unformatted(text *txt, struct ml *ml);
 
 #endif /* PREPSTDREPLY_H */
