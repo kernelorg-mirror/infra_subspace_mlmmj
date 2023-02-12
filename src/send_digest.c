@@ -301,7 +301,7 @@ int send_digest(struct ml *ml, int firstindex, int lastindex,
 	register_formatted(txt, "digestthreads", rewind_thread_list,
 			get_thread_list_line, tls);
 
-	line = get_processed_text_line(txt, 1, ml);
+	line = get_processed_text_line(txt, true, ml);
 
 	if (line == NULL) {
 		log_error(LOG_ARGS, "No content in digest listtext");
@@ -328,7 +328,7 @@ int send_digest(struct ml *ml, int firstindex, int lastindex,
 		free(line);
 
 		/* Skip the empty line after the subject */
-		line = get_processed_text_line(txt, 1, ml);
+		line = get_processed_text_line(txt, true, ml);
 		if (line == NULL || *line != '\0') {
 			log_error(LOG_ARGS, "Too many headers "
 					"in digest listtext");
@@ -413,7 +413,7 @@ errdighdrs:
 		}
 
 		for (;;) {
-			line = get_processed_text_line(txt, 0, ml);
+			line = get_processed_text_line(txt, false, ml);
 			if (line == NULL) break;
 			if(dprintf(fd, "%s\n", line) < 0) {
 				free(line);

@@ -997,7 +997,7 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 }
 
 
-char *get_processed_text_line(text *txt, int headers, struct ml *ml)
+char *get_processed_text_line(text *txt, bool headers, struct ml *ml)
 {
 	char *line;
 	const char *item;
@@ -1537,7 +1537,7 @@ prepstdreply_to(text *txt, struct ml *ml, const char *from, const char *to,
 	}
 
 	for(;;) {
-		line = get_processed_text_line(txt, 1, ml);
+		line = get_processed_text_line(txt, true, ml);
 		if (!line) {
 			log_error(LOG_ARGS, "No body in listtext");
 			break;
@@ -1615,7 +1615,7 @@ prepstdreply_to(text *txt, struct ml *ml, const char *from, const char *to,
 	}
 
 	if (line == NULL) {
-		line = get_processed_text_line(txt, 0, ml);
+		line = get_processed_text_line(txt, false, ml);
 	}
 	while(line) {
 			if(dprintf(tofd, "%s\n", line) < 0) {
@@ -1624,7 +1624,7 @@ prepstdreply_to(text *txt, struct ml *ml, const char *from, const char *to,
 				goto freeandreturn;
 			}
 		free(line);
-		line = get_processed_text_line(txt, 0, ml);
+		line = get_processed_text_line(txt, false, ml);
 	}
 
 	fsync(tofd);

@@ -61,7 +61,7 @@ void register_unformatted(text *txt, const char *token, const char *subst);
 void register_originalmail(text *txt, const char *mailname);
 void register_formatted(text *txt, const char *token,
 		rewind_function rew, get_function get, void * state);
-char *get_processed_text_line(text *txt, int headers, struct ml *ml);
+char *get_processed_text_line(text *txt, bool headers, struct ml *ml);
 bool prepstdreply_to(text *txt, struct ml *ml,
 		const char *from, const char *to, const char *replyto, int tofd, const char *messageid);
 char *prepstdreply(text *txt, struct ml *ml,
