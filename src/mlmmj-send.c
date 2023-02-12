@@ -23,7 +23,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/fcntl.h>
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
@@ -435,7 +434,7 @@ int main(int argc, char **argv)
 	char *mailfilename = NULL, *subfilename = NULL, *omit = NULL;
 	char *bounceaddr = NULL;
 	char *relayhost = NULL, *archivefilename = NULL, *tmpstr;
-	char *subddirname = NULL;
+	const char *subddirname = NULL;
 	char listctrl = 0;
 	char *probefile, *a;
 	char *verp = NULL;
@@ -450,6 +449,7 @@ int main(int argc, char **argv)
 	struct sigaction sigact;
 	struct mail mail;
 	struct ml ml;
+	int subdirfd;
 
 	memset(&mail, 0, sizeof(mail));
 	log_set_name(argv[0]);
@@ -762,14 +762,14 @@ int main(int argc, char **argv)
 		/* fall through */
 	default: /* normal list mail */
 		if (!digest) {
-			subddirname = concatstr(2, ml.dir, "/subscribers.d/");
+			subddirname = "subscribers.d";
 		} else {
-			subddirname = concatstr(2, ml.dir, "/digesters.d/");
+			subddirname = "digesters.d";
 		}
-		if((subddir = opendir(subddirname)) == NULL) {
-			log_error(LOG_ARGS, "Could not opendir(%s)",
+		subdirfd = openat(ml.fd, subddirname, O_DIRECTORY|O_CLOEXEC);
+		if (subdirfd == -1 || (subddir = fdopendir(subdirfd)) == NULL) {
+			log_error(LOG_ARGS, "Could not opendir(%s/%s)", ml.dir,
 					    subddirname);
-			free(subddirname);
 			free(mail.hdrs);
 			free(mail.body);
 			exit(EXIT_FAILURE);
@@ -825,16 +825,16 @@ int main(int argc, char **argv)
 		}
 
 		while((dp = readdir(subddir)) != NULL) {
+			int fd;
+			FILE *f;
 			if(!strcmp(dp->d_name, "."))
 				continue;
 			if(!strcmp(dp->d_name, ".."))
 				continue;
-			subfilename = concatstr(2, subddirname, dp->d_name);
-			FILE *f = fopen(subfilename, "r");
-			if (f == NULL) {
-				log_error(LOG_ARGS, "Could not open '%s'",
-						    subfilename);
-				free(subfilename);
+			fd = openat(subdirfd, dp->d_name, O_RDONLY);
+			if (fd == -1 || (f = fdopen(fd, "r")) == NULL) {
+				log_error(LOG_ARGS, "Could not open '%s/%s/%s'",
+				    ml.dir, subddirname, dp->d_name);
 				continue;
 			}
 			do {
@@ -876,9 +876,7 @@ int main(int argc, char **argv)
 					tll_free_and_free(stl, free);
 				}
 			} while(res > 0);
-			free(subfilename);
 			fclose(f);
-
 		}
 		if(tll_length(stl)) {
 			initsmtp(&sockfd, relayhost, smtpport, smtphelo);
@@ -905,7 +903,6 @@ int main(int argc, char **argv)
 		}
 		free(verpfrom);
 		closedir(subddir);
-		free(subddirname);
 		break;
 	}
 	
