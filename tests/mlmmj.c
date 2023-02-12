@@ -20,7 +20,6 @@
  * IN THE SOFTWARE.
  */
 
-#include <sys/fcntl.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
