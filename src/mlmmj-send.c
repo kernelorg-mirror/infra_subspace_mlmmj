@@ -1,6 +1,6 @@
-/* Copyright (C) 2004, 2003, 2004 Mads Martin Joergensen <mmj at mmj.dk>
- *
- * $Id$
+/*
+ * Copyright (C) 2004, 2003, 2004 Mads Martin Joergensen <mmj at mmj.dk>
+ * Copyright (C) 2023 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -52,8 +52,6 @@
 #include "incindexfile.h"
 #include "chomp.h"
 #include "checkwait_smtpreply.h"
-#include "getlistaddr.h"
-#include "getlistdelim.h"
 #include "init_sockfd.h"
 #include "strgen.h"
 #include "log_error.h"
@@ -435,15 +433,14 @@ int main(int argc, char **argv)
 	int deletewhensent = 1, sendres = 0, digest = 0;
 	bool archive = true, ctrlarchive;
 	int res;
-	char *listaddr = NULL, *listdelim = NULL;
 	char *mailfilename = NULL, *subfilename = NULL, *omit = NULL;
 	char *bounceaddr = NULL;
 	char *relayhost = NULL, *archivefilename = NULL, *tmpstr;
-	char *subddirname = NULL, *listdir = NULL;
+	char *subddirname = NULL;
 	char listctrl = 0;
 	char *probefile, *a;
 	char *verp = NULL;
-	char *listname, *listfqdn, *verpfrom;
+	char *verpfrom;
 	char *reply, *smtphelo, *requeuefilename;
 	ssize_t memmailsize = 0;
 	DIR *subddir;
@@ -452,11 +449,12 @@ int main(int argc, char **argv)
 	strlist stl = tll_init();
 	unsigned short smtpport;
 	struct sigaction sigact;
-	int listfd, ctrlfd;
 	struct mail mail;
+	struct ml ml;
 
 	memset(&mail, 0, sizeof(mail));
 	log_set_name(argv[0]);
+	ml_init(&ml);
 
 	/* install signal handler for SIGTERM */
 	sigact.sa_handler = catch_sig_term;
@@ -488,7 +486,7 @@ int main(int argc, char **argv)
 			archive = false;
 			break;
 		case 'L':
-			listdir = optarg;
+			ml.dir = optarg;
 			break;
 		case 'm':
 			mailfilename = optarg;
@@ -514,15 +512,13 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if(mailfilename == NULL || (listdir == NULL && listctrl == '0')) {
+	if(mailfilename == NULL || (ml.dir == NULL && listctrl == '0')) {
 		errx(EXIT_FAILURE, "You have to specify -m and -L or -l\n"
 		    "%s -h for help", argv[0]);
 	}
-	if (listdir != NULL) {
-		listfd = open_listdir(listdir, true);
-		ctrlfd = openat(listfd, "control", O_DIRECTORY|O_CLOEXEC);
-		if (ctrlfd == -1)
-			err(EXIT_FAILURE, "Cannot open(%s/control)", listdir);
+	if (ml.dir != NULL) {
+		if (!ml_open(&ml, false))
+			exit(EXIT_FAILURE);
 	}
 
 	/* get the list address */
@@ -530,27 +526,24 @@ int main(int argc, char **argv)
 		errx(EXIT_FAILURE, "With -l 1 you need -F and -T");
 	}
 
-	if((listctrl == '2' && (listdir == NULL || bounceaddr == NULL))) {
+	if((listctrl == '2' && (ml.dir == NULL || bounceaddr == NULL))) {
 		errx(EXIT_FAILURE, "With -l 2 you need -L and -F");
 	}
 
-	if((listctrl == '7' && listdir == NULL)) {
+	if((listctrl == '7' && ml.dir == NULL)) {
 		errx(EXIT_FAILURE, "With -l 7 you need -L");
 	}
 
-	if (listdir) {
-		verp = ctrlvalue(ctrlfd, "verp");
+	if (ml.dir) {
+		verp = ctrlvalue(ml.ctrlfd, "verp");
 		if(verp == NULL)
-			if(statctrl(ctrlfd, "verp") == 1)
+			if(statctrl(ml.ctrlfd, "verp") == 1)
 				verp = xstrdup("");
 
-		if(verp && statctrl(ctrlfd, "maxverprecips"))
-			maxverprecips = ctrlsizet(ctrlfd, "maxverprecips", MAXVERPRECIPS);
+		if(verp && statctrl(ml.ctrlfd, "maxverprecips"))
+			maxverprecips = ctrlsizet(ml.ctrlfd, "maxverprecips", MAXVERPRECIPS);
 	}
 
-	if(listdir && listctrl != '5')
-		listaddr = getlistaddr(ctrlfd);
-	
 	/* initialize file with mail to send */
 
 	if((mailfd = open(mailfilename, O_RDWR, 0644)) < 0 &&
@@ -564,9 +557,9 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	if (listdir) {
-		memmailsize = ctrlsizet(ctrlfd, "memorymailsize", MEMORYMAILSIZE);
-		ctrlarchive = statctrl(ctrlfd, "noarchive");
+	if (ml.dir) {
+		memmailsize = ctrlsizet(ml.ctrlfd, "memorymailsize", MEMORYMAILSIZE);
+		ctrlarchive = statctrl(ml.ctrlfd, "noarchive");
 	}
 
 	if(st.st_size > memmailsize) {
@@ -598,22 +591,18 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if(listdir)
-		listdelim = getlistdelim(ctrlfd);
-
 	switch(listctrl) {
 	case '1': /* A single mail is to be sent, do nothing */
 	case '5':
 		break;
 	case '2': /* Moderators */
-		subfilename = concatstr(2, listdir, "/control/moderators");
+		subfilename = concatstr(2, ml.dir, "/control/moderators");
 		if((subfd = open(subfilename, O_RDONLY)) < 0) {
 			log_error(LOG_ARGS, "Could not open '%s':",
 					    subfilename);
 			free(mail.hdrs);
 			free(mail.body);
 			free(subfilename);
-			free(listdelim);
 			/* No moderators is no error. Could be the sysadmin
 			 * likes to do it manually.
 			 */
@@ -621,44 +610,43 @@ int main(int argc, char **argv)
 		}
 		break;
 	case '3':
-		mail.addtohdr = statctrl(ctrlfd, "addtohdr");
+		mail.addtohdr = statctrl(ml.ctrlfd, "addtohdr");
 	case '4': /* sending mails to subfile */
 		if((subfd = open(subfilename, O_RDONLY)) < 0) {
 			log_error(LOG_ARGS, "Could not open '%s':",
 					    subfilename);
 			free(mail.hdrs);
 			free(mail.body);
-			free(listdelim);
 			exit(EXIT_FAILURE);
 		}
 		break;
 	case '6':
 		deletewhensent = 0;
 		archivefilename = xstrdup(mailfilename);
-		bounceaddr = bounce_from_adr(mail.to, listaddr, listdelim,
-						archivefilename, ctrlfd);
+		bounceaddr = bounce_from_adr(mail.to, ml.addr, ml.delim,
+						archivefilename, ml.ctrlfd);
 		break;
 	default: /* normal list mail -- now handled when forking */
-		mail.addtohdr = statctrl(ctrlfd, "addtohdr");
+		mail.addtohdr = statctrl(ml.ctrlfd, "addtohdr");
 		break;
 	}
 
 	/* initialize the archive filename */
 	if(archive) {
-		mindex = incindexfile(listfd);
-		len = strlen(listdir) + 9 + 20;
+		mindex = incindexfile(ml.fd);
+		len = strlen(ml.dir) + 9 + 20;
 		archivefilename = xmalloc(len);
-		snprintf(archivefilename, len, "%s/archive/%d", listdir,
+		snprintf(archivefilename, len, "%s/archive/%d", ml.dir,
 			 mindex);
 	}
 
 	if(!relayhost)
-		relayhost = ctrlvalue(ctrlfd, "relayhost");
+		relayhost = ctrlvalue(ml.ctrlfd, "relayhost");
 	if(!relayhost)
 		relayhost = xstrdup(RELAYHOST);
 
-	smtpport = ctrlushort(ctrlfd, "smtpport", 25);
-	if ((smtphelo = ctrlvalue(ctrlfd, "smtphelo")) == NULL) {
+	smtpport = ctrlushort(ml.ctrlfd, "smtpport", 25);
+	if ((smtphelo = ctrlvalue(ml.ctrlfd, "smtphelo")) == NULL) {
 		smtphelo = hostnamestr();
 	}
 
@@ -667,7 +655,7 @@ int main(int argc, char **argv)
 	case '6':
 		initsmtp(&sockfd, relayhost, smtpport, smtphelo);
 		mail.from = bounceaddr;
-		if(send_mail(sockfd, &mail,listfd, ctrlfd, false)) {
+		if(send_mail(sockfd, &mail, ml.fd, ml.ctrlfd, false)) {
 			close(sockfd);
 			sockfd = -1;
 			/* error, so keep it in the queue */
@@ -721,7 +709,7 @@ int main(int argc, char **argv)
 		initsmtp(&sockfd, relayhost, smtpport, smtphelo);
 		mail.from = bounceaddr;
 		mail.replyto = NULL;
-		if(send_mail_many_fd(sockfd, &mail, subfd, NULL, NULL, NULL, listfd, ctrlfd)) {
+		if(send_mail_many_fd(sockfd, &mail, subfd, NULL, NULL, NULL, ml.fd, ml.ctrlfd)) {
 			close(sockfd);
 			sockfd = -1;
 		} else {
@@ -732,8 +720,8 @@ int main(int argc, char **argv)
 		initsmtp(&sockfd, relayhost, smtpport, smtphelo);
 		mail.from = NULL;
 		mail.replyto = NULL;
-		if(send_mail_many_fd(sockfd, &mail, subfd, listaddr, listdelim,
-				mailfilename, listfd, ctrlfd)) {
+		if(send_mail_many_fd(sockfd, &mail, subfd, ml.addr, ml.delim,
+				mailfilename, ml.fd, ml.ctrlfd)) {
 			close(sockfd);
 			sockfd = -1;
 		} else {
@@ -745,8 +733,8 @@ int main(int argc, char **argv)
 		initsmtp(&sockfd, relayhost, smtpport, smtphelo);
 		mail.from = bounceaddr;
 		mail.replyto = NULL;
-		if(send_mail_many_fd(sockfd, &mail, subfd, listaddr, listdelim,
-				mailfilename, listfd, ctrlfd)) {
+		if(send_mail_many_fd(sockfd, &mail, subfd, ml.addr, ml.delim,
+				mailfilename, ml.fd, ml.ctrlfd)) {
 			close(sockfd);
 			sockfd = -1;
 		} else {
@@ -756,7 +744,7 @@ int main(int argc, char **argv)
 	case '5': /* bounceprobe - handle relayhost local users bouncing*/
 		initsmtp(&sockfd, relayhost, smtpport, smtphelo);
 		mail.from = bounceaddr;
-		if(send_mail(sockfd, &mail, listfd, ctrlfd, false)) {
+		if(send_mail(sockfd, &mail, ml.fd, ml.ctrlfd, false)) {
 			close(sockfd);
 			sockfd = -1;
 			/* error, so remove the probefile */
@@ -764,7 +752,7 @@ int main(int argc, char **argv)
 			a = strchr(tmpstr, '@');
 			MY_ASSERT(a);
 			*a = '=';
-			probefile = concatstr(4, listdir, "/bounce/", tmpstr,
+			probefile = concatstr(4, ml.dir, "/bounce/", tmpstr,
 					"-probe");
 			unlink(probefile);
 			free(probefile);
@@ -780,27 +768,21 @@ int main(int argc, char **argv)
 		/* fall through */
 	default: /* normal list mail */
 		if (!digest) {
-			subddirname = concatstr(2, listdir, "/subscribers.d/");
+			subddirname = concatstr(2, ml.dir, "/subscribers.d/");
 		} else {
-			subddirname = concatstr(2, listdir, "/digesters.d/");
+			subddirname = concatstr(2, ml.dir, "/digesters.d/");
 		}
 		if((subddir = opendir(subddirname)) == NULL) {
 			log_error(LOG_ARGS, "Could not opendir(%s)",
 					    subddirname);
-			free(listdelim);
 			free(subddirname);
 			free(mail.hdrs);
 			free(mail.body);
 			exit(EXIT_FAILURE);
 		}
 
-		listdelim = getlistdelim(ctrlfd);
-		listname = genlistname(listaddr);	
-		listfqdn = genlistfqdn(listaddr);	
-		xasprintf(&verpfrom, "%s%sbounces-%d@%s", listname, listdelim,
-		    mindex, listfqdn);
-		free(listname);
-		free(listfqdn);
+		xasprintf(&verpfrom, "%s%sbounces-%d@%s", ml.name, ml.delim,
+		    mindex, ml.fqdn);
 
 		if(digest)
 			verp = NULL;
@@ -878,7 +860,7 @@ int main(int argc, char **argv)
 								&mail,
 								verp);
 						if(sendres)
-							requeuemail(listfd,
+							requeuemail(ml.fd,
 								mindex,
 								&stl);
 					} else {
@@ -886,10 +868,10 @@ int main(int argc, char **argv)
 						mail.replyto = NULL;
 						sendres = send_mail_many_list(
 								sockfd, &mail,
-								&stl, listaddr,
-								listdelim,
+								&stl, ml.addr,
+								ml.delim,
 								archivefilename,
-								listfd, ctrlfd);
+								ml.fd, ml.fd);
 					}
 				    	if (sendres) {
 					    	close(sockfd);
@@ -911,13 +893,13 @@ int main(int argc, char **argv)
 				mail.replyto = NULL;
 				sendres = send_mail_verp(sockfd, &stl, &mail, verp);
 				if(sendres)
-					requeuemail(listfd, mindex, &stl);
+					requeuemail(ml.fd, mindex, &stl);
 			} else {
 				mail.from = NULL;
 				mail.replyto = NULL;
 				sendres = send_mail_many_list(sockfd, &mail,
-						&stl, listaddr, listdelim,
-						archivefilename, listfd, ctrlfd);
+						&stl, ml.addr, ml.delim,
+						archivefilename, ml.fd, ml.ctrlfd);
 			}
 			if (sendres) {
 				close(sockfd);
@@ -933,7 +915,6 @@ int main(int argc, char **argv)
 		break;
 	}
 	
-	free(listdelim);
 	free(mail.hdrs);
 	free(mail.body);
 	munmap(mail.map, mail.size);
@@ -951,7 +932,7 @@ int main(int argc, char **argv)
 			}
 		} else {
 			xasprintf(&requeuefilename, "%s/requeue/%d",
-				listdir, mindex);
+				ml.dir, mindex);
 			if(stat(requeuefilename, &st) < 0) {
 				/* Nothing was requeued and we don't keep
 				 * mail for a noarchive list. */
@@ -960,7 +941,7 @@ int main(int argc, char **argv)
 				free(requeuefilename);
 				xasprintf(&requeuefilename,
 					"%s/requeue/%d/mailfile",
-					listdir, mindex);
+					ml.dir, mindex);
 				if (rename(mailfilename, requeuefilename) < 0) {
 					log_error(LOG_ARGS,
 							"Could not rename(%s,%s);",
