@@ -501,7 +501,7 @@ ATF_TC_BODY(strtoim, tc)
 	ATF_REQUIRE_EQ(errno, EINVAL);
 	ATF_REQUIRE(errp != NULL);
 	ATF_REQUIRE_STREQ(errp, "invalid");
-
+	ATF_REQUIRE_EQ(strtoim("ba12", 0, 9, NULL), 0);
 
 	ATF_REQUIRE_EQ(strtouim(NULL, 0, 10, &errp), 0);
 	ATF_REQUIRE(errp != NULL);
@@ -524,6 +524,7 @@ ATF_TC_BODY(strtoim, tc)
 	ATF_REQUIRE_EQ(errno, EINVAL);
 	ATF_REQUIRE(errp != NULL);
 	ATF_REQUIRE_STREQ(errp, "invalid");
+	ATF_REQUIRE_EQ(strtouim("ba12", 0, 9, NULL), 0);
 }
 
 ATF_TC_BODY(write_ehlo, tc)

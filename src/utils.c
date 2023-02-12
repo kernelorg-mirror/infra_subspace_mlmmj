@@ -44,27 +44,32 @@ strtoim(const char *np, intmax_t minval, intmax_t maxval, const char **errpp)
 	char *endp;
 	intmax_t ret;
 
-	*errpp = NULL;
+	if (errpp != NULL)
+		*errpp = NULL;
 	if (minval > maxval || np == NULL) {
 		errno = EINVAL;
-		*errpp = "invalid";
+		if (errpp != NULL)
+			*errpp = "invalid";
 		return (0);
 	}
 	errno = 0;
 	ret = strtoimax(np, &endp, 10);
 	if (endp == np || *endp != '\0') {
 		errno = EINVAL;
-		*errpp = "invalid";
+		if (errpp != NULL)
+			*errpp = "invalid";
 		return (0);
 	}
 	if (ret < minval) {
 		errno = ERANGE;
-		*errpp = "too small";
+		if (errpp != NULL)
+			*errpp = "too small";
 		return (0);
 	}
 	if (errno == ERANGE || ret > maxval) {
 		errno = ERANGE;
-		*errpp = "too large";
+		if (errpp != NULL)
+			*errpp = "too large";
 		return (0);
 	}
 	return (ret);
@@ -84,27 +89,32 @@ strtouim(const char *np, uintmax_t minval, uintmax_t maxval, const char **errpp)
 	char *endp;
 	uintmax_t ret;
 
-	*errpp = NULL;
+	if (errpp != NULL)
+		*errpp = NULL;
 	if (minval > maxval || np == NULL) {
 		errno = EINVAL;
-		*errpp = "invalid";
+		if (errpp != NULL)
+			*errpp = "invalid";
 		return (0);
 	}
 	errno = 0;
 	ret = strtoumax(np, &endp, 10);
 	if (endp == np || *endp != '\0') {
 		errno = EINVAL;
-		*errpp = "invalid";
+		if (errpp != NULL)
+			*errpp = "invalid";
 		return (0);
 	}
 	if (ret < minval) {
 		errno = ERANGE;
-		*errpp = "too small";
+		if (errpp != NULL)
+			*errpp = "too small";
 		return (0);
 	}
 	if (errno == ERANGE || ret > maxval) {
 		errno = ERANGE;
-		*errpp = "too large";
+		if (errpp != NULL)
+			*errpp = "too large";
 		return (0);
 	}
 	return (ret);
