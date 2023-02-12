@@ -428,7 +428,7 @@ static void print_help(const char *prg)
 
 int main(int argc, char **argv)
 {
-	size_t len = 0, hdrslen, bodylen;
+	size_t hdrslen, bodylen;
 	int sockfd = -1, mailfd = 0, opt, mindex = 0, subfd = 0, tmpfd;
 	int deletewhensent = 1, sendres = 0, digest = 0;
 	bool archive = true, ctrlarchive;
@@ -634,10 +634,7 @@ int main(int argc, char **argv)
 	/* initialize the archive filename */
 	if(archive) {
 		mindex = incindexfile(ml.fd);
-		len = strlen(ml.dir) + 9 + 20;
-		archivefilename = xmalloc(len);
-		snprintf(archivefilename, len, "%s/archive/%d", ml.dir,
-			 mindex);
+		xasprintf(&archivefilename, "%s/archive/%d", ml.dir, mindex);
 	}
 
 	if(!relayhost)
