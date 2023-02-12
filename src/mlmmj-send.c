@@ -860,12 +860,7 @@ int main(int argc, char **argv)
 					} else {
 						mail.from = NULL;
 						mail.replyto = NULL;
-						sendres = send_mail_many_list(
-								sockfd, &mail,
-								&stl, ml.addr,
-								ml.delim,
-								archivefilename,
-								ml.fd, ml.fd);
+						sendres = send_mail_many_list( sockfd, &mail, &stl, ml.addr, ml.delim, archivefilename, ml.fd, ml.fd);
 					}
 				    	if (sendres) {
 					    	close(sockfd);
@@ -889,9 +884,7 @@ int main(int argc, char **argv)
 			} else {
 				mail.from = NULL;
 				mail.replyto = NULL;
-				sendres = send_mail_many_list(sockfd, &mail,
-						&stl, ml.addr, ml.delim,
-						archivefilename, ml.fd, ml.ctrlfd);
+				sendres = send_mail_many_list(sockfd, &mail, &stl, ml.addr, ml.delim, archivefilename, ml.fd, ml.ctrlfd);
 			}
 			if (sendres) {
 				close(sockfd);

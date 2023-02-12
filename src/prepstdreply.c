@@ -728,7 +728,7 @@ static int handle_conditional(text *txt, char **line_p, char **pos_p,
 
 static int handle_directive(text *txt, char **line_p, char **pos_p,
 		int *width_p, int *skipwhite_p,
-		int conditionalsonly, const char *listdir, int ctrlfd)
+		int conditionalsonly, struct ml *ml)
 {
 	/* This function returns 1 to swallow a preceding blank line, i.e. if
 	 * we just finished processing a failed conditional without an else
@@ -757,35 +757,35 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 	if(strncmp(token, "ifaction ", 9) == 0) {
 		token += 9;
 		if (handle_conditional(txt, line_p, pos_p, skipwhite_p, token,
-				0, ACTION, 1, ctrlfd) == 0) return 0;
+				0, ACTION, 1, ml->ctrlfd) == 0) return 0;
 	} else if(strncmp(token, "ifreason ", 9) == 0) {
 		token += 9;
 		if (handle_conditional(txt, line_p, pos_p, skipwhite_p, token,
-				0, REASON, 1, ctrlfd) == 0) return 0;
+				0, REASON, 1, ml->ctrlfd) == 0) return 0;
 	} else if(strncmp(token, "iftype ", 7) == 0) {
 		token += 7;
 		if (handle_conditional(txt, line_p, pos_p, skipwhite_p, token,
-				0, TYPE, 1, ctrlfd) == 0) return 0;
+				0, TYPE, 1, ml->ctrlfd) == 0) return 0;
 	} else if(strncmp(token, "ifcontrol ", 10) == 0) {
 		token += 10;
 		if (handle_conditional(txt, line_p, pos_p, skipwhite_p, token,
-				0, CONTROL, 1, ctrlfd) == 0) return 0;
+				0, CONTROL, 1, ml->ctrlfd) == 0) return 0;
 	} else if(strncmp(token, "ifnaction ", 10) == 0) {
 		token += 10;
 		if (handle_conditional(txt, line_p, pos_p, skipwhite_p, token,
-				1, ACTION, 0, ctrlfd) == 0) return 0;
+				1, ACTION, 0, ml->ctrlfd) == 0) return 0;
 	} else if(strncmp(token, "ifnreason ", 10) == 0) {
 		token += 10;
 		if (handle_conditional(txt, line_p, pos_p, skipwhite_p, token,
-				1, REASON, 0, ctrlfd) == 0) return 0;
+				1, REASON, 0, ml->ctrlfd) == 0) return 0;
 	} else if(strncmp(token, "ifntype ", 8) == 0) {
 		token += 8;
 		if (handle_conditional(txt, line_p, pos_p, skipwhite_p, token,
-				1, TYPE, 0, ctrlfd) == 0) return 0;
+				1, TYPE, 0, ml->ctrlfd) == 0) return 0;
 	} else if(strncmp(token, "ifncontrol ", 11) == 0) {
 		token += 11;
 		if (handle_conditional(txt, line_p, pos_p, skipwhite_p, token,
-				1, CONTROL, 1, ctrlfd) == 0) return 0;
+				1, CONTROL, 1, ml->ctrlfd) == 0) return 0;
 	} else if(strcmp(token, "else") == 0) {
 		if (txt->cond != NULL) {
 			if (txt->skip == txt->cond) txt->skip = NULL;
@@ -933,7 +933,7 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 	} else if(strncmp(token, "control ", 8) == 0) {
 		token = filename_token(token + 8);
 		if (token != NULL) {
-			filename = concatstr(3, listdir, "/control/", token);
+			xasprintf(&filename, "%s/control/%s", ml->dir, token);
 			begin_new_source_file(txt,
 					line_p, pos_p, width_p, filename, 0);
 			free(filename);
@@ -942,7 +942,7 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 	} else if(strncmp(token, "text ", 5) == 0) {
 		token = filename_token(token + 5);
 		if (token != NULL) {
-			filename = concatstr(3, listdir, "/text/", token);
+			xasprintf(&filename, "%s/text/%s", ml->dir, token);
 			begin_new_source_file(txt,
 					line_p, pos_p, width_p, filename, 0);
 			free(filename);
@@ -997,8 +997,7 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 }
 
 
-char *get_processed_text_line(text *txt, int headers,
-		const char *listdir, int listfd, int ctrlfd)
+char *get_processed_text_line(text *txt, int headers, struct ml *ml)
 {
 	char *line;
 	const char *item;
@@ -1259,7 +1258,7 @@ char *get_processed_text_line(text *txt, int headers,
 				continue;
 			} else if (*pos == '$' && txt->skip == NULL) {
 				if (peeking) break;
-				substitute_one(&line, &pos, &width, listfd, ctrlfd, txt);
+				substitute_one(&line, &pos, &width, ml->fd, ml->ctrlfd, txt);
 				if (len != pos - line) {
 					/* Cancel any break inhibition if the
 					 * length changed (which will be
@@ -1275,7 +1274,7 @@ char *get_processed_text_line(text *txt, int headers,
 				directive = 1;
 				swallow = handle_directive(txt, &line, &pos,
 						&width, &skipwhite,
-						peeking, listdir, ctrlfd);
+						peeking, ml);
 				if (swallow == 1) peeking = 0;
 				if (swallow == -1) break;
 				if (txt->skip != NULL) {
@@ -1538,7 +1537,7 @@ prepstdreply_to(text *txt, struct ml *ml, const char *from, const char *to,
 	}
 
 	for(;;) {
-		line = get_processed_text_line(txt, 1, ml->dir, ml->fd, ml->fd);
+		line = get_processed_text_line(txt, 1, ml);
 		if (!line) {
 			log_error(LOG_ARGS, "No body in listtext");
 			break;
@@ -1616,7 +1615,7 @@ prepstdreply_to(text *txt, struct ml *ml, const char *from, const char *to,
 	}
 
 	if (line == NULL) {
-		line = get_processed_text_line(txt, 0, ml->dir, ml->fd, ml->ctrlfd);
+		line = get_processed_text_line(txt, 0, ml);
 	}
 	while(line) {
 			if(dprintf(tofd, "%s\n", line) < 0) {
@@ -1625,7 +1624,7 @@ prepstdreply_to(text *txt, struct ml *ml, const char *from, const char *to,
 				goto freeandreturn;
 			}
 		free(line);
-		line = get_processed_text_line(txt, 0, ml->dir, ml->fd, ml->ctrlfd);
+		line = get_processed_text_line(txt, 0, ml);
 	}
 
 	fsync(tofd);
