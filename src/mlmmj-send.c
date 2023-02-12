@@ -320,7 +320,7 @@ requeuemail(int listfd, int index, strlist *addrs)
 		free(dirname);
 		return -1;
 	}
-	addrfilename = concatstr(2, dirname, "/subscribers");
+	xasprintf(&addrfilename, "%s/subscribers");
 	free(dirname);
 	addrfd = openat(listfd, addrfilename, O_WRONLY|O_CREAT|O_APPEND,
 			S_IRUSR|S_IWUSR);
@@ -329,27 +329,26 @@ requeuemail(int listfd, int index, strlist *addrs)
 				addrfilename);
 		free(addrfilename);
 		return -1;
-	} else {
-		/* Dump the remaining addresses. We dump the remaining before
-		 * we write the failing address to ensure the potential good
-		 * ones will be tried first when mlmmj-maintd sends out mails
-		 * that have been requeued. addrcount was so far we were */
-		char *addr = tll_pop_front(*addrs);
-		tll_foreach(*addrs, it) {
-			if(dprintf(addrfd, "%s\n", it->item) < 0) {
-				log_error(LOG_ARGS, "Could not add [%s] "
-						    "to requeue file", it->item);
-				return -1;
-			}
-		}
-		if(dprintf(addrfd, "%s\n", addr) < 0) {
-			log_error(LOG_ARGS, "Could not add [%s] to requeue "
-					"file", addr);
-			return -1;
-		}
-		free(addr);
 	}
 	free(addrfilename);
+	/* Dump the remaining addresses. We dump the remaining before
+	 * we write the failing address to ensure the potential good
+	 * ones will be tried first when mlmmj-maintd sends out mails
+	 * that have been requeued. addrcount was so far we were */
+	char *addr = tll_pop_front(*addrs);
+	tll_foreach(*addrs, it) {
+		if(dprintf(addrfd, "%s\n", it->item) < 0) {
+			log_error(LOG_ARGS, "Could not add [%s] "
+					    "to requeue file", it->item);
+			return -1;
+		}
+	}
+	if(dprintf(addrfd, "%s\n", addr) < 0) {
+		log_error(LOG_ARGS, "Could not add [%s] to requeue "
+				"file", addr);
+		return -1;
+	}
+	free(addr);
 	close(addrfd);
 
 	return 0;
