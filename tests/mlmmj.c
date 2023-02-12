@@ -53,7 +53,6 @@
 #include "find_email_adr.h"
 #include "send_mail.h"
 #include "getlistdelim.h"
-#include "getlistaddr.h"
 #include "statctrl.h"
 #include "subscriberfuncs.h"
 #include "getaddrsfromfile.h"
@@ -117,7 +116,6 @@ ATF_TC_WITHOUT_HEAD(getlistdelim_1);
 ATF_TC_WITHOUT_HEAD(getlistdelim_2);
 ATF_TC_WITHOUT_HEAD(getlistdelim_3);
 ATF_TC_WITHOUT_HEAD(getlistdelim_4);
-ATF_TC_WITHOUT_HEAD(getlistaddr);
 ATF_TC_WITHOUT_HEAD(statctrl);
 ATF_TC_WITHOUT_HEAD(is_subbed_in);
 ATF_TC_WITHOUT_HEAD(getaddrsfromfile);
@@ -1619,26 +1617,6 @@ ATF_TC_BODY(getlistdelim_4, tc)
 	ATF_REQUIRE_STREQ_MSG(getlistdelim(fd), "mydelim", "Invalid delimiter found");
 }
 
-ATF_TC_BODY(getlistaddr, tc)
-{
-	init_ml(false);
-	int fd = open("list/control", O_RDONLY);
-
-	pid_t p = atf_utils_fork();
-	if (p == 0) {
-		ATF_REQUIRE_EQ_MSG(getlistaddr(fd), NULL, "no control/listaddress file should be null");
-	}
-	atf_utils_wait(p, EXIT_FAILURE, "", "");
-	atf_utils_create_file("list/control/listaddress", "plop\n");
-	p = atf_utils_fork();
-	if (p == 0) {
-		ATF_REQUIRE_EQ_MSG(getlistaddr(fd), NULL, "no control/listaddress file should be null");
-	}
-	atf_utils_wait(p, EXIT_FAILURE, "", "");
-	atf_utils_create_file("list/control/listaddress", "plop@meh\n");
-	ATF_REQUIRE_STREQ_MSG(getlistaddr(fd), "plop@meh", "list address not read properly");
-}
-
 ATF_TC_BODY(statctrl, tc)
 {
 	pid_t p;
@@ -2555,7 +2533,6 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, getlistdelim_2);
 	ATF_TP_ADD_TC(tp, getlistdelim_3);
 	ATF_TP_ADD_TC(tp, getlistdelim_4);
-	ATF_TP_ADD_TC(tp, getlistaddr);
 	ATF_TP_ADD_TC(tp, statctrl);
 	ATF_TP_ADD_TC(tp, is_subbed_in);
 	ATF_TP_ADD_TC(tp, getaddrsfromfile);
