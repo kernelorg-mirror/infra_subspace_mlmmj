@@ -595,13 +595,11 @@ int main(int argc, char **argv)
 	case '5':
 		break;
 	case '2': /* Moderators */
-		subfilename = concatstr(2, ml.dir, "/control/moderators");
-		if((subfd = open(subfilename, O_RDONLY)) < 0) {
+		if((subfd = openat(ml.ctrlfd, "moderators", O_RDONLY)) < 0) {
 			log_error(LOG_ARGS, "Could not open '%s':",
 					    subfilename);
 			free(mail.hdrs);
 			free(mail.body);
-			free(subfilename);
 			/* No moderators is no error. Could be the sysadmin
 			 * likes to do it manually.
 			 */
