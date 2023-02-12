@@ -213,30 +213,6 @@ ATF_TC_BODY(random_int, tc)
 	ATF_CHECK_MSG(val < INT_MAX, "Invalid integer");
 }
 
-static const char *formatted_text1 =
-"Subject: =?utf-8?q?Welcome_to_test=40test?=\n"
-"From: test+help@test\n"
-"To: john@doe.net\n"
-"Message-ID: <1636022023-16598-mlmmj-39117dfa@test>\n"
-"Date: Thu, 04 Nov 2021 10:33:43 +0000\n"
-"MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=utf-8\n"
-"Content-Transfer-Encoding: 8bit\n"
-"\n"
-"\n"
-"Thank you for your request to join us. You have now been added to the\n"
-"normal version of the list.\n"
-"\n"
-"The email address you are subscribed with is <john@doe.net>.\n"
-"\n"
-"If you ever wish to unsubscribe, send a message to <test+unsubscribe@test>\n"
-"using this email address. The subject and the body of the message can be\n"
-"anything. You will then receive confirmation or further instructions.\n"
-"\n"
-"For other information and help about this list, send a message to\n"
-"<test+help@test>.\n"
-"\n";
-
 ATF_TC_BODY(chomp, tc)
 {
 	char test1[] = "\n";
