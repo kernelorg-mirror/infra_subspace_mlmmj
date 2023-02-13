@@ -42,6 +42,7 @@
 #include "wrappers.h"
 #include "mlmmj.h"
 #include "unistr.h"
+#include "xstring.h"
 
 struct substitution {
 	char *token;
@@ -241,7 +242,7 @@ void finish_file_lines(file_lines_state *s)
 
 static char *filename_token(char *token)
 {
-	char *pos = token;
+	const char *pos = token;
 	if (*pos == '\0') return NULL;
 	while (
 		(*pos >= '0' && *pos <= '9') ||
@@ -269,6 +270,54 @@ static char *numeric_token(char *token)
 	return token;
 }
 
+static size_t
+do_substitute(xstring *str, const char *line, int listfd, int ctrlfd, text *txt)
+{
+	const char *key, *endpos;
+	char *value = NULL;
+	char *token = NULL;
+	struct substitution *subst;
+	bool found = true;
+	size_t len;
+	if (*line != '$')
+		return (0);
+	line++;
+	key = line;
+	endpos = strchr(key, '$');
+	if (endpos == NULL) {
+		fputc('$', str->fp);
+		return (0);
+	}
+	len = endpos - key;
+	if (len == 8 && strncmp(key, "control ", 8) == 0) {
+		token = xstrndup(key + 8, endpos - key + 8);
+		if (strchr(token, '/') == NULL) /* ensure stay in the directory */
+			value = ctrlcontent(ctrlfd, token);
+	} else if (len == 5 && strncmp(key, "text ", 5) == 0) {
+		token = xstrndup(key + 5, endpos - key + 5);
+		if (strchr(token, '/') == NULL) /* ensure stay in the directory */
+			value = textcontent(listfd, token);
+	} else if(strcmp(key, "originalmail") == 0) {
+		/* DEPRECATED: use %originalmail% instead */
+		fputs(" %originalmail 100%", str->fp);
+	} else {
+		found = false;
+		tll_foreach(txt->substs, it) {
+			subst = it->item;
+			if (strlen (subst->token) == len &&
+			    strncmp(key, subst->token, len) == 0) {
+				fputs(subst->subst, str->fp);
+				found = true;
+				break;
+			}
+		}
+	}
+	free(value);
+	free(token);
+	if (!found)
+		fprintf(str->fp, "$%.*s$", (int)(endpos - key), key);
+	return (len + 1);
+}
 
 static void substitute_one(char **line_p, char **pos_p, int *width_p,
 			int listfd, int ctrlfd, text *txt)
@@ -333,24 +382,18 @@ static void substitute_one(char **line_p, char **pos_p, int *width_p,
 
 char *substitute(const char *line, int listfd, int ctrlfd, text *txt)
 {
-	char *new;
-	char *pos;
-	int width = 0; /* Just a dummy here */
-
-	new = xstrdup(line);
-	pos = new;
+	const char *pos = line;
+	xstring *str = xstring_new();
 
 	while (*pos != '\0') {
-		if (*pos == '$') {
-			substitute_one(&new, &pos, &width, listfd, ctrlfd, txt);
-			/* The function sets up for the next character
-			 * to process, so continue straight away. */
-			continue;
-		}
+		if (*pos != '$')
+			fputc(*pos, str->fp);
+		else
+			pos += do_substitute(str, pos, listfd, ctrlfd, txt);
 		pos++;
 	}
 
-	return new;
+	return xstring_get(str);
 }
 
 text *open_text_file(int listfd, const char *filename)
