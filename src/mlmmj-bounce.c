@@ -124,7 +124,7 @@ int main(int argc, char **argv)
 	const char *thisaddr;
 	char *bindir, *mlmmjsend, *a;
 	const char *mailname = NULL;
-	int probe = 0;
+	bool probe = false;
 	bounce_t bret;
 	struct ml ml;
 
@@ -155,7 +155,7 @@ int main(int argc, char **argv)
 			number = optarg;
 			break;
 		case 'p':
-			probe = 1;
+			probe = true;
 			break;
 		case 'h':
 			print_help(argv[0]);
@@ -167,7 +167,7 @@ int main(int argc, char **argv)
 	}
 
 	if(ml.dir == NULL || (thisaddr == NULL && dsnbounce == 0)
-				|| (number == NULL && probe == 0)) {
+				|| (number == NULL && !probe)) {
 		errx(EXIT_FAILURE, "You have to specify -L, -a or -d and -n or -p\n"
 		    "%s -h for help", argv[0]);
 	}
@@ -190,7 +190,7 @@ int main(int argc, char **argv)
 		thisaddr = address;
 	}
 
-	if(number != NULL && probe != 0) {
+	if(number != NULL && probe) {
 		errx(EXIT_FAILURE, "You can only specify one of -n or -p\n"
 		    "%s -h for help", argv[0]);
 	}
