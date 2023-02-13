@@ -144,6 +144,7 @@ ATF_TC_WITHOUT_HEAD(text_1);
 ATF_TC_WITHOUT_HEAD(file_lines);
 ATF_TC_WITHOUT_HEAD(list_subs);
 ATF_TC_WITHOUT_HEAD(notify_sub);
+ATF_TC_WITHOUT_HEAD(get_processed_text_line);
 
 #ifndef NELEM
 #define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
@@ -2454,6 +2455,43 @@ ATF_TC_BODY(notify_sub, tc)
 	}
 }
 
+ATF_TC_BODY(get_processed_text_line, tc)
+{
+	struct ml ml;
+	char *ret;
+	atf_utils_create_file("intext",
+	   "Subject: huhu, $listaddr$ $listowner$\n"
+	   "plop\n"
+	   "$$\n"
+	   "$listaddr$\n"
+	   "$list+$\n"
+	   "$listowner$\n"
+	   "$helpaddr$\n"
+	   "$faqaddr$\n"
+	   "$listgetN$\n"
+	   "$listunsubaddr$\n"
+	   "$nomailunsubaddr$\n"
+	   "$digestunsubaddr$\n"
+	   "$listsubaddr$\n"
+	   "$digestsubaddr$\n"
+	   "$nomailsubaddr$\n"
+	   );
+	int fd = open("intext", O_RDONLY);
+	text *txt = open_text_fd(fd);
+	ATF_REQUIRE(txt != NULL);
+	init_ml(true);
+	ml_init(&ml);
+	ml.dir = "list";
+	ATF_REQUIRE(ml_open(&ml, false));
+	register_default_unformatted(txt, &ml);
+	ret = get_processed_text_line(txt, true, &ml);
+	ATF_REQUIRE(ret != NULL);
+	ATF_REQUIRE_STREQ(ret, "Subject: huhu, test@test test+owner@test");
+	ret = get_processed_text_line(txt, true, &ml);
+	ATF_REQUIRE_STREQ(ret, "plop");
+	close_text(txt);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -2537,6 +2575,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, file_lines);
 	ATF_TP_ADD_TC(tp, list_subs);
 	ATF_TP_ADD_TC(tp, notify_sub);
+	ATF_TP_ADD_TC(tp, get_processed_text_line);
 
 	return (atf_no_error());
 }

@@ -316,7 +316,7 @@ do_substitute(xstring *str, const char *line, int listfd, int ctrlfd, text *txt)
 	free(token);
 	if (!found)
 		fprintf(str->fp, "$%.*s$", (int)(endpos - key), key);
-	return (len + 1);
+	return (len +1);
 }
 
 static void substitute_one(char **line_p, char **pos_p, int *width_p,
@@ -1491,7 +1491,7 @@ char *get_processed_text_line(text *txt, bool headers, struct ml *ml)
 		}
 
 		if (txt->src->suffix != NULL) {
-			tmp = concatstr(2, line, txt->src->suffix);
+			xasprintf(&tmp, "%s%s", line, txt->src->suffix);
 			free(line);
 			return tmp;
 		} else {
