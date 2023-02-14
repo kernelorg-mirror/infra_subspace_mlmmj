@@ -70,6 +70,35 @@ void catch_sig_term(int sig __unused)
 	gotsigterm = 1;
 }
 
+static bool
+save_file(const char *name, const char *ext, const char *content)
+{
+	char *tmpstr;
+	int fd;
+
+	xasprintf(&tmpstr, "%s.%s", name, ext);
+	fd = open(tmpstr, O_WRONLY|O_CREAT|O_EXCL|O_SYNC, S_IRUSR|S_IWUSR);
+	if (fd == -1) {
+		free(tmpstr);
+		return (false);
+	}
+	dprintf(fd, "%s", content);
+	close(fd);
+	free(tmpstr);
+	return (true);
+}
+
+static void
+save_queue(const char *queuefilename, struct mail *mail)
+{
+	if (!save_file(queuefilename, "mailfrom", mail->from))
+		return;
+	if (!save_file(queuefilename, "reciptto", mail->to))
+		return;
+	if (mail->replyto != NULL)
+		save_file(queuefilename, "reply-to", mail->replyto);
+}
+
 int
 get_index_from_filename(const char *filename)
 {
@@ -410,13 +439,13 @@ static void print_help(const char *prg)
 
 int main(int argc, char **argv)
 {
-	int sockfd = -1, opt, mindex = 0, subfd = 0, tmpfd;
+	int sockfd = -1, opt, mindex = 0, subfd = 0;
 	int deletewhensent = 1, sendres = 0, digest = 0;
 	bool archive = true, ctrlarchive = true;
 	int res;
 	char *mailfilename = NULL, *subfilename = NULL, *omit = NULL;
 	char *bounceaddr = NULL;
-	char *relayhost = NULL, *archivefilename = NULL, *tmpstr;
+	char *relayhost = NULL, *archivefilename = NULL;
 	const char *subddirname = NULL;
 	char listctrl = 0;
 	char *verp = NULL;
@@ -599,47 +628,7 @@ int main(int argc, char **argv)
 			sockfd = -1;
 			/* error, so keep it in the queue */
 			deletewhensent = 0;
-			/* dump data we want when resending first check
-			 * if it already exists. In that case continue */
-			tmpstr = concatstr(2, mailfilename, ".mailfrom");
-			if(stat(tmpstr, &st) == 0) {
-				free(tmpstr);
-				break;
-			}
-			tmpfd = open(tmpstr, O_WRONLY|O_CREAT|O_TRUNC|O_SYNC,
-						S_IRUSR|S_IWUSR);
-			free(tmpstr);
-			if(tmpfd >= 0) {
-				dprintf(tmpfd, "%s", bounceaddr);
-			}
-			close(tmpfd);
-			tmpstr = concatstr(2, mailfilename, ".reciptto");
-			if(stat(tmpstr, &st) == 0) {
-				free(tmpstr);
-				break;
-			}
-			tmpfd = open(tmpstr, O_WRONLY|O_CREAT|O_TRUNC|O_SYNC,
-						S_IRUSR|S_IWUSR);
-			free(tmpstr);
-			if(tmpfd >= 0) {
-				dprintf(tmpfd, "%s", mail.to);
-			}
-			close(tmpfd);
-			if(mail.replyto) {
-				tmpstr = concatstr(2, mailfilename,
-						      ".reply-to");
-				if(stat(tmpstr, &st) == 0) {
-					free(tmpstr);
-					break;
-				}
-				tmpfd = open(tmpstr, O_WRONLY|O_CREAT|O_TRUNC|O_SYNC,
-							S_IRUSR|S_IWUSR);
-				free(tmpstr);
-				if(tmpfd >= 0) {
-					dprintf(tmpfd, "%s", mail.replyto);
-				}
-				close(tmpfd);
-			}
+			save_queue(mailfilename, &mail);
 		} else {
 			endsmtp(&sockfd);
 		}
