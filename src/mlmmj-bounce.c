@@ -51,23 +51,18 @@
 #include "send_mail.h"
 
 static void
-save_queue(const char *queuefilename, const char *from, const char *to)
+unlink_bounce(struct ml *ml, const char *to)
 {
-	char *tmpstr;
-	int fd;
-	xasprintf(&tmpstr, "%s.mailfrom", queuefilename);
-	fd = open(tmpstr, O_WRONLY|O_CREAT|O_EXCL|O_SYNC, S_IRUSR|S_IWUSR);
-	if (fd == -1)
-		return;
-	dprintf(fd, "%s", from);
-	close(fd);
-	free(tmpstr);
-	xasprintf(&tmpstr, "%s.recripto", queuefilename);
-	fd = open(tmpstr, O_WRONLY|O_CREAT|O_EXCL|O_SYNC, S_IRUSR|S_IWUSR);
-	if (fd == -1)
-		return;
-	dprintf(fd, "%s", to);
-	close(fd);
+	char *tmpstr, *a, *probefile;
+
+	/* error, so remove the probefile */
+	tmpstr = xstrdup(to);
+	a = strchr(tmpstr, '@');
+	MY_ASSERT(a);
+	*a = '=';
+	xasprintf(&probefile, "bounce/%s-prove", tmpstr);
+	unlinkat(ml->fd, probefile, 0);
+	free(probefile);
 	free(tmpstr);
 }
 
@@ -123,10 +118,9 @@ void do_probe(struct ml *ml, const char *addr)
 	mail.to = myaddr;
 	mail.from = from;
 	mail.fp = fopen(queuefilename, "r");
-	if (!send_single_mail(&mail, ml, false)) {
-		save_queue(queuefilename, mail.from, mail.to);
+	if (!send_single_mail(&mail, ml, false))
 		exit(EXIT_FAILURE);
-	}
+	unlink_bounce(ml, myaddr);
 	fclose(mail.fp);
 	exit(EXIT_SUCCESS);
 }
