@@ -20,6 +20,8 @@
  * IN THE SOFTWARE.
  */
 
+#pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
