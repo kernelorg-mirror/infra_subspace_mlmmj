@@ -816,7 +816,6 @@ ATF_TC_BODY(open_subscriber_directory, tc)
 ATF_TC_BODY(unsubscribe, tc)
 {
 	int listfd;
-	FILE *f;
 	init_ml(true);
 
 	listfd = open("list", O_DIRECTORY);
@@ -1317,7 +1316,6 @@ ATF_TC_BODY(copy_file_2, tc)
 ATF_TC_BODY(controls, tc)
 {
 	int ctrlfd;
-	FILE *f;
 
 	mkdir("control", 0755);
 	ctrlfd = open("control", O_DIRECTORY);
