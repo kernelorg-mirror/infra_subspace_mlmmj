@@ -135,6 +135,7 @@ ATF_TC_WITHOUT_HEAD(file_lines);
 ATF_TC_WITHOUT_HEAD(list_subs);
 ATF_TC_WITHOUT_HEAD(notify_sub);
 ATF_TC_WITHOUT_HEAD(get_processed_text_line);
+ATF_TC_WITHOUT_HEAD(newsmtp);
 
 ATF_TC_BODY(random_int, tc)
 {
@@ -2018,6 +2019,54 @@ ATF_TC_BODY(get_processed_text_line, tc)
 	close_text(txt);
 }
 
+ATF_TC_BODY(newsmtp, tc)
+{
+	init_ml(true);
+	struct ml ml;
+	ml_init(&ml);
+	ml.dir = "list";
+	ATF_REQUIRE_MSG(ml_open(&ml, false), "impossible to open the mailing list");
+	atf_utils_create_file("list/control/smtpport", "25678");
+	int fd = newsmtp(&ml);
+	ATF_REQUIRE_MSG(fd == -1, "Socket should not have open");
+	int smtppipe[2];
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		int s = fakesmtp(smtppipe[1]);
+		int c;
+		struct sockaddr_in cl;
+		socklen_t clsize = 0;
+		c = accept(s, (struct sockaddr *) &cl, &clsize);
+		if (c == -1)
+			err(5, "accept()");
+		dprintf(c, "220 me fake smtp\n");
+		const char *replies[] = {
+			"250-hostname.net\n"
+			"250-PIPELINEING\n"
+			"250-SIZE 20480000\n"
+			"250-ETRN\n"
+			"250-STARTTLS\n"
+			"250-ENHANCEDSTATUSCODES\n"
+			"250-8BITMIME\n"
+			"250-DSN\n"
+			"250-SMTPUTF8\n"
+			"250 CHUNKING\n",
+			"221 2.0.0 bye\n",
+		};
+		read_print_reply(c, replies, NELEM(replies));
+		exit(0);
+	}
+	close(smtppipe[1]);
+	atf_utils_readline(smtppipe[0]);
+	atf_utils_create_file("list/control/smtphelo", "heloname");
+	atf_utils_create_file("list/control/relayhost", "127.0.0.1");
+	fd = newsmtp(&ml);
+	ATF_REQUIRE_MSG(fd != -1, "Invalid socket");
+	endsmtp(&fd);
+	atf_utils_wait(p, 0, "EHLO heloname\r\nQUIT\r\n", "");
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -2091,6 +2140,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, list_subs);
 	ATF_TP_ADD_TC(tp, notify_sub);
 	ATF_TP_ADD_TC(tp, get_processed_text_line);
+	ATF_TP_ADD_TC(tp, newsmtp);
 
 	return (atf_no_error());
 }
