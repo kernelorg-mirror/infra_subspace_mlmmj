@@ -7,7 +7,7 @@ mlmmj_SOURCES = mlmmj.c \
 EXTRA_DIST = *.sh *.h
 CLEANFILES= $(test_scripts:.sh=)
 
-AM_CFLAGS = -g -Wall -std=gnu99 -D_GNU_SOURCE=1 -Wextra -pedantic -Wsign-compare -DDEFAULTTEXTDIR='"@textlibdir@"' -I$(srcdir)/../include @ATF_CFLAGS@
+AM_CFLAGS = -g -Wall -std=gnu11 -D_GNU_SOURCE=1 -Wextra -pedantic -Wsign-compare -DDEFAULTTEXTDIR='"@textlibdir@"' -I$(srcdir)/../include @ATF_CFLAGS@
 mlmmj_LDADD =  $(top_builddir)/src/libmlmmj.a @ATF_LIBS@ -lrt
 AM_LDFLAGS =
 if WANT_COVERAGE

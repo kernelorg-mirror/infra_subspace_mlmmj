@@ -919,10 +919,7 @@ ATF_TC_BODY(smtp, tc)
 	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
-		dprintf(smtppipe[0], "220 me fake smtp\n");
-		/* EHLO */
-		reply = mygetline(smtppipe[0]);
-		dprintf(smtppipe[0],
+		const char *replies[] = {
 		    "250-hostname.net\n"
 		    "250-PIPELINEING\n"
 		    "250-SIZE 20480000\n"
@@ -932,35 +929,20 @@ ATF_TC_BODY(smtp, tc)
 		    "250-8BITMIME\n"
 		    "250-DSN\n"
 		    "250-SMTPUTF8\n"
-		    "250 CHUNKING\n");
-		/* HELO */
-		reply = mygetline(smtppipe[0]);
-		dprintf(smtppipe[0],
-		    "250-hostname.net\n");
-		/* MAIL FROM */
-		reply = mygetline(smtppipe[0]);
-		dprintf(smtppipe[0],
-		    "250 2.1.0 Ok\n");
-		/* RCPT TO */
-		reply = mygetline(smtppipe[0]);
-		dprintf(smtppipe[0],
-		    "250 2.1.0 Ok\n");
-		/* DATA */
-		reply = mygetline(smtppipe[0]);
-		dprintf(smtppipe[0],
-		    "354 Send message content; end with <CRLF>.<CRLF>\n");
-		/* DATA */
-		reply = mygetline(smtppipe[0]);
-		dprintf(smtppipe[0],
-		    "250 2.1.0 Ok\n");
-		/* QUIT */
-		reply = mygetline(smtppipe[0]);
-		dprintf(smtppipe[0],
-		    "221 2.0.0 Bye\n");
-		/* RSET */
-		reply = mygetline(smtppipe[0]);
-		dprintf(smtppipe[0],
-		    "250 2.0.0 Ok\n");
+		    "250 CHUNKING\n", /* EHLO */
+		    "250-hostname.net\n", /* HELO */
+		    "250 2.1.0 Ok\n", /* MAIL FROM */
+		    "250 2.1.0 Ok\n", /* RCPT TO */
+		    "354 Send message content; end with <CRLF>.<CRLF>\n", /* DATA */
+		    "250 2.1.0 Ok\n", /* DATA */
+		    "221 2.0.0 Bye\n", /* QUIT */
+		    "250 2.0.0 Ok\n", /* RSET */
+		};
+		dprintf(smtppipe[0], "220 me fake smtp\n");
+		for (uint8_t i = 0; i < NELEM(replies); i++) {
+			reply = atf_utils_readline(smtppipe[0]);
+			dprintf(smtppipe[0], "%s", replies[i]);
+		}
 		exit (0);
 	}
 	close(smtppipe[0]);
