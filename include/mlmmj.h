@@ -29,6 +29,10 @@
 #include <time.h>
 #include <tllist.h>
 
+#ifndef __unused
+#define __unused __attribute__((__unused__))
+#endif
+
 #define RELAYHOST "127.0.0.1"
 #define READ_BUFSIZE 2048
 #define DEFAULT_RECIPDELIM "+"  /* Default recipient delimiter */

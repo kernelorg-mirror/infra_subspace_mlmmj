@@ -65,7 +65,7 @@
 static size_t maxverprecips = MAXVERPRECIPS;
 static int gotsigterm = 0;
 
-void catch_sig_term(int sig)
+void catch_sig_term(int sig __unused)
 {
 	gotsigterm = 1;
 }
