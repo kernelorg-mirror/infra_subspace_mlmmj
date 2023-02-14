@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2004, 2003, 2004 Mads Martin Joergensen <mmj at mmj.dk>
- * Copyright (C) 2022 Baptiste Daroussin <bapt@FreeBSD.org>
+ * Copyright (C) 2022-2023 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -25,11 +25,14 @@
 
 #include <sys/types.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include "mlmmj.h"
 
 struct mail {
 	const char *from;
 	const char *to;
 	const char *replyto;
+	FILE *fp;
 	char *map;
 	size_t size;
 	char *hdrs;
@@ -38,6 +41,7 @@ struct mail {
 	bool addtohdr;
 };
 
+int newsmtp(struct ml *ml);
 int initsmtp(int *sockfd, const char *relayhost, unsigned short port, const char *heloname);
 int endsmtp(int *sockfd);
 int send_mail(int sockfd, struct mail *mail, int listfd, int ctrlfd, bool bounce);

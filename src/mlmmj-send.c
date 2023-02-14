@@ -436,7 +436,6 @@ int main(int argc, char **argv)
 	char *relayhost = NULL, *archivefilename = NULL, *tmpstr;
 	const char *subddirname = NULL;
 	char listctrl = 0;
-	char *probefile, *a;
 	char *verp = NULL;
 	char *verpfrom;
 	char *reply, *smtphelo, *requeuefilename;
@@ -592,7 +591,9 @@ int main(int argc, char **argv)
 
 	switch(listctrl) {
 	case '1': /* A single mail is to be sent, do nothing */
+		break;
 	case '5':
+		err(EXIT_FAILURE, "5 is not supported anymore");
 		break;
 	case '2': /* Moderators */
 		if((subfd = openat(ml.ctrlfd, "moderators", O_RDONLY)) < 0) {
@@ -736,24 +737,6 @@ int main(int argc, char **argv)
 		}
 		break;
 	case '5': /* bounceprobe - handle relayhost local users bouncing*/
-		initsmtp(&sockfd, relayhost, smtpport, smtphelo);
-		mail.from = bounceaddr;
-		if(send_mail(sockfd, &mail, ml.fd, ml.ctrlfd, false)) {
-			close(sockfd);
-			sockfd = -1;
-			/* error, so remove the probefile */
-			tmpstr = xstrdup(mail.to);
-			a = strchr(tmpstr, '@');
-			MY_ASSERT(a);
-			*a = '=';
-			probefile = concatstr(4, ml.dir, "/bounce/", tmpstr,
-					"-probe");
-			unlink(probefile);
-			free(probefile);
-			free(tmpstr);
-		} else {
-			endsmtp(&sockfd);
-		}
 		break;
 	case '7':
 		digest = 1;

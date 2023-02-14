@@ -2492,6 +2492,10 @@ ATF_TC_BODY(get_processed_text_line, tc)
 	close_text(txt);
 }
 
+ATF_TC_BODY(do_probe)
+{
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);

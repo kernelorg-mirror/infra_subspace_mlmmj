@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2004, 2003, 2004 Mads Martin Joergensen <mmj at mmj.dk>
- * Copyright (C) 2022 Baptiste Daroussin <bapt@FreeBSD.org>
+ * Copyright (C) 2022-2023 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -31,7 +31,9 @@
 #include "log_error.h"
 #include "init_sockfd.h"
 #include "mlmmj.h"
+#include "strgen.h"
 #include "xmalloc.h"
+#include "ctrlvalue.h"
 
 int
 initsmtp(int *sockfd, const char *relayhost, unsigned short port, const char *heloname)
@@ -256,7 +258,7 @@ send_mail(int sockfd, struct mail *mail, int listfd, int ctrlfd, bool bounce)
 			log_error(LOG_ARGS, "No body or headers");
 			return (0);
 		}
-	} else {
+	} else if (mail->fp == NULL) {
 		if (mail->size == 0 || mail->map == NULL) {
 			log_error(LOG_ARGS, "No mmap mail");
 			return (0);
@@ -342,6 +344,24 @@ send_mail(int sockfd, struct mail *mail, int listfd, int ctrlfd, bool bounce)
 			log_error(LOG_ARGS, "Could not write mailbody.\n");
 			return retval;
 		}
+	} else if (mail->fp != NULL) {
+		int c, next;
+		bool addhdr = true;
+		while ((c = fgetc(mail->fp)) != EOF) {
+			if (c != '\n') {
+				dprintf(sockfd, "%c", c);
+				continue;
+			}
+			next = fgetc(mail->fp);
+			if (next == '.') {
+				dprintf(sockfd, "\r\n.");
+			}
+			if (addhdr && mail->addtohdr && next == '\n') {
+				dprintf(sockfd, "To: %s\r\n", mail->to);
+				addhdr = false;
+			}
+			ungetc(c, mail->fp);
+		}
 	} else {
 		retval = write_mailbody_from_map(sockfd, mail->map, mail->size,
 		    mail->addtohdr ? mail->to : NULL);
@@ -370,4 +390,22 @@ send_mail(int sockfd, struct mail *mail, int listfd, int ctrlfd, bool bounce)
 	}
 
 	return 0;
+}
+
+int
+newsmtp(struct ml *ml)
+{
+	int sockfd;
+	char *relayhost, *smtphelo;
+	unsigned short smtpport = ctrlushort(ml->ctrlfd, "smtpport", 25);
+
+	relayhost = ctrlvalue(ml->ctrlfd, "relayhost");
+	if (relayhost == NULL)
+		relayhost = xstrdup(RELAYHOST);
+	smtphelo = ctrlvalue(ml->ctrlfd, "smtphelo");
+	if (smtphelo == NULL)
+		smtphelo = hostnamestr();
+	if (initsmtp(&sockfd, relayhost, smtpport, smtphelo) != 0)
+		return (-1);
+	return (sockfd);
 }

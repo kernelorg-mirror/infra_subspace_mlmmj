@@ -48,9 +48,30 @@
 #include "find_email_adr.h"
 #include "gethdrline.h"
 #include "utils.h"
+#include "send_mail.h"
 
+static void
+save_queue(const char *queuefilename, const char *from, const char *to)
+{
+	char *tmpstr;
+	int fd;
+	xasprintf(&tmpstr, "%s.mailfrom", queuefilename);
+	fd = open(tmpstr, O_WRONLY|O_CREAT|O_EXCL|O_SYNC, S_IRUSR|S_IWUSR);
+	if (fd == -1)
+		return;
+	dprintf(fd, "%s", from);
+	close(fd);
+	free(tmpstr);
+	xasprintf(&tmpstr, "%s.recripto", queuefilename);
+	fd = open(tmpstr, O_WRONLY|O_CREAT|O_EXCL|O_SYNC, S_IRUSR|S_IWUSR);
+	if (fd == -1)
+		return;
+	dprintf(fd, "%s", to);
+	close(fd);
+	free(tmpstr);
+}
 
-void do_probe(struct ml *ml, const char *mlmmjsend, const char *addr)
+void do_probe(struct ml *ml, const char *addr)
 {
 	text *txt;
 	file_lines_state *fls;
@@ -58,7 +79,10 @@ void do_probe(struct ml *ml, const char *mlmmjsend, const char *addr)
 	char *probefile;
 	int fd;
 	time_t t;
+	struct mail mail;
+	int sockfd;
 
+	memset(&mail, 0, sizeof(mail));
 	myaddr = lowercase(addr);
 
 	gen_addr_cookie(from, ml, "bounces-probe-", myaddr)
@@ -95,11 +119,22 @@ void do_probe(struct ml *ml, const char *mlmmjsend, const char *addr)
 	else
 		if (dprintf(fd, "%ld", (long int)t) < 0)
 			log_error(LOG_ARGS, "Could not write time in probe");
-
 	free(probefile);
 
-	exec_or_die(mlmmjsend, "-l", "5", "-L", ml->dir, "-T", myaddr,
-	    "-F", from, "-m", queuefilename, NULL);
+	mail.to = myaddr;
+	mail.from = from;
+	mail.fp = fopen(queuefilename, "r");
+	sockfd = newsmtp(ml);
+	if (sockfd == -1)
+		exit(EXIT_FAILURE);
+	if (send_mail(sockfd, &mail, ml->fd, ml->ctrlfd, false)) {
+		close(sockfd);
+		save_queue(queuefilename, mail.from, mail.to);
+		exit(EXIT_FAILURE);
+	}
+	fclose(mail.fp);
+	endsmtp(&sockfd);
+	exit(EXIT_SUCCESS);
 }
 
 static void print_help(const char *prg)
@@ -122,20 +157,14 @@ int main(int argc, char **argv)
 	int opt, dsnbounce = 0;
 	char *address = NULL, *number = NULL;
 	const char *thisaddr;
-	char *bindir, *mlmmjsend, *a;
+	char *a;
 	const char *mailname = NULL;
 	bool probe = false;
 	bounce_t bret;
 	struct ml ml;
 
 	log_set_name(argv[0]);
-
-	CHECKFULLPATH(argv[0]);
 	ml_init(&ml);
-
-	bindir = mydirname(argv[0]);
-	xasprintf(&mlmmjsend, "%s/mlmmj-send", bindir);
-	free(bindir);
 
 	while ((opt = getopt(argc, argv, "hdVL:a:n:m:p")) != -1) {
 		switch(opt) {
@@ -197,7 +226,7 @@ int main(int argc, char **argv)
 
 	if (probe) {
 		/* send out a probe */
-		do_probe(&ml, mlmmjsend, thisaddr);
+		do_probe(&ml, thisaddr);
 		/* do_probe() will never return */
 		exit(EXIT_FAILURE);
 	}
@@ -213,6 +242,5 @@ int main(int argc, char **argv)
 	if (bret == BOUNCE_OK && mailname != NULL)
 		unlink(mailname);
 
-	free(mlmmjsend);
 	return (bret == BOUNCE_FAIL ? EXIT_FAILURE : EXIT_SUCCESS);
 }
