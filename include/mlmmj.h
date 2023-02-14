@@ -48,8 +48,6 @@
 			     mlmmj-maintd runs daemonized? 7200s is 2 hours */
 #define MAINTD_LOGFILE "mlmmj-maintd.lastrun.log"
 
-#define MEMORYMAILSIZE 16384  /* How big can a mail be before we don't want to
-			         it in memory? control/memorymailsize */
 #define DIGESTINTERVAL 604800  /* How long do we collect mails for digests
 				* 604800s is 7 days */
 #define DIGESTMAXMAILS 50 /* How many mails can accumulate before we send the

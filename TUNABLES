@@ -90,13 +90,6 @@ entire content is used as value, it's marked "text".
    the rules. The first rule to match wins. See README.access for syntax and
    examples.
 
- · memorymailsize		(normal)
-
-   Here is specified in bytes how big a mail can be and still be prepared for
-   sending in memory. It's greatly reducing the amount of write system calls to
-   prepare it in memory before sending it, but can also lead to denial of
-   service attacks. Default is 16k (16384 bytes).
-
  · addtohdr			(boolean)
 
    When this file is present, a To: header including the recipients
