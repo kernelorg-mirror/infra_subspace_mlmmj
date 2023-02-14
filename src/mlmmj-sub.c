@@ -346,7 +346,6 @@ void generate_subconfirm(struct ml *ml, const char *subaddr,
 
 	if(dprintf(subconffd, "%s", subaddr) < 0) {
 		log_error(LOG_ARGS, "Could not write to subconffd");
-		free(confirmfilename);
                 free(randomstr);
 		exit(EXIT_FAILURE);
 	}

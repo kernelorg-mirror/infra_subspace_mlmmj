@@ -156,7 +156,7 @@ int main(int argc, char **argv)
 {
 	int opt, dsnbounce = 0;
 	char *address = NULL, *number = NULL;
-	const char *thisaddr;
+	const char *thisaddr = NULL;
 	char *a;
 	const char *mailname = NULL;
 	bool probe = false;

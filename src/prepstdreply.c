@@ -1540,13 +1540,12 @@ prepstdreply_to(text *txt, struct ml *ml, const char *from, const char *to,
 	char *tmp, *line;
 	int i;
 	size_t len;
-	char *str;
 	char *headers[10] = { NULL }; /* relies on NULL to flag end */
 
 	for (i=0; i<6; i++) { 
 		tmp = xstrdup("randomN");
 		tmp[6] = '0' + i;
-		str = random_str();
+		char *str = random_str();
 		register_unformatted(txt, tmp, str);
 		free(tmp);
 		free(str);
@@ -1662,7 +1661,6 @@ prepstdreply_to(text *txt, struct ml *ml, const char *from, const char *to,
 	}
 	while(line) {
 			if(dprintf(tofd, "%s\n", line) < 0) {
-				free(str);
 				log_error(LOG_ARGS, "Could not write std mail");
 				goto freeandreturn;
 			}

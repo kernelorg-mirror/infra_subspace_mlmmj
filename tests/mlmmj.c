@@ -228,7 +228,7 @@ ATF_TC_BODY(init_sock, tc)
 	if (p == 0) {
 		int s = fakesmtp(mypipe[1]);
 		int c;
-		struct sockaddr_in me, cl;
+		struct sockaddr_in cl;
 		socklen_t clsize = 0;
 		/*
 		 * Now we can accept incoming connections one

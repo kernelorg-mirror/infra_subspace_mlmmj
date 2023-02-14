@@ -37,7 +37,7 @@
 
 void init_sockfd(int *sockfd, const char *relayhost, unsigned short port)
 {
-	int on, sd;
+	int on, sd = -1;
 	struct addrinfo *ai = NULL, *curai, hints;
 	char srv[NI_MAXSERV];
 	*sockfd = -1;

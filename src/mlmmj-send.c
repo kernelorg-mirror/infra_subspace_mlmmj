@@ -344,6 +344,7 @@ int send_mail_many_list(int sockfd, struct mail *mail, strlist *addrs,
 	char *bounceaddr, *addr;
 
 	tll_foreach(*addrs, it) {
+		bounceaddr = NULL;
 		addr = it->item;
 		if(strchr(addr, '@') == NULL) {
 			errno = 0;
@@ -411,7 +412,7 @@ int main(int argc, char **argv)
 {
 	int sockfd = -1, opt, mindex = 0, subfd = 0, tmpfd;
 	int deletewhensent = 1, sendres = 0, digest = 0;
-	bool archive = true, ctrlarchive;
+	bool archive = true, ctrlarchive = true;
 	int res;
 	char *mailfilename = NULL, *subfilename = NULL, *omit = NULL;
 	char *bounceaddr = NULL;
@@ -553,6 +554,7 @@ int main(int argc, char **argv)
 		break;
 	case '3':
 		mail.addtohdr = statctrl(ml.ctrlfd, "addtohdr");
+		/* FALLTHROUGH */
 	case '4': /* sending mails to subfile */
 		if((subfd = open(subfilename, O_RDONLY)) < 0) {
 			log_error(LOG_ARGS, "Could not open '%s':",
