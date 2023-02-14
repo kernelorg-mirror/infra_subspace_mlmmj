@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Baptiste Daroussin <bapt@FreeBSD.org>
+ * Copyright (C) 2022-2023 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -62,6 +62,7 @@
 #include "listcontrol.h"
 #include "mlmmj-process.h"
 #include "prepstdreply.h"
+#include "mlmmj_tests.h"
 
 ATF_TC_WITHOUT_HEAD(random_int);
 ATF_TC_WITHOUT_HEAD(chomp);
@@ -146,72 +147,11 @@ ATF_TC_WITHOUT_HEAD(list_subs);
 ATF_TC_WITHOUT_HEAD(notify_sub);
 ATF_TC_WITHOUT_HEAD(get_processed_text_line);
 
-#ifndef NELEM
-#define NELEM(array)    (sizeof(array) / sizeof((array)[0]))
-#endif
-
-const char *listdir[] = {
-	"incoming",
-	"queue",
-	"queue/discarded",
-	"archive",
-	"text",
-	"subconf",
-	"unsubconf",
-	"bounce",
-	"control",
-	"moderation",
-	"subscribers.d",
-	"digesters.d",
-	"requeue",
-	"nomailsubs.d"
-};
-
-void
-init_ml(bool complete)
-{
-	int fd;
-	ATF_CHECK(mkdir("list", 00755) != -1);
-	fd = open("list", O_DIRECTORY);
-	ATF_CHECK(fd != -1);
-
-	for (uintmax_t i = 0; i < NELEM(listdir); i++) {
-		ATF_CHECK(mkdirat(fd, listdir[i], 00755) != -1);
-	}
-
-	if (complete)
-		atf_utils_create_file("list/control/listaddress", "test@test");
-}
-
-static int
-fakesmtp(int pipe)
-{
-	int s;
-	struct sockaddr_in me;
-	s = socket(AF_INET, SOCK_STREAM, 0);
-	if (s < 0)
-		exit(1);
-	if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &(int) { 1 }, sizeof(int)) != 0)
-		exit(2);
-	memset(&me, 0, sizeof(me));
-	me.sin_family = AF_INET;
-	me.sin_addr.s_addr = inet_addr("127.0.0.1");
-	/* specific interface */
-	me.sin_port = htons(25678);
-	if (bind(s, (struct sockaddr *) &me, sizeof(me)) == -1)
-		exit(3);
-	if (listen(s, 1) == -1)
-			exit(4);
-	dprintf(pipe, "ready\n");
-
-	return (s);
-}
-
 ATF_TC_BODY(random_int, tc)
 {
 	intmax_t val = random_int();
 
-	ATF_CHECK_MSG(val < INT_MAX, "Invalid integer");
+	ATF_REQUIRE_MSG(val < INT_MAX, "Invalid integer");
 }
 
 ATF_TC_BODY(chomp, tc)
@@ -221,21 +161,21 @@ ATF_TC_BODY(chomp, tc)
 	char test3[] = "\r\n";
 	char test4[] = "test\r\n";
 	char test5[] = "";
-	ATF_CHECK(chomp(NULL) == NULL);
+	ATF_REQUIRE(chomp(NULL) == NULL);
 	char *bla = chomp(test1);
-	ATF_CHECK(bla != NULL);
+	ATF_REQUIRE(bla != NULL);
 	ATF_REQUIRE_STREQ(bla, "");
 	bla = chomp(test2);
-	ATF_CHECK(bla != NULL);
+	ATF_REQUIRE(bla != NULL);
 	ATF_REQUIRE_STREQ(bla, "");
 	bla = chomp(test3);
-	ATF_CHECK(bla != NULL);
+	ATF_REQUIRE(bla != NULL);
 	ATF_REQUIRE_STREQ(bla, "");
 	bla = chomp(test4);
-	ATF_CHECK(bla != NULL);
+	ATF_REQUIRE(bla != NULL);
 	ATF_REQUIRE_STREQ(bla, "test");
 	bla = chomp(test5);
-	ATF_CHECK(bla != NULL);
+	ATF_REQUIRE(bla != NULL);
 	ATF_REQUIRE_STREQ(bla, "");
 }
 
@@ -461,7 +401,7 @@ ATF_TC_BODY(strtoim, tc)
 	ATF_REQUIRE(errp != NULL);
 	ATF_REQUIRE_STREQ(errp, "invalid");
 	ATF_REQUIRE_EQ(strtoim("10", 0, 10, &errp), 10);
-	ATF_CHECK(errp == NULL);
+	ATF_REQUIRE(errp == NULL);
 	ATF_REQUIRE_EQ(strtoim("10", 0, 9, &errp), 0);
 	ATF_REQUIRE(errp != NULL);
 	ATF_REQUIRE_STREQ(errp, "too large");
@@ -481,7 +421,7 @@ ATF_TC_BODY(strtoim, tc)
 	ATF_REQUIRE(errp != NULL);
 	ATF_REQUIRE_STREQ(errp, "invalid");
 	ATF_REQUIRE_EQ(strtouim("10", 0, 10, &errp), 10);
-	ATF_CHECK(errp == NULL);
+	ATF_REQUIRE(errp == NULL);
 	ATF_REQUIRE_EQ(strtouim("10", 0, 9, &errp), 0);
 	ATF_REQUIRE(errp != NULL);
 	ATF_REQUIRE_STREQ(errp, "too large");
@@ -727,7 +667,7 @@ ATF_TC_BODY(strtotimet, tc)
 	const char *errp;
 	char *str;
 	ATF_REQUIRE_EQ(strtotimet("10", &errp), 10);
-	ATF_CHECK(errp == NULL);
+	ATF_REQUIRE(errp == NULL);
 	asprintf(&str, "1%"PRIdMAX, INTMAX_MAX);
 	ATF_REQUIRE_EQ(strtotimet(str, &errp), 0);
 	free(str);
@@ -1970,11 +1910,11 @@ ATF_TC_BODY(ml_list, tc)
 {
 	struct ml list;
 	ml_init(&list);
-	ATF_CHECK(ml_open(&list, false) == false);
+	ATF_REQUIRE(ml_open(&list, false) == false);
 	list.dir = "list";
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
-		ATF_CHECK(ml_open(&list, false) == false);
+		ATF_REQUIRE(ml_open(&list, false) == false);
 		exit(0);
 	}
 	atf_utils_wait(p, 0, "", "mlmmj: Cannot open(list): No such file or directory\n");
@@ -1985,7 +1925,7 @@ ATF_TC_BODY(ml_list, tc)
 	list.dir = "list";
 	p = atf_utils_fork();
 	if (p == 0) {
-		ATF_CHECK(ml_open(&list, false) == false);
+		ATF_REQUIRE(ml_open(&list, false) == false);
 		exit (0);
 	}
 	atf_utils_wait(p, 0, "", "mlmmj: Cannot open(list/control): No such file or directory\n");
@@ -1995,7 +1935,7 @@ ATF_TC_BODY(ml_list, tc)
 	list.dir = "list";
 	p = atf_utils_fork();
 	if (p == 0) {
-		ATF_CHECK(ml_open(&list, false) == false);
+		ATF_REQUIRE(ml_open(&list, false) == false);
 		exit (0);
 	}
 
@@ -2005,7 +1945,7 @@ ATF_TC_BODY(ml_list, tc)
 	list.dir = "list";
 	p = atf_utils_fork();
 	if (p == 0) {
-		ATF_CHECK(ml_open(&list, false) == false);
+		ATF_REQUIRE(ml_open(&list, false) == false);
 		exit (0);
 	}
 	atf_utils_wait(p, 0, "", "mlmmj: test: is not a valid mailing list address, missing '@'\n");
@@ -2015,14 +1955,14 @@ ATF_TC_BODY(ml_list, tc)
 	list.dir = "list";
 	p = atf_utils_fork();
 	if (p == 0) {
-		ATF_CHECK(ml_open(&list, false) == true);
-		ATF_CHECK_STREQ_MSG(list.delim, "+", "Invalid delimiter");
+		ATF_REQUIRE(ml_open(&list, false) == true);
+		ATF_REQUIRE_STREQ_MSG(list.delim, "+", "Invalid delimiter");
 
 		atf_utils_create_file("list/control/delimiter", "#bla#");
 		ml_init(&list);
 		list.dir = "list";
-		ATF_CHECK(ml_open(&list, false) == true);
-		ATF_CHECK_STREQ_MSG(list.delim, "#bla#", "Invalid delimiter");
+		ATF_REQUIRE(ml_open(&list, false) == true);
+		ATF_REQUIRE_STREQ_MSG(list.delim, "#bla#", "Invalid delimiter");
 		exit (0);
 	}
 	atf_utils_wait(p, 0, "", "");
@@ -2490,10 +2430,6 @@ ATF_TC_BODY(get_processed_text_line, tc)
 	ret = get_processed_text_line(txt, true, &ml);
 	ATF_REQUIRE_STREQ(ret, "plop");
 	close_text(txt);
-}
-
-ATF_TC_BODY(do_probe)
-{
 }
 
 ATF_TP_ADD_TCS(tp)

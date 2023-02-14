@@ -2,8 +2,9 @@ AUTOMAKE_OPTIONS = foreign
 
 check_PROGRAMS = mlmmj
 
-mlmmj_SOURCES = mlmmj.c
-EXTRA_DIST = *.sh
+mlmmj_SOURCES = mlmmj.c \
+		mlmmj_tests.c
+EXTRA_DIST = *.sh *.h
 CLEANFILES= $(test_scripts:.sh=)
 
 AM_CFLAGS = -g -Wall -std=gnu99 -D_GNU_SOURCE=1 -Wextra -pedantic -Wsign-compare -DDEFAULTTEXTDIR='"@textlibdir@"' -I$(srcdir)/../include @ATF_CFLAGS@
