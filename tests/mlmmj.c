@@ -85,7 +85,6 @@ ATF_TC_WITHOUT_HEAD(write_rset);
 ATF_TC_WITHOUT_HEAD(write_replyto);
 ATF_TC_WITHOUT_HEAD(write_rcpt_to);
 ATF_TC_WITHOUT_HEAD(write_mail_from);
-ATF_TC_WITHOUT_HEAD(write_mailbody_from_map);
 ATF_TC_WITHOUT_HEAD(write_mailbody);
 ATF_TC_WITHOUT_HEAD(strtotimet);
 ATF_TC_WITHOUT_HEAD(decode_qp);
@@ -102,15 +101,8 @@ ATF_TC_WITHOUT_HEAD(smtp_bad_ehlo);
 ATF_TC_WITHOUT_HEAD(smtp_no_ehlo);
 ATF_TC_WITHOUT_HEAD(endsmtp);
 ATF_TC_WITHOUT_HEAD(do_bouncemail);
-ATF_TC_WITHOUT_HEAD(send_mail_0);
-ATF_TC_WITHOUT_HEAD(send_mail_1);
-ATF_TC_WITHOUT_HEAD(send_mail_2);
-ATF_TC_WITHOUT_HEAD(send_mail_3);
-ATF_TC_WITHOUT_HEAD(send_mail_4);
-ATF_TC_WITHOUT_HEAD(send_mail_5);
-ATF_TC_WITHOUT_HEAD(send_mail_6);
-ATF_TC_WITHOUT_HEAD(send_mail_7);
-ATF_TC_WITHOUT_HEAD(send_mail_8);
+ATF_TC_WITHOUT_HEAD(send_mail_basics);
+ATF_TC_WITHOUT_HEAD(send_mail);
 ATF_TC_WITHOUT_HEAD(getlistdelim);
 ATF_TC_WITHOUT_HEAD(getlistdelim_0);
 ATF_TC_WITHOUT_HEAD(getlistdelim_1);
@@ -127,10 +119,6 @@ ATF_TC_WITHOUT_HEAD(copy_file_2);
 ATF_TC_WITHOUT_HEAD(controls);
 ATF_TC_WITHOUT_HEAD(incindexfile);
 ATF_TC_WITHOUT_HEAD(log_oper);
-ATF_TC_WITHOUT_HEAD(get_preppedhdrs_from_map);
-ATF_TC_WITHOUT_HEAD(get_preppedhdrs_from_map_1);
-ATF_TC_WITHOUT_HEAD(get_prepped_mailbody_from_map);
-ATF_TC_WITHOUT_HEAD(get_prepped_mailbody_from_map_1);
 ATF_TC_WITHOUT_HEAD(get_ctrl_command);
 ATF_TC_WITHOUT_HEAD(get_recipextra_from_env_none);
 ATF_TC_WITHOUT_HEAD(get_recipextra_from_env_qmail);
@@ -555,112 +543,6 @@ ATF_TC_BODY(write_mail_from, tc)
 		atf_utils_cat_file("mail_from.txt", "");
 		atf_tc_fail("Unexpected output");
 	}
-}
-
-ATF_TC_BODY(write_mailbody_from_map, tc)
-{
-	/* no new lines: ignore */
-	struct stat st;
-	char *start;
-	atf_utils_create_file("myemailbody.txt", "line");
-	int fd1 = open("myemailbody.txt", O_RDONLY);
-	fstat(fd1, &st);
-	ATF_REQUIRE((start = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd1, 0)) != NULL);
-	int fd = open("out.txt", O_CREAT|O_WRONLY, 0644);
-	ATF_REQUIRE_EQ(write_mailbody_from_map(fd, start, st.st_size, "test@plop.meh"), 0);
-	close(fd);
-	munmap(start, st.st_size);
-	close(fd1);
-	if (!atf_utils_compare_file("out.txt", "")) {
-		atf_utils_cat_file("out.txt", ">");
-		atf_tc_fail("Unexpected output");
-	}
-
-	/* With a single new line */
-	atf_utils_create_file("myemailbody.txt", "line\n");
-	fd1 = open("myemailbody.txt", O_RDONLY);
-	fstat(fd1, &st);
-	ATF_REQUIRE((start = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd1, 0)) != NULL);
-	fd = open("out.txt", O_CREAT|O_TRUNC|O_WRONLY, 0644);
-	ATF_REQUIRE_EQ(write_mailbody_from_map(fd, start, st.st_size, "test@plop.meh"), 0);
-	close(fd);
-	munmap(start, st.st_size);
-	close(fd1);
-	if (!atf_utils_compare_file("out.txt", "line\r\n")) {
-		atf_utils_cat_file("out.txt", ">");
-		atf_tc_fail("Unexpected output");
-	}
-
-	/* With a single new line with a . */
-	atf_utils_create_file("myemailbody.txt", "line\n.");
-	fd1 = open("myemailbody.txt", O_RDONLY);
-	fstat(fd1, &st);
-	ATF_REQUIRE((start = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd1, 0)) != NULL);
-	fd = open("out.txt", O_CREAT|O_TRUNC|O_WRONLY, 0644);
-	ATF_REQUIRE_EQ(write_mailbody_from_map(fd, start, st.st_size, "test@plop.meh"), 0);
-	close(fd);
-	munmap(start, st.st_size);
-	close(fd1);
-	if (!atf_utils_compare_file("out.txt", "line\r\n.")) {
-		atf_utils_cat_file("out.txt", ">");
-		atf_tc_fail("Unexpected output");
-	}
-
-	/* With a single new line, 2 new lines */
-	atf_utils_create_file("myemailbody.txt", "line\n\n");
-	fd1 = open("myemailbody.txt", O_RDONLY);
-	fstat(fd1, &st);
-	ATF_REQUIRE((start = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd1, 0)) != NULL);
-	fd = open("out.txt", O_CREAT|O_TRUNC|O_WRONLY, 0644);
-	ATF_REQUIRE_EQ(write_mailbody_from_map(fd, start, st.st_size, "test@plop.meh"), 0);
-	close(fd);
-	munmap(start, st.st_size);
-	close(fd1);
-	if (!atf_utils_compare_file("out.txt", "line\r\nTo: test@plop.meh\r\n\r\n")) {
-		atf_utils_cat_file("out.txt", ">");
-		atf_tc_fail("Unexpected output");
-	}
-
-
-	/* With a single 2 lines separated by 2 new lines*/
-	atf_utils_create_file("myemailbody.txt", "line\n\nline2\n\n");
-	fd1 = open("myemailbody.txt", O_RDONLY);
-	fstat(fd1, &st);
-	ATF_REQUIRE((start = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd1, 0)) != NULL);
-	fd = open("out.txt", O_CREAT|O_TRUNC|O_WRONLY, 0644);
-	ATF_REQUIRE_EQ(write_mailbody_from_map(fd, start, st.st_size, "test@plop.meh"), 0);
-	close(fd);
-	munmap(start, st.st_size);
-	close(fd1);
-	if (!atf_utils_compare_file("out.txt", "line\r\nTo: test@plop.meh\r\n\r\nline2\r\n\r\n")) {
-		atf_utils_cat_file("out.txt", ">");
-		atf_tc_fail("Unexpected output");
-	}
-
-
-	/* No to header */
-	atf_utils_create_file("myemailbody.txt", "line\n\nline2\n\n");
-	fd1 = open("myemailbody.txt", O_RDONLY);
-	fstat(fd1, &st);
-	ATF_REQUIRE((start = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd1, 0)) != NULL);
-	fd = open("out.txt", O_CREAT|O_TRUNC|O_WRONLY, 0644);
-	ATF_REQUIRE_EQ(write_mailbody_from_map(fd, start, st.st_size, NULL), 0);
-	close(fd);
-	munmap(start, st.st_size);
-	close(fd1);
-	if (!atf_utils_compare_file("out.txt", "line\r\n\r\nline2\r\n\r\n")) {
-		atf_utils_cat_file("out.txt", ">");
-		atf_tc_fail("Unexpected output");
-	}
-
-	/* With invalid socket */
-	atf_utils_create_file("myemailbody.txt", "line\n");
-	fd1 = open("myemailbody.txt", O_RDONLY);
-	fstat(fd1, &st);
-	ATF_REQUIRE((start = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd1, 0)) != NULL);
-	ATF_REQUIRE_EQ(write_mailbody_from_map(-1, start, st.st_size, "test@plop.meh"), -1);
-	munmap(start, st.st_size);
-	close(fd1);
 }
 
 ATF_TC_BODY(write_mailbody, tc)
@@ -1221,242 +1103,17 @@ ATF_TC_BODY(do_bouncemail, tc)
 	close(ctrlfd);
 }
 
-ATF_TC_BODY(send_mail_0, tc)
+ATF_TC_BODY(send_mail_basics, tc)
 {
-	int smtppipe[2];
 	struct mail mail = {};
-	ATF_REQUIRE_EQ(send_mail(-1, NULL, -1, -1, false), EBADF);
-	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
-	pid_t p = atf_utils_fork();
-	if (p == 0) {
-		const char *replies [] = {
-			"550 2.1.0 kO\n",
-			NULL,
-		};
-		read_print_reply(smtppipe[0], replies, NELEM(replies));
-		exit(0);
-	}
-	close(smtppipe[0]);
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), 0);
+	ATF_REQUIRE_EQ_MSG(send_mail(1, &mail, -1, -1, false), 0, "Failure with to == NULL");
+	mail.to = "plop";
+	ATF_REQUIRE_EQ_MSG(send_mail(1, &mail, -1, -1, false), 0, "Failure with to without @");
 	mail.to = "plop@meh";
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), 0);
-	mail.from = "test@meh";
-	mail.inmem = true;
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), 0);
-	mail.hdrs = "plop";
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), 0);
-	mail.hdrs = NULL;
-	mail.body = "body";
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), 0);
-	mail.inmem = false;
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), 0);
-	mail.size = 1;
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), 0);
-	mail.size = 0;
-	mail.map = "bla";
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), 0);
-	mail.inmem = true;
-	mail.hdrs = "headers";
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), MLMMJ_FROM);
-	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRSET\r\n", "");
+	ATF_REQUIRE_EQ_MSG(send_mail(1, &mail, -1, -1, false), 0, "Failure with from == NULL");
 }
 
-ATF_TC_BODY(send_mail_1, tc)
-{
-	int smtppipe[2];
-	struct mail mail = {};
-	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
-	pid_t p = atf_utils_fork();
-	if (p == 0) {
-		const char *replies [] = {
-			"250 2.1.0 Ok\n",
-			"550 2.1.0 OK\n",
-			NULL,
-		};
-		read_print_reply(smtppipe[0], replies, NELEM(replies));
-		exit(0);
-	}
-	close(smtppipe[0]);
-	mail.to = "plop@meh";
-	mail.from = "test@meh";
-	mail.inmem = true;
-	mail.hdrs = "headers";
-	mail.body = "body";
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), MLMMJ_RCPTTO);
-	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRCPT TO:<plop@meh>\r\nRSET\r\n", "");
-}
-
-ATF_TC_BODY(send_mail_2, tc)
-{
-	int smtppipe[2];
-	struct mail mail = {};
-	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
-	pid_t p = atf_utils_fork();
-	if (p == 0) {
-		const char *replies [] = {
-			"250 2.1.0 Ok\n",
-			"250 2.1.0 OK\n",
-			"550 2.1.0 OK\n",
-			NULL,
-		};
-		read_print_reply(smtppipe[0], replies, NELEM(replies));
-		exit(0);
-	}
-	close(smtppipe[0]);
-	mail.to = "plop@meh";
-	mail.from = "test@meh";
-	mail.inmem = true;
-	mail.hdrs = "headers";
-	mail.body = "body";
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), MLMMJ_DATA);
-	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRCPT TO:<plop@meh>\r\nDATA\r\nRSET\r\n", "");
-}
-
-ATF_TC_BODY(send_mail_3, tc)
-{
-	int smtppipe[2];
-	struct mail mail = {};
-	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
-	pid_t p = atf_utils_fork();
-	if (p == 0) {
-		const char *replies [] = {
-			"250 2.1.0 Ok\n",
-			"250 2.1.0 OK\n",
-			"550 2.1.0 OK\n",
-			NULL,
-		};
-		read_print_reply(smtppipe[0], replies, NELEM(replies));
-		exit(0);
-	}
-	close(smtppipe[0]);
-	mail.to = "plop@meh";
-	mail.from = "test@meh";
-	mail.inmem = true;
-	mail.hdrs = "headers";
-	mail.body = "body";
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), MLMMJ_DATA);
-	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRCPT TO:<plop@meh>\r\nDATA\r\nRSET\r\n", "");
-}
-
-ATF_TC_BODY(send_mail_4, tc)
-{
-	int smtppipe[2];
-	struct mail mail = {};
-	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
-	pid_t p = atf_utils_fork();
-	if (p == 0) {
-		const char *replies [] = {
-			"250 2.1.0 OK\n",
-			"250 2.1.0 OK\n",
-			"250 2.1.0 OK\n",
-			NULL,
-		};
-		read_print_reply(smtppipe[0], replies, NELEM(replies));
-		exit(0);
-	}
-	close(smtppipe[0]);
-	mail.to = "plop@meh";
-	mail.from = "test@meh";
-	mail.inmem = true;
-	mail.hdrs = "headers";
-	mail.body = "body";
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), MLMMJ_DATA);
-	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRCPT TO:<plop@meh>\r\nDATA\r\nRSET\r\n", "");
-}
-
-ATF_TC_BODY(send_mail_5, tc)
-{
-	int smtppipe[2];
-	struct mail mail = {};
-	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
-	pid_t p = atf_utils_fork();
-	if (p == 0) {
-		const char *replies [] = {
-			"250 2.1.0 OK\n",
-			"250 2.1.0 OK\n",
-			"350 2.1.0 OK\n",
-			NULL,
-			NULL,
-			NULL,
-			"350 2.1.0 OK\n",
-			NULL,
-		};
-		read_print_reply(smtppipe[0], replies, NELEM(replies));
-		exit(0);
-	}
-	close(smtppipe[0]);
-	mail.to = "plop@meh";
-	mail.from = "test@meh";
-	mail.inmem = true;
-	mail.hdrs = "headers\n";
-	mail.body = "body\n";
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), MLMMJ_DOT);
-	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRCPT TO:<plop@meh>\r\nDATA\r\nheaders\nbody\n\r\n.\r\nRSET\r\n", "");
-}
-
-ATF_TC_BODY(send_mail_6, tc)
-{
-	int smtppipe[2];
-	struct mail mail = {};
-	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
-	pid_t p = atf_utils_fork();
-	if (p == 0) {
-		const char *replies [] = {
-			"250 2.1.0 OK\n",
-			"250 2.1.0 OK\n",
-			"350 2.1.0 OK\n",
-			NULL,
-			NULL,
-			NULL,
-			NULL,
-			"250 2.1.0 OK\n",
-		};
-		read_print_reply(smtppipe[0], replies, NELEM(replies));
-		exit(0);
-	}
-	close(smtppipe[0]);
-	mail.to = "plop@meh";
-	mail.from = "test@meh";
-	mail.inmem = true;
-	mail.hdrs = "headers\n";
-	mail.body = "body\n";
-	mail.replyto= "yeah@meh";
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), 0);
-	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRCPT TO:<plop@meh>\r\nDATA\r\nReply-To: yeah@meh\r\nheaders\nbody\n\r\n.\r\n", "");
-}
-
-ATF_TC_BODY(send_mail_7, tc)
-{
-	int smtppipe[2];
-	struct mail mail = {};
-	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
-	pid_t p = atf_utils_fork();
-	if (p == 0) {
-		const char *replies [] = {
-			"250 2.1.0 OK\n",
-			"250 2.1.0 OK\n",
-			"350 2.1.0 OK\n",
-			NULL,
-			NULL,
-			NULL,
-			NULL,
-			"250 2.1.0 OK\n",
-		};
-		read_print_reply(smtppipe[0], replies, NELEM(replies));
-		exit(0);
-	}
-	close(smtppipe[0]);
-	mail.to = "plop@meh";
-	mail.from = "test@meh";
-	mail.inmem = true;
-	mail.hdrs = "headers\n";
-	mail.body = "body\n";
-	mail.addtohdr = true;
-	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), 0);
-	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRCPT TO:<plop@meh>\r\nDATA\r\nheaders\nTo: plop@meh\r\nbody\n\r\n.\r\n", "");
-}
-
-ATF_TC_BODY(send_mail_8, tc)
+ATF_TC_BODY(send_mail, tc)
 {
 	int smtppipe[2];
 	struct mail mail = {};
@@ -1480,7 +1137,6 @@ ATF_TC_BODY(send_mail_8, tc)
 	close(smtppipe[0]);
 	mail.to = "plop@meh";
 	mail.from = "test@meh";
-	mail.inmem = false;
 	atf_utils_create_file("mymail.txt", "headers\n\nbody\n");
 	mail.fp = fopen("mymail.txt", "r");
 	mail.addtohdr = true;
@@ -1723,78 +1379,6 @@ ATF_TC_BODY(log_oper, tc)
 		atf_utils_cat_file("list/plop", ">");
 		atf_tc_fail("Invalid log file");
 	}
-}
-
-ATF_TC_BODY(get_preppedhdrs_from_map, tc)
-{
-	struct stat st;
-	char *hdr;
-	atf_utils_create_file("./mailfile", "head1: plop\nhead2\n\nbody\n");
-
-	stat("./mailfile", &st);
-	int fd = open("./mailfile", O_RDONLY);
-	ATF_REQUIRE(fd != -1);
-	char *map = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
-	ATF_REQUIRE(map != NULL);
-	size_t len = 0;
-	ATF_REQUIRE((hdr = get_preppedhdrs_from_map(map, st.st_size, &len)) != NULL);
-	ATF_REQUIRE_EQ(len, 20);
-	ATF_REQUIRE(strncmp(hdr, "head1: plop\r\nhead2\r\n", len) == 0);
-	ATF_REQUIRE_STREQ(hdr, "head1: plop\r\nhead2\r\n");
-	munmap(map, st.st_size);
-	close(fd);
-}
-
-ATF_TC_BODY(get_preppedhdrs_from_map_1, tc)
-{
-	struct stat st;
-	atf_utils_create_file("./mailfile", "head1: plop\nhead2\nbody\n");
-
-	stat("./mailfile", &st);
-	int fd = open("./mailfile", O_RDONLY);
-	ATF_REQUIRE(fd != -1);
-	char *map = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
-	ATF_REQUIRE(map != NULL);
-	size_t len = 0;
-	ATF_REQUIRE(get_preppedhdrs_from_map(map, st.st_size, &len) == NULL);
-	munmap(map, st.st_size);
-	close(fd);
-}
-
-ATF_TC_BODY(get_prepped_mailbody_from_map, tc)
-{
-	struct stat st;
-	char *body;
-	atf_utils_create_file("./mailfile", "head1: plop\nhead2\n\nbody\n");
-
-	stat("./mailfile", &st);
-	int fd = open("./mailfile", O_RDONLY);
-	ATF_REQUIRE(fd != -1);
-	char *map = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
-	ATF_REQUIRE(map != NULL);
-	size_t len = 0;
-	ATF_REQUIRE((body = get_prepped_mailbody_from_map(map, st.st_size, &len)) != NULL);
-	ATF_REQUIRE_EQ(len, 8);
-	ATF_REQUIRE(strncmp(body, "\r\nbody\r\n", len) == 0);
-	ATF_REQUIRE_STREQ(body, "\r\nbody\r\n");
-	munmap(map, st.st_size);
-	close(fd);
-}
-
-ATF_TC_BODY(get_prepped_mailbody_from_map_1, tc)
-{
-	struct stat st;
-	atf_utils_create_file("./mailfile", "head1: plop\nhead2\nbody\n");
-
-	stat("./mailfile", &st);
-	int fd = open("./mailfile", O_RDONLY);
-	ATF_REQUIRE(fd != -1);
-	char *map = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
-	ATF_REQUIRE(map != NULL);
-	size_t len = 0;
-	ATF_REQUIRE(get_prepped_mailbody_from_map(map, st.st_size, &len) == NULL);
-	munmap(map, st.st_size);
-	close(fd);
 }
 
 ATF_TC_BODY(get_ctrl_command, tc)
@@ -2457,7 +2041,6 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, write_replyto);
 	ATF_TP_ADD_TC(tp, write_rcpt_to);
 	ATF_TP_ADD_TC(tp, write_mail_from);
-	ATF_TP_ADD_TC(tp, write_mailbody_from_map);
 	ATF_TP_ADD_TC(tp, write_mailbody);
 	ATF_TP_ADD_TC(tp, strtotimet);
 	ATF_TP_ADD_TC(tp, decode_qp);
@@ -2474,15 +2057,8 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, smtp_no_ehlo);
 	ATF_TP_ADD_TC(tp, endsmtp);
 	ATF_TP_ADD_TC(tp, do_bouncemail);
-	ATF_TP_ADD_TC(tp, send_mail_0);
-	ATF_TP_ADD_TC(tp, send_mail_1);
-	ATF_TP_ADD_TC(tp, send_mail_2);
-	ATF_TP_ADD_TC(tp, send_mail_3);
-	ATF_TP_ADD_TC(tp, send_mail_4);
-	ATF_TP_ADD_TC(tp, send_mail_5);
-	ATF_TP_ADD_TC(tp, send_mail_6);
-	ATF_TP_ADD_TC(tp, send_mail_7);
-	ATF_TP_ADD_TC(tp, send_mail_8);
+	ATF_TP_ADD_TC(tp, send_mail_basics);
+	ATF_TP_ADD_TC(tp, send_mail);
 	ATF_TP_ADD_TC(tp, getlistdelim);
 	ATF_TP_ADD_TC(tp, getlistdelim_0);
 	ATF_TP_ADD_TC(tp, getlistdelim_1);
@@ -2499,10 +2075,6 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, controls);
 	ATF_TP_ADD_TC(tp, incindexfile);
 	ATF_TP_ADD_TC(tp, log_oper);
-	ATF_TP_ADD_TC(tp, get_preppedhdrs_from_map);
-	ATF_TP_ADD_TC(tp, get_preppedhdrs_from_map_1);
-	ATF_TP_ADD_TC(tp, get_prepped_mailbody_from_map);
-	ATF_TP_ADD_TC(tp, get_prepped_mailbody_from_map_1);
 	ATF_TP_ADD_TC(tp, get_ctrl_command);
 	ATF_TP_ADD_TC(tp, get_recipextra_from_env_none);
 	ATF_TP_ADD_TC(tp, get_recipextra_from_env_qmail);

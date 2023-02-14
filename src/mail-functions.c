@@ -78,46 +78,6 @@ int write_rcpt_to(int sockfd, const char *rcpt_addr)
 	return (write_sock(sockfd, "TO", "RCPT TO:<%s>\r\n", rcpt_addr));
 }
 
-int write_mailbody_from_map(int sockfd, char *mapstart, size_t size,
-			    const char *tohdr)
-{
-	char *cur, *next;
-	char newlinebuf[3];
-	size_t len;
-	int i = 1;
-
-	for(next = cur = mapstart; next < mapstart + size; next++) {
-		if(*next == '\n') {
-			if(dprintf(sockfd, "%.*s", (int)(next - cur), cur) < 0) {
-				log_error(LOG_ARGS, "Could not write mail");
-				return -1;
-			}
-			newlinebuf[0] = '\r';
-			newlinebuf[1] = '\n';
-			len = 2;
-			if(next < (mapstart + size - 1) && *(next+1) == '.') {
-				newlinebuf[2] = '.';
-				len++;
-			}
-			if(dprintf(sockfd, "%.*s", (int)len, newlinebuf) < 0) {
-				log_error(LOG_ARGS, "Could not write mail");
-				return -1;
-			}
-			if(i && tohdr && *(next+1) == '\n') { /* add To: header */
-				if(dprintf(sockfd, "To: %s\r\n", tohdr) < 0) {
-					log_error(LOG_ARGS, "Could not write"
-							    " To: header");
-					return -1;
-				}
-				i = 0; /* Make sure we don't write it again */
-			}
-			cur = next + 1;
-		}
-	}
-
-	return 0;
-}
-
 void
 write_mailbody(int sockfd, FILE *fp, const char *tohdr)
 {
@@ -136,87 +96,6 @@ write_mailbody(int sockfd, FILE *fp, const char *tohdr)
 		}
 		ungetc(next, fp);
 	}
-}
-
-char *get_preppedhdrs_from_map(char *mapstart, size_t maplen, size_t *hlen)
-{
-	char *cur, *next, *endhdrs, *retstr, *r;
-	const char newlinebuf[] = "\r\n";
-	size_t hdrlen, n = 0;
-
-	endhdrs = strnstr(mapstart, "\n\n", maplen);
-	if(endhdrs == NULL)
-		return NULL; /* The map doesn't map a file with a mail */
-
-	hdrlen = endhdrs - mapstart + 1;
-
-	for(next = cur = mapstart; next < mapstart + hdrlen; next++)
-		if(*next == '\n')
-			n++;
-
-	retstr = xmalloc(hdrlen + n + 1);
-	*hlen = hdrlen + n;	
-	r = retstr;	
-
-	for(next = cur = mapstart; next < mapstart + hdrlen; next++) {
-		if(*next == '\n') {
-			strncpy(r, cur, next - cur);
-			r += next - cur;
-			strncpy(r, newlinebuf, 2);
-			r += 2;
-			cur = next + 1;
-		}
-	}
-	retstr[*hlen] = '\0';
-
-	return retstr;
-}
-
-char *get_prepped_mailbody_from_map(char *mapstart, size_t size, size_t *blen)
-{
-	char *cur, *next, *endhdrs, *retstr, *r;
-	char newlinebuf[3];
-	size_t bodylen, len, n = 0;
-
-	endhdrs = strnstr(mapstart, "\n\n", size);
-	if(endhdrs == NULL)
-		return NULL; /* The map doesn't map a file with a mail */
-
-	endhdrs++; /* Skip the first newline, it's in hdrs */
-
-	bodylen = size - (endhdrs - mapstart);
-	
-	for(next = cur = endhdrs; next < mapstart + size; next++) {
-		if(*next == '\n') {
-			n++;
-			if((next < mapstart + size - 1) && *(next+1) == '.')
-				n++;
-		}
-	}
-
-	retstr = xmalloc(bodylen + n +1);
-	*blen = bodylen + n;
-	r = retstr;
-	
-	for(next = cur = endhdrs; next < mapstart + size; next++) {
-		if(*next == '\n') {
-			strncpy(r, cur, next - cur);
-			r += next - cur;
-			newlinebuf[0] = '\r';
-			newlinebuf[1] = '\n';
-			len = 2;
-			if((next < mapstart + size - 1) && *(next+1) == '.') {
-				newlinebuf[2] = '.';
-				len = 3;
-			}
-			strncpy(r, newlinebuf, len);
-			r += len;
-			cur = next + 1;
-		}
-	}
-	retstr[*blen] = '\0';
-
-	return retstr;
 }
 
 int write_dot(int sockfd)

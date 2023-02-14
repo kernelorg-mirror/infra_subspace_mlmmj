@@ -1,6 +1,6 @@
-/* Copyright (C) 2002, 2003 Mads Martin Joergensen <mmj at mmj.dk>
- *
- * $Id$
+/*
+ * Copyright (C) 2002, 2003 Mads Martin Joergensen <mmj at mmj.dk>
+ * Copyright (C) 2023 Mads Martin Joergensen <mmj at mmj.dk>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -21,8 +21,7 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef MAIL_FUNCTIONS_H
-#define MAIL_FUNCTIONS_H
+#pragma once
 
 #define WRITE_BUFSIZE 1024
 
@@ -33,16 +32,9 @@ int write_ehlo(int sockfd, const char *hostname);
 int write_mail_from(int sockfd, const char *from_addr, const char *extra);
 int write_rcpt_to(int sockfd, const char *rcpt_addr);
 int write_custom_line(int sockfd, const char *line);
-int write_mailbody_from_map(int sockfd, char *mailmap, size_t mailsize,
-			    const char *tohdr);
 void write_mailbody(int sockfd, FILE *fp, const char *tohdr);
-char *get_preppedhdrs_from_map(char *mapstart, size_t maplen, size_t *hdrslen);
-char *get_prepped_mailbody_from_map(char *mapstart, size_t size,
-				    size_t *bodylen);
 int write_replyto(int sockfd, const char *replyaddr);
 int write_dot(int sockfd);
 int write_quit(int sockfd);
 int write_data(int sockfd);
 int write_rset(int sockfd);
-
-#endif /* MAIL_FUNCTIONS_H */

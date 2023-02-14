@@ -253,17 +253,6 @@ send_mail(int sockfd, struct mail *mail, int listfd, int ctrlfd, bool bounce)
 		return 0;
 	}
 
-	if (mail->inmem) {
-		if (mail->hdrs == NULL || mail->body == NULL) {
-			log_error(LOG_ARGS, "No body or headers");
-			return (0);
-		}
-	} else if (mail->fp == NULL) {
-		if (mail->size == 0 || mail->map == NULL) {
-			log_error(LOG_ARGS, "No mmap mail");
-			return (0);
-		}
-	}
 	retval = write_mail_from(sockfd, mail->from, "");
 	if(retval) {
 		log_error(LOG_ARGS, "Could not write MAIL FROM\n");
@@ -326,34 +315,7 @@ send_mail(int sockfd, struct mail *mail, int listfd, int ctrlfd, bool bounce)
 		}
 	}
 
-	if(mail->inmem) {
-		retval = dprintf(sockfd, "%s", mail->hdrs);
-		if(retval < 0) {
-			log_error(LOG_ARGS, "Could not write mailheaders.\n");
-			return retval;
-		}
-		if(mail->addtohdr) {
-			retval = dprintf(sockfd, "To: %s\r\n", mail->to);
-			if(retval < 0) {
-				log_error(LOG_ARGS, "Could not write To:.\n");
-				return retval;
-			}
-		}
-		retval = dprintf(sockfd, "%s", mail->body);
-		if(retval < 0) {
-			log_error(LOG_ARGS, "Could not write mailbody.\n");
-			return retval;
-		}
-	} else if (mail->fp != NULL) {
-		write_mailbody(sockfd, mail->fp, mail->addtohdr ? mail->to : NULL);
-	} else {
-		retval = write_mailbody_from_map(sockfd, mail->map, mail->size,
-		    mail->addtohdr ? mail->to : NULL);
-		if(retval) {
-			log_error(LOG_ARGS, "Could not write mail\n");
-			return retval;
-		}
-	}
+	write_mailbody(sockfd, mail->fp, mail->addtohdr ? mail->to : NULL);
 
 	retval = write_dot(sockfd);
 	if(retval) {

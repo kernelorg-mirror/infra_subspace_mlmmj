@@ -33,11 +33,6 @@ struct mail {
 	const char *to;
 	const char *replyto;
 	FILE *fp;
-	char *map;
-	size_t size;
-	char *hdrs;
-	char *body;
-	bool inmem;
 	bool addtohdr;
 };
 

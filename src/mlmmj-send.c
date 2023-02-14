@@ -234,24 +234,7 @@ int send_mail_verp(int sockfd, strlist *addrs, struct mail *mail,
 		return MLMMJ_DATA;
 	}
 
-	if(mail->inmem) {
-		retval = dprintf(sockfd, "%s", mail->hdrs);
-		if(retval < 0) {
-			log_error(LOG_ARGS, "Could not write mailheaders.\n");
-			return retval;
-		}
-		retval = dprintf(sockfd, "%s", mail->body);
-		if(retval < 0) {
-			log_error(LOG_ARGS, "Could not write mailbody.\n");
-			return retval;
-		}
-	} else {
-		retval = write_mailbody_from_map(sockfd, mail->map, mail->size, NULL);
-		if(retval) {
-			log_error(LOG_ARGS, "Could not write mail\n");
-			return retval;
-		}
-	}
+	write_mailbody(sockfd, mail->fp, NULL);
 
 	retval = write_dot(sockfd);
 	if(retval) {
@@ -426,8 +409,7 @@ static void print_help(const char *prg)
 
 int main(int argc, char **argv)
 {
-	size_t hdrslen, bodylen;
-	int sockfd = -1, mailfd = 0, opt, mindex = 0, subfd = 0, tmpfd;
+	int sockfd = -1, opt, mindex = 0, subfd = 0, tmpfd;
 	int deletewhensent = 1, sendres = 0, digest = 0;
 	bool archive = true, ctrlarchive;
 	int res;
@@ -439,7 +421,6 @@ int main(int argc, char **argv)
 	char *verp = NULL;
 	char *verpfrom;
 	char *reply, *smtphelo, *requeuefilename;
-	ssize_t memmailsize = 0;
 	DIR *subddir;
 	struct dirent *dp;
 	struct stat st;
@@ -448,7 +429,7 @@ int main(int argc, char **argv)
 	struct sigaction sigact;
 	struct mail mail;
 	struct ml ml;
-	int subdirfd;
+	int subdirfd, mailfd;
 
 	memset(&mail, 0, sizeof(mail));
 	log_set_name(argv[0]);
@@ -544,50 +525,15 @@ int main(int argc, char **argv)
 
 	/* initialize file with mail to send */
 
-	if((mailfd = open(mailfilename, O_RDWR, 0644)) < 0 &&
+	if ((mailfd = open(mailfilename, O_RDWR)) == -1 ||
 	    !lock(mailfd, true)) {
-	        log_error(LOG_ARGS, "Could not open '%s'", mailfilename);
+		log_error(LOG_ARGS, "Could not open '%s'", mailfilename);
 		exit(EXIT_FAILURE);
 	}
+	mail.fp = fdopen(mailfd, "r");
 
-	if(fstat(mailfd, &st) < 0) {
-		log_error(LOG_ARGS, "Could not stat mailfd");
-		exit(EXIT_FAILURE);
-	}
-
-	if (ml.dir) {
-		memmailsize = ctrlsizet(ml.ctrlfd, "memorymailsize", MEMORYMAILSIZE);
+	if (ml.dir)
 		ctrlarchive = statctrl(ml.ctrlfd, "noarchive");
-	}
-
-	if(st.st_size > memmailsize) {
-		errno = 0;
-		log_error(LOG_ARGS, "Not preparing in memory. "
-				    "Mail is %ld bytes", (long)st.st_size);
-	} else
-		mail.inmem = true;
-
-	mail.map = mmap(0, st.st_size, PROT_READ, MAP_SHARED, mailfd, 0);
-	if(mail.map == MAP_FAILED) {
-		log_error(LOG_ARGS, "Could not mmap mailfd");
-		exit(EXIT_FAILURE);
-	}
-	mail.size = st.st_size;
-
-	if(mail.inmem) {
-		mail.hdrs = get_preppedhdrs_from_map(mail.map, mail.size, &hdrslen);
-		if(mail.hdrs == NULL) {
-			log_error(LOG_ARGS, "Could not prepare headers");
-			exit(EXIT_FAILURE);
-		}
-		mail.body = get_prepped_mailbody_from_map(mail.map, st.st_size,
-						     &bodylen);
-		if(mail.body == NULL) {
-			log_error(LOG_ARGS, "Could not prepare mailbody");
-			free(mail.hdrs);
-			exit(EXIT_FAILURE);
-		}
-	}
 
 	switch(listctrl) {
 	case '1': /* A single mail is to be sent, do nothing */
@@ -599,8 +545,6 @@ int main(int argc, char **argv)
 		if((subfd = openat(ml.ctrlfd, "moderators", O_RDONLY)) < 0) {
 			log_error(LOG_ARGS, "Could not open '%s':",
 					    subfilename);
-			free(mail.hdrs);
-			free(mail.body);
 			/* No moderators is no error. Could be the sysadmin
 			 * likes to do it manually.
 			 */
@@ -613,8 +557,6 @@ int main(int argc, char **argv)
 		if((subfd = open(subfilename, O_RDONLY)) < 0) {
 			log_error(LOG_ARGS, "Could not open '%s':",
 					    subfilename);
-			free(mail.hdrs);
-			free(mail.body);
 			exit(EXIT_FAILURE);
 		}
 		break;
@@ -753,8 +695,6 @@ int main(int argc, char **argv)
 		if (subdirfd == -1 || (subddir = fdopendir(subdirfd)) == NULL) {
 			log_error(LOG_ARGS, "Could not opendir(%s/%s)", ml.dir,
 					    subddirname);
-			free(mail.hdrs);
-			free(mail.body);
 			exit(EXIT_FAILURE);
 		}
 
@@ -881,11 +821,7 @@ int main(int argc, char **argv)
 		closedir(subddir);
 		break;
 	}
-	
-	free(mail.hdrs);
-	free(mail.body);
-	munmap(mail.map, mail.size);
-	close(mailfd);
+
 	free(verp);
 	free(smtphelo);
 
