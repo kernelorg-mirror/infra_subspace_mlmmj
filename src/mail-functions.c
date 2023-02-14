@@ -31,6 +31,7 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <fcntl.h>
+#include <stdbool.h>
 
 #include "xmalloc.h"
 #include "mail-functions.h"
@@ -115,6 +116,26 @@ int write_mailbody_from_map(int sockfd, char *mapstart, size_t size,
 	}
 
 	return 0;
+}
+
+void
+write_mailbody(int sockfd, FILE *fp, const char *tohdr)
+{
+	int c, next;
+	bool addhdr = true;
+	while ((c = fgetc(fp)) != EOF) {
+		if (c != '\n') {
+			dprintf(sockfd, "%c", c);
+			continue;
+		}
+		next = fgetc(fp);
+		dprintf(sockfd, "\r\n");
+		if (addhdr && tohdr != NULL && next == '\n') {
+			dprintf(sockfd, "To: %s\r\n", tohdr);
+			addhdr = false;
+		}
+		ungetc(next, fp);
+	}
 }
 
 char *get_preppedhdrs_from_map(char *mapstart, size_t maplen, size_t *hlen)

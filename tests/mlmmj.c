@@ -86,6 +86,7 @@ ATF_TC_WITHOUT_HEAD(write_replyto);
 ATF_TC_WITHOUT_HEAD(write_rcpt_to);
 ATF_TC_WITHOUT_HEAD(write_mail_from);
 ATF_TC_WITHOUT_HEAD(write_mailbody_from_map);
+ATF_TC_WITHOUT_HEAD(write_mailbody);
 ATF_TC_WITHOUT_HEAD(strtotimet);
 ATF_TC_WITHOUT_HEAD(decode_qp);
 ATF_TC_WITHOUT_HEAD(parse_lastdigest);
@@ -660,6 +661,88 @@ ATF_TC_BODY(write_mailbody_from_map, tc)
 	ATF_REQUIRE_EQ(write_mailbody_from_map(-1, start, st.st_size, "test@plop.meh"), -1);
 	munmap(start, st.st_size);
 	close(fd1);
+}
+
+ATF_TC_BODY(write_mailbody, tc)
+{
+	/* no new lines: ignore */
+	FILE *fp;
+	atf_utils_create_file("myemailbody.txt", "line");
+	fp = fopen("myemailbody.txt", "r");
+	ATF_REQUIRE(fp != NULL);
+	int fd = open("out.txt", O_CREAT|O_WRONLY, 0644);
+	write_mailbody(fd, fp, "test@plop.meh");
+	fclose(fp);
+	close(fd);
+	if (!atf_utils_compare_file("out.txt", "line")) {
+		atf_utils_cat_file("out.txt", ">");
+		atf_tc_fail("Unexpected output (no new lines case)");
+	}
+
+	/* With a single new line */
+	atf_utils_create_file("myemailbody.txt", "line\n");
+	fp = fopen("myemailbody.txt", "r");
+	ATF_REQUIRE(fp != NULL);
+	fd = open("out.txt", O_CREAT|O_TRUNC|O_WRONLY, 0644);
+	write_mailbody(fd, fp, "test@plop.meh");
+	close(fd);
+	fclose(fp);
+	if (!atf_utils_compare_file("out.txt", "line\r\n")) {
+		atf_utils_cat_file("out.txt", ">");
+		atf_tc_fail("Unexpected output (a single new line)");
+	}
+
+	/* With a single new line with a . */
+	atf_utils_create_file("myemailbody.txt", "line\n.");
+	fp = fopen("myemailbody.txt", "r");
+	ATF_REQUIRE(fp != NULL);
+	fd = open("out.txt", O_CREAT|O_TRUNC|O_WRONLY, 0644);
+	write_mailbody(fd, fp,  "test@plop.meh");
+	close(fd);
+	fclose(fp);
+	if (!atf_utils_compare_file("out.txt", "line\r\n.")) {
+		atf_utils_cat_file("out.txt", ">");
+		atf_tc_fail("Unexpected output (single new line with a .)");
+	}
+
+	/* With a single new line, 2 new lines */
+	atf_utils_create_file("myemailbody.txt", "line\n\n");
+	fp = fopen("myemailbody.txt", "r");
+	ATF_REQUIRE(fp != NULL);
+	fd = open("out.txt", O_CREAT|O_TRUNC|O_WRONLY, 0644);
+	write_mailbody(fd, fp,  "test@plop.meh");
+	close(fd);
+	fclose(fp);
+	if (!atf_utils_compare_file("out.txt", "line\r\nTo: test@plop.meh\r\n\r\n")) {
+		atf_utils_cat_file("out.txt", ">");
+		atf_tc_fail("Unexpected output (a single new line, 2 new lines)");
+	}
+
+	/* With a single 2 lines separated by 2 new lines*/
+	atf_utils_create_file("myemailbody.txt", "line\n\nline2\n\n");
+	fp = fopen("myemailbody.txt", "r");
+	ATF_REQUIRE(fp != NULL);
+	fd = open("out.txt", O_CREAT|O_TRUNC|O_WRONLY, 0644);
+	write_mailbody(fd, fp,  "test@plop.meh");
+	close(fd);
+	fclose(fp);
+	if (!atf_utils_compare_file("out.txt", "line\r\nTo: test@plop.meh\r\n\r\nline2\r\n\r\n")) {
+		atf_utils_cat_file("out.txt", ">");
+		atf_tc_fail("Unexpected output (2 lines separated by 2 new lines)");
+	}
+
+	/* No to header */
+	atf_utils_create_file("myemailbody.txt", "line\n\nline2\n\n");
+	fp = fopen("myemailbody.txt", "r");
+	ATF_REQUIRE(fp != NULL);
+	fd = open("out.txt", O_CREAT|O_TRUNC|O_WRONLY, 0644);
+	write_mailbody(fd, fp,  NULL);
+	close(fd);
+	fclose(fp);
+	if (!atf_utils_compare_file("out.txt", "line\r\n\r\nline2\r\n\r\n")) {
+		atf_utils_cat_file("out.txt", ">");
+		atf_tc_fail("Unexpected output (no to header)");
+	}
 }
 
 ATF_TC_BODY(strtotimet, tc)
@@ -1377,7 +1460,6 @@ ATF_TC_BODY(send_mail_8, tc)
 {
 	int smtppipe[2];
 	struct mail mail = {};
-	struct stat st;
 	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
@@ -1400,10 +1482,7 @@ ATF_TC_BODY(send_mail_8, tc)
 	mail.from = "test@meh";
 	mail.inmem = false;
 	atf_utils_create_file("mymail.txt", "headers\n\nbody\n");
-	int fd = open("mymail.txt", O_RDONLY);
-	fstat(fd, &st);
-	mail.size = st.st_size;
-	mail.map = mmap(0, mail.size, PROT_READ, MAP_SHARED, fd, 0);
+	mail.fp = fopen("mymail.txt", "r");
 	mail.addtohdr = true;
 	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), 0);
 	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRCPT TO:<plop@meh>\r\nDATA\r\nheaders\r\nTo: plop@meh\r\n\r\nbody\r\n\r\n.\r\n", "");
@@ -2379,6 +2458,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, write_rcpt_to);
 	ATF_TP_ADD_TC(tp, write_mail_from);
 	ATF_TP_ADD_TC(tp, write_mailbody_from_map);
+	ATF_TP_ADD_TC(tp, write_mailbody);
 	ATF_TP_ADD_TC(tp, strtotimet);
 	ATF_TP_ADD_TC(tp, decode_qp);
 	ATF_TP_ADD_TC(tp, parse_lastdigest);

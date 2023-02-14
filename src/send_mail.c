@@ -345,23 +345,7 @@ send_mail(int sockfd, struct mail *mail, int listfd, int ctrlfd, bool bounce)
 			return retval;
 		}
 	} else if (mail->fp != NULL) {
-		int c, next;
-		bool addhdr = true;
-		while ((c = fgetc(mail->fp)) != EOF) {
-			if (c != '\n') {
-				dprintf(sockfd, "%c", c);
-				continue;
-			}
-			next = fgetc(mail->fp);
-			if (next == '.') {
-				dprintf(sockfd, "\r\n.");
-			}
-			if (addhdr && mail->addtohdr && next == '\n') {
-				dprintf(sockfd, "To: %s\r\n", mail->to);
-				addhdr = false;
-			}
-			ungetc(c, mail->fp);
-		}
+		write_mailbody(sockfd, mail->fp, mail->addtohdr ? mail->to : NULL);
 	} else {
 		retval = write_mailbody_from_map(sockfd, mail->map, mail->size,
 		    mail->addtohdr ? mail->to : NULL);
