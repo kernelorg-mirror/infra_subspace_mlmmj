@@ -80,7 +80,6 @@ void do_probe(struct ml *ml, const char *addr)
 	int fd;
 	time_t t;
 	struct mail mail;
-	int sockfd;
 
 	memset(&mail, 0, sizeof(mail));
 	myaddr = lowercase(addr);
@@ -124,16 +123,11 @@ void do_probe(struct ml *ml, const char *addr)
 	mail.to = myaddr;
 	mail.from = from;
 	mail.fp = fopen(queuefilename, "r");
-	sockfd = newsmtp(ml);
-	if (sockfd == -1)
-		exit(EXIT_FAILURE);
-	if (send_mail(sockfd, &mail, ml->fd, ml->ctrlfd, false)) {
-		close(sockfd);
+	if (!send_single_mail(&mail, ml, false)) {
 		save_queue(queuefilename, mail.from, mail.to);
 		exit(EXIT_FAILURE);
 	}
 	fclose(mail.fp);
-	endsmtp(&sockfd);
 	exit(EXIT_SUCCESS);
 }
 

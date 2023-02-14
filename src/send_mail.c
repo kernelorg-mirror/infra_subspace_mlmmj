@@ -355,3 +355,19 @@ newsmtp(struct ml *ml)
 		return (-1);
 	return (sockfd);
 }
+
+bool
+send_single_mail(struct mail *mail, struct ml *ml, bool bounce)
+{
+	int sockfd;
+
+	sockfd = newsmtp(ml);
+	if (sockfd == -1)
+		return (false);
+	if (!send_mail(sockfd, mail, ml->fd, ml->ctrlfd, bounce)) {
+		endsmtp(&sockfd);
+		return (false);
+	}
+	endsmtp(&sockfd);
+	return (true);
+}
