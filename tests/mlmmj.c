@@ -2131,37 +2131,7 @@ ATF_TC_BODY(send_single_mail, tc)
 	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
-		int s = fakesmtp(smtppipe[1]);
-		int c;
-		struct sockaddr_in cl;
-		socklen_t clsize = 0;
-		c = accept(s, (struct sockaddr *) &cl, &clsize);
-		if (c == -1)
-			err(5, "accept()");
-		dprintf(c, "220 me fake smtp\n");
-		const char *replies[] = {
-			"250-hostname.net\n"
-			"250-PIPELINEING\n"
-			"250-SIZE 20480000\n"
-			"250-ETRN\n"
-			"250-STARTTLS\n"
-			"250-ENHANCEDSTATUSCODES\n"
-			"250-8BITMIME\n"
-			"250-DSN\n"
-			"250-SMTPUTF8\n"
-			"250 CHUNKING\n",
-			"250 2.1.0 OK\n",
-			"250 2.1.0 OK\n",
-			"350 2.1.0 OK\n",
-			NULL,
-			NULL,
-			NULL,
-			NULL,
-			NULL,
-			"250 2.1.0 OK\n",
-			"221 2.0.0 bye\n",
-		};
-		read_print_reply(c, replies, NELEM(replies));
+		single_mail_reception(smtppipe[1]);
 		exit(0);
 	}
 	close(smtppipe[1]);
