@@ -183,27 +183,6 @@ static void print_help(const char *prg)
 	exit(EXIT_SUCCESS);
 }
 
-static void generate_notsubscribed(struct ml *ml, const char *subaddr,
-	const char *mlmmjsend, enum subtype typesub)
-{
-	text *txt;
-	char *queuefilename, *fromaddr;
-
-	gen_addr(fromaddr, ml, "bounces-help");
-	txt = open_text(ml->fd,
-			"deny", "unsub", "unsubbed", subtype_strs[typesub],
-			"unsub-notsubscribed");
-	MY_ASSERT(txt);
-	register_default_unformatted(txt, ml);
-	register_unformatted(txt, "subaddr", subaddr);
-	queuefilename = prepstdreply(txt, ml, "$helpaddr$", subaddr, NULL);
-	MY_ASSERT(queuefilename);
-	close_text(txt);
-
-	exec_or_die(mlmmjsend, "-l", "1", "-L", ml->dir, "-T", subaddr,
-	    "-F", fromaddr, "-m", queuefilename, NULL);
-}
-
 int main(int argc, char **argv)
 {
 	int opt;
@@ -340,7 +319,7 @@ int main(int argc, char **argv)
 	if(!subbed) {
 		/* Address is not subscribed */
 		if(!nogennotsubscribed)
-			generate_notsubscribed(&ml, address, mlmmjsend, typesub);
+			generate_subscription(&ml, address, typesub, false);
 		exit(EXIT_SUCCESS);
 	}
 

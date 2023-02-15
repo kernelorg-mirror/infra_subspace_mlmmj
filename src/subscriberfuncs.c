@@ -166,8 +166,9 @@ get_subcookie_content(int listfd, bool unsub, const char *param)
 	return (NULL);
 }
 
-void notify_sub(struct ml *ml, const char *subaddr, enum subtype typesub,
-		enum subreason reasonsub, bool sub)
+void
+notify_sub(struct ml *ml, const char *subaddr, enum subtype typesub,
+    enum subreason reasonsub, bool sub)
 {
 	char *fromaddr, *tostr;
 	text *txt;
@@ -208,6 +209,37 @@ void notify_sub(struct ml *ml, const char *subaddr, enum subtype typesub,
 	close_text(txt);
 
 	mail.to = tostr;
+	mail.from = fromaddr;
+	mail.fp = fopen(queuefilename, "r");
+	if (!send_single_mail(&mail, ml, false)) {
+		save_queue(queuefilename, &mail);
+		exit(EXIT_FAILURE);
+	}
+	exit(EXIT_SUCCESS);
+}
+
+void
+generate_subscription(struct ml *ml, const char *subaddr,
+    enum subtype typesub, bool sub)
+{
+	text *txt;
+	char *queuefilename, *fromaddr;
+	struct mail mail;
+
+	memset(&mail, 0, sizeof(mail));
+
+	gen_addr(fromaddr, ml, "bounces-help");
+	txt = open_text(ml->fd, "deny", sub ? "sub" : "unsub",
+	    sub ? "subbed" : "unsubbed", subtype_strs[typesub],
+	    sub ? "sub-subscribed" : "unsub-notsubscribed");
+	MY_ASSERT(txt);
+	register_default_unformatted(txt, ml);
+	register_unformatted(txt, "subaddr", subaddr);
+	queuefilename = prepstdreply(txt, ml, "$helpaddr$", subaddr, NULL);
+	MY_ASSERT(queuefilename);
+	close_text(txt);
+
+	mail.to = subaddr;
 	mail.from = fromaddr;
 	mail.fp = fopen(queuefilename, "r");
 	if (!send_single_mail(&mail, ml, false)) {

@@ -419,27 +419,6 @@ static void print_help(const char *prg)
 	exit(EXIT_SUCCESS);
 }
 
-void generate_subscribed(struct ml *ml, const char *subaddr,
-    const char *mlmmjsend, enum subtype typesub)
-{
-	text *txt;
-	char *queuefilename, *fromaddr;
-
-	gen_addr(fromaddr, ml, "bounceshelp");
-	txt = open_text(ml->fd,
-			"deny", "sub", "subbed", subtype_strs[typesub],
-			"sub-subscribed");
-	MY_ASSERT(txt);
-	register_default_unformatted(txt, ml);
-	register_unformatted(txt, "subaddr", subaddr);
-	queuefilename = prepstdreply(txt, ml, "$helpaddr$", subaddr, NULL);
-	MY_ASSERT(queuefilename);
-	close_text(txt);
-
-	exec_or_die(mlmmjsend, "-l", "1", "-L", ml->dir, "-T", subaddr, "-F",
-	    fromaddr, "-m", queuefilename, NULL);
-}
-
 static void subscribe_type(int listfd, char *address, enum subtype typesub) {
 	int dirfd;;
 	char chstr[2];
@@ -612,7 +591,7 @@ int main(int argc, char **argv)
 
 	if(subbed == typesub) {
 		if(!nogensubscribed)
-			generate_subscribed(&ml, address, mlmmjsend, typesub);
+			generate_subscription(&ml, address, typesub, true);
 		return EXIT_SUCCESS;
 	} else if(subbed != SUB_NONE) {
 		reasonsub = SUB_SWITCH;
