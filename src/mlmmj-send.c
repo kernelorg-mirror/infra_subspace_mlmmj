@@ -70,35 +70,6 @@ void catch_sig_term(int sig __unused)
 	gotsigterm = 1;
 }
 
-static bool
-save_file(const char *name, const char *ext, const char *content)
-{
-	char *tmpstr;
-	int fd;
-
-	xasprintf(&tmpstr, "%s.%s", name, ext);
-	fd = open(tmpstr, O_WRONLY|O_CREAT|O_EXCL|O_SYNC, S_IRUSR|S_IWUSR);
-	if (fd == -1) {
-		free(tmpstr);
-		return (false);
-	}
-	dprintf(fd, "%s", content);
-	close(fd);
-	free(tmpstr);
-	return (true);
-}
-
-static void
-save_queue(const char *queuefilename, struct mail *mail)
-{
-	if (!save_file(queuefilename, "mailfrom", mail->from))
-		return;
-	if (!save_file(queuefilename, "reciptto", mail->to))
-		return;
-	if (mail->replyto != NULL)
-		save_file(queuefilename, "reply-to", mail->replyto);
-}
-
 int
 get_index_from_filename(const char *filename)
 {

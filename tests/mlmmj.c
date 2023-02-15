@@ -137,6 +137,8 @@ ATF_TC_WITHOUT_HEAD(list_subs);
 ATF_TC_WITHOUT_HEAD(notify_sub);
 ATF_TC_WITHOUT_HEAD(get_processed_text_line);
 ATF_TC_WITHOUT_HEAD(newsmtp);
+ATF_TC_WITHOUT_HEAD(save_queue);
+ATF_TC_WITHOUT_HEAD(send_single_mail);
 
 ATF_TC_BODY(random_int, tc)
 {
@@ -2066,6 +2068,132 @@ ATF_TC_BODY(newsmtp, tc)
 	atf_utils_wait(p, 0, "EHLO heloname\r\nQUIT\r\n", "");
 }
 
+ATF_TC_BODY(save_queue, tc)
+{
+	struct mail mail = {};
+	mail.to = "plop";
+	mail.from = "bla";
+
+	save_queue("myfile", &mail);
+	if (!atf_utils_file_exists("myfile.reciptto"))
+		atf_tc_fail("myfile.receiptto does not exists");
+	if (!atf_utils_compare_file("myfile.reciptto", "plop"))
+		atf_tc_fail("myfile.reciptto: invalid content");
+	if (!atf_utils_file_exists("myfile.mailfrom"))
+		atf_tc_fail("myfile.receiptto does not exists");
+	if (!atf_utils_compare_file("myfile.mailfrom", "bla"))
+		atf_tc_fail("myfile.mailfrom: invalid content");
+	if (atf_utils_file_exists("myfile.reply-to"))
+		atf_tc_fail("myfile.reply-to should not exists");
+
+	mail.replyto = "hey";
+	save_queue("myfile2", &mail);
+	if (!atf_utils_file_exists("myfile2.reciptto"))
+		atf_tc_fail("myfile2.receiptto does not exists");
+	if (!atf_utils_compare_file("myfile2.reciptto", "plop"))
+		atf_tc_fail("myfile2.recriptto: invalid content");
+	if (!atf_utils_file_exists("myfile2.mailfrom"))
+		atf_tc_fail("myfile2.receiptto does not exists");
+	if (!atf_utils_compare_file("myfile2.mailfrom", "bla"))
+		atf_tc_fail("myfile2.mailfrom: invalid content");
+	if (!atf_utils_file_exists("myfile2.reply-to"))
+		atf_tc_fail("myfile2.reply-to does not exists");
+	if (!atf_utils_compare_file("myfile2.reply-to", "hey"))
+		atf_tc_fail("myfile2.reply-to: invalid content");
+
+	unlink("myfile2.reply-to");
+	unlink("myfile2.mailfrom");
+	/* the files exists reciptto exist so it should fail and stop there */
+	save_queue("myfile2", &mail);
+	if (!atf_utils_file_exists("myfile2.mailfrom"))
+		atf_tc_fail("myfile2.mailfrom does not exists but should have been created");
+	if (atf_utils_file_exists("myfile2.reply-to"))
+		atf_tc_fail("myfile2.reply-to should not exists");
+	/* will return in the first loop */
+	unlink("myfile2.reciptto");
+	save_queue("myfile2", &mail);
+	if (atf_utils_file_exists("myfile2.reciptto"))
+		atf_tc_fail("myfile2.reciptto should not exists");
+	if (atf_utils_file_exists("myfile2.reply-to"))
+		atf_tc_fail("myfile2.reply-to should not exists");
+}
+
+ATF_TC_BODY(send_single_mail, tc)
+{
+	init_ml(true);
+	struct ml ml;
+	ml_init(&ml);
+	ml.dir = "list";
+	struct mail mail = {};
+	ATF_REQUIRE_MSG(ml_open(&ml, false), "impossible to open the mailing list");
+	atf_utils_create_file("list/control/smtpport", "25678");
+	int smtppipe[2];
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		int s = fakesmtp(smtppipe[1]);
+		int c;
+		struct sockaddr_in cl;
+		socklen_t clsize = 0;
+		c = accept(s, (struct sockaddr *) &cl, &clsize);
+		if (c == -1)
+			err(5, "accept()");
+		dprintf(c, "220 me fake smtp\n");
+		const char *replies[] = {
+			"250-hostname.net\n"
+			"250-PIPELINEING\n"
+			"250-SIZE 20480000\n"
+			"250-ETRN\n"
+			"250-STARTTLS\n"
+			"250-ENHANCEDSTATUSCODES\n"
+			"250-8BITMIME\n"
+			"250-DSN\n"
+			"250-SMTPUTF8\n"
+			"250 CHUNKING\n",
+			"250 2.1.0 OK\n",
+			"250 2.1.0 OK\n",
+			"350 2.1.0 OK\n",
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			"250 2.1.0 OK\n",
+			"221 2.0.0 bye\n",
+		};
+		read_print_reply(c, replies, NELEM(replies));
+		exit(0);
+	}
+	close(smtppipe[1]);
+	atf_utils_readline(smtppipe[0]);
+	atf_utils_create_file("list/control/smtphelo", "heloname");
+	atf_utils_create_file("list/control/relayhost", "127.0.0.1");
+	atf_utils_create_file("mymail.txt", "headers\n\nbody\n");
+	mail.to = "plop@meh";
+	mail.from = "test@meh";
+	mail.fp = fopen("mymail.txt", "r");
+	mail.addtohdr = true;
+	ATF_REQUIRE(send_single_mail(&mail, &ml, false));
+	atf_utils_wait(p, 0, "save:out.txt", "");
+	const char *output = ""
+		"EHLO heloname\r\n"
+		"MAIL FROM:<test@meh>\r\n"
+		"RCPT TO:<plop@meh>\r\n"
+		"DATA\r\nheaders\r\n"
+		"To: plop@meh\r\n"
+		"\r\n"
+		"body\r\n"
+		"\r\n"
+		".\r\n"
+		"QUIT\r\n";
+	if (!atf_utils_compare_file("out.txt", output)) {
+		printf("Invalid file expected: \n===\n%s\n===\ngot:\n===\n", output);
+		atf_utils_cat_file("out.txt", ">");
+		printf("\n===\n");
+		atf_tc_fail("Invalid output");
+	}
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -2140,6 +2268,8 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, notify_sub);
 	ATF_TP_ADD_TC(tp, get_processed_text_line);
 	ATF_TP_ADD_TC(tp, newsmtp);
+	ATF_TP_ADD_TC(tp, save_queue);
+	ATF_TP_ADD_TC(tp, send_single_mail);
 
 	return (atf_no_error());
 }

@@ -21,8 +21,11 @@
  * IN THE SOFTWARE.
  */
 
+#include <sys/stat.h>
+
 #include <stdio.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #include "checkwait_smtpreply.h"
 #include "mail-functions.h"
@@ -253,6 +256,12 @@ send_mail(int sockfd, struct mail *mail, int listfd, int ctrlfd, bool bounce)
 		return 0;
 	}
 
+	if (mail->fp == NULL) {
+		errno = 0;
+		log_error(LOG_ARGS, "No mail to send, ignoring");
+		return 0;
+	}
+
 	retval = write_mail_from(sockfd, mail->from, "");
 	if(retval) {
 		log_error(LOG_ARGS, "Could not write MAIL FROM\n");
@@ -356,6 +365,35 @@ newsmtp(struct ml *ml)
 	return (sockfd);
 }
 
+static bool
+save_file(const char *name, const char *ext, const char *content)
+{
+	char *tmpstr;
+	int fd;
+
+	xasprintf(&tmpstr, "%s.%s", name, ext);
+	fd = open(tmpstr, O_WRONLY|O_CREAT|O_EXCL|O_SYNC, S_IRUSR|S_IWUSR);
+	if (fd == -1) {
+		free(tmpstr);
+		return (false);
+	}
+	dprintf(fd, "%s", content);
+	close(fd);
+	free(tmpstr);
+	return (true);
+}
+
+void
+save_queue(const char *queuefilename, struct mail *mail)
+{
+	if (!save_file(queuefilename, "mailfrom", mail->from))
+		return;
+	if (!save_file(queuefilename, "reciptto", mail->to))
+		return;
+	if (mail->replyto != NULL)
+		save_file(queuefilename, "reply-to", mail->replyto);
+}
+
 bool
 send_single_mail(struct mail *mail, struct ml *ml, bool bounce)
 {
@@ -364,10 +402,11 @@ send_single_mail(struct mail *mail, struct ml *ml, bool bounce)
 	sockfd = newsmtp(ml);
 	if (sockfd == -1)
 		return (false);
-	if (!send_mail(sockfd, mail, ml->fd, ml->ctrlfd, bounce)) {
+	if (send_mail(sockfd, mail, ml->fd, ml->ctrlfd, bounce) != 0) {
 		endsmtp(&sockfd);
 		return (false);
 	}
 	endsmtp(&sockfd);
 	return (true);
 }
+
