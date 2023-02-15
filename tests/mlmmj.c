@@ -142,6 +142,7 @@ ATF_TC_WITHOUT_HEAD(send_single_mail);
 ATF_TC_WITHOUT_HEAD(generate_subscription);
 ATF_TC_WITHOUT_HEAD(generate_subconfirm);
 ATF_TC_WITHOUT_HEAD(confirm_sub);
+ATF_TC_WITHOUT_HEAD(listcontrol);
 
 ATF_TC_BODY(random_int, tc)
 {
@@ -2460,6 +2461,31 @@ ATF_TC_BODY(confirm_sub, tc)
 	}
 }
 
+ATF_TC_BODY(listcontrol, tc)
+{
+	struct ml ml;
+	init_ml(true);
+	ml_init(&ml);
+	ml.dir = "list";
+	strlist fromemails = tll_init();
+
+	ATF_REQUIRE(ml_open(&ml, false));
+	ATF_REQUIRE_EQ(listcontrol(NULL, &ml, "plop", NULL, NULL, NULL, "meh"), -1);
+
+	ATF_REQUIRE_EQ(listcontrol(&fromemails, &ml, "help", NULL, NULL, NULL, "meh"), -1);
+
+	atf_utils_create_file("list/control/closedlist", "");
+	atf_utils_create_file("meh", "mail");
+	tll_push_back(fromemails, "plop@test");
+	ATF_REQUIRE_EQ(listcontrol(&fromemails, &ml, "unsubscribe", NULL, NULL, NULL, "meh"), -1);
+	if (atf_utils_file_exists("me"))
+		atf_tc_fail("mail should have been removed");
+
+	unlink("list/control/closedlist");
+	atf_utils_create_file("list/control/closedlistsub", "");
+	ATF_REQUIRE_EQ(listcontrol(&fromemails, &ml, "subscribe", NULL, NULL, NULL, "meh"), -1);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -2539,6 +2565,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, generate_subscription);
 	ATF_TP_ADD_TC(tp, generate_subconfirm);
 	ATF_TP_ADD_TC(tp, confirm_sub);
+	ATF_TP_ADD_TC(tp, listcontrol);
 
 	return (atf_no_error());
 }
