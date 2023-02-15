@@ -76,7 +76,6 @@ int main(int argc, char **argv)
 	int nogennotsubscribed = 0;
 	int status;
 	char *address = NULL;
-	char *mlmmjsend, *bindir;
 	const char *subdir;
 	enum subtype typesub = SUB_ALL;
 	enum subreason reasonsub = SUB_ADMIN;
@@ -85,14 +84,8 @@ int main(int argc, char **argv)
 	pid_t pid, childpid;
 	struct ml ml;
 
-	CHECKFULLPATH(argv[0]);
 	ml_init(&ml);
-	
 	log_set_name(argv[0]);
-
-	bindir = mydirname(argv[0]);
-	xasprintf(&mlmmjsend, "%s/mlmmj-send", bindir);
-	free(bindir);
 
 	while ((opt = getopt(argc, argv, "hcCdenNVUL:a:sqrR")) != -1) {
 		switch(opt) {
@@ -238,7 +231,6 @@ int main(int argc, char **argv)
                 notify_sub(&ml, address, typesub, reasonsub, false);
 
 	free(address);
-	free(mlmmjsend);
 
 	return EXIT_SUCCESS;
 }
