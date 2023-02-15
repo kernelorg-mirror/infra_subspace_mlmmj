@@ -106,7 +106,6 @@ void do_probe(struct ml *ml, const char *addr)
 
 	xasprintf(&probefile, "bounce/%s-probe", addr);
 	t = time(NULL);
-	unlinkat(ml->fd, probefile, 0);
 	fd = openat(ml->fd, probefile, O_WRONLY|O_TRUNC|O_CREAT, S_IRUSR|S_IWUSR);
 	if(fd < 0)
 		log_error(LOG_ARGS, "Could not open %s", probefile);
