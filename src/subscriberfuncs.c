@@ -34,6 +34,7 @@
 #include "utils.h"
 #include "prepstdreply.h"
 #include "xmalloc.h"
+#include "send_mail.h"
 
 char *subtype_strs[] = {
 	"normal",
@@ -165,15 +166,16 @@ get_subcookie_content(int listfd, bool unsub, const char *param)
 	return (NULL);
 }
 
-void notify_sub(struct ml *ml, const char *subaddr,
-		const char *mlmmjsend, enum subtype typesub,
+void notify_sub(struct ml *ml, const char *subaddr, enum subtype typesub,
 		enum subreason reasonsub, bool sub)
 {
 	char *fromaddr, *tostr;
 	text *txt;
 	char *queuefilename = NULL;
 	const char *listtext = NULL;
+	struct mail mail;
 
+	memset(&mail, 0, sizeof(mail));
 	gen_addr(fromaddr, ml, "bounces-help");
 	gen_addr(tostr, ml, "owner");
 
@@ -205,7 +207,13 @@ void notify_sub(struct ml *ml, const char *subaddr,
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
-	exec_or_die(mlmmjsend, "-l", "1", "-L", ml->dir, "-T", tostr,
-	    "-F", fromaddr, "-m", queuefilename, NULL);
+	mail.to = tostr;
+	mail.from = fromaddr;
+	mail.fp = fopen(queuefilename, "r");
+	if (!send_single_mail(&mail, ml, false)) {
+		save_queue(queuefilename, &mail);
+		exit(EXIT_FAILURE);
+	}
+	exit(EXIT_SUCCESS);
 }
 

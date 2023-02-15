@@ -1,6 +1,6 @@
-/* Copyright (C) 2003 Mads Martin Joergensen <mmj at mmj.dk>
- *
- * $Id$
+/*
+ * Copyright (C) 2003 Mads Martin Joergensen <mmj at mmj.dk>
+ * Copyright (C) 2023 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -21,8 +21,7 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef SUBSCRIBERFUNC_H
-#define SUBSCRIBERFUNC_H
+#pragma once
 
 #include <stdbool.h>
 
@@ -30,7 +29,5 @@ bool find_subscriber(int fd, const char *address);
 int is_subbed_in(int fd, const char *subddirname, const char *address);
 enum subtype is_subbed(int listfd, const char *address, bool both);
 char *get_subcookie_content(int listfd, bool unsub, const char *param);
-void notify_sub(struct ml *ml, const char *subaddr,
-		const char *mlmmjsend, enum subtype typesub,
+void notify_sub(struct ml *ml, const char *subaddr, enum subtype typesub,
 		enum subreason reasonsub, bool sub);
-#endif /* SUBSCRIBERFUNC_H */

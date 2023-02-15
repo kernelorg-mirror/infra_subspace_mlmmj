@@ -1780,9 +1780,8 @@ ATF_TC_BODY(list_subs, tc)
 
 ATF_TC_BODY(notify_sub, tc)
 {
-	int fd;
-	char *dir, *content;
-	const char *path, *pattern;
+	char *dir;
+	const char *path;
 	init_ml(true);
 	struct ml ml;
 	ml_init(&ml);
@@ -1793,22 +1792,19 @@ ATF_TC_BODY(notify_sub, tc)
 	    atf_tc_get_config_var(tc, "srcdir"));
 
 	symlink(dir, "list/text");
-
+	atf_utils_create_file("list/control/smtpport", "25678");
+	atf_utils_create_file("list/control/smtphelo", "heloname");
+	int smtppipe[2];
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
+	pid_t p2 = single_mail_reception(smtppipe[1]);
+	atf_utils_readline(smtppipe[0]);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
-		notify_sub(&ml, "test@plop", "/bin/echo", SUB_NORMAL,
-		    SUB_ADMIN, true);
+		notify_sub(&ml, "test@plop", SUB_NORMAL, SUB_ADMIN, true);
 	}
-	atf_utils_wait(p, 0, "save:plop.txt", "");
-	fd = open("plop.txt", O_RDONLY);
-	content = atf_utils_readline(fd);
-	close(fd);
-	pattern = "-l 1 -L list -T test+owner@test -F test+bounces-help@test -m list/queue/";
-	if (strncmp(content, pattern, strlen(pattern)) != 0)
-		atf_tc_fail("Invalid command: '%s'", content);
-	path = strrchr(content, ' ');
-	ATF_REQUIRE(path != NULL);
-	path++;
+	atf_utils_wait(p2, 0, "save:mailout.txt", "");
+	atf_utils_wait(p, 0, "", "");
+	path = "mailout.txt";
 	if (!atf_utils_grep_file(".*The address <test@plop> has been subscribed to the normal.*", path)) {
 		atf_utils_cat_file(path, "");
 		atf_tc_fail("invalid file");
@@ -1819,20 +1815,14 @@ ATF_TC_BODY(notify_sub, tc)
 		atf_tc_fail("invalid file");
 	}
 
+	p2 = single_mail_reception(smtppipe[1]);
+	atf_utils_readline(smtppipe[0]);
 	p = atf_utils_fork();
 	if (p == 0) {
-		notify_sub(&ml, "test@plop", "/bin/echo", SUB_DIGEST,
-		    SUB_ADMIN, true);
+		notify_sub(&ml, "test@plop", SUB_DIGEST, SUB_ADMIN, true);
 	}
-	atf_utils_wait(p, 0, "save:plop.txt", "");
-	fd = open("plop.txt", O_RDONLY);
-	content = atf_utils_readline(fd);
-	close(fd);
-	pattern = "-l 1 -L list -T test+owner@test -F test+bounces-help@test -m list/queue/";
-	if (strncmp(content, pattern, strlen(pattern)) != 0)
-		atf_tc_fail("Invalid command: '%s'", content);
-	path = strrchr(content, ' ');
-	path++;
+	atf_utils_wait(p2, 0, "save:mailout.txt", "");
+	atf_utils_wait(p, 0, "", "");
 	if (!atf_utils_grep_file(".*The address <test@plop> has been subscribed to the digest.*", path)) {
 		atf_utils_cat_file(path, "");
 		atf_tc_fail("invalid file");
@@ -1842,20 +1832,14 @@ ATF_TC_BODY(notify_sub, tc)
 		atf_tc_fail("invalid file");
 	}
 
+	p2 = single_mail_reception(smtppipe[1]);
+	atf_utils_readline(smtppipe[0]);
 	p = atf_utils_fork();
 	if (p == 0) {
-		notify_sub(&ml, "test@plop", "/bin/echo", SUB_NOMAIL,
-		    SUB_CONFIRM, true);
+		notify_sub(&ml, "test@plop", SUB_NOMAIL, SUB_CONFIRM, true);
 	}
-	atf_utils_wait(p, 0, "save:plop.txt", "");
-	fd = open("plop.txt", O_RDONLY);
-	content = atf_utils_readline(fd);
-	close(fd);
-	pattern = "-l 1 -L list -T test+owner@test -F test+bounces-help@test -m list/queue/";
-	if (strncmp(content, pattern, strlen(pattern)) != 0)
-		atf_tc_fail("Invalid command: '%s'", content);
-	path = strrchr(content, ' ');
-	path++;
+	atf_utils_wait(p2, 0, "save:mailout.txt", "");
+	atf_utils_wait(p, 0, "", "");
 	if (!atf_utils_grep_file(".*The address <test@plop> has been subscribed to the no-mail.*", path)) {
 		atf_utils_cat_file(path, "");
 		atf_tc_fail("invalid file");
@@ -1865,20 +1849,14 @@ ATF_TC_BODY(notify_sub, tc)
 		atf_tc_fail("invalid file");
 	}
 
+	p2 = single_mail_reception(smtppipe[1]);
+	atf_utils_readline(smtppipe[0]);
 	p = atf_utils_fork();
 	if (p == 0) {
-		notify_sub(&ml, "test@plop", "/bin/echo", SUB_BOTH,
-		    SUB_REQUEST, true);
+		notify_sub(&ml, "test@plop", SUB_BOTH, SUB_REQUEST, true);
 	}
-	atf_utils_wait(p, 0, "save:plop.txt", "");
-	fd = open("plop.txt", O_RDONLY);
-	content = atf_utils_readline(fd);
-	close(fd);
-	pattern = "-l 1 -L list -T test+owner@test -F test+bounces-help@test -m list/queue/";
-	if (strncmp(content, pattern, strlen(pattern)) != 0)
-		atf_tc_fail("Invalid command: '%s'", content);
-	path = strrchr(content, ' ');
-	path++;
+	atf_utils_wait(p2, 0, "save:mailout.txt", "");
+	atf_utils_wait(p, 0, "", "");
 	if (!atf_utils_grep_file(".*The address <test@plop> has been subscribed to the version.*", path)) {
 		atf_utils_cat_file(path, "");
 		atf_tc_fail("invalid file");
@@ -1888,21 +1866,14 @@ ATF_TC_BODY(notify_sub, tc)
 		atf_tc_fail("invalid file");
 	}
 
+	p2 = single_mail_reception(smtppipe[1]);
+	atf_utils_readline(smtppipe[0]);
 	p = atf_utils_fork();
 	if (p == 0) {
-		notify_sub(&ml, "test@plop", "/bin/echo", SUB_NORMAL,
-		    SUB_ADMIN, false);
+		notify_sub(&ml, "test@plop", SUB_NORMAL, SUB_ADMIN, false);
 	}
-	atf_utils_wait(p, 0, "save:plop.txt", "");
-	fd = open("plop.txt", O_RDONLY);
-	content = atf_utils_readline(fd);
-	close(fd);
-	pattern = "-l 1 -L list -T test+owner@test -F test+bounces-help@test -m list/queue/";
-	if (strncmp(content, pattern, strlen(pattern)) != 0)
-		atf_tc_fail("Invalid command: '%s'", content);
-	path = strrchr(content, ' ');
-	ATF_REQUIRE(path != NULL);
-	path++;
+	atf_utils_wait(p2, 0, "save:mailout.txt", "");
+	atf_utils_wait(p, 0, "", "");
 	if (!atf_utils_grep_file(".*The address <test@plop> has been unsubscribed from the list.*", path)) {
 		atf_utils_cat_file(path, "");
 		atf_tc_fail("invalid file");
@@ -1913,20 +1884,14 @@ ATF_TC_BODY(notify_sub, tc)
 		atf_tc_fail("invalid file");
 	}
 
+	p2 = single_mail_reception(smtppipe[1]);
+	atf_utils_readline(smtppipe[0]);
 	p = atf_utils_fork();
 	if (p == 0) {
-		notify_sub(&ml, "test@plop", "/bin/echo", SUB_DIGEST,
-		    SUB_ADMIN, false);
+		notify_sub(&ml, "test@plop", SUB_DIGEST, SUB_ADMIN, false);
 	}
-	atf_utils_wait(p, 0, "save:plop.txt", "");
-	fd = open("plop.txt", O_RDONLY);
-	content = atf_utils_readline(fd);
-	close(fd);
-	pattern = "-l 1 -L list -T test+owner@test -F test+bounces-help@test -m list/queue/";
-	if (strncmp(content, pattern, strlen(pattern)) != 0)
-		atf_tc_fail("Invalid command: '%s'", content);
-	path = strrchr(content, ' ');
-	path++;
+	atf_utils_wait(p2, 0, "save:mailout.txt", "");
+	atf_utils_wait(p, 0, "", "");
 	if (!atf_utils_grep_file(".*The address <test@plop> has been unsubscribed from the list.*", path)) {
 		atf_utils_cat_file(path, "");
 		atf_tc_fail("invalid file");
@@ -1936,43 +1901,31 @@ ATF_TC_BODY(notify_sub, tc)
 		atf_tc_fail("invalid file");
 	}
 
+	p2 = single_mail_reception(smtppipe[1]);
+	atf_utils_readline(smtppipe[0]);
 	p = atf_utils_fork();
 	if (p == 0) {
-		notify_sub(&ml, "test@plop", "/bin/echo", SUB_NOMAIL,
-		    SUB_CONFIRM, false);
+		notify_sub(&ml, "test@plop", SUB_NOMAIL, SUB_CONFIRM, false);
 	}
-	atf_utils_wait(p, 0, "save:plop.txt", "");
-	fd = open("plop.txt", O_RDONLY);
-	content = atf_utils_readline(fd);
-	close(fd);
-	pattern = "-l 1 -L list -T test+owner@test -F test+bounces-help@test -m list/queue/";
-	if (strncmp(content, pattern, strlen(pattern)) != 0)
-		atf_tc_fail("Invalid command: '%s'", content);
-	path = strrchr(content, ' ');
-	path++;
+	atf_utils_wait(p2, 0, "save:mailout.txt", "");
+	atf_utils_wait(p, 0, "", "");
 	if (!atf_utils_grep_file(".*The address <test@plop> has been unsubscribed from the list.*", path)) {
 		atf_utils_cat_file(path, "");
-		atf_tc_fail("invalid file");
+		atf_tc_fail("invalid file unsubscribe nomail confirm");
 	}
 	if (!atf_utils_grep_file(".*request to unsubscribe was confirmed.*", path)) {
 		atf_utils_cat_file(path, "");
 		atf_tc_fail("invalid file");
 	}
 
+	p2 = single_mail_reception(smtppipe[1]);
+	atf_utils_readline(smtppipe[0]);
 	p = atf_utils_fork();
 	if (p == 0) {
-		notify_sub(&ml, "test@plop", "/bin/echo", SUB_BOTH,
-		    SUB_REQUEST, false);
+		notify_sub(&ml, "test@plop", SUB_BOTH, SUB_REQUEST, false);
 	}
-	atf_utils_wait(p, 0, "save:plop.txt", "");
-	fd = open("plop.txt", O_RDONLY);
-	content = atf_utils_readline(fd);
-	close(fd);
-	pattern = "-l 1 -L list -T test+owner@test -F test+bounces-help@test -m list/queue/";
-	if (strncmp(content, pattern, strlen(pattern)) != 0)
-		atf_tc_fail("Invalid command: '%s'", content);
-	path = strrchr(content, ' ');
-	path++;
+	atf_utils_wait(p2, 0, "save:mailout.txt", "");
+	atf_utils_wait(p, 0, "", "");
 	if (!atf_utils_grep_file(".*The address <test@plop> has been unsubscribed from the list.*", path)) {
 		atf_utils_cat_file(path, "");
 		atf_tc_fail("invalid file");
@@ -2129,11 +2082,7 @@ ATF_TC_BODY(send_single_mail, tc)
 	atf_utils_create_file("list/control/smtpport", "25678");
 	int smtppipe[2];
 	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
-	pid_t p = atf_utils_fork();
-	if (p == 0) {
-		single_mail_reception(smtppipe[1]);
-		exit(0);
-	}
+	pid_t p = single_mail_reception(smtppipe[1]);
 	close(smtppipe[1]);
 	atf_utils_readline(smtppipe[0]);
 	atf_utils_create_file("list/control/smtphelo", "heloname");

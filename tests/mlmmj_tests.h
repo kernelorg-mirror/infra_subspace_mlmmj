@@ -32,4 +32,4 @@
 void init_ml(bool complete);
 int fakesmtp(int pipe);
 void read_print_reply(int fd, const char **replies, size_t nreplies);
-void single_mail_reception(int fd);
+pid_t single_mail_reception(int fd);

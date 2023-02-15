@@ -372,7 +372,7 @@ int main(int argc, char **argv)
 
         /* Notify list owner about subscription */
         if (notifysub)
-                notify_sub(&ml, address, mlmmjsend, typesub, reasonsub, false);
+                notify_sub(&ml, address, typesub, reasonsub, false);
 
 	free(address);
 	free(mlmmjsend);
