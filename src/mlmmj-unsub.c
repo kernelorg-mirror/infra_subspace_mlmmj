@@ -45,42 +45,6 @@
 #include "prepstdreply.h"
 #include "utils.h"
 
-void confirm_unsub(struct ml *ml, const char *subaddr, const char *mlmmjsend,
-		   enum subtype typesub, enum subreason reasonsub)
-{
-	text *txt;
-	char *queuefilename, *fromaddr, *listtext;
-
-	gen_addr(fromaddr, ml, "bounces-help");
-
-	switch(typesub) {
-		default:
-		case SUB_NORMAL:
-			listtext = xstrdup("unsub-ok");
-			break;
-		case SUB_DIGEST:
-			listtext = xstrdup("unsub-ok-digest");
-			break;
-		case SUB_NOMAIL:
-			listtext = xstrdup("unsub-ok-nomail");
-			break;
-	}
-
-	txt = open_text(ml->fd, "finish", "unsub",
-			subreason_strs[reasonsub], subtype_strs[typesub],
-			listtext);
-	free(listtext);
-	MY_ASSERT(txt);
-	register_default_unformatted(txt, ml);
-	register_unformatted(txt, "subaddr", subaddr);
-	queuefilename = prepstdreply(txt, ml, "$helpaddr$", subaddr, NULL);
-	MY_ASSERT(queuefilename);
-	close_text(txt);
-
-	exec_or_die(mlmmjsend, "-l", "1", "-L", ml->dir, "-T", subaddr, "-F",
-	    fromaddr, "-m", queuefilename, NULL);
-}
-
 static void print_help(const char *prg)
 {
 	printf("Usage: %s -L /path/to/list -a john@doe.org\n"
@@ -253,7 +217,7 @@ int main(int argc, char **argv)
 
 		if(childpid < 0) {
 			log_error(LOG_ARGS, "Could not fork");
-			confirm_unsub(&ml, address, mlmmjsend, typesub, reasonsub);
+			confirm_sub(&ml, address, typesub, reasonsub, false);
 		}
 
 		if(childpid > 0) {
@@ -264,7 +228,7 @@ int main(int argc, char **argv)
 
 		/* child confirms subscription */
 		if(childpid == 0)
-			confirm_unsub(&ml, address, mlmmjsend, typesub, reasonsub);
+			confirm_sub(&ml, address, typesub, reasonsub, false);
 	}
 
 	notifysub = !quiet && statctrl(ml.ctrlfd, "notifysub");

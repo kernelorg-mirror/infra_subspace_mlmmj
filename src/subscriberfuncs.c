@@ -334,3 +334,49 @@ generate_subconfirm(struct ml *ml, const char *subaddr, enum subtype typesub,
 	exit(EXIT_SUCCESS);
 }
 
+void
+confirm_sub(struct ml *ml, const char *subaddr, enum subtype typesub,
+    enum subreason reasonsub, bool sub)
+{
+	text *txt;
+	char *queuefilename, *fromaddr;
+	const char *listtext;
+	struct mail mail;
+
+	memset(&mail, 0, sizeof(mail));
+	gen_addr(fromaddr, ml, "bounces-help");
+
+	switch(typesub) {
+		default:
+		case SUB_BOTH: /* FALLTHROUGH */
+		case SUB_NORMAL:
+			listtext = sub ? "sub-ok" : "unsub-ok";
+			break;
+		case SUB_DIGEST:
+			listtext = sub ? "sub-ok-digest" : "unsub-ok-digest";
+			break;
+		case SUB_NOMAIL:
+			listtext = sub ? "sub-ok-nomail" : "unsub-ok-nomail";
+			break;
+	}
+
+	txt = open_text(ml->fd, "finish", sub ? "sub" : "unsub",
+			subreason_strs[reasonsub], subtype_strs[typesub],
+			listtext);
+	MY_ASSERT(txt);
+	register_default_unformatted(txt, ml);
+	register_unformatted(txt, "subaddr", subaddr);
+	queuefilename = prepstdreply(txt, ml, "$helpaddr$", subaddr, NULL);
+	MY_ASSERT(queuefilename);
+	close_text(txt);
+
+	mail.to = subaddr;
+	mail.from = fromaddr;
+	mail.fp = fopen(queuefilename, "r");
+	if (!send_single_mail(&mail, ml, false)) {
+		save_queue(queuefilename, &mail);
+		exit(EXIT_FAILURE);
+	}
+	exit(EXIT_SUCCESS);
+}
+
