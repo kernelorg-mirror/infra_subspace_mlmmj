@@ -107,7 +107,7 @@ enum subtype {
 extern char *subtype_strs[7]; /* count matches enum above; defined in subscriberfuncs.c */
 
 enum subreason {
-	SUB_REQUEST,
+	SUB_REQUEST = 0,
 	SUB_CONFIRM,
 	SUB_PERMIT,
 	SUB_ADMIN,

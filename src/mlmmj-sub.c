@@ -313,89 +313,6 @@ void confirm_sub(struct ml *ml, const char *subaddr,
 	    fromaddr, "-m", queuefilename, NULL);
 }
 
-void generate_subconfirm(struct ml *ml, const char *subaddr,
-			 const char *mlmmjsend, enum subtype typesub,
-			 enum subreason reasonsub)
-{
-	int subconffd;
-	char *confirmaddr, *confirmfilename = NULL;
-	text *txt;
-	char *listtext, *queuefilename = NULL, *fromaddr;
-	char *randomstr = NULL, *tmpstr;
-
-        do {
-		free(confirmfilename);
-		free(randomstr);
-		randomstr = random_str();
-                confirmfilename = concatstr(3, ml->dir, "/subconf/",
-					    randomstr);
-
-                subconffd = open(confirmfilename, O_RDWR|O_CREAT|O_EXCL,
-						  S_IRUSR|S_IWUSR);
-
-        } while ((subconffd < 0) && (errno == EEXIST));
-
-	if(subconffd < 0) {
-		log_error(LOG_ARGS, "Could not open '%s'", confirmfilename);
-		free(confirmfilename);
-                free(randomstr);
-		exit(EXIT_FAILURE);
-	}
-
-	free(confirmfilename);
-
-	if(dprintf(subconffd, "%s", subaddr) < 0) {
-		log_error(LOG_ARGS, "Could not write to subconffd");
-                free(randomstr);
-		exit(EXIT_FAILURE);
-	}
-
-	close(subconffd);
-
-	gen_addr_cookie(fromaddr, ml, "bounces-confsub-", randomstr);
-
-	switch(typesub) {
-		default:
-		case SUB_NORMAL:
-			listtext = xstrdup("sub-confirm");
-			tmpstr = xstrdup("confsub-");
-			break;
-		case SUB_DIGEST:
-			listtext = xstrdup("sub-confirm-digest");
-			tmpstr = xstrdup("confsub-digest-");
-			break;
-		case SUB_NOMAIL:
-			listtext = xstrdup("sub-confirm-nomail");
-			tmpstr = xstrdup("confsub-nomail-");
-			break;
-		case SUB_BOTH:
-			/* No legacy list text as feature didn't exist. */
-			listtext = xstrdup("sub-confirm");
-			tmpstr = xstrdup("confsub-both-");
-			break;
-	}
-
-	gen_addr_cookie(confirmaddr, ml, tmpstr, randomstr);
-	free(randomstr);
-	free(tmpstr);
-
-	txt = open_text(ml->fd, "confirm", "sub",
-			subreason_strs[reasonsub], subtype_strs[typesub],
-			listtext);
-	free(listtext);
-	MY_ASSERT(txt);
-	register_default_unformatted(txt, ml);
-	register_unformatted(txt, "subaddr", subaddr);
-	register_unformatted(txt, "confaddr", confirmaddr); /* DEPRECATED */
-	register_unformatted(txt, "confirmaddr", confirmaddr);
-	queuefilename = prepstdreply(txt, ml, "$helpaddr$", subaddr, confirmaddr);
-	MY_ASSERT(queuefilename);
-	close_text(txt);
-
-	exec_or_die(mlmmjsend, "-l", "1", "-L", ml->dir, "-T", subaddr, "-F",
-	    fromaddr, "-m", queuefilename, NULL);
-}
-
 static void print_help(const char *prg)
 {
 	printf("Usage: %s -L /path/to/list {-a john@doe.org | -m str}\n"
@@ -611,7 +528,7 @@ int main(int argc, char **argv)
 	}
 
 	if(subbed == SUB_NONE && subconfirm)
-		generate_subconfirm(&ml, address, mlmmjsend, typesub, reasonsub);
+		generate_subconfirm(&ml, address, typesub, reasonsub, true);
 
 	if(modstr == NULL && subbed == SUB_NONE && !force &&
 			statctrl(ml.fd, "submod")) {

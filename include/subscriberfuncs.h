@@ -32,3 +32,5 @@ char *get_subcookie_content(int listfd, bool unsub, const char *param);
 void notify_sub(struct ml *ml, const char *subaddr, enum subtype typesub,
 		enum subreason reasonsub, bool sub);
 void generate_subscription(struct ml *ml, const char *subaddr, enum subtype typesub, bool sub);
+void generate_subconfirm(struct ml *ml, const char *subaddr, enum subtype typesub,
+    enum subreason reasonsub, bool sub);

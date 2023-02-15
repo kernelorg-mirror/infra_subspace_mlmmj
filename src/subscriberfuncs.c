@@ -21,6 +21,8 @@
  * IN THE SOFTWARE.
  */
 
+#include <sys/stat.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
@@ -35,6 +37,7 @@
 #include "prepstdreply.h"
 #include "xmalloc.h"
 #include "send_mail.h"
+#include "strgen.h"
 
 char *subtype_strs[] = {
 	"normal",
@@ -236,6 +239,88 @@ generate_subscription(struct ml *ml, const char *subaddr,
 	register_default_unformatted(txt, ml);
 	register_unformatted(txt, "subaddr", subaddr);
 	queuefilename = prepstdreply(txt, ml, "$helpaddr$", subaddr, NULL);
+	MY_ASSERT(queuefilename);
+	close_text(txt);
+
+	mail.to = subaddr;
+	mail.from = fromaddr;
+	mail.fp = fopen(queuefilename, "r");
+	if (!send_single_mail(&mail, ml, false)) {
+		save_queue(queuefilename, &mail);
+		exit(EXIT_FAILURE);
+	}
+	exit(EXIT_SUCCESS);
+}
+
+void
+generate_subconfirm(struct ml *ml, const char *subaddr, enum subtype typesub,
+    enum subreason reasonsub, bool sub)
+{
+	int subconffd;
+	text *txt;
+	char *queuefilename = NULL, *fromaddr;
+	char *randomstr = NULL, *confirmaddr;
+	const char *tmpstr, *listtext;
+	int fd = openat(ml->fd, sub ? "subconf" : "unsubconf", O_DIRECTORY|O_CLOEXEC);
+	struct mail mail;
+
+	memset(&mail, 0, sizeof(mail));
+	if (fd == -1) {
+		log_error(LOG_ARGS, "Cound not open(%s/%s)", ml->dir,
+		    sub ? "subconf" : "unsubconf");
+		exit(EXIT_FAILURE);
+	}
+
+	do {
+		free(randomstr);
+		randomstr = random_str();
+		subconffd = openat(fd, randomstr, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
+	} while ((subconffd < 0) && (errno == EEXIST));
+
+	if(subconffd < 0) {
+		log_error(LOG_ARGS, "Could not open '%s/%s/%s'", ml->dir,
+		    sub ? "subconf" : "unsubconf", randomstr);
+		free(randomstr);
+		exit(EXIT_FAILURE);
+	}
+	dprintf(subconffd, "%s", subaddr);
+	close(subconffd);
+
+	gen_addr_cookie(fromaddr, ml, "bounces-confsub-", randomstr);
+
+	switch(typesub) {
+		default:
+		case SUB_NORMAL:
+			listtext = sub ? "sub-confirm" : "unsub-confirm";
+			tmpstr = sub ? "confsub-" : "confunsub-digest";
+			break;
+		case SUB_DIGEST:
+			listtext = sub ? "sub-confirm-digest" : "unsub-confirm-digest";
+			tmpstr = sub ? "confsub-digest-" : "confunsub-digest-";
+			break;
+		case SUB_NOMAIL:
+			listtext = sub ? "sub-confirm-nomail" : "unsub-confirm-nomail";
+			tmpstr = sub ? "confsub-nomail-" : "confunsub-nomail-";
+			break;
+		case SUB_BOTH:
+			/* No legacy list text as feature didn't exist. */
+			listtext = sub ? "sub-confirm" : "unsub-confirm";
+			tmpstr = sub ? "confsub-both-" : "confunsub-both-";
+			break;
+	}
+
+	gen_addr_cookie(confirmaddr, ml, tmpstr, randomstr);
+	free(randomstr);
+
+	txt = open_text(ml->fd, "confirm", sub ? "sub" : "unsub",
+			subreason_strs[reasonsub], subtype_strs[typesub],
+			listtext);
+	MY_ASSERT(txt);
+	register_default_unformatted(txt, ml);
+	register_unformatted(txt, "subaddr", subaddr);
+	register_unformatted(txt, "confaddr", confirmaddr); /* DEPRECATED */
+	register_unformatted(txt, "confirmaddr", confirmaddr);
+	queuefilename = prepstdreply(txt, ml, "$helpaddr$", subaddr, confirmaddr);
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 

@@ -140,6 +140,7 @@ ATF_TC_WITHOUT_HEAD(newsmtp);
 ATF_TC_WITHOUT_HEAD(save_queue);
 ATF_TC_WITHOUT_HEAD(send_single_mail);
 ATF_TC_WITHOUT_HEAD(generate_subscription);
+ATF_TC_WITHOUT_HEAD(generate_subconfirm);
 
 ATF_TC_BODY(random_int, tc)
 {
@@ -2162,6 +2163,163 @@ ATF_TC_BODY(generate_subscription, tc)
 	}
 }
 
+ATF_TC_BODY(generate_subconfirm, tc)
+{
+	char *dir;
+	const char *path;
+	init_ml(true);
+	struct ml ml;
+	ml_init(&ml);
+	ml.dir = "list";
+	ml_open(&ml, false);
+	rmdir("list/text");
+	xasprintf(&dir, "%s/../listtexts/en",
+	    atf_tc_get_config_var(tc, "srcdir"));
+
+	symlink(dir, "list/text");
+	atf_utils_create_file("list/control/smtpport", "25678");
+	atf_utils_create_file("list/control/smtphelo", "heloname");
+	int smtppipe[2];
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
+	pid_t p2 = single_mail_reception(smtppipe[1]);
+	atf_utils_readline(smtppipe[0]);
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		generate_subconfirm(&ml, "test@plop", SUB_NORMAL, SUB_ADMIN, true);
+	}
+	atf_utils_wait(p2, 0, "save:mailout.txt", "");
+	atf_utils_wait(p, 0, "", "");
+	path = "mailout.txt";
+	if (!atf_utils_grep_file(".*An administrator has requested that your email address <test@plop> be added.*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+	if (!atf_utils_grep_file(".*To confirm you want to do this, please send a message to*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+
+	p2 = single_mail_reception(smtppipe[1]);
+	atf_utils_readline(smtppipe[0]);
+	p = atf_utils_fork();
+	if (p == 0) {
+		generate_subconfirm(&ml, "test@plop", SUB_DIGEST, SUB_ADMIN, true);
+	}
+	atf_utils_wait(p2, 0, "save:mailout.txt", "");
+	atf_utils_wait(p, 0, "", "");
+	if (!atf_utils_grep_file(".*An administrator has requested that your email address <test@plop> be added.*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+	if (!atf_utils_grep_file(".*to the list, to receive digests.*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+	if (!atf_utils_grep_file(".*To confirm you want to do this, please send a message to*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+
+	p2 = single_mail_reception(smtppipe[1]);
+	atf_utils_readline(smtppipe[0]);
+	p = atf_utils_fork();
+	if (p == 0) {
+		generate_subconfirm(&ml, "test@plop", SUB_NOMAIL, SUB_CONFIRM, true);
+	}
+	atf_utils_wait(p2, 0, "save:mailout.txt", "");
+	atf_utils_wait(p, 0, "", "");
+	if (!atf_utils_grep_file(".*has requested that your email address <test@plop> be added to the list.*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+	if (!atf_utils_grep_file(".*without mail delivery.*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+
+	p2 = single_mail_reception(smtppipe[1]);
+	atf_utils_readline(smtppipe[0]);
+	p = atf_utils_fork();
+	if (p == 0) {
+		generate_subconfirm(&ml, "test@plop", SUB_BOTH, SUB_REQUEST, true);
+	}
+	atf_utils_wait(p2, 0, "save:mailout.txt", "");
+	atf_utils_wait(p, 0, "", "");
+	if (!atf_utils_grep_file(".*Somebody \\(and we hope it was you\\) has requested that your email address.*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+	if (!atf_utils_grep_file(".*<test@plop> be added.*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+
+	p2 = single_mail_reception(smtppipe[1]);
+	atf_utils_readline(smtppipe[0]);
+	p = atf_utils_fork();
+	if (p == 0) {
+		generate_subconfirm(&ml, "test@plop", SUB_NORMAL, SUB_ADMIN, false);
+	}
+	atf_utils_wait(p2, 0, "save:mailout.txt", "");
+	atf_utils_wait(p, 0, "", "");
+	if (!atf_utils_grep_file(".*An administrator has requested that the email address <test@plop> be.*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+
+	p2 = single_mail_reception(smtppipe[1]);
+	atf_utils_readline(smtppipe[0]);
+	p = atf_utils_fork();
+	if (p == 0) {
+		generate_subconfirm(&ml, "test@plop", SUB_DIGEST, SUB_ADMIN, false);
+	}
+	atf_utils_wait(p2, 0, "save:mailout.txt", "");
+	atf_utils_wait(p, 0, "", "");
+	if (!atf_utils_grep_file(".*An administrator has requested that the email address <test@plop> be.*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+	if (!atf_utils_grep_file(".*test\\+confunsub-digest.*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+
+	p2 = single_mail_reception(smtppipe[1]);
+	atf_utils_readline(smtppipe[0]);
+	p = atf_utils_fork();
+	if (p == 0) {
+		generate_subconfirm(&ml, "test@plop", SUB_NOMAIL, SUB_CONFIRM, false);
+	}
+	atf_utils_wait(p2, 0, "save:mailout.txt", "");
+	atf_utils_wait(p, 0, "", "");
+	if (!atf_utils_grep_file(".*has requested that the email address <test@plop> be removed from the list..*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file unsubscribe nomail confirm");
+	}
+	if (!atf_utils_grep_file(".*test\\+confunsub-nomail.*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+
+	p2 = single_mail_reception(smtppipe[1]);
+	atf_utils_readline(smtppipe[0]);
+	p = atf_utils_fork();
+	if (p == 0) {
+		generate_subconfirm(&ml, "test@plop", SUB_BOTH, SUB_REQUEST, false);
+	}
+	atf_utils_wait(p2, 0, "save:mailout.txt", "");
+	atf_utils_wait(p, 0, "", "");
+	if (!atf_utils_grep_file(".*<test@plop> be removed from the list.*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+	if (!atf_utils_grep_file(".*test\\+confunsub-both-.*", path)) {
+		atf_utils_cat_file(path, "");
+		atf_tc_fail("invalid file");
+	}
+	return;
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -2239,6 +2397,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, save_queue);
 	ATF_TP_ADD_TC(tp, send_single_mail);
 	ATF_TP_ADD_TC(tp, generate_subscription);
+	ATF_TP_ADD_TC(tp, generate_subconfirm);
 
 	return (atf_no_error());
 }
