@@ -60,7 +60,7 @@ unlink_bounce(struct ml *ml, const char *to)
 	a = strchr(tmpstr, '@');
 	MY_ASSERT(a);
 	*a = '=';
-	xasprintf(&probefile, "bounce/%s-prove", tmpstr);
+	xasprintf(&probefile, "bounce/%s-probe", tmpstr);
 	unlinkat(ml->fd, probefile, 0);
 	free(probefile);
 	free(tmpstr);
