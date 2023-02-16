@@ -207,7 +207,10 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 		mail.from = from;
 		mail.to = efromsender;
 		mail.fp = fopen(queuefilename, "r");
-		send_single_mail(&mail, ml, false);
+		if (send_single_mail(&mail, ml, false))
+			save_queue(queuefilename, &mail);
+		else
+			unlink(queuefilename);
 	}
 
 	if (efromismod) {
@@ -215,7 +218,10 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 		mail.from = from;
 		mail.to = efromsender;
 		mail.fp = fopen(queuefilename, "r");
-		send_single_mail(&mail, ml, false);
+		if (send_single_mail(&mail, ml, false))
+			save_queue(queuefilename, &mail);
+		else
+			unlink(queuefilename);
 		exit(EXIT_SUCCESS);
 	}
 	exec_or_die(mlmmjsend, "-l", "2", "-L", ml->dir, "-F", from,

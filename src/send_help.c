@@ -21,6 +21,8 @@
  * IN THE SOFTWARE.
  */
 
+#include <unistd.h>
+
 #include "mlmmj.h"
 #include "send_help.h"
 #include "utils.h"
@@ -41,5 +43,7 @@ send_help(struct ml *ml, const char *queuefilename, const char *emailaddr)
 	mail.fp = fopen(queuefilename, "r");
 	if (!send_single_mail(&mail, ml, false))
 		save_queue(queuefilename, &mail);
+	else
+		unlink(queuefilename);
 	exit(EXIT_SUCCESS);
 }

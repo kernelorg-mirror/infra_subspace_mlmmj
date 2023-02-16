@@ -244,7 +244,10 @@ resend_queue(struct ml *ml, int logfd)
 		mail.from = from;
 		mail.replyto = repto;
 		mail.fp = fopen(mailname, "r");
-		send_single_mail(&mail, ml, false);
+		if (send_single_mail(&mail, ml, false))
+			save_queue(mailname, &mail);
+		else
+			unlink(mailname);
 		fclose(mail.fp);
 	}
 
