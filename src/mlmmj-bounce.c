@@ -117,8 +117,7 @@ void do_probe(struct ml *ml, const char *addr)
 	mail.to = myaddr;
 	mail.from = from;
 	mail.fp = fopen(queuefilename, "r");
-	if (!send_single_mail(&mail, ml, false))
-		exit(EXIT_FAILURE);
+	send_single_mail(&mail, ml, false);
 	unlink_bounce(ml, myaddr);
 	fclose(mail.fp);
 	exit(EXIT_SUCCESS);
