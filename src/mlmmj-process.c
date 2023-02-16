@@ -54,6 +54,7 @@
 #include "utils.h"
 #include "xstring.h"
 #include "send_help.h"
+#include "send_mail.h"
 
 enum action {
 	ALLOW,
@@ -139,6 +140,7 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 	const char *efromismod = NULL;
 	const char *mailbasename = mybasename(mailfilename);
 	int notifymod = 0;
+	struct mail mail;
 #if 0
 	printf("mailfilename = [%s], mailbasename = [%s]\n", mailfilename,
 			                                     mailbasename);
@@ -201,13 +203,21 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 
 		finish_memory_lines(mls);
 
-		exec_and_wait(mlmmjsend, "-l", "1", "-L", ml->dir, "-F", from,
-		    "-m", queuefilename, "-T", efromsender, NULL);
+		memset(&mail, 0, sizeof(mail));
+		mail.from = from;
+		mail.to = efromsender;
+		mail.fp = fopen(queuefilename, "r");
+		send_single_mail(&mail, ml, false);
 	}
 
-	if (efromismod)
-		exec_or_die(mlmmjsend, "-l", "1", "-L", ml->dir, "-F", from,
-		    "-m", queuefilename, "-T", efromsender, NULL);
+	if (efromismod) {
+		memset(&mail, 0, sizeof(mail));
+		mail.from = from;
+		mail.to = efromsender;
+		mail.fp = fopen(queuefilename, "r");
+		send_single_mail(&mail, ml, false);
+		exit(EXIT_SUCCESS);
+	}
 	exec_or_die(mlmmjsend, "-l", "2", "-L", ml->dir, "-F", from,
 	    "-m", queuefilename, NULL);
 }
