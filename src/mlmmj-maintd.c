@@ -45,6 +45,7 @@
 #include "send_digest.h"
 #include "log_oper.h"
 #include "utils.h"
+#include "send_mail.h"
 
 #define log(...) dprintf(logfd, __VA_ARGS__);
 #define opendirat(_dirfd, _fd, _dirent, _path) \
@@ -145,7 +146,7 @@ clean_unsubconf(int dfd, int logfd)
 }
 
 static bool
-resend_queue(struct ml *ml, const char *mlmmjsend, int logfd)
+resend_queue(struct ml *ml, int logfd)
 {
 	DIR *queuedir;
 	struct dirent *dp;
@@ -155,6 +156,7 @@ resend_queue(struct ml *ml, const char *mlmmjsend, int logfd)
 	int err = 0, qfd;
 	time_t t, bouncelife;
 	bool ret = true;
+	struct mail mail;
 
 	opendirat(ml->fd, qfd, queuedir, "queue");
 
@@ -237,13 +239,13 @@ resend_queue(struct ml *ml, const char *mlmmjsend, int logfd)
 			continue;
 		}
 
-		if(repto)
-			exec_and_wait(mlmmjsend, "-l", "1", "-L", ml->dir, "-m",
-			    mailname, "-F", from, "-T", to, "-R", repto, "-a",
-			    NULL);
-		else
-			exec_and_wait(mlmmjsend, "-l", "1", "-L", ml->dir, "-m",
-			    mailname, "-F", from, "-T", to, "-a", NULL);
+		memset(&mail, 0, sizeof(mail));
+		mail.to = to;
+		mail.from = from;
+		mail.replyto = repto;
+		mail.fp = fopen(mailname, "r");
+		send_single_mail(&mail, ml, false);
+		fclose(mail.fp);
 	}
 
 	closedir(queuedir);
@@ -685,7 +687,7 @@ void do_maintenance(struct ml *ml, const char *mlmmjsend, const char *mlmmjbounc
 		    "confirmations, mails, see %s", MAINTD_LOGFILE);
 
 	log("resend_queue\n");
-	if (!resend_queue(ml, mlmmjsend, logfd))
+	if (!resend_queue(ml, logfd))
 		log_err("An error occured while resending queued mails, see %s",
 		    MAINTD_LOGFILE);
 
