@@ -38,6 +38,7 @@
 #include "xmalloc.h"
 #include "send_mail.h"
 #include "strgen.h"
+#include "send_help.h"
 
 char *subtype_strs[] = {
 	"normal",
@@ -173,14 +174,11 @@ void
 notify_sub(struct ml *ml, const char *subaddr, enum subtype typesub,
     enum subreason reasonsub, bool sub)
 {
-	char *fromaddr, *tostr;
+	char *tostr;
 	text *txt;
 	char *queuefilename = NULL;
 	const char *listtext = NULL;
-	struct mail mail;
 
-	memset(&mail, 0, sizeof(mail));
-	gen_addr(fromaddr, ml, "bounces-help");
 	gen_addr(tostr, ml, "owner");
 
 	switch(typesub) {
@@ -211,13 +209,7 @@ notify_sub(struct ml *ml, const char *subaddr, enum subtype typesub,
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
-	mail.to = tostr;
-	mail.from = fromaddr;
-	mail.fp = fopen(queuefilename, "r");
-	if (!send_single_mail(&mail, ml, false)) {
-		save_queue(queuefilename, &mail);
-		exit(EXIT_FAILURE);
-	}
+	send_help(ml, queuefilename, tostr);
 	exit(EXIT_SUCCESS);
 }
 
@@ -226,12 +218,8 @@ generate_subscription(struct ml *ml, const char *subaddr,
     enum subtype typesub, bool sub)
 {
 	text *txt;
-	char *queuefilename, *fromaddr;
-	struct mail mail;
+	char *queuefilename;
 
-	memset(&mail, 0, sizeof(mail));
-
-	gen_addr(fromaddr, ml, "bounces-help");
 	txt = open_text(ml->fd, "deny", sub ? "sub" : "unsub",
 	    sub ? "subbed" : "unsubbed", subtype_strs[typesub],
 	    sub ? "sub-subscribed" : "unsub-notsubscribed");
@@ -242,14 +230,7 @@ generate_subscription(struct ml *ml, const char *subaddr,
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
-	mail.to = subaddr;
-	mail.from = fromaddr;
-	mail.fp = fopen(queuefilename, "r");
-	if (!send_single_mail(&mail, ml, false)) {
-		save_queue(queuefilename, &mail);
-		exit(EXIT_FAILURE);
-	}
-	exit(EXIT_SUCCESS);
+	send_help(ml, queuefilename, subaddr);
 }
 
 void
@@ -327,10 +308,8 @@ generate_subconfirm(struct ml *ml, const char *subaddr, enum subtype typesub,
 	mail.to = subaddr;
 	mail.from = fromaddr;
 	mail.fp = fopen(queuefilename, "r");
-	if (!send_single_mail(&mail, ml, false)) {
+	if (!send_single_mail(&mail, ml, false))
 		save_queue(queuefilename, &mail);
-		exit(EXIT_FAILURE);
-	}
 	exit(EXIT_SUCCESS);
 }
 
@@ -339,12 +318,8 @@ confirm_sub(struct ml *ml, const char *subaddr, enum subtype typesub,
     enum subreason reasonsub, bool sub)
 {
 	text *txt;
-	char *queuefilename, *fromaddr;
+	char *queuefilename;
 	const char *listtext;
-	struct mail mail;
-
-	memset(&mail, 0, sizeof(mail));
-	gen_addr(fromaddr, ml, "bounces-help");
 
 	switch(typesub) {
 		default:
@@ -370,13 +345,5 @@ confirm_sub(struct ml *ml, const char *subaddr, enum subtype typesub,
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
-	mail.to = subaddr;
-	mail.from = fromaddr;
-	mail.fp = fopen(queuefilename, "r");
-	if (!send_single_mail(&mail, ml, false)) {
-		save_queue(queuefilename, &mail);
-		exit(EXIT_FAILURE);
-	}
-	exit(EXIT_SUCCESS);
+	send_help(ml, queuefilename, subaddr);
 }
-

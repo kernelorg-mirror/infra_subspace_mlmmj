@@ -213,8 +213,7 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 					tll_front(*fromemails), NULL);
 			MY_ASSERT(queuefilename);
 			close_text(txt);
-			send_help(ml, queuefilename,
-			    tll_front(*fromemails), mlmmjsend);
+			send_help(ml, queuefilename, tll_front(*fromemails));
 			return -1;
 		}
 		log_oper(ml->fd, OPLOGFNAME, "mlmmj-sub: request for digest"
@@ -249,8 +248,7 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 					tll_front(*fromemails), NULL);
 			MY_ASSERT(queuefilename);
 			close_text(txt);
-			send_help(ml, queuefilename,
-					tll_front(*fromemails), mlmmjsend);
+			send_help(ml, queuefilename, tll_front(*fromemails));
 			return -1;
 		}
 		log_oper(ml->fd, OPLOGFNAME, "mlmmj-sub: request for nomail"
@@ -285,8 +283,7 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 					tll_front(*fromemails), NULL);
 			MY_ASSERT(queuefilename);
 			close_text(txt);
-			send_help(ml, queuefilename,
-					tll_front(*fromemails), mlmmjsend);
+			send_help(ml, queuefilename, tll_front(*fromemails));
 			return -1;
 		}
 		log_oper(ml->fd, OPLOGFNAME, "mlmmj-sub: request for both"
@@ -603,8 +600,7 @@ permit:
 				"$listowner$", tll_front(*fromemails), NULL);
 		MY_ASSERT(queuefilename);
 		close_text(txt);
-		send_help(ml, queuefilename,
-				tll_front(*fromemails), mlmmjsend);
+		send_help(ml, queuefilename, tll_front(*fromemails));
 		break;
 
        /* listname+faq@domain.tld */
@@ -626,8 +622,7 @@ permit:
 				"$listowner$", tll_front(*fromemails), NULL);
 		MY_ASSERT(queuefilename);
 		close_text(txt);
-		send_help(ml, queuefilename,
-				tll_front(*fromemails), mlmmjsend);
+		send_help(ml, queuefilename, tll_front(*fromemails));
                break;
 
 	/* listname+get-INDEX@domain.tld */
@@ -697,7 +692,7 @@ permit:
 				" Ignoring mail");
 			return -1;
 		} else {
-			send_list(ml, owner, mlmmjsend);
+			send_list(ml, owner);
 		}
 		if (owners != NULL)
 			tll_free_and_free(*owners, free);

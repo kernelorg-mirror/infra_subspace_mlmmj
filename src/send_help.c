@@ -25,14 +25,21 @@
 #include "send_help.h"
 #include "utils.h"
 #include "xmalloc.h"
+#include "send_mail.h"
 
-void send_help(struct ml *ml, const char *queuefilename,
-		const char *emailaddr, const char *mlmmjsend)
+void
+send_help(struct ml *ml, const char *queuefilename, const char *emailaddr)
 {
 	char *fromaddr;
+	struct mail mail;
 
+	memset(&mail, 0, sizeof(mail));
 	gen_addr(fromaddr, ml, "bounces-help");
 
-	exec_or_die(mlmmjsend, "-l", "1", "-L", ml->dir, "-T", emailaddr,
-	    "-F", fromaddr, "-m", queuefilename, NULL);
+	mail.to = emailaddr;
+	mail.from = fromaddr;
+	mail.fp = fopen(queuefilename, "r");
+	if (!send_single_mail(&mail, ml, false))
+		save_queue(queuefilename, &mail);
+	exit(EXIT_SUCCESS);
 }

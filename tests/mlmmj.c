@@ -64,6 +64,7 @@
 #include "mlmmj-process.h"
 #include "prepstdreply.h"
 #include "mlmmj_tests.h"
+#include "send_help.h"
 
 ATF_TC_WITHOUT_HEAD(random_int);
 ATF_TC_WITHOUT_HEAD(chomp);
@@ -143,6 +144,7 @@ ATF_TC_WITHOUT_HEAD(generate_subscription);
 ATF_TC_WITHOUT_HEAD(generate_subconfirm);
 ATF_TC_WITHOUT_HEAD(confirm_sub);
 ATF_TC_WITHOUT_HEAD(listcontrol);
+ATF_TC_WITHOUT_HEAD(send_help);
 
 ATF_TC_BODY(random_int, tc)
 {
@@ -2486,6 +2488,48 @@ ATF_TC_BODY(listcontrol, tc)
 	ATF_REQUIRE_EQ(listcontrol(&fromemails, &ml, "subscribe", NULL, NULL, NULL, "meh"), -1);
 }
 
+ATF_TC_BODY(send_help, tc)
+{
+	char *dir;
+	init_ml(true);
+	struct ml ml;
+	ml_init(&ml);
+	ml.dir = "list";
+	ml_open(&ml, false);
+	rmdir("list/text");
+	xasprintf(&dir, "%s/../listtexts/en",
+	    atf_tc_get_config_var(tc, "srcdir"));
+
+	symlink(dir, "list/text");
+	atf_utils_create_file("list/control/smtpport", "25678");
+	atf_utils_create_file("list/control/smtphelo", "heloname");
+	atf_utils_create_file("mail", "headers\n\nbody\n");
+	int smtppipe[2];
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
+	pid_t p2 = single_mail_reception(smtppipe[1]);
+	atf_utils_readline(smtppipe[0]);
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		send_help(&ml, "mail", "test@plop");
+	}
+	atf_utils_wait(p2, 0, "save:mailout.txt", "");
+	atf_utils_wait(p, 0, "", "");
+	const char *output= "EHLO heloname\r\n"
+		"MAIL FROM:<test+bounces-help@test>\r\n"
+		"RCPT TO:<test@plop>\r\n"
+		"DATA\r\n"
+		"headers\r\n"
+		"\r\n"
+		"body\r\n"
+		"\r\n"
+		".\r\n"
+		"QUIT\r\n";
+	if (!atf_utils_compare_file("mailout.txt", output)) {
+		atf_utils_cat_file("mailout.txt", "");
+		atf_tc_fail("invalid file");
+	}
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -2566,6 +2610,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, generate_subconfirm);
 	ATF_TP_ADD_TC(tp, confirm_sub);
 	ATF_TP_ADD_TC(tp, listcontrol);
+	ATF_TP_ADD_TC(tp, send_help);
 
 	return (atf_no_error());
 }

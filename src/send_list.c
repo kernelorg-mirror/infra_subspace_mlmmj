@@ -39,6 +39,7 @@
 #include "wrappers.h"
 #include "prepstdreply.h"
 #include "utils.h"
+#include "send_help.h"
 
 
 struct subs_list_state {
@@ -137,14 +138,12 @@ void print_subs(int fd, struct subs_list_state *s)
 }
 
 
-void send_list(struct ml *ml, const char *emailaddr, const char *mlmmjsend)
+void send_list(struct ml *ml, const char *emailaddr)
 {
 	text *txt;
 	struct subs_list_state *normalsls, *digestsls, *nomailsls;
-	char *queuefilename, *fromaddr;
+	char *queuefilename;
 	int fd;
-
-	gen_addr(fromaddr, ml, "bounces-help");
 
 	normalsls = init_subs_list(ml->fd, "subscribers.d");
 	digestsls = init_subs_list(ml->fd, "digesters.d");
@@ -187,6 +186,5 @@ void send_list(struct ml *ml, const char *emailaddr, const char *mlmmjsend)
 	finish_subs_list(digestsls);
 	finish_subs_list(nomailsls);
 
-	exec_or_die(mlmmjsend, "-l", "1", "-L", ml->dir, "-T", emailaddr, "-F",
-	    fromaddr, "-m", queuefilename, NULL);
+	send_help(ml, queuefilename, emailaddr);
 }

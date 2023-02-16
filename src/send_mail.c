@@ -402,7 +402,7 @@ send_single_mail(struct mail *mail, struct ml *ml, bool bounce)
 	sockfd = newsmtp(ml);
 	if (sockfd == -1)
 		return (false);
-	if (send_mail(sockfd, mail, ml->fd, ml->ctrlfd, bounce) != 0) {
+	if (send_mail(sockfd, mail, ml->fd, ml->ctrlfd, bounce)) {
 		endsmtp(&sockfd);
 		return (false);
 	}

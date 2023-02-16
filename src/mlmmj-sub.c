@@ -48,6 +48,7 @@
 #include "ctrlvalues.h"
 #include "chomp.h"
 #include "utils.h"
+#include "send_help.h"
 
 static void moderate_sub(struct ml *ml, const char *subaddr,
 		const char *mlmmjsend, enum subtype typesub,
@@ -186,8 +187,6 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 	
 	/* send mail to requester that the list is submod'ed */
 
-	gen_addr(from, ml, "bounces-help");
-
 	txt = open_text(ml->fd,
 			"wait", "sub",
 			subreason_strs[reasonsub], subtype_strs[typesub],
@@ -203,14 +202,7 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 	close_text(txt);
 
 	finish_memory_lines(mls);
-	execl(mlmmjsend, mlmmjsend,
-				"-l", "1",
-				"-L", ml->dir,
-				"-T", subaddr,
-				"-F", from,
-				"-m", queuefilename, (char *)NULL);
-	log_error(LOG_ARGS, "execl() of '%s' failed", mlmmjsend);
-	exit(EXIT_FAILURE);
+	send_help(ml, queuefilename, subaddr);
 }
 
 void getaddrandtype(const char *listdir, const char *modstr,

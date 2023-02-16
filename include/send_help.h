@@ -23,5 +23,4 @@
 
 #pragma once
 
-void send_help(struct ml *ml, const char *queuefilename,
-               const char *emailaddr, const char *mlmmjsend);
+void send_help(struct ml *ml, const char *queuefilename, const char *emailaddr);

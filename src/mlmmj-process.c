@@ -53,6 +53,7 @@
 #include "mlmmj-process.h"
 #include "utils.h"
 #include "xstring.h"
+#include "send_help.h"
 
 enum action {
 	ALLOW,
@@ -367,7 +368,6 @@ int main(int argc, char **argv)
 	char *randomstr = NULL, *mqueuename, *omitfilename;
 	char *mlmmjsend, *mlmmjsub, *mlmmjunsub;
 	char *bindir, *subjectprefix, *discardname;
-	char *fromaddr;
 	text *txt;
 	char *queuefilename, *recipextra = NULL, *owner = NULL;
 	char *maxmailsizestr;
@@ -698,7 +698,6 @@ int main(int argc, char **argv)
 				exit(EXIT_SUCCESS);
 			}
 
-			gen_addr(fromaddr, &ml, "bounces-help");
 			txt = open_text(ml.fd, "deny", "post",
 					"maxmailsize", NULL, "maxmailsize");
 			MY_ASSERT(txt);
@@ -715,9 +714,7 @@ int main(int argc, char **argv)
 			unlink(mailfile);
 			free(donemailname);
 			free(maxmailsizestr);
-			exec_or_die(mlmmjsend, "-l", "1", "-L", ml.dir, "-T",
-			    posteraddr, "-F", fromaddr, "-m", queuefilename,
-			    NULL);
+			send_help(&ml, queuefilename, posteraddr);
 		}
 	}
 
@@ -755,7 +752,6 @@ int main(int argc, char **argv)
 			free(donemailname);
 			exit(EXIT_SUCCESS);
 		}
-		gen_addr(fromaddr, &ml, "bounces-help");
 		txt = open_text(ml.fd, "deny", "post",
 				"tocc", NULL, "notintocc");
 		MY_ASSERT(txt);
@@ -769,8 +765,7 @@ int main(int argc, char **argv)
 		close_text(txt);
 		unlink(donemailname);
 		free(donemailname);
-		exec_or_die(mlmmjsend, "-l", "1", "-L", ml.dir, "-T",
-		    posteraddr, "-F", fromaddr, "-m", queuefilename, NULL);
+		send_help(&ml, queuefilename, posteraddr);
 	}
 
 	access_rules = ctrlvalues(ml.ctrlfd, "access");
@@ -793,7 +788,6 @@ int main(int argc, char **argv)
 				free(donemailname);
 				exit(EXIT_SUCCESS);
 			}
-			gen_addr(fromaddr, &ml, "bounces-help");
 			txt = open_text(ml.fd, "deny", "post",
 					"access", NULL, "access");
 			MY_ASSERT(txt);
@@ -808,9 +802,7 @@ int main(int argc, char **argv)
 			unlink(donemailname);
 			free(donemailname);
 			free(randomstr);
-			exec_or_die(mlmmjsend, "-l", "1", "-L", ml.dir, "-T",
-			    posteraddr, "-F", fromaddr, "-m", queuefilename,
-			    NULL);
+			send_help(&ml, queuefilename, posteraddr);
 		} else if (accret == MODERATE) {
 			moderated = 1;
 			modreason = ACCESS;
@@ -891,7 +883,6 @@ int main(int argc, char **argv)
 				free(donemailname);
 				exit(EXIT_SUCCESS);
 			    }
-			    gen_addr(fromaddr, &ml, "bounces-help");
 			    if (subonlypost) {
 				txt = open_text(ml.fd, "deny", "post",
 					"subonlypost", NULL, "subonlypost");
@@ -910,9 +901,7 @@ int main(int argc, char **argv)
 			    close_text(txt);
 			    unlink(donemailname);
 			    free(donemailname);
-				exec_or_die(mlmmjsend, "-L", ml.dir, "-l", "1",
-				    "-T", testaddr, "-F", fromaddr, "-m",
-				    queuefilename, NULL);
+			    send_help(&ml, queuefilename, testaddr);
 			}
 		}
 	}
