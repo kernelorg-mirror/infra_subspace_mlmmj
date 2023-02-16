@@ -502,9 +502,10 @@ int main(int argc, char **argv)
 	}
 
 	/* get the list address */
-	if(listctrl == '1' && (bounceaddr == NULL || mail.to == NULL)) {
-		errx(EXIT_FAILURE, "With -l 1 you need -F and -T");
-	}
+	if(listctrl == '1')
+		errx(EXIT_FAILURE, "-l 1 is not supported anymore");
+	if(listctrl == '5')
+		errx(EXIT_FAILURE, "-l 1 is not supported anymore");
 
 	if((listctrl == '2' && (ml.dir == NULL || bounceaddr == NULL))) {
 		errx(EXIT_FAILURE, "With -l 2 you need -L and -F");
@@ -537,11 +538,6 @@ int main(int argc, char **argv)
 		ctrlarchive = statctrl(ml.ctrlfd, "noarchive");
 
 	switch(listctrl) {
-	case '1': /* A single mail is to be sent, do nothing */
-		break;
-	case '5':
-		err(EXIT_FAILURE, "5 is not supported anymore");
-		break;
 	case '2': /* Moderators */
 		if((subfd = openat(ml.ctrlfd, "moderators", O_RDONLY)) < 0) {
 			log_error(LOG_ARGS, "Could not open '%s':",
@@ -590,7 +586,9 @@ int main(int argc, char **argv)
 	}
 
 	switch(listctrl) {
-	case '1': /* A single mail is to be sent */
+	case '1':
+	case '5': /* bounceprobe - handle relayhost local users bouncing*/
+		break;
 	case '6':
 		initsmtp(&sockfd, relayhost, smtpport, smtphelo);
 		mail.from = bounceaddr;
@@ -639,8 +637,6 @@ int main(int argc, char **argv)
 		} else {
 			endsmtp(&sockfd);
 		}
-		break;
-	case '5': /* bounceprobe - handle relayhost local users bouncing*/
 		break;
 	case '7':
 		digest = 1;
