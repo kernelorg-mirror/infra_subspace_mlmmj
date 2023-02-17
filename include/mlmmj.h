@@ -33,6 +33,10 @@
 #define __unused __attribute__((__unused__))
 #endif
 
+#ifndef NELEM
+#define NELEM(array) (sizeof(array) / sizeof((array)[0]))
+#endif
+
 #define RELAYHOST "127.0.0.1"
 #define READ_BUFSIZE 2048
 #define DEFAULT_RECIPDELIM "+"  /* Default recipient delimiter */

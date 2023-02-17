@@ -51,6 +51,16 @@
 #include "send_help.h"
 #include "xstring.h"
 
+static char *subtypes[7] = {
+	"SUB_NORMAL",
+	"SUB_DIGEST",
+	"SUB_NOMAIL",
+	NULL,
+	NULL,
+	"SUB_BOTH",
+	NULL,
+};
+
 static void moderate_sub(struct ml *ml, const char *subaddr,
 		const char *mlmmjsend, enum subtype typesub,
 		enum subreason reasonsub)
@@ -66,23 +76,8 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 	pid_t childpid, pid;
 	xstring *str = NULL;
 
-	/* generate the file in moderation/ */
-	switch(typesub) {
-		default:
-		case SUB_NORMAL:
-			type = "SUB_NORMAL";
-			break;
-		case SUB_DIGEST:
-			type = "SUB_DIGEST";
-			break;
-		case SUB_NOMAIL:
-			type = "SUB_NOMAIL";
-			break;
-		case SUB_BOTH:
-			type = "SUB_BOTH";
-			break;
-	}
-	
+	type = subtypes[typesub];
+
 	for (;;) {
 		cookie = random_str();
 		xasprintf(&modfilename, "moderation/subscribe%s", cookie);
@@ -239,24 +234,13 @@ void getaddrandtype(const char *listdir, const char *modstr,
 	chomp(readaddr);
 	*addrptr = readaddr;
 
-	if(strncmp(readtype, "SUB_NORMAL", 10) == 0) {
-		*subtypeptr = SUB_NORMAL;
-		goto freedone;
-	}
-
-	if(strncmp(readtype, "SUB_DIGEST", 10) == 0) {
-		*subtypeptr = SUB_DIGEST;
-		goto freedone;
-	}
-
-	if(strncmp(readtype, "SUB_NOMAIL", 10) == 0) {
-		*subtypeptr = SUB_NOMAIL;
-		goto freedone;
-	}
-
-	if(strncmp(readtype, "SUB_BOTH", 8) == 0) {
-		*subtypeptr = SUB_BOTH;
-		goto freedone;
+	for (size_t i = 0; i < NELEM(subtypes); i++) {
+		if (subtypes[i] == NULL)
+			continue;
+		if (strcmp(subtypes[i], readtype) == 0) {
+			*subtypeptr = i;
+			goto freedone;
+		}
 	}
 
 	log_error(LOG_ARGS, "Type %s not valid in %s", readtype,
@@ -436,7 +420,7 @@ int main(int argc, char **argv)
 	}
 
 	if(modstr) {
-		getaddrandtype(listdir, modstr, &address, &typesub);
+		getaddrandtype(ml.dir, modstr, &address, &typesub);
 		reasonsub = SUB_PERMIT;
 	}
 

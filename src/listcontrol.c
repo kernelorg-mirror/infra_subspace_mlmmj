@@ -80,10 +80,6 @@ static struct ctrl_command ctrl_commands[] = {
 	{ "list",               false, true , true ,CTRL_LIST }
 };
 
-#ifndef NELEM
-#define NELEM(array) (sizeof(array) / sizeof((array)[0]))
-#endif
-
 struct ctrl_command *
 get_ctrl_command(const char *controlstr, char **param)
 {

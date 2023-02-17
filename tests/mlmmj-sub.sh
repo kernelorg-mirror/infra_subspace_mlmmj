@@ -247,6 +247,10 @@ EOF
 	atf_check -s exit:1 test -f mail-3.txt
 	atf_check -o match:"^ml/moderation/subscribe.*" find ml/moderation/ -type f
 	atf_check -o inline:"john@doe.org\nSUB_NORMAL\n" cat ml/moderation/subscribe*
+	file=$(ls ml/moderation/subscribe*)
+	atf_check ${mlmmjsub} -L ml -m ${file##*subscribe} -c
+	atf_check -o inline:"john@doe.org\n" cat ml/subscribers.d/j
+	atf_check -s exit:1 test -f $file
 }
 
 add_normal_then_nomail_body()
