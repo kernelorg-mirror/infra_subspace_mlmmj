@@ -49,6 +49,7 @@
 #include "chomp.h"
 #include "utils.h"
 #include "send_help.h"
+#include "xstring.h"
 
 static void moderate_sub(struct ml *ml, const char *subaddr,
 		const char *mlmmjsend, enum subtype typesub,
@@ -57,12 +58,13 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 	int fd, status;
 	text *txt;
 	memory_lines_state *mls;
-	char *a = NULL, *queuefilename, *from, *str;
+	char *a = NULL, *queuefilename, *from;
 	char *modfilename, *mods, *to, *replyto, *moderators = NULL;
 	char *cookie, *obstruct;
 	strlist *submods;
 	const char *type;
 	pid_t childpid, pid;
+	xstring *str = NULL;
 
 	/* generate the file in moderation/ */
 	switch(typesub) {
@@ -99,7 +101,7 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 		break;
 	}
 
-	if(dprintf(fd, "%s\n%s\n", subaddr, type) < 0) {
+	if (dprintf(fd, "%s\n%s\n", subaddr, type) < 0) {
 		log_error(LOG_ARGS, "could not write to %s"
 				"ignoring request for: %s", subaddr);
 		exit(EXIT_FAILURE);
@@ -130,10 +132,11 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 	gen_addr_cookie(obstruct, ml, "obstruct-", cookie);
 	free(cookie);
 	tll_foreach(*submods, sm) {
-		str = moderators;
-		moderators = concatstr(3, moderators, sm->item, "\n");
-		free(str);
+		if (str == NULL)
+			str = xstring_new();
+		fprintf(str->fp, "%s\n", sm->item);
 	}
+	moderators = xstring_get(str);
 	mls = init_memory_lines(moderators);
 	free(moderators);
 
