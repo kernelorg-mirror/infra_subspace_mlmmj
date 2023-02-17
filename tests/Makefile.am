@@ -1,9 +1,12 @@
 AUTOMAKE_OPTIONS = foreign
 
-check_PROGRAMS = mlmmj
+check_PROGRAMS = mlmmj fakesmtpd
 
 mlmmj_SOURCES = mlmmj.c \
 		mlmmj_tests.c
+
+fakesmtpd_SOURCES=	fakesmtpd.c
+
 EXTRA_DIST = *.sh *.h
 CLEANFILES= $(test_scripts:.sh=)
 
