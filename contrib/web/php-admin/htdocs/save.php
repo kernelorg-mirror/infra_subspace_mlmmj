@@ -40,8 +40,6 @@ function mlmmj_boolean($name, $nicename, $text)
     {
        if(!touch($file))
           die("Couldn't open ".$file." for writing");
-       //if (!chmod($file, 0644))
-       //   die("Couldn't chmod ".$file);
        // don't error on chmod, if the owner of the file is different it won't work
        @chmod($file, 0664);
     }
@@ -83,8 +81,6 @@ function mlmmj_list($name, $nicename, $text)
        fwrite($fp, $_POST[$name]);
        fclose($fp);
 
-       //if (!chmod($file, 0644))
-       //   die("Couldn't chmod ".$file);
        // don't error on chmod, if the owner of the file is different it won't work
        @chmod($file, 0664);
     }

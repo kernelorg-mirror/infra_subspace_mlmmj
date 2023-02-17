@@ -192,7 +192,6 @@ class rFastTemplate {
    // Description
    //    Constructor.
    //
-   //function rFastTemplate ($pathToTemplates = '') {
    public function __construct ($pathToTemplates = '') {
 
       // $pathToTemplates can also be an array of template roots, handled in set_root
