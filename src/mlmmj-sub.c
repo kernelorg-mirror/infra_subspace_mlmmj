@@ -59,7 +59,7 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 	text *txt;
 	memory_lines_state *mls;
 	char *a = NULL, *queuefilename, *from;
-	char *modfilename, *mods, *to, *replyto, *moderators = NULL;
+	char *modfilename, *mods = NULL, *to, *replyto, *moderators = NULL;
 	char *cookie, *obstruct;
 	strlist *submods;
 	const char *type;
@@ -111,7 +111,6 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 	submods = ctrlvalues(ml->ctrlfd, "submod");
 	if (submods == NULL)
 		return;
-	mods = concatstr(2, ml->dir, "/control/submod");
 	/* check to see if there's adresses in the submod control file */
 	tll_foreach(*submods, it)
 		a = strchr(it->item, '@');
@@ -122,9 +121,10 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 		tll_free_and_free(*submods, free);
 		free(submods);
 		submods = ctrlvalues(ml->ctrlfd, "owner");
-		free(mods);
-		mods = concatstr(2, ml->dir, "/control/owner");
+		xasprintf(&mods, "%s/control/owner", ml->dir);
 	}
+	if (mods == NULL)
+		xasprintf(&mods, "%s/control/submod", ml->dir);
 
 	gen_addr(from, ml, "owner");
 	xasprintf(&to, "%s-moderators@%s", ml->name, ml->fqdn);
