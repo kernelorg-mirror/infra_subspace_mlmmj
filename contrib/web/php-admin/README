@@ -46,4 +46,11 @@ To use this web-interface you have to:
 
    It will then ask you for a password for the given username.
 
-6) That is it, you are ready to use the interface.
+6) Use 2 extra configs to limit per list the people who can access the php admin itf and/or who can manage the subscribers
+   To limit who can access the php admin interface per list, create for the list in question the control file admin_users
+   and put in it the userids of the people allowed to manage just that list (one per line)
+   To limit who can manage subscribers per list, create for the list in question the control file subsadmin_users
+   and put in it the userids of the people allowed to manage subscribers just that list (one per line)
+   If subsadmin_users does not exist and admin_users exists, the content of that file will be used.
+
+7) That is it, you are ready to use the interface.

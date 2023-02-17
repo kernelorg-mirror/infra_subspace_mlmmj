@@ -1,6 +1,7 @@
 <?php
 
 /* mlmmj/php-admin:
+ * Copyright (C) 2023 Franky Van Liedekerke <franky at e-dynamics dot be>
  * Copyright (C) 2004 Christoph Thiel <ct at kki dot org>
  *
  * mlmmj/php-perl:
@@ -36,12 +37,58 @@ $tpl->define(array("main" => "index.html"));
 $lists = "";
 
 # use scandir to have alphabetical order
-foreach (scandir($topdir) as $file) {
-    if (!ereg("^\.",$file))
-    {
-	$lists .= "<p>".htmlentities($file)."<br/>\n";
-	$lists .= "<a href=\"edit.php?list=".urlencode($file)."\">Config</a> - <a href=\"subscribers.php?list=".urlencode($file)."\">Subscribers</a>\n";
-	$lists .= "</p>\n";
+foreach (scandir($topdir) as $mlmmj_list) {
+    if (substr($mlmmj_list,0,1) != '.' && file_exists("$topdir/$mlmmj_list/control")) {
+	$admin_userfile = "$topdir/$mlmmj_list/control/admin_users";
+	$subs_userfile = "$topdir/$mlmmj_list/control/subsadmin_users";
+	if (!is_file($subs_userfile)) {
+		$subs_userfile = "$topdir/$mlmmj_list/control/admin_users";
+	}
+
+	if (isset($_SERVER['PHP_AUTH_USER']) && is_file($admin_userfile)) {
+		// read users into array
+		$admin_users = array_map('trim',file($admin_userfile));
+		// remove empty values from array
+		$admin_users = array_filter($admin_users);
+		if (in_array($_SERVER['PHP_AUTH_USER'],$admin_users)) {
+			$print_config=1;
+		} else {
+			$print_config=0;
+		}
+	} else {
+		$print_config=1;
+	}
+	if (isset($_SERVER['PHP_AUTH_USER']) && is_file($subs_userfile)) {
+		// read users into array
+		$subs_users = array_map('trim',file($subs_userfile));
+		// remove empty values from array
+		$subs_users = array_filter($subs_users);
+		if (in_array($_SERVER['PHP_AUTH_USER'],$subs_users)) {
+			$print_sub=1;
+		} else {
+			$print_sub=0;
+		}
+	} else {
+		$print_sub=1;
+	}
+
+	if ($print_config || $print_sub) {
+		$lists .= "<p>".htmlentities($mlmmj_list)."<br/>\n";
+
+		if ($print_config) {
+			$lists .= "<a href=\"edit.php?list=".urlencode($mlmmj_list)."\">Config</a> - ";
+			$lists .= "<a href=\"texts.php?list=".urlencode($mlmmj_list)."\">Text files</a>";
+		}
+		if ($print_config && $print_sub)
+			$lists .= " - ";
+		if ($print_sub)
+			$lists .= "<a href=\"subscribers.php?list=".urlencode($mlmmj_list)."\">Subscribers</a>\n";
+
+		if ($print_config)
+			$lists .= " - <a href=\"logs.php?list=".urlencode($mlmmj_list)."\">Log</a>";
+
+		$lists .= "</p>\n";
+	}
     }
 }
 

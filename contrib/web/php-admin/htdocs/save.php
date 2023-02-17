@@ -1,6 +1,7 @@
 <?php
 
 /* mlmmj/php-admin:
+ * Copyright (C) 2023 Franky Van Liedekerke <franky at e-dynamics dot be>
  * Copyright (C) 2004 Christoph Thiel <ct at kki dot org>
  *
  * mlmmj/php-perl:
@@ -39,8 +40,10 @@ function mlmmj_boolean($name, $nicename, $text)
     {
        if(!touch($file))
           die("Couldn't open ".$file." for writing");
-       if (!chmod($file, 0644))
-          die("Couldn't chmod ".$file);
+       //if (!chmod($file, 0644))
+       //   die("Couldn't chmod ".$file);
+       // don't error on chmod, if the owner of the file is different it won't work
+       @chmod($file, 0664);
     }
     else {
        if (file_exists($file)) {
@@ -80,8 +83,10 @@ function mlmmj_list($name, $nicename, $text)
        fwrite($fp, $_POST[$name]);
        fclose($fp);
 
-       if (!chmod($file, 0644))
-          die("Couldn't chmod ".$file);
+       //if (!chmod($file, 0644))
+       //   die("Couldn't chmod ".$file);
+       // don't error on chmod, if the owner of the file is different it won't work
+       @chmod($file, 0664);
     }
     else {
        if (file_exists($file)) {
@@ -97,16 +102,34 @@ function encode_entities($str) { return htmlentities($str); }
 
 $tpl = new rFastTemplate($templatedir);
 
-$list = $_POST["list"];
-
-if(!isset($list))
-die("no list specified");
+if(empty($_POST['list']))
+        die("no list specified");
+$list = $_POST['list'];
 
 if (dirname(realpath($topdir."/".$list)) != realpath($topdir))
 die("list outside topdir");
 
 if(!is_dir($topdir."/".$list))
 die("non-existent list");
+
+$userfile = "$topdir/$list/control/admin_users";
+$admin_user = "";
+if(is_file($userfile)) {
+        // read users into array
+	$admin_users = array_map('trim',file($userfile));
+        // remove empty values from array
+        $admin_users = array_filter($admin_users);
+        if (!isset($_SERVER['PHP_AUTH_USER']) || !in_array($_SERVER['PHP_AUTH_USER'],$admin_users)) {
+		header("WWW-Authenticate: " .
+			"Basic realm=\"Mlmmj Protected Area\"");
+		header("HTTP/1.0 401 Unauthorized");
+		//Show failure text, which browsers usually
+		//show only after several failed attempts
+		print("This page is protected by HTTP " .
+			"Authentication.<br>\n");
+		exit;
+	}
+}
 
 $tpl->define(array("main" => "save.html"));
 $tpl->assign(array("LIST" => htmlentities($list)));

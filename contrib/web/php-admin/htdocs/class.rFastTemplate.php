@@ -192,7 +192,8 @@ class rFastTemplate {
    // Description
    //    Constructor.
    //
-   function rFastTemplate ($pathToTemplates = '') {
+   //function rFastTemplate ($pathToTemplates = '') {
+   public function __construct ($pathToTemplates = '') {
 
       // $pathToTemplates can also be an array of template roots, handled in set_root
       global $php_errormsg;
@@ -317,7 +318,7 @@ class rFastTemplate {
          $this->ROOT[] = $root;
       } else {
          reset($root);
-         while(list($k, $v) = each($root)) {
+	 foreach ($root as $k=>$v) {
             if (is_dir($v)) {
                $trailer = substr ($v,-1);
                if ($trailer != ($this->WIN32 ? '\\' : '/'))
@@ -341,7 +342,7 @@ class rFastTemplate {
    //
    function define ($fileList, $dynamic = 0) {
       reset ($fileList);
-      while (list ($tpl, $file) = each ($fileList)) {
+      foreach ($fileList as $tpl=>$file) {
          $this->TEMPLATE[$tpl] = array ('file' => $file, 'dynamic' => $dynamic);
       }
       return true;
@@ -350,7 +351,7 @@ class rFastTemplate {
    function define_dynamic ($tplList, $parent='') {
       if (is_array($tplList)) {
          reset ($tplList);
-         while (list ($tpl, $parent) = each ($tplList)) {
+	 foreach ($tplList as $tpl=>$parent) {
             $this->TEMPLATE[$tpl]['parent'] = $parent;
             $this->TEMPLATE[$tpl]['dynamic'] = true;
          }
@@ -371,7 +372,7 @@ class rFastTemplate {
    //
    function define_raw ($stringList, $dynamic = 0) {
       reset ($stringList);
-      while (list ($tpl, $string) = each ($stringList)) {
+      foreach ($stringList as $tpl=>$string) {
          $this->TEMPLATE[$tpl] = array ('string' => $string, 'dynamic' => $dynamic, 'loaded' => 1);
       }
       return true;
@@ -393,7 +394,7 @@ class rFastTemplate {
 
       // search path for a matching file
       reset($this->ROOT);
-      while(list($k, $v) = each($this->ROOT)) {
+      foreach ($this->ROOT as $k=>$v) {
          $f = $v . $file;
          if (file_exists($f)) {
             return $f;
@@ -474,7 +475,7 @@ class rFastTemplate {
             // whitespace.  If so, we delete the entire line.
             $okay = false;
             for ($offbeg = $pos - 1; $offbeg >= 0; $offbeg--) {
-               $c = $rest{$offbeg};
+               $c = $rest[$offbeg];
                if ($c == "\n") {
                   $okay = true;
                   $offbeg++;
@@ -490,7 +491,7 @@ class rFastTemplate {
             } else {
                $l = strlen ($rest);
                for ($offend = $pos + strlen($dynbeg[1]); $offend < $l; $offend++) {
-                  $c = $rest{$offend};
+                  $c = $rest[$offend];
                   if ($c == "\n") {
                      $offend++;
                      break;
@@ -534,7 +535,7 @@ class rFastTemplate {
                   // only whitespace.  If so, we delete the entire line.
                   $okay = false;
                   for ($offbeg = $pos - 1; $offbeg >= 0; $offbeg--) {
-                     $c = $rest{$offbeg};
+                     $c = $rest[$offbeg];
                      if ($c == "\n") {
                         $offbeg++;
                         $okay = true;
@@ -550,7 +551,7 @@ class rFastTemplate {
                   } else {
                      $l = strlen ($rest);
                      for ($offend = $pos + strlen($dynend[1]); $offend < $l; $offend++) {
-                        $c = $rest{$offend};
+                        $c = $rest[$offend];
                         if ($c == "\n") {
                            $offend++;
                            break;
@@ -804,14 +805,14 @@ class rFastTemplate {
                // Because we treat VAR and HANDLE separately (unlike
                // class.FastTemplate.php3), we have to iterate over both or we
                // miss some substitutions and are not 100% compatible.
-               while (list($key,$val) = each ($this->VAR)) {
+	       foreach ($this->VAR as $key=>$val) {
                   if ($debug)
                      $this->logwrite ("subst: substituting VAR $key = $val in $tag");
                   $key = '{'.$key.'}';
                   $tmp = str_replace ($key, $val, $tmp);
                }
                reset ($this->HANDLE);
-               while (list($key,$val) = each ($this->HANDLE)) {
+	       foreach ($this->HANDLE as $key=>$val) {
                   if ($debug)
                      $this->logwrite ("subst: substituting HANDLE $key = $val in $tag");
                   $key = '{'.$key.'}';
@@ -983,7 +984,7 @@ class rFastTemplate {
    function setkey ($tplkey, $rest = '') {
       if (gettype ($tplkey) == 'array') {
          reset ($tplkey);
-         while (list($key,$val) = each ($tplkey)) {
+	 foreach ($tplkey as $key=>$val) {
             if (!empty($key)) {
                $this->VAR[$key] = $val;
             }
@@ -998,7 +999,7 @@ class rFastTemplate {
    function append ($tplkey, $rest = '') {
       if (gettype ($tplkey) == 'array') {
          reset ($tplkey);
-         while (list($key,$val) = each ($tplkey)) {
+	 foreach ($tplkey as $key=>$val) {
             if (!empty($key)) {
                $this->VAR[$key] .= $val;
             }

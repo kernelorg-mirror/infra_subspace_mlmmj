@@ -1,6 +1,12 @@
 <?php
 
-/* Copyright (C) 2012 Marc MAURICE <marc-mlmmj at pub dot positon dot org>
+/* mlmmj/php-admin:
+ * Copyright (C) 2023 Franky Van Liedekerke <franky at e-dynamics dot be>
+ * Copyright (C) 2004 Christoph Thiel <ct at kki dot org>
+ *
+ * mlmmj/php-perl:
+ * Copyright (C) 2004 Morten K. Poulsen <morten at afdelingp.dk>
+ * Copyright (C) 2004 Christian Laursen <christian@pil.dk>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -27,10 +33,9 @@ require(dirname(__FILE__)."/class.rFastTemplate.php");
 $tpl = new rFastTemplate($templatedir);
 
 # get the list parameter and check that list exists
-$list = $_GET["list"];
-
-if(!isset($list))
-die("no list specified");
+if(empty($_GET['list']))
+        die("no list specified");
+$list = $_GET['list'];
 
 if (dirname(realpath($topdir."/".$list)) != realpath($topdir))
 die("list outside topdir");
@@ -38,7 +43,28 @@ die("list outside topdir");
 if(!is_dir($topdir."/".$list))
 die("non-existent list");
 
-# this will be displayed on the top of the page
+$userfile = "$topdir/$list/control/subsadmin_users";
+if (!is_file($userfile)) {
+	$userfile = "$topdir/$list/control/admin_users";
+}
+$admin_user = "";
+if (is_file($userfile)) {
+        // read users into array
+	$admin_users = array_map('trim',file($userfile));
+        // remove empty values from array
+        $admin_users = array_filter($admin_users);
+        if (!isset($_SERVER['PHP_AUTH_USER']) || !in_array($_SERVER['PHP_AUTH_USER'],$admin_users)) {
+                header("WWW-Authenticate: " .
+                        "Basic realm=\"Mlmmj Protected Area\"");
+                header("HTTP/1.0 401 Unauthorized");
+                //Show failure text, which browsers usually
+                //show only after several failed attempts
+                print("This page is protected by HTTP " .
+                        "Authentication.<br>\n");
+                exit;
+        }
+}
+
 $message = "";
 
 # subscribe some people if tosubscribe is set
@@ -48,7 +74,7 @@ if (isset($_POST["tosubscribe"])) {
 		$email = trim($line);
 		if ($email != "") {
 			if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
-				$cmd = "/usr/bin/mlmmj-sub -L ".escapeshellarg("$topdir/$list")." -a ".escapeshellarg($email)." 2>&1";
+				$cmd = "/usr/bin/mlmmj-sub -f -q -s -L ".escapeshellarg("$topdir/$list")." -a ".escapeshellarg($email)." 2>&1";
 				unset($out);
 				exec($cmd, $out, $ret);
 				if ($ret !== 0) {
@@ -67,7 +93,7 @@ if (isset($_POST["tosubscribe"])) {
 	$email = $_POST["email"];
 	if (! filter_var($email, FILTER_VALIDATE_EMAIL)) die("Email address not valid");
 	
-	$cmd = "/usr/bin/mlmmj-unsub -L ".escapeshellarg("$topdir/$list")." -a ".escapeshellarg($email)." 2>&1";
+	$cmd = "/usr/bin/mlmmj-unsub -q -s -L ".escapeshellarg("$topdir/$list")." -a ".escapeshellarg($email)." 2>&1";
 	unset($out);
 	exec($cmd, $out, $ret);
 	if ($ret !== 0) {
@@ -78,7 +104,7 @@ if (isset($_POST["tosubscribe"])) {
 $subscribers="";
 
 # get subscribers from mlmmj
-$cmd = "/usr/bin/mlmmj-list -L ".escapeshellarg("$topdir/$list")." 2>&1";
+$cmd = "/usr/bin/mlmmj-list -L ".escapeshellarg("$topdir/$list")." |sort";
 unset($out);
 exec($cmd, $out, $ret);
 if ($ret !== 0) {
@@ -96,8 +122,8 @@ if ($ret !== 0) {
 		$subscribers.= "<tr><td>".htmlspecialchars($email)."</td><td>$form</td></tr>\n";
 	}
 
-	if ($subscribers === "") {
-		$subscribers = "<tr><td>This list is empty.</td></tr>\n";
+	if (empty($subscribers)) {
+		$subscribers = "<tr><td>This list is empty or the permissions are not set correctly to get the subscribers.</td></tr>\n";
 	}
 }
 

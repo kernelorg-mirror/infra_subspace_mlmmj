@@ -1,6 +1,7 @@
 <?php
 
 /* mlmmj/php-admin:
+ * Copyright (C) 2023 Franky Van Liedekerke <franky at e-dynamics dot be>
  * Copyright (C) 2004 Christoph Thiel <ct at kki dot org>
  *
  * mlmmj/php-perl:
@@ -40,7 +41,7 @@ function mlmmj_boolean($name, $nicename, $text)
 
     $tpl->assign(array("NAME" => htmlentities($name),
 		       "NICENAME" => htmlentities($nicename),
-		       "TEXT" => htmlentities($text)));
+		       "TEXT" => nl2br(htmlentities($text))));
     $tpl->assign(array("CHECKED" => $checked ? " checked" : ""));
 
     $tpl->parse("ROWS",".boolean");
@@ -63,7 +64,7 @@ function mlmmj_string($name, $nicename, $text)
     
     $tpl->assign(array("NAME" => htmlentities($name),
 		       "NICENAME" => htmlentities($nicename),
-		       "TEXT" => htmlentities($text),
+		       "TEXT" => nl2br(htmlentities($text)),
 		       "VALUE" => htmlentities($value)));
     
     $tpl->parse("ROWS",".string");
@@ -85,7 +86,7 @@ function mlmmj_list($name, $nicename, $text)
 
     $tpl->assign(array("NAME" => htmlentities($name),
 		       "NICENAME" => htmlentities($nicename),
-		       "TEXT" => htmlentities($text),
+		       "TEXT" => nl2br(htmlentities($text)),
 		       "VALUE" => htmlentities($value)));
 
     $tpl->parse("ROWS",".list");
@@ -97,16 +98,33 @@ function encode_entities($str) { return htmlentities($str); }
 
 $tpl = new rFastTemplate($templatedir);
 
-$list = $_GET["list"];
-
-if(!isset($list))
-die("no list specified");
+if(empty($_GET['list']))
+	die("no list specified");
+$list = $_GET['list'];
 
 if (dirname(realpath($topdir."/".$list)) != realpath($topdir))
 die("list outside topdir");
 
 if(!is_dir($topdir."/".$list))
 die("non-existent list");
+
+$userfile = "$topdir/$list/control/admin_users";
+if (is_file($userfile)) {
+	// read users into array
+        $admin_users = array_map('trim',file($userfile));
+	// remove empty values from array
+	$admin_users = array_filter($admin_users);
+        if (!isset($_SERVER['PHP_AUTH_USER']) || !in_array($_SERVER['PHP_AUTH_USER'],$admin_users)) {
+                header("WWW-Authenticate: " .
+                        "Basic realm=\"Mlmmj Protected Area\"");
+                header("HTTP/1.0 401 Unauthorized");
+                //Show failure text, which browsers usually
+                //show only after several failed attempts
+                print("This page is protected by HTTP " .
+                        "Authentication.<br>\n");
+                exit;
+        }
+}
 
 $tpl->define(array("main" => "edit.html",
 		   "boolean" => "edit_boolean.html",
