@@ -39,6 +39,7 @@
 #include "strgen.h"
 #include "chomp.h"
 #include "log_error.h"
+#include "mygetline.h"
 #include "wrappers.h"
 #include "mlmmj.h"
 #include "unistr.h"
@@ -68,12 +69,10 @@ struct source {
 	int prefixlen;
 	int prefixwidth;
 	char *suffix;
-	FILE *fp;
+	int fd;
 	struct formatted *fmt;
 	int transparent;
 	int limit;
-	char *line;
-	size_t linecap;
 };
 
 
@@ -428,7 +427,7 @@ text *open_text_fd(int fd)
 	txt->src->limit = -1;
 	txt->wrapmode = WRAP_WORD;
 	txt->widthreckoning = WIDTH_THIN;
-	txt->src->fp = fdopen(fd, "r");
+	txt->src->fd = fd;
 
 	return (txt);
 }
@@ -480,10 +479,9 @@ text *open_text(int listfd, const char *purpose, const char *action,
 void close_source(text *txt)
 {
 	source *tmp;
-	if (txt->src->fp) fclose(txt->src->fp);
+	if (txt->src->fd != -1) close(txt->src->fd);
 	if (txt->src->prefix != NULL) free(txt->src->prefix);
 	if (txt->src->suffix != NULL) free(txt->src->suffix);
-	free(txt->src->line);
 	tmp = txt->src;
 	txt->src = txt->src->prev;
 	free(tmp);
@@ -586,31 +584,36 @@ static void begin_new_source_file(text *txt, char **line_p, char **pos_p,
 		return;
 	}
 
-	src = xcalloc(1, sizeof(source));
+	src = xmalloc(sizeof(source));
 	src->prev = txt->src;
+	src->upcoming = NULL;
 	src->prefixlen = strlen(line);
 	src->prefixwidth = *width_p;
 	src->prefix = xmalloc((*width_p + 1) * sizeof(char));
 	for (tmp = src->prefix, i = 0; i < *width_p; tmp++, i++) *tmp = ' ';
 	*tmp = '\0';
-	src->fp = fdopen(fd, "r");
+	src->suffix = NULL;
+	src->fd = fd;
+	src->fmt = NULL;
 	src->transparent = transparent;
 	src->limit = -1;
 	txt->src = src;
-	if (getline(&txt->src->line, &txt->src->linecap, txt->src->fp) <= 0) {
+	tmp = mygetline(fd);
+	if (tmp == NULL) {
 		close_source(txt);
 		**pos_p = '\0';
 		return;
 	}
-	tmp = txt->src->line;
 	if (!transparent) {
 		esc = unistr_escaped_to_utf8(tmp);
+		free(tmp);
 		tmp = esc;
 	}
-	line = concatstr(2, line, txt->src->line);
+	line = concatstr(2, line, tmp);
 	*pos_p = line + (*pos_p - *line_p);
 	free(*line_p);
 	*line_p = line;
+	free(tmp);
 }
 
 
@@ -648,7 +651,7 @@ static void begin_new_formatted_source(text *txt, char **line_p, char **pos_p,
 	} else {
 		src->suffix = xstrdup(suffix);
 	}
-	src->fp = NULL;
+	src->fd = -1;
 	src->fmt = fmt;
 	src->transparent = transparent;
 	src->limit = -1;
@@ -1119,16 +1122,15 @@ char *get_processed_text_line(text *txt, bool headers, struct ml *ml)
 				break;
 			}
 			if (txt->src->limit != 0) {
-				tmp = NULL;
-				if (txt->src->fp != NULL) {
-					tmp = NULL;
-					if (getline(&txt->src->line, &txt->src->linecap, txt->src->fp) > 0)
-						tmp = xstrdup(txt->src->line);
+				if (txt->src->fd != -1) {
+					tmp = mygetline(txt->src->fd);
 				} else if (txt->src->fmt != NULL) {
 					item = (*txt->src->fmt->get)(
 						txt->src->fmt->state);
 					if (item==NULL) tmp = NULL;
 					else tmp = xstrdup(item);
+				} else {
+					tmp = NULL;
 				}
 				if (txt->src->limit > 0) txt->src->limit--;
 				if (tmp == NULL) {
