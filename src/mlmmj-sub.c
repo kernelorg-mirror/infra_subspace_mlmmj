@@ -61,22 +61,23 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 	char *modfilename, *mods, *to, *replyto, *moderators = NULL;
 	char *cookie, *obstruct;
 	strlist *submods;
+	const char *type;
 	pid_t childpid, pid;
 
 	/* generate the file in moderation/ */
 	switch(typesub) {
 		default:
 		case SUB_NORMAL:
-			str = concatstr(4, subaddr, "\n", "SUB_NORMAL", "\n");
+			type = "SUB_NORMAL";
 			break;
 		case SUB_DIGEST:
-			str = concatstr(4, subaddr, "\n", "SUB_DIGEST", "\n");
+			type = "SUB_DIGEST";
 			break;
 		case SUB_NOMAIL:
-			str = concatstr(4, subaddr, "\n", "SUB_NOMAIL", "\n");
+			type = "SUB_NOMAIL";
 			break;
 		case SUB_BOTH:
-			str = concatstr(4, subaddr, "\n", "SUB_BOTH", "\n");
+			type = "SUB_BOTH";
 			break;
 	}
 	
@@ -92,19 +93,18 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 				continue;
 			}
 			log_error(LOG_ARGS, "could not create %s"
-					"ignoring request: %s", str);
+					"ignoring request for: %s", subaddr);
 			exit(EXIT_FAILURE);
 		}
 		break;
 	}
 
-	if(dprintf(fd, "%s", str) < 0) {
+	if(dprintf(fd, "%s\n%s\n", subaddr, type) < 0) {
 		log_error(LOG_ARGS, "could not write to %s"
-				"ignoring request: %s", str);
+				"ignoring request for: %s", subaddr);
 		exit(EXIT_FAILURE);
 	}
 	close(fd);
-	free(str);
 
 	submods = ctrlvalues(ml->ctrlfd, "submod");
 	if (submods == NULL)
