@@ -233,6 +233,7 @@ void getaddrandtype(const char *listdir, const char *modstr,
 	
 	chomp(readaddr);
 	*addrptr = readaddr;
+	chomp(readtype);
 
 	for (size_t i = 0; i < NELEM(subtypes); i++) {
 		if (subtypes[i] == NULL)
