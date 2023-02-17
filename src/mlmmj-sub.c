@@ -106,7 +106,9 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 	close(fd);
 	free(str);
 
-	submods = ctrlvalues(ml->fd, "submod");
+	submods = ctrlvalues(ml->ctrlfd, "submod");
+	if (submods == NULL)
+		return;
 	mods = concatstr(2, ml->dir, "/control/submod");
 	/* check to see if there's adresses in the submod control file */
 	tll_foreach(*submods, it)
@@ -117,7 +119,7 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 		/* free the submods struct from above */
 		tll_free_and_free(*submods, free);
 		free(submods);
-		submods = ctrlvalues(ml->fd, "owner");
+		submods = ctrlvalues(ml->ctrlfd, "owner");
 		free(mods);
 		mods = concatstr(2, ml->dir, "/control/owner");
 	}
@@ -128,7 +130,6 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 	gen_addr_cookie(obstruct, ml, "obstruct-", cookie);
 	free(cookie);
 	tll_foreach(*submods, sm) {
-		printf("%s", sm->item);
 		str = moderators;
 		moderators = concatstr(3, moderators, sm->item, "\n");
 		free(str);
@@ -482,7 +483,7 @@ int main(int argc, char **argv)
 		generate_subconfirm(&ml, address, typesub, reasonsub, true);
 
 	if(modstr == NULL && subbed == SUB_NONE && !force &&
-			statctrl(ml.fd, "submod")) {
+			statctrl(ml.ctrlfd, "submod")) {
 		moderate_sub(&ml, address, mlmmjsend, typesub, reasonsub);
 	}
 
