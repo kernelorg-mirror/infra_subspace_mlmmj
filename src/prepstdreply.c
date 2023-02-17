@@ -147,6 +147,7 @@ init_memory_lines(const char *lines)
 	char *l;
 
 	l = s->lines = xstrdup(lines);
+	chomp(s->lines);
 	s->end = s->lines + strlen(s->lines);
 	while (strsep(&l, "\n"));
 
