@@ -171,7 +171,6 @@ endsmtp(int *sockfd)
 	write_quit(*sockfd);
 	reply = checkwait_smtpreply(*sockfd, MLMMJ_QUIT);
 	if(reply) {
-		printf("reply from quit: %s\n", reply);
 		log_error(LOG_ARGS, "Mailserver would not let us QUIT. "
 			  "We close the socket anyway though. "
 			  "Mailserver reply = [%s]", reply);
