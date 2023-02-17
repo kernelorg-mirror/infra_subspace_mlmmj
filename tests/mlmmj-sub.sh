@@ -2,9 +2,18 @@
 
 . $(atf_get_srcdir)/test_env.sh
 
+kill_fakesmtp()
+{
+	pid=$(cat fakesmtp.pid)
+	kill -15 $pid
+}
+
 tests_init \
 	add_basics \
 	add_normal \
+	add_normal_welcome \
+	add_normal_welcome_confirm \
+	add_normal_welcome_moderate \
 	add_normal_owner \
 	add_nomail \
 	add_digest \
@@ -30,6 +39,214 @@ add_normal_body()
 	atf_check -o inline:"john@doe.org\n" cat ml/subscribers.d/j
 	atf_check -s exit:0 $mlmmjsub -L ml -a jane@doe.org
 	atf_check -o inline:"john@doe.org\njane@doe.org\n" cat ml/subscribers.d/j
+}
+
+add_normal_welcome_body()
+{
+	init_ml ml
+	mlmmjsub=$(command -v mlmmj-sub)
+	atf_check $srcdir/fakesmtpd
+	trap kill_fakesmtp EXIT TERM
+	echo test@mlmmjtest > ml/control/listaddress
+	echo "25678" > ml/control/smtpport
+	echo "heloname" > ml/control/smtphelo
+	rmdir ml/text
+	ln -s ${srcdir}/../listtexts/en ml/text
+	atf_check -s exit:0 $mlmmjsub -L ml -c -a john@doe.org
+	cat > expected.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-help@mlmmjtest>
+RCPT TO:<john@doe.org>
+DATA
+Subject: =?utf-8?q?Welcome_to_test=40mlmmjtest?=
+From: test+help@mlmmjtest
+To: john@doe.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+An administrator has subscribed you to the normal version of the list.
+
+The email address you are subscribed with is <john@doe.org>.
+
+If you ever wish to unsubscribe, send a message to
+<test+unsubscribe@mlmmjtest> using this email address. The subject and the
+body of the message can be anything. You will then receive confirmation or
+further instructions.
+
+For other information and help about this list, send a message to
+<test+help@mlmmjtest>.
+
+
+.
+QUIT
+EOF
+
+	atf_check -o file:expected.txt sed -e "/^Message-ID:/d; /^Date:/d" mail-1.txt
+	atf_check -o inline:"john@doe.org\n" cat ml/subscribers.d/j
+	atf_check -s exit:1 test -f mail-2.txt
+}
+
+add_normal_welcome_confirm_body()
+{
+	init_ml ml
+	mlmmjsub=$(command -v mlmmj-sub)
+	atf_check $srcdir/fakesmtpd
+	trap kill_fakesmtp EXIT TERM
+	echo test@mlmmjtest > ml/control/listaddress
+	echo "25678" > ml/control/smtpport
+	echo "heloname" > ml/control/smtphelo
+	rmdir ml/text
+	ln -s ${srcdir}/../listtexts/en ml/text
+	atf_check -s exit:0 $mlmmjsub -L ml -c -C -a john@doe.org
+	cat > expected.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-confsub-@mlmmjtest>
+RCPT TO:<john@doe.org>
+DATA
+Subject: =?utf-8?q?Confirm_subscription_to_test=40mlmmjtest?=
+From: test+help@mlmmjtest
+To: john@doe.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Reply-To: test+confsub-@mlmmjtest
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+An administrator has requested that your email address <john@doe.org> be
+added to the list. This means every time a post is sent to the list, you
+will receive a copy of it.
+
+To confirm you want to do this, please send a message to
+<test+confsub-@mlmmjtest> which can usually be done simply
+by replying to this message. The subject and the body of the message can be
+anything.
+
+After doing so, you should receive a reply informing you that the operation
+succeeded.
+
+If you do not want to do this, simply ignore this message.
+
+
+.
+QUIT
+EOF
+
+	atf_check -o file:expected.txt sed -e "/^Message-ID:/d; /^Date:/d; s/confsub-.*@mlmmjtest/confsub-@mlmmjtest/g" mail-1.txt
+	atf_check -s exit:1 test -f ml/subscribers.d/j
+	atf_check -o match:"^ml/subconf/.*" find ml/subconf/ -type f
+	atf_check -s exit:1 test -f mail-2.txt
+}
+
+add_normal_welcome_moderate_body()
+{
+	init_ml ml
+	mlmmjsub=$(command -v mlmmj-sub)
+	atf_check $srcdir/fakesmtpd
+	trap kill_fakesmtp EXIT TERM
+	echo test@mlmmjtest > ml/control/listaddress
+	echo "25678" > ml/control/smtpport
+	echo "heloname" > ml/control/smtphelo
+	rmdir ml/text
+	ln -s ${srcdir}/../listtexts/en ml/text
+	cat > ml/control/submod <<EOF
+modo1@test
+modo2@test
+EOF
+	atf_check -s exit:0 $mlmmjsub -L ml -c -a john@doe.org
+	cat > expected.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-help@mlmmjtest>
+RCPT TO:<john@doe.org>
+DATA
+Subject: =?utf-8?q?Awaiting_permission_to_join_test=40mlmmjtest?=
+From: test+owner@mlmmjtest
+To: john@doe.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+Your request to join the list has been received. However, the gatekeepers
+are being asked to review it before permitting you to join.
+
+
+.
+QUIT
+EOF
+
+	cat > expected-modos.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+owner@mlmmjtest>
+RCPT TO:<modo1@test>
+DATA
+Subject: =?utf-8?q?Subscription_request_for_test=40mlmmjtest:_john=40doe.org?=
+From: test+owner@mlmmjtest
+To: test-moderators@mlmmjtest
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Reply-To: test+permit-@mlmmjtest
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+There has been a request from <john@doe.org> to join the normal version of
+the list.
+
+To permit this, please send a message to
+<test+permit-@mlmmjtest> which can usually be done simply
+by replying to this message.
+
+If you do not want to do this, either send a message to
+<test+obstruct-@mlmmjtest> or simply ignore this message.
+
+The following gatekeepers have received this mail:
+- modo1@test
+- modo2@test
+
+
+.
+MAIL FROM:<test+owner@mlmmjtest>
+RCPT TO:<modo2@test>
+DATA
+Subject: =?utf-8?q?Subscription_request_for_test=40mlmmjtest:_john=40doe.org?=
+From: test+owner@mlmmjtest
+To: test-moderators@mlmmjtest
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Reply-To: test+permit-@mlmmjtest
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+There has been a request from <john@doe.org> to join the normal version of
+the list.
+
+To permit this, please send a message to
+<test+permit-@mlmmjtest> which can usually be done simply
+by replying to this message.
+
+If you do not want to do this, either send a message to
+<test+obstruct-@mlmmjtest> or simply ignore this message.
+
+The following gatekeepers have received this mail:
+- modo1@test
+- modo2@test
+
+
+.
+QUIT
+EOF
+	atf_check -o file:expected.txt sed -e "/^Message-ID:/d; /^Date:/d" mail-1.txt
+	atf_check -s exit:1 test -f ml/subscribers.d/j
+	atf_check -o file:expected-modos.txt sed -e "/^Message-ID:/d; /^Date:/d; s/permit-.*@mlmmjtest/permit-@mlmmjtest/g; s/obstruct-.*@mlmmjtest/obstruct-@mlmmjtest/g" mail-2.txt
+	atf_check -s exit:1 test -f mail-3.txt
+	atf_check -o match:"^ml/moderation/subscribe.*" find ml/moderation/ -type f
+	atf_check -o inline:"john@doe.org\nSUB_NORMAL\n" cat ml/moderation/subscribe*
 }
 
 add_normal_then_nomail_body()
