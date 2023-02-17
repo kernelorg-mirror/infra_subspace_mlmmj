@@ -366,6 +366,7 @@ int send_mail_many_list(int sockfd, struct mail *mail, strlist *addrs,
 			    archivefilename, ctrlfd);
 			mail->from = bounceaddr;
 		}
+		mail->to = addr;
 		res = send_mail(sockfd, mail, listfd, ctrlfd, bounceaddr != NULL);
 		free(bounceaddr);
 		if(res && listaddr && archivefilename) {
