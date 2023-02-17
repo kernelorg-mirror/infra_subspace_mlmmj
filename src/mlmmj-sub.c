@@ -42,7 +42,6 @@
 #include "strgen.h"
 #include "subscriberfuncs.h"
 #include "log_error.h"
-#include "mygetline.h"
 #include "statctrl.h"
 #include "prepstdreply.h"
 #include "ctrlvalues.h"
@@ -204,36 +203,41 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 	send_help(ml, queuefilename, subaddr);
 }
 
-void getaddrandtype(const char *listdir, const char *modstr,
+void getaddrandtype(struct ml *ml, const char *modstr,
 		char **addrptr, enum subtype *subtypeptr)
 {
 	int fd;
-	char *readaddr, *readtype, *modfilename;
+	char *readaddr, *readtype, *modfilename, *line = NULL;
+	FILE *f;
+	size_t linecap = 0;
 
 	if (strncmp(modstr, "subscribe", 9) == 0)
 			modstr += 9;
 
-	modfilename = concatstr(3, listdir, "/moderation/subscribe", modstr);
+	xasprintf(&modfilename, "moderation/subscribe%s", modstr);
 
-	fd = open(modfilename, O_RDONLY);
+	fd = openat(ml->fd, modfilename, O_RDONLY);
 	if(fd < 0) {
-		log_error(LOG_ARGS, "Could not open %s", modfilename);
+		log_error(LOG_ARGS, "Could not open %s/%s", ml->dir, modfilename);
 		exit(EXIT_FAILURE);
 	}
+	f = fdopen(fd, "r");
 
-	readaddr = mygetline(fd);
-	readtype = mygetline(fd);
-
-	close(fd);
-
-	if(readaddr == NULL || readtype == NULL) {
-		log_error(LOG_ARGS, "Could not parse %s", modfilename);
+	if (getline(&line, &linecap, f) <= 0) {
+		log_error(LOG_ARGS, "Could not parse %s/%s", ml->dir, modfilename);
 		exit(EXIT_FAILURE);
 	}
-	
-	chomp(readaddr);
+	chomp(line);
+	readaddr = xstrdup(line);
+	if (getline(&line, &linecap, f) <= 0) {
+		log_error(LOG_ARGS, "Could not parse %s/%s", ml->dir, modfilename);
+		exit(EXIT_FAILURE);
+	}
+	chomp(line);
+	readtype = xstrdup(line);
+	fclose(f);
+
 	*addrptr = readaddr;
-	chomp(readtype);
 
 	for (size_t i = 0; i < NELEM(subtypes); i++) {
 		if (subtypes[i] == NULL)
@@ -244,12 +248,12 @@ void getaddrandtype(const char *listdir, const char *modstr,
 		}
 	}
 
-	log_error(LOG_ARGS, "Type %s not valid in %s", readtype,
-			modfilename);
+	log_error(LOG_ARGS, "Type %s not valid in %s/%s", readtype,
+	    ml->dir, modfilename);
 
 freedone:
 	free(readtype);
-	unlink(modfilename);
+	unlinkat(ml->fd, modfilename, 0);
 	free(modfilename);
 }
 
@@ -421,7 +425,7 @@ int main(int argc, char **argv)
 	}
 
 	if(modstr) {
-		getaddrandtype(ml.dir, modstr, &address, &typesub);
+		getaddrandtype(&ml, modstr, &address, &typesub);
 		reasonsub = SUB_PERMIT;
 	}
 
