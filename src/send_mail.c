@@ -260,6 +260,7 @@ send_mail(int sockfd, struct mail *mail, int listfd, int ctrlfd, bool bounce)
 		log_error(LOG_ARGS, "No mail to send, ignoring");
 		return 0;
 	}
+	rewind(mail->fp);
 
 	retval = write_mail_from(sockfd, mail->from, "");
 	if(retval) {
