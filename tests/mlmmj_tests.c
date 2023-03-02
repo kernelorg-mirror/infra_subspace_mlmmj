@@ -71,13 +71,12 @@ int
 fakesmtp(int pipe)
 {
 	int s;
-	struct sockaddr_in me;
+	struct sockaddr_in me = { 0 };
 	s = socket(AF_INET, SOCK_STREAM, 0);
 	if (s < 0)
 		exit(1);
 	if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &(int) { 1 }, sizeof(int)) != 0)
 		exit(2);
-	memset(&me, 0, sizeof(me));
 	me.sin_family = AF_INET;
 	me.sin_addr.s_addr = inet_addr("127.0.0.1");
 	/* specific interface */

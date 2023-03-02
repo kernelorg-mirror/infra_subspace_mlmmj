@@ -74,9 +74,8 @@ void do_probe(struct ml *ml, const char *addr)
 	char *probefile;
 	int fd;
 	time_t t;
-	struct mail mail;
+	struct mail mail = { 0 };
 
-	memset(&mail, 0, sizeof(mail));
 	myaddr = lowercase(addr);
 
 	gen_addr_cookie(from, ml, "bounces-probe-", myaddr)

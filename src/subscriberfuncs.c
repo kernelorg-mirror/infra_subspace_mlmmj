@@ -243,9 +243,8 @@ generate_subconfirm(struct ml *ml, const char *subaddr, enum subtype typesub,
 	char *randomstr = NULL, *confirmaddr;
 	const char *tmpstr, *listtext;
 	int fd = openat(ml->fd, sub ? "subconf" : "unsubconf", O_DIRECTORY|O_CLOEXEC);
-	struct mail mail;
+	struct mail mail = { 0 };
 
-	memset(&mail, 0, sizeof(mail));
 	if (fd == -1) {
 		log_error(LOG_ARGS, "Cound not open(%s/%s)", ml->dir,
 		    sub ? "subconf" : "unsubconf");

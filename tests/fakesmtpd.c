@@ -53,7 +53,7 @@ main(void)
 	int s, c;
 	FILE *f;
 	socklen_t clsize = 0;
-	struct sockaddr_in me, cl;
+	struct sockaddr_in me = { 0 }, cl;
 	char *line = NULL;
 	size_t linecap = 0;
 	int mailnum = 0;
@@ -63,7 +63,6 @@ main(void)
 		exit(1);
 	if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &(int) { 1 }, sizeof(int)) != 0)
 		exit(2);
-	memset(&me, 0, sizeof(me));
 	me.sin_family = AF_INET;
 	me.sin_addr.s_addr = inet_addr("127.0.0.1");
 	/* specific interface */

@@ -33,9 +33,8 @@ void
 send_help(struct ml *ml, const char *queuefilename, const char *emailaddr)
 {
 	char *fromaddr;
-	struct mail mail;
+	struct mail mail = { 0 };
 
-	memset(&mail, 0, sizeof(mail));
 	gen_addr(fromaddr, ml, "bounces-help");
 
 	mail.to = emailaddr;

@@ -38,11 +38,10 @@
 void init_sockfd(int *sockfd, const char *relayhost, unsigned short port)
 {
 	int on, sd = -1;
-	struct addrinfo *ai = NULL, *curai, hints;
+	struct addrinfo *ai = NULL, *curai, hints = { 0 };
 	char srv[NI_MAXSERV];
 	*sockfd = -1;
 
-	memset(&hints, 0, sizeof(hints));
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_family = PF_UNSPEC;
 	snprintf(srv, sizeof(srv), "%d", port);

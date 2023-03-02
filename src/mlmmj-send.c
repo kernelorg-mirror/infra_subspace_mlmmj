@@ -429,11 +429,10 @@ int main(int argc, char **argv)
 	strlist stl = tll_init();
 	unsigned short smtpport;
 	struct sigaction sigact;
-	struct mail mail;
+	struct mail mail = { 0 };
 	struct ml ml;
 	int subdirfd, mailfd;
 
-	memset(&mail, 0, sizeof(mail));
 	log_set_name(argv[0]);
 	ml_init(&ml);
 

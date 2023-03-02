@@ -1114,7 +1114,7 @@ ATF_TC_BODY(do_bouncemail, tc)
 
 ATF_TC_BODY(send_mail_basics, tc)
 {
-	struct mail mail = {};
+	struct mail mail = { 0 };
 	ATF_REQUIRE_EQ_MSG(send_mail(1, &mail, -1, -1, false), 0, "Failure with to == NULL");
 	mail.to = "plop";
 	ATF_REQUIRE_EQ_MSG(send_mail(1, &mail, -1, -1, false), 0, "Failure with to without @");
@@ -1125,7 +1125,7 @@ ATF_TC_BODY(send_mail_basics, tc)
 ATF_TC_BODY(send_mail, tc)
 {
 	int smtppipe[2];
-	struct mail mail = {};
+	struct mail mail = { 0 };
 	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
@@ -2029,7 +2029,7 @@ ATF_TC_BODY(newsmtp, tc)
 
 ATF_TC_BODY(save_queue, tc)
 {
-	struct mail mail = {};
+	struct mail mail = { 0 };
 	mail.to = "plop";
 	mail.from = "bla";
 
@@ -2083,7 +2083,7 @@ ATF_TC_BODY(send_single_mail, tc)
 	struct ml ml;
 	ml_init(&ml);
 	ml.dir = "list";
-	struct mail mail = {};
+	struct mail mail = { 0 };
 	ATF_REQUIRE_MSG(ml_open(&ml, false), "impossible to open the mailing list");
 	atf_utils_create_file("list/control/smtpport", "25678");
 	int smtppipe[2];
