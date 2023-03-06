@@ -27,6 +27,7 @@ tests_init \
 	remove_basics \
 	remove_normal \
 	remove_normal_confirm \
+	remove_normal_confirm_and_send_owner \
 	remove_normal_owner \
 	remove_nomail \
 	remove_digest
@@ -500,6 +501,147 @@ QUIT
 EOF
 	atf_check -o file:expected4.txt sed -e "/^Message-ID:/d; /^Date:/d" mail-4.txt
 	atf_check -s exit:1 test -f mail-5.txt
+}
+
+remove_normal_confirm_and_send_owner_body()
+{
+	init_ml ml
+	mlmmjsub=$(command -v mlmmj-unsub)
+	atf_check $srcdir/fakesmtpd
+	trap kill_fakesmtp EXIT TERM
+	echo test@mlmmjtest > ml/control/listaddress
+	echo "john@doe.org" > ml/subscribers.d/j
+	echo "bob@doe.org" >> ml/subscribers.d/j
+	echo "rebecca@doe.org" >> ml/subscribers.d/j
+	echo "25678" > ml/control/smtpport
+	echo "heloname" > ml/control/smtphelo
+	touch ml/control/notifysub
+	rmdir ml/text
+	ln -s ${srcdir}/../listtexts/en ml/text
+	atf_check -s exit:0 $mlmmjsub -L ml -c -a john@doe.org
+	atf_check -o inline:"bob@doe.org\nrebecca@doe.org\n" cat ml/subscribers.d/j
+	cat > expected.txt << EOF
+EHLO heloname
+MAIL FROM:<test+bounces-help@mlmmjtest>
+RCPT TO:<john@doe.org>
+DATA
+Subject: =?utf-8?q?Goodbye_from_test=40mlmmjtest?=
+From: test+help@mlmmjtest
+To: john@doe.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+An administrator has removed you from the list.
+
+
+.
+QUIT
+EOF
+	atf_check -s exit:0 test -f mail-2.txt
+	atf_check -o file:expected.txt sed -e "/^Message-ID:/d; /^Date:/d" mail-1.txt
+	cat > notify.txt << EOF
+EHLO heloname
+MAIL FROM:<test+bounces-help@mlmmjtest>
+RCPT TO:<test+owner@mlmmjtest>
+DATA
+Subject: =?utf-8?q?Unsubscribed_from_test=40mlmmjtest:_john=40doe.org?=
+From: test+owner@mlmmjtest
+To: test+owner@mlmmjtest
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+The address <john@doe.org> has been unsubscribed from the list because an
+administrator commanded it.
+
+
+.
+QUIT
+EOF
+	atf_check -o file:notify.txt sed -e "/^Message-ID:/d; /^Date:/d" mail-2.txt
+	touch ml/control/notifysub
+	atf_check -s exit:0 $mlmmjsub -L ml -c -a john@doe.org
+	atf_check -o inline:"bob@doe.org\nrebecca@doe.org\n" cat ml/subscribers.d/j
+	cat > expected2.txt << EOF
+EHLO heloname
+MAIL FROM:<test+bounces-help@mlmmjtest>
+RCPT TO:<john@doe.org>
+DATA
+Subject: =?utf-8?q?Unable_to_unsubscribe_from_test=40mlmmjtest?=
+From: test+help@mlmmjtest
+To: john@doe.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+You were unable to be unsubscribed from the list because you are not
+subscribed.
+
+If you are receiving messages, perhaps a different email address is
+subscribed. To find out which address you are subscribed with, refer to the
+message welcoming you to the list, or look at the envelope "Return-Path"
+header of a message you receive from the list.
+
+
+.
+QUIT
+EOF
+	atf_check -o file:expected2.txt sed -e "/^Message-ID:/d; /^Date:/d" mail-3.txt
+
+	echo "john@doe.org" >> ml/subscribers.d/j
+	atf_check -s exit:0 $mlmmjsub -L ml -c -a john@doe.org
+	atf_check -o inline:"bob@doe.org\nrebecca@doe.org\n" cat ml/subscribers.d/j
+	cat > expected3.txt << EOF
+EHLO heloname
+MAIL FROM:<test+bounces-help@mlmmjtest>
+RCPT TO:<john@doe.org>
+DATA
+Subject: =?utf-8?q?Goodbye_from_test=40mlmmjtest?=
+From: test+help@mlmmjtest
+To: john@doe.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+An administrator has removed you from the list.
+
+
+.
+QUIT
+EOF
+	atf_check -o file:expected3.txt sed -e "/^Message-ID:/d; /^Date:/d" mail-4.txt
+	cat > expected4.txt << EOF
+EHLO heloname
+MAIL FROM:<test+bounces-help@mlmmjtest>
+RCPT TO:<test+owner@mlmmjtest>
+DATA
+Subject: =?utf-8?q?Unsubscribed_from_test=40mlmmjtest:_john=40doe.org?=
+From: test+owner@mlmmjtest
+To: test+owner@mlmmjtest
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+The address <john@doe.org> has been unsubscribed from the list because an
+administrator commanded it.
+
+
+.
+QUIT
+EOF
+	atf_check -o file:expected4.txt sed -e "/^Message-ID:/d; /^Date:/d" mail-5.txt
+	atf_check -s exit:1 test -f mail-6.txt
 }
 
 remove_normal_owner_body()
