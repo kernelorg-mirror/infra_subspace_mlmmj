@@ -20,6 +20,7 @@
  * IN THE SOFTWARE.
  */
 
+#include "tllist.h"
 #pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
 
 #include <sys/socket.h>
@@ -145,6 +146,7 @@ ATF_TC_WITHOUT_HEAD(generate_subconfirm);
 ATF_TC_WITHOUT_HEAD(confirm_sub);
 ATF_TC_WITHOUT_HEAD(listcontrol);
 ATF_TC_WITHOUT_HEAD(send_help);
+ATF_TC_WITHOUT_HEAD(requeuemail);
 
 ATF_TC_BODY(random_int, tc)
 {
@@ -2530,6 +2532,48 @@ ATF_TC_BODY(send_help, tc)
 	}
 }
 
+ATF_TC_BODY(requeuemail, tc)
+{
+	strlist l = tll_init();
+	init_ml(true);
+	int dfd = open("list", O_DIRECTORY);
+
+	rmdir("list/requeue");
+	ATF_REQUIRE(!requeuemail(dfd, 1, NULL, NULL));
+	ATF_REQUIRE(!requeuemail(dfd, 1, NULL, NULL));
+	ATF_REQUIRE(!requeuemail(dfd, 1, &l, NULL));
+	tll_push_back(l, "test1");
+	rmdir("list/requeue");
+	ATF_REQUIRE(!requeuemail(dfd, 1, &l, NULL));
+	mkdir("list/requeue", 0755);
+	ATF_REQUIRE(requeuemail(dfd, 1, &l, NULL));
+	if (!atf_utils_file_exists("list/requeue/1/subscribers"))
+		atf_tc_fail("queue file does not exists");
+	if (!atf_utils_compare_file("list/requeue/1/subscribers", "test1\n")) {
+		atf_utils_cat_file("list/requeue/1/subscribers", "");
+		atf_tc_fail("Invalid queue content");
+	}
+	unlink("list/requeue/1/subscribers");
+	tll_push_back(l, "testhey");
+	tll_push_back(l, "test2");
+	ATF_REQUIRE(requeuemail(dfd, 1, &l, NULL));
+	if (!atf_utils_file_exists("list/requeue/1/subscribers"))
+		atf_tc_fail("queue file does not exists");
+	if (!atf_utils_compare_file("list/requeue/1/subscribers", "test1\ntesthey\ntest2\n")) {
+		atf_utils_cat_file("list/requeue/1/subscribers", "");
+		atf_tc_fail("Invalid queue content");
+	}
+	unlink("list/requeue/1/subscribers");
+	ATF_REQUIRE(requeuemail(dfd, 1, &l, "fail"));
+	if (!atf_utils_file_exists("list/requeue/1/subscribers"))
+		atf_tc_fail("queue file does not exists");
+	if (!atf_utils_compare_file("list/requeue/1/subscribers", "test1\ntesthey\ntest2\nfail\n")) {
+		atf_utils_cat_file("list/requeue/1/subscribers", ">");
+		atf_tc_fail("Invalid queue content (fail)");
+	}
+	close(dfd);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -2611,6 +2655,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, confirm_sub);
 	ATF_TP_ADD_TC(tp, listcontrol);
 	ATF_TP_ADD_TC(tp, send_help);
+	ATF_TP_ADD_TC(tp, requeuemail);
 
 	return (atf_no_error());
 }

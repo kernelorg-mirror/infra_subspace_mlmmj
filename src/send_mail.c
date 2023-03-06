@@ -35,6 +35,7 @@
 #include "init_sockfd.h"
 #include "mlmmj.h"
 #include "strgen.h"
+#include "tllist.h"
 #include "xmalloc.h"
 #include "ctrlvalue.h"
 
@@ -407,6 +408,49 @@ send_single_mail(struct mail *mail, struct ml *ml, bool bounce)
 		return (false);
 	}
 	endsmtp(&sockfd);
+	return (true);
+}
+
+bool
+requeuemail(int listfd, int index, strlist *addrs, const char *addr)
+{
+	int addrfd, dfd;
+	char *dirname;
+
+	if (addrs == NULL || tll_length(*addrs) == 0)
+		return (false);
+	xasprintf(&dirname, "requeue/%d", index);
+	if(mkdirat(listfd, dirname, 0750) < 0 && errno != EEXIST) {
+		log_error(LOG_ARGS, "Could not mkdir(%s) for "
+				"requeueing. Mail cannot "
+				"be requeued.", dirname);
+		free(dirname);
+		return (false);
+	}
+	dfd = openat(listfd, dirname, O_DIRECTORY);
+	free(dirname);
+	addrfd = openat(dfd, "subscribers", O_WRONLY|O_CREAT|O_APPEND,
+			S_IRUSR|S_IWUSR);
+	if(addrfd < 0) {
+		log_error(LOG_ARGS, "Could not open %s/subscribers",
+		    dirname);
+		free(dirname);
+		close(dfd);
+		return (false);
+	}
+	free(dirname);
+	close(dfd);
+	/* Dump the remaining addresses. We dump the remaining before
+	 * we write the failing address to ensure the potential good
+	 * ones will be tried first when mlmmj-maintd sends out mails
+	 * that have been requeued. addrcount was so far we were */
+	tll_foreach(*addrs, it) {
+		dprintf(addrfd, "%s\n", it->item);
+	}
+	if (addr != NULL)
+		dprintf(addrfd, "%s\n", addr);
+	close(addrfd);
+
 	return (true);
 }
 

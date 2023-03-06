@@ -288,54 +288,6 @@ int send_mail_many_fd(int sockfd, struct mail *mail, int subfd,
 	return 0;
 }
 
-int
-requeuemail(int listfd, int index, strlist *addrs)
-{
-	int addrfd;
-	char *dirname, *addrfilename;
-	
-	xasprintf(&dirname, "requeue/%d", index);
-	if(mkdirat(listfd, dirname, 0750) < 0 && errno != EEXIST) {
-		log_error(LOG_ARGS, "Could not mkdir(%s) for "
-				"requeueing. Mail cannot "
-				"be requeued.", dirname);
-		free(dirname);
-		return -1;
-	}
-	xasprintf(&addrfilename, "%s/subscribers");
-	free(dirname);
-	addrfd = openat(listfd, addrfilename, O_WRONLY|O_CREAT|O_APPEND,
-			S_IRUSR|S_IWUSR);
-	if(addrfd < 0) {
-		log_error(LOG_ARGS, "Could not open %s",
-				addrfilename);
-		free(addrfilename);
-		return -1;
-	}
-	free(addrfilename);
-	/* Dump the remaining addresses. We dump the remaining before
-	 * we write the failing address to ensure the potential good
-	 * ones will be tried first when mlmmj-maintd sends out mails
-	 * that have been requeued. addrcount was so far we were */
-	char *addr = tll_pop_front(*addrs);
-	tll_foreach(*addrs, it) {
-		if(dprintf(addrfd, "%s\n", it->item) < 0) {
-			log_error(LOG_ARGS, "Could not add [%s] "
-					    "to requeue file", it->item);
-			return -1;
-		}
-	}
-	if(dprintf(addrfd, "%s\n", addr) < 0) {
-		log_error(LOG_ARGS, "Could not add [%s] to requeue "
-				"file", addr);
-		return -1;
-	}
-	free(addr);
-	close(addrfd);
-
-	return 0;
-}
-
 int send_mail_many_list(int sockfd, struct mail *mail, strlist *addrs,
 		   const char *listaddr, const char *listdelim,
 		   const char *archivefilename, int listfd, int ctrlfd)
@@ -343,14 +295,14 @@ int send_mail_many_list(int sockfd, struct mail *mail, strlist *addrs,
 	int res = 0, status, index;
 	char *bounceaddr, *addr;
 
-	tll_foreach(*addrs, it) {
+	while (tll_length(*addrs) > 0) {
+		addr = tll_pop_front(*addrs);
 		bounceaddr = NULL;
-		addr = it->item;
 		if(strchr(addr, '@') == NULL) {
 			errno = 0;
 			log_error(LOG_ARGS, "No @ in address, ignoring %s",
 					addr);
-			tll_remove_and_free(*addrs, it, free);
+			free(addr);
 			continue;
 		}
 		if(gotsigterm && listaddr && archivefilename) {
@@ -358,7 +310,8 @@ int send_mail_many_list(int sockfd, struct mail *mail, strlist *addrs,
 			log_error(LOG_ARGS, "TERM signal received, "
 						"shutting down.");
 			index = get_index_from_filename(archivefilename);
-			status = requeuemail(listfd, index, addrs);
+			status = requeuemail(listfd, index, addrs, addr);
+			free(addr);
 			return status;
 		}
 		if (mail->from == NULL) {
@@ -372,10 +325,11 @@ int send_mail_many_list(int sockfd, struct mail *mail, strlist *addrs,
 		if(res && listaddr && archivefilename) {
 			/* we failed, so save the addresses and bail */
 			index = get_index_from_filename(archivefilename);
-			status = requeuemail(listfd, index, addrs);
+			status = requeuemail(listfd, index, addrs, addr);
+			free(addr);
 			return status;
 		}
-		tll_remove_and_free(*addrs, it, free);
+		free(addr);
 	}
 	return 0;
 }
@@ -737,7 +691,7 @@ int main(int argc, char **argv)
 						if(sendres)
 							requeuemail(ml.fd,
 								mindex,
-								&stl);
+								&stl, NULL);
 					} else {
 						mail.from = NULL;
 						mail.replyto = NULL;
@@ -761,7 +715,7 @@ int main(int argc, char **argv)
 				mail.replyto = NULL;
 				sendres = send_mail_verp(sockfd, &stl, &mail, verp);
 				if(sendres)
-					requeuemail(ml.fd, mindex, &stl);
+					requeuemail(ml.fd, mindex, &stl, NULL);
 			} else {
 				mail.from = NULL;
 				mail.replyto = NULL;
