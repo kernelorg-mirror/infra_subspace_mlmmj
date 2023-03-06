@@ -96,13 +96,15 @@ char *gethdrline(int fd, char **unfolded)
 
 		if (unfolded != NULL) {
 			oldunfolded = *unfolded;
-			*unfolded = concatstr(2, oldunfolded, line);
+			xasprintf(unfolded, "%s%s",
+			    oldunfolded != NULL ? oldunfolded : "", line);
 			free(oldunfolded);
 		}
 
 		chomp(line);
 		oldretstr = retstr;
-		retstr = concatstr(2, oldretstr, line);
+		xasprintf(&retstr, "%s%s",
+		    oldretstr != NULL ? oldretstr : "", line);
 		free(oldretstr);
 
 		free(line);

@@ -87,7 +87,7 @@ static void rewind_thread_list(void * state)
 {
 	thread_list_state *s = (thread_list_state *)state;
 	int i, j, archivefd, thread_idx;
-	char *line, *tmp, *subj, *from;
+	char *line, *tmp, *subj, *from, *tmpfrom;
 	char *archivename;
 	int num_threads = 0;
 	struct thread *threads = NULL;
@@ -101,10 +101,7 @@ static void rewind_thread_list(void * state)
 	}
 
 	for (i=s->firstindex; i<=s->lastindex; i++) {
-
-		snprintf(buf, sizeof(buf), "%d", i);
-
-		archivename = concatstr(3, s->listdir, "/archive/", buf);
+		xasprintf(&archivename, "%s/archive/%d", s->listdir, i);
 		archivefd = open(archivename, O_RDONLY);
 		free(archivename);
 
@@ -159,7 +156,7 @@ static void rewind_thread_list(void * state)
 			num_threads++;
 			threads = xrealloc(threads,
 					num_threads*sizeof(struct thread));
-			threads[num_threads-1].subject = concatstr(2,tmp,"\n");
+			xasprintf(&(threads[num_threads-1].subject), "%s\n", tmp);
 			threads[num_threads-1].num_mails = 0;
 			threads[num_threads-1].mails = NULL;
 			thread_idx = num_threads-1;
@@ -179,8 +176,8 @@ static void rewind_thread_list(void * state)
 		threads[thread_idx].mails = xrealloc(threads[thread_idx].mails,
 				threads[thread_idx].num_mails*sizeof(struct mail));
 		threads[thread_idx].mails[threads[thread_idx].num_mails-1].idx = i;
-		threads[thread_idx].mails[threads[thread_idx].num_mails-1].from =
-				concatstr(5, "      ", buf, " - ", tmp, "\n");
+		xasprintf(&tmpfrom, "      %s - %s\n", buf, tmp);
+		threads[thread_idx].mails[threads[thread_idx].num_mails-1].from = tmpfrom;
 
 		free(subj);
 		free(from);
@@ -323,7 +320,7 @@ int send_digest(struct ml *ml, int firstindex, int lastindex,
 	len++;
 	if (strncasecmp(line, "Subject:", len) == 0) {
 		tmp = unistr_utf8_to_header(tmp);
-		subject = concatstr(2, "Subject: ", tmp);
+		xasprintf(&subject, "Subject: %s", tmp);
 		free(tmp);
 		free(line);
 
