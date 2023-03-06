@@ -362,7 +362,7 @@ static void substitute_one(char **line_p, char **pos_p, int *width_p,
 	}
 
 	if (value != NULL) {
-		line = concatstr(3, line, value, endpos + 1);
+		xasprintf(&line, "%s%s%s", line, value, endpos + 1);
 		*pos_p = line + (*pos_p - *line_p);
 		if (strcmp(value, "$") == 0) {
 			(*pos_p)++;
@@ -440,8 +440,11 @@ text *open_text(int listfd, const char *purpose, const char *action,
 	char *filename;
 	text *txt;
 
-	filename = concatstr(7,purpose,"-",action,"-",reason,"-",type);
-	filenamelen = strlen(filename);
+	filenamelen = xasprintf(&filename, "%s-%s-%s-%s",
+	    purpose != NULL ? purpose : "",
+	    action != NULL ? action : "",
+	    reason != NULL ? reason : "",
+	    type != NULL ? type: "");
 	do {
 		if ((txt = open_text_file(listfd, filename)) != NULL) break;
 		len = type ? strlen(type) : 0;
@@ -610,7 +613,7 @@ static void begin_new_source_file(text *txt, char **line_p, char **pos_p,
 		free(tmp);
 		tmp = esc;
 	}
-	line = concatstr(2, line, tmp);
+	xasprintf(&line, "%s%s", line, tmp);
 	*pos_p = line + (*pos_p - *line_p);
 	free(*line_p);
 	*line_p = line;
@@ -666,7 +669,7 @@ static void begin_new_formatted_source(text *txt, char **line_p, char **pos_p,
 		return;
 	}
 	if (!transparent) str = unistr_escaped_to_utf8(str);
-	line = concatstr(2, line, str);
+	xasprintf(&line, "%s%s", line, str);
 	/* The suffix will be added back in get_processed_text_line() */
 	*pos_p = line + strlen(*line_p);
 	free(*line_p);
@@ -764,7 +767,7 @@ static int handle_conditional(text *txt, char **line_p, char **pos_p,
 	if (*skipwhite_p) {
 		while (*pos == ' ' || *pos == '\t') pos++;
 	}
-	line = concatstr(2, line, pos);
+	xasprintf(&line, "%s%s", line, pos);
 	*pos_p = line + (*pos_p - *line_p);
 	free(*line_p);
 	*line_p = line;
@@ -843,7 +846,7 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 				while (*endpos == ' ' || *endpos == '\t')
 						endpos++;
 			}
-			line = concatstr(2, line, endpos);
+			xasprintf(&line, "%s%s", line, endpos);
 			*pos_p = line + (*pos_p - *line_p);
 			free(*line_p);
 			*line_p = line;
@@ -861,7 +864,7 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 				while (*endpos == ' ' || *endpos == '\t')
 						endpos++;
 			}
-			line = concatstr(2, line, endpos);
+			xasprintf(&line, "%s%s", line, endpos);
 			*pos_p = line + (*pos_p - *line_p);
 			free(*line_p);
 			*line_p = line;
@@ -888,7 +891,7 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 	*skipwhite_p = 0;
 
 	if(strcmp(token, "") == 0) {
-		line = concatstr(3, line, "%", endpos + 1);
+		xasprintf(&line, "%s%%%s", line, endpos + 1);
 		*pos_p = line + (*pos_p - *line_p) + 1;
 		(*width_p)++;
 		free(*line_p);
@@ -897,7 +900,7 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 	} else if(strcmp(token, "^") == 0) {
 		if (txt->src->prefixlen != 0) {
 			line[txt->src->prefixlen] = '\0';
-			line = concatstr(2, line, endpos + 1);
+			xasprintf(&line, "%s%s", line, endpos + 1);
 			*width_p = txt->src->prefixwidth;
 		} else {
 			line = xstrdup(endpos + 1);
@@ -910,7 +913,7 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 	} else if(strcmp(token, "comment") == 0 || strcmp(token, "$") == 0 ) {
 		pos = endpos + 1;
 		while (*pos != '\0' && *pos != '\r' && *pos != '\n') pos++;
-		line = concatstr(2, line, pos);
+		xasprintf(&line, "%s%s", line, pos);
 		*pos_p = line + (*pos_p - *line_p);
 		free(*line_p);
 		*line_p = line;
@@ -927,7 +930,7 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 		if (limit != 0) {
 			txt->wrapindent = *width_p;
 			txt->wrapwidth = limit;
-			line = concatstr(2, line, endpos + 1);
+			xasprintf(&line, "%s%s", line, endpos + 1);
 			*pos_p = line + (*pos_p - *line_p);
 			free(*line_p);
 			*line_p = line;
@@ -935,7 +938,7 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 		}
 	} else if(strcmp(token, "nowrap") == 0) {
 		txt->wrapwidth = 0;
-		line = concatstr(2, line, endpos + 1);
+		xasprintf(&line, "%s%s", line, endpos + 1);
 		*pos_p = line + (*pos_p - *line_p);
 		free(*line_p);
 		*line_p = line;
@@ -949,21 +952,21 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 		if (*token == 'w') txt->wrapmode = WRAP_WORD;
 		if (*token == 'c') txt->wrapmode = WRAP_CHAR;
 		if (*token == 'u') txt->wrapmode = WRAP_USER;
-		line = concatstr(2, line, endpos + 1);
+		xasprintf(&line, "%s%s", line, endpos + 1);
 		*pos_p = line + (*pos_p - *line_p);
 		free(*line_p);
 		*line_p = line;
 		return 0;
 	} else if(strcmp(token, "thin") == 0) {
 		txt->widthreckoning = WIDTH_THIN;
-		line = concatstr(2, line, endpos + 1);
+		xasprintf(&line, "%s%s", line, endpos + 1);
 		*pos_p = line + (*pos_p - *line_p);
 		free(*line_p);
 		*line_p = line;
 		return 0;
 	} else if(strcmp(token, "wide") == 0) {
 		txt->widthreckoning = WIDTH_WIDE;
-		line = concatstr(2, line, endpos + 1);
+		xasprintf(&line, "%s%s", line, endpos + 1);
 		*pos_p = line + (*pos_p - *line_p);
 		free(*line_p);
 		*line_p = line;
@@ -972,7 +975,7 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 		token += 5;
 		if (txt->zerowidth != NULL) free(txt->zerowidth);
 		txt->zerowidth = xstrdup(token);
-		line = concatstr(2, line, endpos + 1);
+		xasprintf(&line, "%s%s", line, endpos + 1);
 		*pos_p = line + (*pos_p - *line_p);
 		free(*line_p);
 		*line_p = line;
@@ -1195,11 +1198,11 @@ char *get_processed_text_line(text *txt, bool headers, struct ml *ml)
 				} else {
 					if (txt->wrapmode == WRAP_WORD &&
 							len > wrapindentlen) {
-					    tmp = concatstr(3, prev, " ", pos);
-					    len++;
-					    width++;
+						xasprintf(&tmp, "%s %s", prev, pos);
+						len++;
+						width++;
 					} else {
-					    tmp = concatstr(2, prev, pos);
+						xasprintf(&tmp, "%s%s", prev, pos);
 					}
 				}
 				free(line);
@@ -1296,7 +1299,7 @@ char *get_processed_text_line(text *txt, bool headers, struct ml *ml)
 					else inhibitbreak = 0;
 				}
 				*pos = '\0';
-				tmp = concatstr(2, line, tmp);
+				xasprintf(&tmp, "%s%s", line, tmp);
 				pos = tmp + len;
 				free(line);
 				line = tmp;
@@ -1334,7 +1337,7 @@ char *get_processed_text_line(text *txt, bool headers, struct ml *ml)
 					    /* Time to cut */
 					    if (pos - line != incision) {
 						line[incision] = '\0';
-						tmp = concatstr(2, line, pos);
+						xasprintf(&tmp, "%s%s", line, pos);
 						pos = tmp + incision;
 						free(line);
 						line = tmp;
@@ -1437,8 +1440,8 @@ char *get_processed_text_line(text *txt, bool headers, struct ml *ml)
 				    /* If something's coming up, it's because
 				     * it was a new line. */
 				    if (*(line + linebreak) != '\0') {
-					tmp = concatstr(3, line + linebreak,
-						"\n", txt->src->upcoming);
+					xasprintf(&tmp, "%s\n%s",
+					    line + linebreak, txt->src->upcoming);
 					free(txt->src->upcoming);
 				    } else {
 				    	tmp = txt->src->upcoming;
@@ -1481,9 +1484,8 @@ char *get_processed_text_line(text *txt, bool headers, struct ml *ml)
 					txt->src->processedwidth = width;
 				} else {
 					tmp = txt->src->upcoming;
-					txt->src->upcoming = concatstr(3,
-							line, "\n",
-							txt->src->upcoming);
+					xasprintf(&txt->src->upcoming, "%s\n%s",
+					    line, txt->src->upcoming);
 					txt->src->processedlen = len;
 					txt->src->processedwidth = width;
 					free(line);
