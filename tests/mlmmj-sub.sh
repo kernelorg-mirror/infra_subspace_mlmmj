@@ -13,6 +13,7 @@ tests_init \
 	add_normal \
 	add_normal_welcome \
 	add_normal_welcome_confirm \
+	add_normal_welcome_confirm_and_send_owner \
 	add_normal_welcome_moderate \
 	add_normal_owner \
 	add_nomail \
@@ -141,6 +142,76 @@ EOF
 	atf_check -s exit:1 test -f ml/subscribers.d/j
 	atf_check -o match:"^ml/subconf/.*" find ml/subconf/ -type f
 	atf_check -s exit:1 test -f mail-2.txt
+}
+
+add_normal_welcome_confirm_and_send_owner_body()
+{
+	init_ml ml
+	mlmmjsub=$(command -v mlmmj-sub)
+	atf_check $srcdir/fakesmtpd
+	trap kill_fakesmtp EXIT TERM
+	echo test@mlmmjtest > ml/control/listaddress
+	echo "25678" > ml/control/smtpport
+	echo "heloname" > ml/control/smtphelo
+	touch ml/control/notifysub
+	rmdir ml/text
+	ln -s ${srcdir}/../listtexts/en ml/text
+	atf_check -s exit:0 $mlmmjsub -L ml -c -a john@doe.org
+	cat > expected.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-help@mlmmjtest>
+RCPT TO:<john@doe.org>
+DATA
+Subject: =?utf-8?q?Welcome_to_test=40mlmmjtest?=
+From: test+help@mlmmjtest
+To: john@doe.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+An administrator has subscribed you to the normal version of the list.
+
+The email address you are subscribed with is <john@doe.org>.
+
+If you ever wish to unsubscribe, send a message to
+<test+unsubscribe@mlmmjtest> using this email address. The subject and the
+body of the message can be anything. You will then receive confirmation or
+further instructions.
+
+For other information and help about this list, send a message to
+<test+help@mlmmjtest>.
+
+
+.
+QUIT
+EOF
+
+	atf_check -o file:expected.txt sed -e "/^Message-ID:/d; /^Date:/d; s/confsub-.*@mlmmjtest/confsub-@mlmmjtest/g" mail-1.txt
+	cat > expected2.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-help@mlmmjtest>
+RCPT TO:<test+owner@mlmmjtest>
+DATA
+Subject: =?utf-8?q?Subscribed_to_test=40mlmmjtest:_john=40doe.org?=
+From: test+owner@mlmmjtest
+To: test+owner@mlmmjtest
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+The address <john@doe.org> has been subscribed to the normal version of the
+list because an administrator commanded it.
+
+
+.
+QUIT
+EOF
+	atf_check -o file:expected2.txt sed -e "/^Message-ID:/d; /^Date:/d; s/confsub-.*@mlmmjtest/confsub-@mlmmjtest/g" mail-2.txt
+	atf_check -s exit:1 test -f mail-3.txt
 }
 
 add_normal_welcome_moderate_body()
