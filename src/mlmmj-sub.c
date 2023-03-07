@@ -315,7 +315,6 @@ static void subscribe_type(int listfd, char *address, enum subtype typesub) {
 
 int main(int argc, char **argv)
 {
-	char *listdir = NULL;
 	char *mlmmjsend, *bindir;
 	char *address = NULL, *modstr = NULL;
 	int opt, subconfirm = 0, confirmsub = 0, notifysub;
@@ -439,7 +438,7 @@ int main(int argc, char **argv)
 		uid = getuid();
 		if(!uid && fstat(ml.fd, &st) == 0 && uid != st.st_uid) {
 			printf("Changing to uid %d, owner of %s.\n",
-					(int)st.st_uid, listdir);
+					(int)st.st_uid, ml.dir);
 			if(setuid(st.st_uid) < 0) {
 				perror("setuid");
 				fprintf(stderr, "Continuing as uid %d\n",
