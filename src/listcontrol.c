@@ -310,14 +310,14 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 	case CTRL_CONFSUB_DIGEST:
 		subtype = "-d";
 		subtypename = "digest";
-		/* FALLTHROUH */
+		__attribute__ ((fallthrough));
 	/* listname+subconf-nomail-COOKIE@domain.tld */
 	case CTRL_CONFSUB_NOMAIL:
 		if (subtype == NULL) {
 			subtype = "-n";
 			subtypename = "nomail";
 		}
-		/* FALLTHROUH */
+		__attribute__ ((fallthrough));
 	/* listname+subconf-both-COOKIE@domain.tld */
 	case CTRL_CONFSUB_BOTH:
 		if (subtype == NULL) {
