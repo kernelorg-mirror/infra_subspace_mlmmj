@@ -23,6 +23,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/limits.h>
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
@@ -386,6 +387,7 @@ int main(int argc, char **argv)
 	struct mail mail = { 0 };
 	struct ml ml;
 	int subdirfd, mailfd;
+	const char *errp;
 
 	log_set_name(argv[0]);
 	ml_init(&ml);
@@ -506,7 +508,8 @@ int main(int argc, char **argv)
 		mail.addtohdr = statctrl(ml.ctrlfd, "addtohdr");
 		/* FALLTHROUGH */
 	case '4': /* sending mails to subfile */
-		if((subfd = open(subfilename, O_RDONLY)) < 0) {
+		subfd = strtoim(subfilename, 0, INT_MAX, &errp);
+		if (errp != NULL && (subfd = open(subfilename, O_RDONLY)) < 0) {
 			log_error(LOG_ARGS, "Could not open '%s':",
 					    subfilename);
 			exit(EXIT_FAILURE);
