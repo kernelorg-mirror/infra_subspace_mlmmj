@@ -68,12 +68,13 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 	text *txt;
 	memory_lines_state *mls;
 	char *a = NULL, *queuefilename, *from;
-	char *modfilename, *mods = NULL, *to, *replyto, *moderators = NULL;
+	char *modfilename, *mods, *to, *replyto, *moderators = NULL;
 	char *cookie, *obstruct;
 	strlist *submods;
 	const char *type;
 	pid_t childpid, pid;
 	xstring *str = NULL;
+	int modfd = -1;
 
 	type = subtypes[typesub];
 
@@ -115,10 +116,10 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 		tll_free_and_free(*submods, free);
 		free(submods);
 		submods = ctrlvalues(ml->ctrlfd, "owner");
-		xasprintf(&mods, "%s/control/owner", ml->dir);
+		modfd = openat(ml->ctrlfd, "owner", O_RDONLY);
 	}
-	if (mods == NULL)
-		xasprintf(&mods, "%s/control/submod", ml->dir);
+	if (modfd == -1)
+		modfd = openat(ml->ctrlfd, "submod", O_RDONLY);
 
 	gen_addr(from, ml, "owner");
 	xasprintf(&to, "%s-moderators@%s", ml->name, ml->fqdn);
@@ -168,6 +169,7 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 			while(pid == -1 && errno == EINTR);
 		}
 		finish_memory_lines(mls);
+		xasprintf(&mods, "%d", modfd);
 		execl(mlmmjsend, mlmmjsend,
 				"-a",
 				"-l", "4",
