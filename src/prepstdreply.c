@@ -39,7 +39,6 @@
 #include "strgen.h"
 #include "chomp.h"
 #include "log_error.h"
-#include "mygetline.h"
 #include "wrappers.h"
 #include "mlmmj.h"
 #include "unistr.h"
@@ -69,7 +68,7 @@ struct source {
 	int prefixlen;
 	int prefixwidth;
 	char *suffix;
-	int fd;
+	FILE *fp;
 	struct formatted *fmt;
 	int transparent;
 	int limit;
@@ -428,7 +427,7 @@ text *open_text_fd(int fd)
 	txt->src->limit = -1;
 	txt->wrapmode = WRAP_WORD;
 	txt->widthreckoning = WIDTH_THIN;
-	txt->src->fd = fd;
+	txt->src->fp = fdopen(fd, "r");
 
 	return (txt);
 }
@@ -483,7 +482,7 @@ text *open_text(int listfd, const char *purpose, const char *action,
 void close_source(text *txt)
 {
 	source *tmp;
-	if (txt->src->fd != -1) close(txt->src->fd);
+	if (txt->src->fp != NULL) fclose(txt->src->fp);
 	if (txt->src->prefix != NULL) free(txt->src->prefix);
 	if (txt->src->suffix != NULL) free(txt->src->suffix);
 	tmp = txt->src;
@@ -566,9 +565,10 @@ static void begin_new_source_file(text *txt, char **line_p, char **pos_p,
 		int *width_p, const char *filename, int transparent) {
 	char *line = *line_p;
 	char *pos = *pos_p;
-	char *tmp, *esc;
+	char *tmp = NULL, *esc;
+	size_t tmpcap = 0;
 	source *src;
-	int fd;
+	FILE *fp;
 	int i;
 
 	/* Save any later lines for use after finishing the source */
@@ -581,8 +581,8 @@ static void begin_new_source_file(text *txt, char **line_p, char **pos_p,
 		txt->src->processedwidth = 0;
 	}
 
-	fd = open(filename, O_RDONLY);
-	if (fd < 0) {
+	fp = fopen(filename, "r");
+	if (fp == NULL) {
 		/* Act as if the source were an empty line */
 		**pos_p = '\0';
 		return;
@@ -597,13 +597,12 @@ static void begin_new_source_file(text *txt, char **line_p, char **pos_p,
 	for (tmp = src->prefix, i = 0; i < *width_p; tmp++, i++) *tmp = ' ';
 	*tmp = '\0';
 	src->suffix = NULL;
-	src->fd = fd;
+	src->fp = fp;
 	src->fmt = NULL;
 	src->transparent = transparent;
 	src->limit = -1;
 	txt->src = src;
-	tmp = mygetline(fd);
-	if (tmp == NULL) {
+	if (getline(&tmp, &tmpcap, fp) <= 0) {
 		close_source(txt);
 		**pos_p = '\0';
 		return;
@@ -655,7 +654,7 @@ static void begin_new_formatted_source(text *txt, char **line_p, char **pos_p,
 	} else {
 		src->suffix = xstrdup(suffix);
 	}
-	src->fd = -1;
+	src->fp = NULL;
 	src->fmt = fmt;
 	src->transparent = transparent;
 	src->limit = -1;
@@ -1126,15 +1125,18 @@ char *get_processed_text_line(text *txt, bool headers, struct ml *ml)
 				break;
 			}
 			if (txt->src->limit != 0) {
-				if (txt->src->fd != -1) {
-					tmp = mygetline(txt->src->fd);
+				tmp = NULL;
+				if (txt->src->fp != NULL) {
+					size_t linecap = 0;
+					if (getline(&tmp, &linecap, txt->src->fp) <= 0) {
+						free(tmp);
+						tmp = NULL;
+					}
 				} else if (txt->src->fmt != NULL) {
 					item = (*txt->src->fmt->get)(
 						txt->src->fmt->state);
-					if (item==NULL) tmp = NULL;
-					else tmp = xstrdup(item);
-				} else {
-					tmp = NULL;
+					if (item != NULL)
+						tmp = xstrdup(item);
 				}
 				if (txt->src->limit > 0) txt->src->limit--;
 				if (tmp == NULL) {
