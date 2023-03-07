@@ -33,7 +33,8 @@
 
 static char *mygetuntil(int fd, int eof)
 {
-	size_t i = 0, res, buf_size = BUFSIZE;  /* initial buffer size */
+	size_t i = 0, buf_size = BUFSIZE;  /* initial buffer size */
+	ssize_t res;
 	char *buf, ch;
 
 	buf = xmalloc(buf_size);
