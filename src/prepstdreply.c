@@ -602,6 +602,7 @@ static void begin_new_source_file(text *txt, char **line_p, char **pos_p,
 	src->transparent = transparent;
 	src->limit = -1;
 	txt->src = src;
+	tmp = NULL;
 	if (getline(&tmp, &tmpcap, fp) <= 0) {
 		close_source(txt);
 		**pos_p = '\0';
