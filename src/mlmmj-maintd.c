@@ -150,7 +150,8 @@ resend_queue(struct ml *ml, int logfd)
 {
 	DIR *queuedir;
 	struct dirent *dp;
-	char *mailname, *fromname, *toname, *reptoname, *from, *to, *repto;
+	char *fromname, *toname, *reptoname, *from, *to, *repto;
+	char *mailname = NULL;
 	char *ch;
 	struct stat st;
 	int err = 0, qfd;
