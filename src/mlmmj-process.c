@@ -749,7 +749,7 @@ int main(int argc, char **argv)
 		free(discardname);
 		free(randomstr);
 		/* TODO: free emailstructs */
-		exit(EXIT_SUCCESS);
+		exit(EXIT_FAILURE);
 	}
 
 	unlink(mailfile);

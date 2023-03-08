@@ -3,12 +3,15 @@
 . $(atf_get_srcdir)/test_env.sh
 
 tests_init \
-	basics
+	basics \
+	simple \
+	subscribe
+
+mlmmjreceive=$(command -v mlmmj-receive)
 
 basics_body()
 {
 
-	mlmmjreceive=$(command -v mlmmj-receive)
 	helptxt="Usage: $mlmmjreceive -L /path/to/listdir
        [-s sender@example.org] [-e extension] [-h] [-V] [-P] [-F]
  -h: This help
@@ -64,4 +67,195 @@ EOF
 	*/discarded/*) ;;
 	*) atf_fail "Extra files left" ;;
 	esac
+}
+
+simple_body()
+{
+	atf_check $srcdir/fakesmtpd
+	trap kill_fakesmtp EXIT TERM
+	init_ml list
+	rmdir list/text
+	ln -s ${srcdir}/../listtexts/en list/text
+	echo test@mlmmjtest > list/control/listaddress
+	echo "25678" > list/control/smtpport
+	echo "heloname" > list/control/smtphelo
+	cat > incoming-invalid << EOF
+From: bob@test
+To: invalid@test
+Subject: subscribe
+
+this is a subscribtion test
+EOF
+
+	atf_check -s exit:1 $mlmmjreceive -L list -F <incoming-invalid
+	atf_check -s exit:1 test -f mail-1.txt
+
+	cat > incoming << EOF
+From: bob@test
+To: invalid@test
+Return-Path: jane@test
+Subject: subscribe
+
+this is a subscribtion test
+EOF
+	atf_check $mlmmjreceive -L list -F <incoming
+cat > expected-1.txt << EOF
+EHLO heloname
+MAIL FROM:<test+bounces-help@mlmmjtest>
+RCPT TO:<bob@test>
+DATA
+Subject: =?utf-8?q?Post_to_test=40mlmmjtest_denied:_subscribe?=
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary
+Content-Transfer-Encoding: 8bit
+From: test+owner@mlmmjtest
+To: bob@test
+
+--=RANDOM=
+Content-Type: text/plain; charset=utf8
+Content-Transfer-Encoding: 8bit
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+The message from <bob@test> with subject "subscribe" was unable to be
+delivered to the list because the list address was not found in either the
+To: or CC: header.
+
+(The denied message is below.)
+
+--=RANDOM=
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="message.eml"
+
+From: bob@test
+To: invalid@test
+Subject: subscribe
+
+this is a subscribtion test
+--=RANDOM=--
+
+.
+QUIT
+EOF
+	atf_check -o file:expected-1.txt sed -e "/^Message-ID:/d; /^Date:/d; s/boundary=.*/boundary/g; s/--=.*=/--=RANDOM=/g" mail-1.txt
+	cat > incoming << EOF
+From: bob@test
+To: test@mlmmjtest
+Return-Path: jane@test
+Subject: subscribe
+
+this is a subscribtion test
+EOF
+	cat > archived << EOF
+From: bob@test
+To: test@mlmmjtest
+Subject: subscribe
+
+this is a subscribtion test
+EOF
+	atf_check $mlmmjreceive -L list -F <incoming
+	atf_check -o file:archived cat list/archive/1
+}
+
+subscribe_body()
+{
+	atf_check $srcdir/fakesmtpd
+	trap kill_fakesmtp EXIT TERM
+	init_ml list
+	rmdir list/text
+	ln -s ${srcdir}/../listtexts/en list/text
+	echo test@mlmmjtest > list/control/listaddress
+	echo "25678" > list/control/smtpport
+	echo "heloname" > list/control/smtphelo
+
+	cat > incoming << EOF
+From: bob@test
+To: test+subscribe@mlmmjtest
+Return-Path: jane@test
+Subject: subscribe
+
+this is a subscribtion test
+EOF
+	atf_check $mlmmjreceive -L list -F <incoming
+
+cat > expected-1.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-confsub-@mlmmjtest>
+RCPT TO:<bob@test>
+DATA
+Subject: =?utf-8?q?Confirm_subscription_to_test=40mlmmjtest?=
+From: test+help@mlmmjtest
+To: bob@test
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Reply-To: test+confsub-@mlmmjtest
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+Somebody (and we hope it was you) has requested that your email address
+<bob@test> be added to the list. This means every time a post is sent to
+the list, you will receive a copy of it.
+
+To confirm you want to do this, please send a message to
+<test+confsub-@mlmmjtest> which can usually be done simply
+by replying to this message. The subject and the body of the message can be
+anything.
+
+After doing so, you should receive a reply informing you that the operation
+succeeded.
+
+If you do not want to do this, simply ignore this message.
+
+
+.
+QUIT
+EOF
+	atf_check -o file:expected-1.txt sed -e "/^Message-ID:/d; /^Date:/d; s/confsub-.*@mlmmjtest/confsub-@mlmmjtest/g" mail-1.txt
+	var=$(ls list/subconf)
+
+	cat > incoming << EOF
+From: bob@test
+To: test+confsub-${var}@mlmmjtest
+Return-Path: jane@test
+Subject: subscribe
+
+this is a subscribtion test
+EOF
+	atf_check $mlmmjreceive -L list -F <incoming
+	cat > expected-2.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-help@mlmmjtest>
+RCPT TO:<bob@test>
+DATA
+Subject: =?utf-8?q?Welcome_to_test=40mlmmjtest?=
+From: test+help@mlmmjtest
+To: bob@test
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+Thank you for confirming your subscription. You have now been added to the
+normal version of the list.
+
+The email address you are subscribed with is <bob@test>.
+
+If you ever wish to unsubscribe, send a message to
+<test+unsubscribe@mlmmjtest> using this email address. The subject and the
+body of the message can be anything. You will then receive confirmation or
+further instructions.
+
+For other information and help about this list, send a message to
+<test+help@mlmmjtest>.
+
+
+.
+QUIT
+EOF
+	atf_check -o file:expected-2.txt sed -e "/^Message-ID:/d; /^Date:/d" mail-2.txt
+	atf_check -o inline:"bob@test\n" cat list/subscribers.d/b
 }
