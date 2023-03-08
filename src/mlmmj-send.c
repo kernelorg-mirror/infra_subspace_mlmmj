@@ -322,7 +322,10 @@ int send_mail_many_list(int sockfd, struct mail *mail, strlist *addrs,
 		}
 		mail->to = addr;
 		res = send_mail(sockfd, mail, listfd, ctrlfd, bounceaddr != NULL);
-		free(bounceaddr);
+		if (bounceaddr != NULL) {
+			free(bounceaddr);
+			mail->from = NULL;
+		}
 		if(res && listaddr && archivefilename) {
 			/* we failed, so save the addresses and bail */
 			index = get_index_from_filename(archivefilename);
@@ -485,8 +488,16 @@ int main(int argc, char **argv)
 
 	if ((mailfd = open(mailfilename, O_RDWR)) == -1 ||
 	    !lock(mailfd, true)) {
-		log_error(LOG_ARGS, "Could not open '%s'", mailfilename);
-		exit(EXIT_FAILURE);
+		if (ml.dir != NULL && mailfd == -1) {
+			if ((mailfd = openat(ml.fd, mailfilename, O_RDWR)) == -1 ||
+				!lock(mailfd, true)) {
+				log_error(LOG_ARGS, "Could not open '%s'", mailfilename);
+				exit(EXIT_FAILURE);
+			}
+		} else {
+			log_error(LOG_ARGS, "Could not open '%s'", mailfilename);
+			exit(EXIT_FAILURE);
+		}
 	}
 	mail.fp = fdopen(mailfd, "r");
 
