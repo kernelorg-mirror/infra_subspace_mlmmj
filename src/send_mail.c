@@ -428,7 +428,6 @@ requeuemail(int listfd, int index, strlist *addrs, const char *addr)
 		return (false);
 	}
 	dfd = openat(listfd, dirname, O_DIRECTORY);
-	free(dirname);
 	addrfd = openat(dfd, "subscribers", O_WRONLY|O_CREAT|O_APPEND,
 			S_IRUSR|S_IWUSR);
 	if(addrfd < 0) {
