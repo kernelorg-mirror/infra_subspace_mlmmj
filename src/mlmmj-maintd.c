@@ -151,10 +151,9 @@ resend_queue(struct ml *ml, int logfd)
 	DIR *queuedir;
 	struct dirent *dp;
 	char *fromname, *toname, *reptoname, *from, *to, *repto;
-	char *mailname = NULL;
 	char *ch;
 	struct stat st;
-	int err = 0, qfd;
+	int errn = 0, qfd;
 	time_t t, bouncelife;
 	bool ret = true;
 	struct mail mail;
@@ -162,18 +161,15 @@ resend_queue(struct ml *ml, int logfd)
 	opendirat(ml->fd, qfd, queuedir, "queue");
 
 	while((dp = readdir(queuedir)) != NULL) {
-		if(fstatat(qfd, dp->d_name, &st, 0) < 0) {
-			log(" - Could not stat(queue/%s): %s",
-			    dp->d_name, strerror(errno));
-			ret = false;
+		/* we might have deleted some files like the "mail.*" */
+		if(fstatat(qfd, dp->d_name, &st, 0) < 0)
 			continue;
-		}
 
 		if(!S_ISREG(st.st_mode))
 			continue;
 
 		if(strchr(dp->d_name, '.')) {
-			mailname = xstrdup(dp->d_name);
+			char *mailname = xstrdup(dp->d_name);
 			ch = strrchr(mailname, '.');
 			MY_ASSERT(ch);
 			*ch = '\0';
@@ -196,13 +192,12 @@ resend_queue(struct ml *ml, int logfd)
 		xasprintf(&toname, "%s.reciptto", dp->d_name);
 		xasprintf(&reptoname, "%s.reply-to", dp->d_name);
 
+		errn = 0;
 		from = ctrlvalue(qfd, fromname);
 		if (from == NULL)
-			err = errno;
+			errn = errno;
 		to = ctrlvalue(qfd, toname);
-		free(fromname);
-		free(toname);
-		if((from == NULL && err == ENOENT) ||
+		if((from == NULL && errn == ENOENT) ||
 				(to == NULL && errno == ENOENT)) {
 			/* only delete old files to avoid deleting
 			   mail currently being sent */
@@ -216,13 +211,12 @@ resend_queue(struct ml *ml, int logfd)
 					unlinkat(qfd, reptoname, 0);
 				}
 			}
-			free(mailname);
 			free(reptoname);
+			free(fromname);
+			free(toname);
 			continue;
 		}
-
 		repto = ctrlvalue(qfd, reptoname);
-		free(reptoname);
 
 		/* before we try again, check and see if it's old */
 		bouncelife = ctrltimet(ml->ctrlfd, "bouncelife", BOUNCELIFE);
@@ -233,7 +227,10 @@ resend_queue(struct ml *ml, int logfd)
 				    dp->d_name, strerror(errno));
 				ret = false;
 			}
-			free(mailname);
+			/* avoid leaving orphans */
+			unlinkat(qfd, fromname, 0);
+			unlinkat(qfd, toname, 0);
+			unlinkat(qfd, reptoname, 0);
 			free(from);
 			free(to);
 			free(repto);
@@ -244,11 +241,19 @@ resend_queue(struct ml *ml, int logfd)
 		mail.to = to;
 		mail.from = from;
 		mail.replyto = repto;
-		mail.fp = fopen(mailname, "r");
-		if (send_single_mail(&mail, ml, false))
-			save_queue(mailname, &mail);
-		else
-			unlink(mailname);
+		int mailfd = openat(qfd, dp->d_name, O_RDONLY);
+		mail.fp = fdopen(mailfd, "r");
+		if (mail.fp == NULL)
+			err(1, "merde");
+		if (send_single_mail(&mail, ml, false)) {
+			unlinkat(qfd, dp->d_name, 0);
+			unlinkat(qfd, fromname, 0);
+			unlinkat(qfd, toname, 0);
+			unlinkat(qfd, reptoname, 0);
+		}
+		free(reptoname);
+		free(fromname);
+		free(toname);
 		fclose(mail.fp);
 	}
 

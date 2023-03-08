@@ -2,6 +2,8 @@
 
 . $(atf_get_srcdir)/test_env.sh
 
+mlmmjmaintd=$(command -v mlmmj-maintd)
+
 tests_init \
 	nolongerbouncing \
 	discarded \
@@ -33,11 +35,11 @@ tests_init \
 	basics_9 \
 	basics_10 \
 	basics_11 \
-	resend_requeue
+	resend_requeue \
+	resend_queue
 
 nolongerbouncing_body()
 {
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
 	init_ml lists/ml
 	mkdir -p lists/ml/bounce
@@ -64,7 +66,6 @@ nolongerbouncing_body()
 
 discarded_body()
 {
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
 	init_ml lists/ml
 
@@ -81,7 +82,6 @@ discarded_body()
 
 basics_0_body()
 {
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
 	init_ml lists/ml
 
@@ -103,7 +103,6 @@ basics_0_body()
 
 basics_1_body()
 {
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
 	init_ml lists/ml
 	echo test@mlmmjtest > lists/ml/control/listaddress
@@ -114,7 +113,6 @@ basics_1_body()
 basics_2_body()
 {
 	test $(id -u) = 0 && atf_skip "Can only be run as non-root"
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
 	init_ml lists/ml
 	echo test@mlmmjtest > lists/ml/control/listaddress
@@ -125,7 +123,6 @@ basics_2_body()
 
 basics_3_body()
 {
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
 	init_ml lists/ml
 	echo test@mlmmjtest > lists/ml/control/listaddress
@@ -151,7 +148,6 @@ run_digests
 
 basics_4_body()
 {
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
 	init_ml lists/ml
 	echo test@mlmmjtest > lists/ml/control/listaddress
@@ -176,7 +172,6 @@ run_digests
 
 basics_5_body()
 {
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
 	init_ml lists/ml
 	echo test@mlmmjtest > lists/ml/control/listaddress
@@ -203,7 +198,6 @@ run_digests
 
 basics_6_body()
 {
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
 	init_ml lists/ml
 	echo test@mlmmjtest > lists/ml/control/listaddress
@@ -231,7 +225,6 @@ run_digests
 
 basics_7_body()
 {
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
 	init_ml lists/ml
 	echo test@mlmmjtest > lists/ml/control/listaddress
@@ -258,7 +251,6 @@ run_digests
 
 basics_8_body()
 {
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
 	init_ml lists/ml
 	echo test@mlmmjtest > lists/ml/control/listaddress
@@ -289,7 +281,6 @@ run_digests
 
 basics_9_body()
 {
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
 	init_ml lists/ml
 	echo test@mlmmjtest > lists/ml/control/listaddress
@@ -316,7 +307,6 @@ run_digests
 
 basics_10_body()
 {
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
 	init_ml lists/ml
 	echo test@mlmmjtest > lists/ml/control/listaddress
@@ -343,7 +333,6 @@ run_digests
 
 basics_11_body()
 {
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
 	init_ml lists/ml
 	echo test@mlmmjtest > lists/ml/control/listaddress
@@ -370,7 +359,6 @@ run_digests
 
 digests_0_body()
 {
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
 	init_ml lists/ml
 	echo test@mlmmjtest > lists/ml/control/listaddress
@@ -396,7 +384,6 @@ run_digests
 
 digests_1_body()
 {
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
 	init_ml lists/ml
 	echo test@mlmmjtest > lists/ml/control/listaddress
@@ -422,7 +409,6 @@ run_digests
 digests_2_body()
 {
 	test $(id -u) = 0 && atf_skip "Can only be run as non-root"
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
 	init_ml lists/ml
 	echo test@mlmmjtest > lists/ml/control/listaddress
@@ -448,7 +434,6 @@ run_digests
 
 digests_3_body()
 {
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
 	init_ml lists/ml
 	echo test@mlmmjtest > lists/ml/control/listaddress
@@ -475,7 +460,6 @@ run_digests
 digests_4_body()
 {
 	test $(id -u) = 0 && atf_skip "Can only be run as non-root"
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
 	init_ml lists/ml
 	echo test@mlmmjtest > lists/ml/control/listaddress
@@ -503,7 +487,6 @@ run_digests
 
 unsub_bouncers_0_body()
 {
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	init_ml list
 	echo "test@test" > list/control/listaddress
 
@@ -515,7 +498,6 @@ unsub_bouncers_0_body()
 
 unsub_bouncers_1_body()
 {
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	init_ml list
 	echo test@mlmmjtest > list/control/listaddress
 
@@ -527,7 +509,6 @@ unsub_bouncers_1_body()
 
 unsub_bouncers_2_body()
 {
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	init_ml list
 	echo test@mlmmjtest > list/control/listaddress
 
@@ -539,7 +520,6 @@ unsub_bouncers_2_body()
 
 unsub_bouncers_3_body()
 {
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	init_ml list
 	echo test@mlmmjtest > list/control/listaddress
 
@@ -553,7 +533,6 @@ unsub_bouncers_3_body()
 
 unsub_bouncers_4_body()
 {
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	init_ml list
 	echo "test@test" > list/control/listaddress
 	# filename should contain a = to be properly treated
@@ -564,7 +543,6 @@ unsub_bouncers_4_body()
 
 unsub_bouncers_5_body()
 {
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	init_ml list
 	echo "test@test" > list/control/listaddress
 
@@ -592,7 +570,6 @@ run_digests
 
 unsub_bouncers_6_body()
 {
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	init_ml list
 	echo "test@test" > list/control/listaddress
 
@@ -623,7 +600,6 @@ run_digests
 
 unsub_bouncers_7_body()
 {
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	mkdir lists
 	init_ml list
 	echo "test@test" > list/control/listaddress
@@ -636,7 +612,6 @@ unsub_bouncers_7_body()
 
 unsub_bouncers_8_body()
 {
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	init_ml list
 	echo "test@test" > list/control/listaddress
 
@@ -647,7 +622,6 @@ unsub_bouncers_8_body()
 
 unsub_bouncers_9_body()
 {
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	init_ml list
 	echo "test@test" > list/control/listaddress
 
@@ -661,7 +635,6 @@ unsub_bouncers_9_body()
 
 unsub_bouncers_10_body()
 {
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	init_ml list
 	echo "test@test" > list/control/listaddress
 
@@ -702,7 +675,6 @@ run_digests
 
 resend_requeue_body()
 {
-	mlmmjmaintd=$(command -v mlmmj-maintd)
 	atf_check $srcdir/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	init_ml list
@@ -899,4 +871,139 @@ EOF
 	atf_check -o file:expect3.txt sed -e "/^Message-ID:/d; /^Date:/d; s/bounces-.*-/bounces-/g" mail-3.txt
 	atf_check -s exit:1 test -f mail-4.txt
 	atf_check -s exit:1 test -d list/requeue/1
+}
+
+resend_queue_body()
+{
+	atf_check $srcdir/fakesmtpd
+	trap kill_fakesmtp EXIT TERM
+	init_ml list
+	echo "test@test" > list/control/listaddress
+	echo "25678" > list/control/smtpport
+	echo "heloname" > list/control/smtphelo
+	touch list/queue/file
+
+	# no .mailfrom, no.reciptto no.reply-to but recent
+	atf_check $mlmmjmaintd -L list -F
+	atf_check -s exit:1 test -f mail-1.txt
+	atf_check -s exit:0 test -f list/queue/file
+
+	touch -t 000101010101 list/queue/file
+	# no .mailfrom, no.reciptto no.reply-to but recent
+	atf_check $mlmmjmaintd -L list -F
+	atf_check -s exit:1 test -f mail-1.txt
+	atf_check -s exit:1 test -f list/queue/file
+
+	touch -t 000101010101 list/queue/file
+	echo "bla" > list/queue/file.mailfrom
+	# no.reciptto no.reply-to old recent
+	atf_check $mlmmjmaintd -L list -F
+	atf_check -s exit:1 test -f mail-1.txt
+	atf_check -s exit:1 test -f list/queue/file
+	atf_check -s exit:1 test -f list/queue/file.mailfrom
+
+	touch -t 000101010101 list/queue/file
+	echo "bla" > list/queue/file.mailfrom
+	touch list/queue/file.reply-to
+	# no.reciptto no.reply-to old recent
+	atf_check $mlmmjmaintd -L list -F
+	atf_check -s exit:1 test -f list/queue/file
+	atf_check -s exit:1 test -f list/queue/file.mailfrom
+	atf_check -s exit:1 test -f list/queue/file.reply-to
+
+	touch -t 000101010101 list/queue/file
+	echo "bla" > list/queue/file.mailfrom
+	echo "meh" > list/queue/file.reciptto
+	touch list/queue/file.reply-to
+	atf_check $mlmmjmaintd -L list -F
+	atf_check -s exit:1 test -f list/queue/file
+	atf_check -s exit:1 test -f list/queue/file.mailfrom
+	atf_check -s exit:1 test -f list/queue/file.reciptto
+	atf_check -s exit:1 test -f list/queue/file.reply-to
+
+	touch list/queue/file
+	touch list/queue/file.mailfrom
+	echo "meh" > list/queue/file.reciptto
+	touch list/queue/file.reply-to
+	atf_check $mlmmjmaintd -L list -F
+	atf_check -s exit:0 test -f list/queue/file
+	atf_check -s exit:0 test -f list/queue/file.mailfrom
+	atf_check -s exit:0 test -f list/queue/file.reciptto
+	atf_check -s exit:0 test -f list/queue/file.reply-to
+
+	touch list/queue/file
+	touch list/queue/file.mailfrom
+	touch list/queue/file.reciptto
+	touch list/queue/file.reply-to
+	atf_check $mlmmjmaintd -L list -F
+	atf_check -s exit:0 test -f list/queue/file
+	atf_check -s exit:0 test -f list/queue/file.mailfrom
+	atf_check -s exit:0 test -f list/queue/file.reciptto
+	atf_check -s exit:0 test -f list/queue/file.reply-to
+
+	# actually send the queued email
+	cat > list/queue/file <<EOF
+From: plop
+To: bla
+Subject: hey
+
+Body
+EOF
+	echo "bob@test1" > list/queue/file.mailfrom
+	echo "bob@test2" > list/queue/file.reciptto
+	rm list/queue/file.reply-to
+	atf_check $mlmmjmaintd -L list -F
+	cat > expected.txt <<EOF
+EHLO heloname
+MAIL FROM:<bob@test1>
+RCPT TO:<bob@test2>
+DATA
+From: plop
+To: bla
+Subject: hey
+
+Body
+
+.
+QUIT
+EOF
+	atf_check -o file:expected.txt cat mail-1.txt
+	atf_check -s exit:1 test -f mail-2.txt
+	atf_check -s exit:1 test -f list/queue/file
+	atf_check -s exit:1 test -f list/queue/file.mailfrom
+	atf_check -s exit:1 test -f list/queue/file.reciptto
+
+	# actually send the queued email with reply-to
+	cat > list/queue/file <<EOF
+From: plop
+To: bla
+Subject: hey
+
+Body
+EOF
+	echo "bob@test1" > list/queue/file.mailfrom
+	echo "bob@test2" > list/queue/file.reciptto
+	echo "jane@test2" > list/queue/file.reply-to
+	rm list/queue/file.reply-to
+	atf_check $mlmmjmaintd -L list -F
+	cat > expected.txt <<EOF
+EHLO heloname
+MAIL FROM:<bob@test1>
+RCPT TO:<bob@test2>
+DATA
+From: plop
+To: bla
+Subject: hey
+
+Body
+
+.
+QUIT
+EOF
+	atf_check -o file:expected.txt cat mail-2.txt
+	atf_check -s exit:1 test -f mail-3.txt
+	atf_check -s exit:1 test -f list/queue/file
+	atf_check -s exit:1 test -f list/queue/file.mailfrom
+	atf_check -s exit:1 test -f list/queue/file.reciptto
+	atf_check -s exit:1 test -f list/queue/file.reply-to
 }
