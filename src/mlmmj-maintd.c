@@ -326,21 +326,16 @@ resend_requeue(struct ml *ml, const char *mlmmjsend, int logfd)
 			continue;
 		}
 
-		xasprintf(&subnewname, "%s.resending", subfilename);
+		int subfd = openat(fd, subfilename, O_RDONLY);
+		unlinkat(fd, subfilename, 0);
 
-		if(renameat(fd, subfilename, fd, subnewname) == -1) {
-			log(" - Could not rename(requeue/%s, requeue/%s): %s\n",
-			    subfilename, subnewname, strerror(errno));
-			ret = false;
-			free(archivefilename);
-			free(subfilename);
-			free(subnewname);
-			continue;
-		}
-		free(subfilename);
-
+		xasprintf(&subnewname, "%d", subfd);
 		exec_and_wait(mlmmjsend, "-l", "3", "-L", ml->dir, "-m",
 		    archivefilename, "-s", subnewname, "-a", "-D", NULL);
+		free(subnewname);
+		if (fromrequeuedir)
+			unlinkat(ml->fd, archivefilename, 0);
+		close(subfd);
 	}
 
 	closedir(queuedir);

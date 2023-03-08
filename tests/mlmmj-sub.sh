@@ -2,12 +2,6 @@
 
 . $(atf_get_srcdir)/test_env.sh
 
-kill_fakesmtp()
-{
-	pid=$(cat fakesmtp.pid)
-	kill -15 $pid
-}
-
 tests_init \
 	add_basics \
 	add_normal \

@@ -32,7 +32,8 @@ tests_init \
 	basics_8 \
 	basics_9 \
 	basics_10 \
-	basics_11
+	basics_11 \
+	resend_requeue
 
 nolongerbouncing_body()
 {
@@ -697,4 +698,147 @@ run_digests
  - No readable index file: no digest
 "
 	atf_check -o "inline:$output" sed -e "s/at .*/at/" list/mlmmj-maintd.lastrun.log
+}
+
+resend_requeue_body()
+{
+	mlmmjmaintd=$(command -v mlmmj-maintd)
+	atf_check $srcdir/fakesmtpd
+	trap kill_fakesmtp EXIT TERM
+	init_ml list
+	echo "test@test" > list/control/listaddress
+	echo "25678" > list/control/smtpport
+	echo "heloname" > list/control/smtphelo
+	# Not a directory
+cat >> list/requeue/1 <<EOF
+user1@test1
+user2@test2
+user3@test3
+EOF
+	atf_check $mlmmjmaintd -L list -F
+
+cat >> expect1.txt <<EOF
+Starting maintenance run at
+
+clean_moderation
+clean_discarded
+clean_subconf
+clean_unsubconf
+resend_queue
+resend_requeue
+clean_nolongerbouncing
+unsub_bouncers
+probe_bouncers
+run_digests
+ - No readable index file: no digest
+EOF
+
+	atf_check -o file:expect1.txt sed -e "s/at .*/at/" list/mlmmj-maintd.lastrun.log
+	# no archive and don't remove empty dir
+	rm list/requeue/1
+	mkdir list/requeue/1
+	mkdir list/requeue/2
+	touch -t 000101010101 list/requeue/2
+	mkdir list/requeue/3
+	cat >> list/requeue/1/subscribers <<EOF
+user1@test1
+user2@test2
+user3@test3
+EOF
+	atf_check $mlmmjmaintd -L list -F
+	atf_check -o file:expect1.txt sed -e "s/at .*/at/" list/mlmmj-maintd.lastrun.log
+	test -d list/requeue/3 || atf_fail "list/requeue/3 should not have been removed"
+	if test -d list/requeue/2; then
+		atf_fail "list/requeue/2 should have been removed"
+	fi
+	atf_check -s exit:1 test -f mail-1.txt
+cat > list/requeue/3/mailfile <<EOF
+From: plop
+To: bla
+Subject: test
+
+body
+EOF
+	# no subscribers: delete the mailfile
+	atf_check $mlmmjmaintd -L list -F
+	atf_check -o file:expect1.txt sed -e "s/at .*/at/" list/mlmmj-maintd.lastrun.log
+	if test -f list/requeue/3/mailfile; then
+		atf_fail "list/requeue/3/mailfile should have been removed"
+	fi
+
+cat > list/requeue/3/mailfile <<EOF
+From: plop
+To: bla
+Subject: test
+
+body
+EOF
+	cat >> list/requeue/3/subscribers <<EOF
+user1@test1
+EOF
+	# now the mail should be sent
+	atf_check $mlmmjmaintd -L list -F
+	cat > expect1.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-3-user1=test1@test>
+RCPT TO:<user1@test1>
+DATA
+From: plop
+To: bla
+Subject: test
+
+body
+
+.
+QUIT
+EOF
+	atf_check -o file:expect1.txt sed -e "/^Message-ID:/d; /^Date:/d; s/confsub-.*@mlmmjtest/confsub-@mlmmjtest/g" mail-1.txt
+	atf_check -s exit:1 test -f mail-2.txt
+	atf_check -s exit:1 test -f list/requeue/3/mailfile
+cat > list/archive/1 <<EOF
+From: plop
+To: bla
+Subject: test
+
+body
+EOF
+	# now with archive
+	cat > expect2.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-1-user1=test1@test>
+RCPT TO:<user1@test1>
+DATA
+From: plop
+To: bla
+Subject: test
+
+body
+
+.
+MAIL FROM:<test+bounces-1-user2=test2@test>
+RCPT TO:<user2@test2>
+DATA
+From: plop
+To: bla
+Subject: test
+
+body
+
+.
+MAIL FROM:<test+bounces-1-user3=test3@test>
+RCPT TO:<user3@test3>
+DATA
+From: plop
+To: bla
+Subject: test
+
+body
+
+.
+QUIT
+EOF
+	atf_check $mlmmjmaintd -L list -F
+	atf_check -o file:expect2.txt sed -e "/^Message-ID:/d; /^Date:/d; s/confsub-.*@mlmmjtest/confsub-@mlmmjtest/g" mail-2.txt
+	atf_check -s exit:1 test -f mail-4.txt
+	atf_check -s exit:0 test -f list/archive/1
 }

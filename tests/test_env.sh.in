@@ -35,3 +35,10 @@ init_ml()
 		mkdir $ml/$d
 	done
 }
+
+kill_fakesmtp()
+{
+	pid=$(cat fakesmtp.pid)
+	kill -15 $pid
+}
+
