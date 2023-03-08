@@ -388,7 +388,8 @@ int main(int argc, char **argv)
 	char *queuefilename, *recipextra = NULL, *owner = NULL;
 	char *maxmailsizestr;
 	char *subject = NULL, *posteraddr = NULL;
-	char *envstr, *efrom;
+	char *envstr;
+	const char *efrom = "";
 	struct stat st;
 	strlist fromemails = tll_init();
 	strlist originalfromemails = tll_init();
@@ -626,12 +627,10 @@ int main(int argc, char **argv)
 	/* envelope from */
 	if((envstr = getenv("SENDER")) != NULL) {
 		/* qmail, postfix, exim */
-		efrom = xstrdup(envstr);
+		efrom = envstr;
 	} else if(tll_length(rpemails) >= 1) {
 		/* the (first) Return-Path: header */
-		efrom = xstrdup(tll_front(rpemails));
-	} else {
-		efrom = xstrdup("");
+		efrom = tll_front(rpemails);
 	}
 
 	/* Subject: */
@@ -737,7 +736,7 @@ int main(int argc, char **argv)
 
 	free(delheaders);
 
-	if(strcmp(efrom, "") == 0) { /* don't send mails with <> in From
+	if(*efrom == '\0') { /* don't send mails with <> in From
 					     to the list */
 		xasprintf(&discardname, "%s/queue/discardrd/%s", ml.dir, randomstr);
 		errno = 0;
