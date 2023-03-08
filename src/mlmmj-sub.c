@@ -320,12 +320,11 @@ int main(int argc, char **argv)
 	char *mlmmjsend, *bindir;
 	char *address = NULL, *modstr = NULL;
 	int opt, subconfirm = 0, confirmsub = 0, notifysub;
-	int changeuid = 1, status, digest = 0, nomail = 0, both = 0;
+	int changeuid = 1, digest = 0, nomail = 0, both = 0;
 	int nogensubscribed = 0;
 	int force = 0, quiet = 0;
 	enum subtype subbed;
 	struct stat st;
-	pid_t pid, childpid = 0;
 	uid_t uid;
 	enum subtype typesub = SUB_NORMAL;
 	enum subreason reasonsub = SUB_ADMIN;
@@ -491,24 +490,8 @@ int main(int argc, char **argv)
 		subscribe_type(ml.fd, address, typesub);
 	}
 
-	if(confirmsub) {
-		childpid = fork();
-
-		if(childpid < 0) {
-			log_error(LOG_ARGS, "Could not fork; owner not notified");
-			confirm_sub(&ml, address, typesub, reasonsub, true);
-		}
-		
-		if(childpid > 0) {
-			do /* Parent waits for the child */
-				pid = waitpid(childpid, &status, 0);
-			while(pid == -1 && errno == EINTR);
-		}
-
-		/* child confirms subscription */
-		if(childpid == 0)
-			confirm_sub(&ml, address, typesub, reasonsub, true);
-	}
+	if(confirmsub)
+		confirm_sub(&ml, address, typesub, reasonsub, true);
 
 	notifysub = !quiet && reasonsub != SUB_SWITCH &&
 			statctrl(ml.ctrlfd, "notifysub");

@@ -30,7 +30,7 @@
 #include "send_mail.h"
 
 void
-send_help(struct ml *ml, const char *queuefilename, const char *emailaddr)
+send_help_noexit(struct ml *ml, const char *queuefilename, const char *emailaddr)
 {
 	char *fromaddr;
 	struct mail mail = { 0 };
@@ -44,5 +44,11 @@ send_help(struct ml *ml, const char *queuefilename, const char *emailaddr)
 		save_queue(queuefilename, &mail);
 	else
 		unlink(queuefilename);
+}
+
+void
+send_help(struct ml *ml, const char *queuefilename, const char *emailaddr)
+{
+	send_help_noexit(ml, queuefilename, emailaddr);
 	exit(EXIT_SUCCESS);
 }

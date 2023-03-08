@@ -2345,12 +2345,8 @@ ATF_TC_BODY(confirm_sub, tc)
 	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
 	pid_t p2 = single_mail_reception(smtppipe[1]);
 	atf_utils_readline(smtppipe[0]);
-	pid_t p = atf_utils_fork();
-	if (p == 0) {
-		confirm_sub(&ml, "test@plop", SUB_NORMAL, SUB_ADMIN, true);
-	}
+	confirm_sub(&ml, "test@plop", SUB_NORMAL, SUB_ADMIN, true);
 	atf_utils_wait(p2, 0, "save:mailout.txt", "");
-	atf_utils_wait(p, 0, "", "");
 	path = "mailout.txt";
 	if (!atf_utils_grep_file(".*An administrator has subscribed you to the normal version of the list.*", path)) {
 		atf_utils_cat_file(path, "");
@@ -2363,12 +2359,8 @@ ATF_TC_BODY(confirm_sub, tc)
 
 	p2 = single_mail_reception(smtppipe[1]);
 	atf_utils_readline(smtppipe[0]);
-	p = atf_utils_fork();
-	if (p == 0) {
-		confirm_sub(&ml, "test@plop", SUB_DIGEST, SUB_ADMIN, true);
-	}
+	confirm_sub(&ml, "test@plop", SUB_DIGEST, SUB_ADMIN, true);
 	atf_utils_wait(p2, 0, "save:mailout.txt", "");
-	atf_utils_wait(p, 0, "", "");
 	if (!atf_utils_grep_file(".*An administrator has subscribed you to the digest version of the list.*", path)) {
 		atf_utils_cat_file(path, "");
 		atf_tc_fail("invalid file");
@@ -2380,12 +2372,8 @@ ATF_TC_BODY(confirm_sub, tc)
 
 	p2 = single_mail_reception(smtppipe[1]);
 	atf_utils_readline(smtppipe[0]);
-	p = atf_utils_fork();
-	if (p == 0) {
-		confirm_sub(&ml, "test@plop", SUB_NOMAIL, SUB_CONFIRM, true);
-	}
+	confirm_sub(&ml, "test@plop", SUB_NOMAIL, SUB_CONFIRM, true);
 	atf_utils_wait(p2, 0, "save:mailout.txt", "");
-	atf_utils_wait(p, 0, "", "");
 	if (!atf_utils_grep_file(".*Thank you for confirming your subscription. You have now been added to the.*", path)) {
 		atf_utils_cat_file(path, "");
 		atf_tc_fail("invalid file");
@@ -2397,12 +2385,8 @@ ATF_TC_BODY(confirm_sub, tc)
 
 	p2 = single_mail_reception(smtppipe[1]);
 	atf_utils_readline(smtppipe[0]);
-	p = atf_utils_fork();
-	if (p == 0) {
-		confirm_sub(&ml, "test@plop", SUB_BOTH, SUB_REQUEST, true);
-	}
+	confirm_sub(&ml, "test@plop", SUB_BOTH, SUB_REQUEST, true);
 	atf_utils_wait(p2, 0, "save:mailout.txt", "");
-	atf_utils_wait(p, 0, "", "");
 	if (!atf_utils_grep_file(".*Thank you for your request to join us. You have now been added to the.*", path)) {
 		atf_utils_cat_file(path, "");
 		atf_tc_fail("invalid file");
@@ -2414,12 +2398,8 @@ ATF_TC_BODY(confirm_sub, tc)
 
 	p2 = single_mail_reception(smtppipe[1]);
 	atf_utils_readline(smtppipe[0]);
-	p = atf_utils_fork();
-	if (p == 0) {
-		confirm_sub(&ml, "test@plop", SUB_NORMAL, SUB_ADMIN, false);
-	}
+	confirm_sub(&ml, "test@plop", SUB_NORMAL, SUB_ADMIN, false);
 	atf_utils_wait(p2, 0, "save:mailout.txt", "");
-	atf_utils_wait(p, 0, "", "");
 	if (!atf_utils_grep_file(".*An administrator has removed you from the list.*", path)) {
 		atf_utils_cat_file(path, "");
 		atf_tc_fail("invalid file");
@@ -2427,12 +2407,8 @@ ATF_TC_BODY(confirm_sub, tc)
 
 	p2 = single_mail_reception(smtppipe[1]);
 	atf_utils_readline(smtppipe[0]);
-	p = atf_utils_fork();
-	if (p == 0) {
-		confirm_sub(&ml, "test@plop", SUB_DIGEST, SUB_ADMIN, false);
-	}
+	confirm_sub(&ml, "test@plop", SUB_DIGEST, SUB_ADMIN, false);
 	atf_utils_wait(p2, 0, "save:mailout.txt", "");
-	atf_utils_wait(p, 0, "", "");
 	if (!atf_utils_grep_file(".*An administrator has removed you from the list.*", path)) {
 		atf_utils_cat_file(path, "");
 		atf_tc_fail("invalid file");
@@ -2440,12 +2416,8 @@ ATF_TC_BODY(confirm_sub, tc)
 
 	p2 = single_mail_reception(smtppipe[1]);
 	atf_utils_readline(smtppipe[0]);
-	p = atf_utils_fork();
-	if (p == 0) {
-		confirm_sub(&ml, "test@plop", SUB_NOMAIL, SUB_CONFIRM, false);
-	}
+	confirm_sub(&ml, "test@plop", SUB_NOMAIL, SUB_CONFIRM, false);
 	atf_utils_wait(p2, 0, "save:mailout.txt", "");
-	atf_utils_wait(p, 0, "", "");
 	if (!atf_utils_grep_file(".*Thank you for confirming your unsubscribe. You have now been removed from.*", path)) {
 		atf_utils_cat_file(path, "");
 		atf_tc_fail("invalid file unsubscribe nomail confirm");
@@ -2453,12 +2425,8 @@ ATF_TC_BODY(confirm_sub, tc)
 
 	p2 = single_mail_reception(smtppipe[1]);
 	atf_utils_readline(smtppipe[0]);
-	p = atf_utils_fork();
-	if (p == 0) {
-		confirm_sub(&ml, "test@plop", SUB_BOTH, SUB_REQUEST, false);
-	}
+	confirm_sub(&ml, "test@plop", SUB_BOTH, SUB_REQUEST, false);
 	atf_utils_wait(p2, 0, "save:mailout.txt", "");
-	atf_utils_wait(p, 0, "", "");
 	if (!atf_utils_grep_file(".*You have now been removed from the list.*", path)) {
 		atf_utils_cat_file(path, "");
 		atf_tc_fail("invalid file");

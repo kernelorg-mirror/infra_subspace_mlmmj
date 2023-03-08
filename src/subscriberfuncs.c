@@ -346,5 +346,5 @@ confirm_sub(struct ml *ml, const char *subaddr, enum subtype typesub,
 	MY_ASSERT(queuefilename);
 	close_text(txt);
 
-	send_help(ml, queuefilename, subaddr);
+	send_help_noexit(ml, queuefilename, subaddr);
 }

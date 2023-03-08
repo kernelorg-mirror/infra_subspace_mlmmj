@@ -74,14 +74,12 @@ int main(int argc, char **argv)
 	int confirmunsub = 0, unsubconfirm = 0, notifysub = 0;
 	int changeuid = 1, quiet = 0;
 	int nogennotsubscribed = 0;
-	int status;
 	char *address = NULL;
 	const char *subdir;
 	enum subtype typesub = SUB_ALL;
 	enum subreason reasonsub = SUB_ADMIN;
 	uid_t uid;
 	struct stat st;
-	pid_t pid, childpid;
 	struct ml ml;
 
 	ml_init(&ml);
@@ -205,24 +203,8 @@ int main(int argc, char **argv)
 
 	unsubscribe(ml.fd, address, typesub);
 
-	if(confirmunsub) {
-		childpid = fork();
-
-		if(childpid < 0) {
-			log_error(LOG_ARGS, "Could not fork");
-			confirm_sub(&ml, address, typesub, reasonsub, false);
-		}
-
-		if(childpid > 0) {
-			do /* Parent waits for the child */
-				pid = waitpid(childpid, &status, 0);
-			while(pid == -1 && errno == EINTR);
-		}
-
-		/* child confirms subscription */
-		if(childpid == 0)
-			confirm_sub(&ml, address, typesub, reasonsub, false);
-	}
+	if(confirmunsub)
+		confirm_sub(&ml, address, typesub, reasonsub, false);
 
 	notifysub = !quiet && statctrl(ml.ctrlfd, "notifysub");
 
