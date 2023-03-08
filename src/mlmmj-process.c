@@ -640,7 +640,8 @@ int main(int argc, char **argv)
 	if (!subject) subject = xstrdup("");
 
 	if(recipextra) {
-		xasprintf(&owner, "%s/control/owner", ml.dir);
+		int ownfd = openat(ml.ctrlfd, "owner", O_RDONLY);
+		xasprintf(&owner, "%d", ownfd);
 		if(owner && strcmp(recipextra, "owner") == 0) {
 			/* Why is this here, and not in listcontrol() ?
 			 * -- mortenp 20060409 */
