@@ -843,7 +843,8 @@ EOF
 	atf_check -s exit:0 test -f list/archive/1
 	atf_check -s exit:1 test -f lists/requeue/1/subscribers
 	atf_check -s exit:1 test -f list/requeue/3/mailfile
-	mkdir lists/requeue/1
+	atf_check -s exit:1 test -d list/requeue/1
+	mkdir list/requeue/1
 cat > list/archive/1 <<EOF
 From: plop
 To: bla
@@ -897,4 +898,5 @@ EOF
 	atf_check $mlmmjmaintd -L list -F
 	atf_check -o file:expect3.txt sed -e "/^Message-ID:/d; /^Date:/d; s/bounces-.*-/bounces-/g" mail-3.txt
 	atf_check -s exit:1 test -f mail-4.txt
+	atf_check -s exit:1 test -d list/requeue/1
 }

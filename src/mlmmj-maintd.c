@@ -331,6 +331,7 @@ resend_requeue(struct ml *ml, const char *mlmmjsend, int logfd)
 			unlinkat(requeuefd, "mailfile", 0);
 		close(subfd);
 		close(requeuefd);
+		unlinkat(fd, dp->d_name, AT_REMOVEDIR);
 	}
 
 	closedir(queuedir);
