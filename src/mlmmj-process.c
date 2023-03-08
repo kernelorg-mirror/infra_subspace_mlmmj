@@ -738,7 +738,7 @@ int main(int argc, char **argv)
 
 	if(*efrom == '\0') { /* don't send mails with <> in From
 					     to the list */
-		xasprintf(&discardname, "%s/queue/discardrd/%s", ml.dir, randomstr);
+		xasprintf(&discardname, "%s/queue/discarded/%s", ml.dir, randomstr);
 		errno = 0;
 		log_error(LOG_ARGS, "Discarding %s due to missing envelope"
 				" from address", mailfile);
