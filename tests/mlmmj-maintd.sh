@@ -839,6 +839,62 @@ QUIT
 EOF
 	atf_check $mlmmjmaintd -L list -F
 	atf_check -o file:expect2.txt sed -e "/^Message-ID:/d; /^Date:/d; s/bounces-.*-/bounces-/g" mail-2.txt
-	atf_check -s exit:1 test -f mail-4.txt
+	atf_check -s exit:1 test -f mail-3.txt
 	atf_check -s exit:0 test -f list/archive/1
+	atf_check -s exit:1 test -f lists/requeue/1/subscribers
+	atf_check -s exit:1 test -f list/requeue/3/mailfile
+	mkdir lists/requeue/1
+cat > list/archive/1 <<EOF
+From: plop
+To: bla
+Subject: test
+
+body
+EOF
+	cat >> list/requeue/1/subscribers <<EOF
+user1@test1
+user2@test2
+user3@test3
+EOF
+	cat > expect3.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-user1=test1@test>
+RCPT TO:<user1@test1>
+DATA
+From: plop
+To: bla
+Subject: test
+To: user1@test1
+
+body
+
+.
+MAIL FROM:<test+bounces-user2=test2@test>
+RCPT TO:<user2@test2>
+DATA
+From: plop
+To: bla
+Subject: test
+To: user2@test2
+
+body
+
+.
+MAIL FROM:<test+bounces-user3=test3@test>
+RCPT TO:<user3@test3>
+DATA
+From: plop
+To: bla
+Subject: test
+To: user3@test3
+
+body
+
+.
+QUIT
+EOF
+	touch list/control/addtohdr
+	atf_check $mlmmjmaintd -L list -F
+	atf_check -o file:expect3.txt sed -e "/^Message-ID:/d; /^Date:/d; s/bounces-.*-/bounces-/g" mail-3.txt
+	atf_check -s exit:1 test -f mail-4.txt
 }
