@@ -780,7 +780,7 @@ EOF
 	atf_check $mlmmjmaintd -L list -F
 	cat > expect1.txt <<EOF
 EHLO heloname
-MAIL FROM:<test+bounces-3-user1=test1@test>
+MAIL FROM:<test+bounces-user1=test1@test>
 RCPT TO:<user1@test1>
 DATA
 From: plop
@@ -792,7 +792,7 @@ body
 .
 QUIT
 EOF
-	atf_check -o file:expect1.txt sed -e "/^Message-ID:/d; /^Date:/d; s/confsub-.*@mlmmjtest/confsub-@mlmmjtest/g" mail-1.txt
+	atf_check -o file:expect1.txt sed -e "/^Message-ID:/d; /^Date:/d; s/bounces-.*-/bounces-/g" mail-1.txt
 	atf_check -s exit:1 test -f mail-2.txt
 	atf_check -s exit:1 test -f list/requeue/3/mailfile
 cat > list/archive/1 <<EOF
@@ -805,7 +805,7 @@ EOF
 	# now with archive
 	cat > expect2.txt <<EOF
 EHLO heloname
-MAIL FROM:<test+bounces-1-user1=test1@test>
+MAIL FROM:<test+bounces-user1=test1@test>
 RCPT TO:<user1@test1>
 DATA
 From: plop
@@ -815,7 +815,7 @@ Subject: test
 body
 
 .
-MAIL FROM:<test+bounces-1-user2=test2@test>
+MAIL FROM:<test+bounces-user2=test2@test>
 RCPT TO:<user2@test2>
 DATA
 From: plop
@@ -825,7 +825,7 @@ Subject: test
 body
 
 .
-MAIL FROM:<test+bounces-1-user3=test3@test>
+MAIL FROM:<test+bounces-user3=test3@test>
 RCPT TO:<user3@test3>
 DATA
 From: plop
@@ -838,7 +838,7 @@ body
 QUIT
 EOF
 	atf_check $mlmmjmaintd -L list -F
-	atf_check -o file:expect2.txt sed -e "/^Message-ID:/d; /^Date:/d; s/confsub-.*@mlmmjtest/confsub-@mlmmjtest/g" mail-2.txt
+	atf_check -o file:expect2.txt sed -e "/^Message-ID:/d; /^Date:/d; s/bounces-.*-/bounces-/g" mail-2.txt
 	atf_check -s exit:1 test -f mail-4.txt
 	atf_check -s exit:0 test -f list/archive/1
 }

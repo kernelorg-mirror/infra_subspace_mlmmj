@@ -261,7 +261,7 @@ resend_requeue(struct ml *ml, const char *mlmmjsend, int logfd)
 {
 	DIR *queuedir;
 	struct dirent *dp;
-	char *archivefilename, *subfilename, *subnewname;
+	char *archivefilename, *subnewname;
 	struct stat st;
 	time_t t;
 	bool fromrequeuedir;
@@ -289,53 +289,48 @@ resend_requeue(struct ml *ml, const char *mlmmjsend, int logfd)
 		    unlinkat(fd, dp->d_name, AT_REMOVEDIR) == 0)
 			continue;
 
+		int requeuefd = openat(fd, dp->d_name, O_DIRECTORY);
+
 		xasprintf(&archivefilename, "archive/%s", dp->d_name);
+		int archivefd = openat(ml->fd, archivefilename, O_RDONLY);
+		free(archivefilename);
 
 		/* Explicitly initialize for each mail we examine */
 		fromrequeuedir = false;
 
-		if(faccessat(ml->fd, archivefilename, F_OK, 0) < 0) {
-			/* Might be it's just not moved to the archive
-			 * yet because it's still getting sent, so just
-			 * continue
-			 */
-			free(archivefilename);
-
+		if (archivefd == -1) {
 			/* If the list is set not to archive we want to look
 			 * in /requeue/ for a mailfile
 			 */
-			xasprintf(&archivefilename, "requeue/%s/mailfile",
-			    dp->d_name);
-			if(faccessat(ml->fd, archivefilename, F_OK, 0) < 0) {
-				free(archivefilename);
+			archivefd = openat(requeuefd, "mailfile", O_RDONLY);
+			if (archivefd == -1) {
+				close(requeuefd);
 				continue;
 			}
 			fromrequeuedir = true;
 		}
-		xasprintf(&subfilename, "%s/subscribers", dp->d_name);
-		if(faccessat(fd, subfilename, F_OK, 0) < 0) {
-			if (fromrequeuedir) {
-				if (unlinkat(ml->fd, archivefilename, 0) == -1) {
-					log(" - Cound not remove %s: %s\n",
-					    archivefilename, strerror(errno));
-					ret = false;
-				}
+		int subfd = openat(requeuefd, "subscribers", O_RDONLY);
+		if (subfd == -1) {
+			if (fromrequeuedir && unlinkat(requeuefd, "mailfile", 0) == -1) {
+				log(" - Cound not remove requeue/%s/mailfile: %s\n",
+				    dp->d_name, strerror(errno));
+				ret = false;
 			}
-			free(archivefilename);
-			free(subfilename);
+			close(requeuefd);
 			continue;
 		}
-
-		int subfd = openat(fd, subfilename, O_RDONLY);
-		unlinkat(fd, subfilename, 0);
+		unlinkat(requeuefd, "subscribers", 0);
 
 		xasprintf(&subnewname, "%d", subfd);
+		xasprintf(&archivefilename, "%d", archivefd);
 		exec_and_wait(mlmmjsend, "-l", "3", "-L", ml->dir, "-m",
 		    archivefilename, "-s", subnewname, "-a", "-D", NULL);
 		free(subnewname);
+		free(archivefilename);
 		if (fromrequeuedir)
-			unlinkat(ml->fd, archivefilename, 0);
+			unlinkat(requeuefd, "mailfile", 0);
 		close(subfd);
+		close(requeuefd);
 	}
 
 	closedir(queuedir);

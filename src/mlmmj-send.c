@@ -486,8 +486,14 @@ int main(int argc, char **argv)
 
 	/* initialize file with mail to send */
 
-	if ((mailfd = open(mailfilename, O_RDWR)) == -1 ||
-	    !lock(mailfd, true)) {
+	mailfd = strtoim(mailfilename, 0, INT_MAX, &errp);
+	if (errp == NULL) {
+		/* cannot delete a mail sent from file descriptor */
+		deletewhensent = false;
+	}
+
+	if (errp != NULL && ((mailfd = open(mailfilename, O_RDWR)) == -1 ||
+	    !lock(mailfd, true))) {
 		if (ml.dir != NULL && mailfd == -1) {
 			if ((mailfd = openat(ml.fd, mailfilename, O_RDWR)) == -1 ||
 				!lock(mailfd, true)) {
