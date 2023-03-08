@@ -882,11 +882,13 @@ resend_queue_body()
 	echo "25678" > list/control/smtpport
 	echo "heloname" > list/control/smtphelo
 	touch list/queue/file
+	touch list/queue/plop.hey
 
 	# no .mailfrom, no.reciptto no.reply-to but recent
 	atf_check $mlmmjmaintd -L list -F
 	atf_check -s exit:1 test -f mail-1.txt
 	atf_check -s exit:0 test -f list/queue/file
+	atf_check -s exit:1 test -f list/queue/plop.hey
 
 	touch -t 000101010101 list/queue/file
 	# no .mailfrom, no.reciptto no.reply-to but recent
