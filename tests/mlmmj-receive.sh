@@ -170,7 +170,7 @@ subscribe_body()
 	echo "25678" > list/control/smtpport
 	echo "heloname" > list/control/smtphelo
 
-	cat > incoming << EOF
+	cat > subscribe << EOF
 From: bob@test
 To: test+subscribe@mlmmjtest
 Return-Path: jane@test
@@ -178,7 +178,7 @@ Subject: subscribe
 
 this is a subscribtion test
 EOF
-	atf_check $mlmmjreceive -L list -F <incoming
+	atf_check $mlmmjreceive -L list -F <subscribe
 
 cat > expected-1.txt <<EOF
 EHLO heloname
@@ -216,15 +216,15 @@ EOF
 	atf_check -o file:expected-1.txt sed -e "/^Message-ID:/d; /^Date:/d; s/confsub-.*@mlmmjtest/confsub-@mlmmjtest/g" mail-1.txt
 	var=$(ls list/subconf)
 
-	cat > incoming << EOF
+	cat > confirm << EOF
 From: bob@test
-To: test+confsub-${var}@mlmmjtest
+To: test+confsub-${var##*/}@mlmmjtest
 Return-Path: jane@test
 Subject: subscribe
 
 this is a subscribtion test
 EOF
-	atf_check $mlmmjreceive -L list -F <incoming
+	atf_check $mlmmjreceive -L list -F <confirm
 	cat > expected-2.txt <<EOF
 EHLO heloname
 MAIL FROM:<test+bounces-help@mlmmjtest>
@@ -258,4 +258,103 @@ QUIT
 EOF
 	atf_check -o file:expected-2.txt sed -e "/^Message-ID:/d; /^Date:/d" mail-2.txt
 	atf_check -o inline:"bob@test\n" cat list/subscribers.d/b
+	atf_check -s exit:1 test -f list/subconf/${var}
+
+# second confirmation
+	atf_check $mlmmjreceive -L list -F <confirm
+	atf_check -s exit:1 test -f mail-3.txt
+	cat > expected-3.txt << EOF
+EHLO heloname
+MAIL FROM:<test+bounces-help@mlmmjtest>
+RCPT TO:<bob@test>
+DATA
+Subject: =?utf-8?q?Unable_to_subscribe_to_test=40mlmmjtest?=
+From: test+help@mlmmjtest
+To: bob@test
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+You were unable to be subscribed to the list because you are already
+subscribed.
+
+
+.
+QUIT
+EOF
+	# New subscribtion
+	atf_check $mlmmjreceive -L list -F <subscribe
+	atf_check -o file:expected-3.txt sed -e "/^Message-ID:/d; /^Date:/d" mail-3.txt
+
+	cat > unsubscribe <<EOF
+From: bob@test
+To: test+unsubscribe@mlmmjtest
+Return-Path: jane@test
+EOF
+	atf_check $mlmmjreceive -L list -F <unsubscribe
+	cat > expected-4.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-confunsub-@mlmmjtest>
+RCPT TO:<bob@test>
+DATA
+Subject: =?utf-8?q?Confirm_unsubscribe_from_test=40mlmmjtest?=
+From: test+help@mlmmjtest
+To: bob@test
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Reply-To: test+confunsub-@mlmmjtest
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+Somebody (and we hope it was you) has requested that the email address
+<bob@test> be removed from the list.
+
+To confirm you want to do this, please send a message to
+<test+confunsub-@mlmmjtest> which can usually be done
+simply by replying to this message. The subject and the body of the message
+can be anything.
+
+After doing so, you should receive a reply informing you that the operation
+succeeded.
+
+If you do not want to do this, simply ignore this message.
+
+
+.
+QUIT
+EOF
+	atf_check -o file:expected-4.txt sed -e "/^Message-ID:/d; /^Date:/d; s/confunsub-.*@mlmmjtest/confunsub-@mlmmjtest/g" mail-4.txt
+	var=$(ls list/unsubconf)
+	cat > confirm-unsub << EOF
+From: bob@test
+To: test+confunsub-${var##*/}@mlmmjtest
+Return-Path: jane@test
+EOF
+	atf_check $mlmmjreceive -L list -F <confirm-unsub
+	cat > expected-5.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-help@mlmmjtest>
+RCPT TO:<bob@test>
+DATA
+Subject: =?utf-8?q?Goodbye_from_test=40mlmmjtest?=
+From: test+help@mlmmjtest
+To: bob@test
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+Thank you for confirming your unsubscribe. You have now been removed from
+the list.
+
+
+.
+QUIT
+EOF
+	atf_check -o file:expected-5.txt sed -e "/^Message-ID:/d; /^Date:/d" mail-5.txt
+	atf_check -s exit:1 test -f list/subscribers.d/b
 }
