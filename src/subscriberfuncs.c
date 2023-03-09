@@ -266,13 +266,13 @@ generate_subconfirm(struct ml *ml, const char *subaddr, enum subtype typesub,
 	dprintf(subconffd, "%s", subaddr);
 	close(subconffd);
 
-	gen_addr_cookie(fromaddr, ml, "bounces-confsub-", randomstr);
+	gen_addr_cookie(fromaddr, ml, sub ? "bounces-confsub-" : "bounces-confunsub-", randomstr);
 
 	switch(typesub) {
 		default:
 		case SUB_NORMAL:
 			listtext = sub ? "sub-confirm" : "unsub-confirm";
-			tmpstr = sub ? "confsub-" : "confunsub-digest";
+			tmpstr = sub ? "confsub-" : "confunsub-";
 			break;
 		case SUB_DIGEST:
 			listtext = sub ? "sub-confirm-digest" : "unsub-confirm-digest";
