@@ -155,16 +155,19 @@ get_subcookie_content(int listfd, bool unsub, const char *param)
 		return (NULL);
 	}
 	fd = openat(dfd, param, O_RDONLY);
-	close(dfd);
-	if (fd == -1)
+	if (fd == -1) {
+		close(dfd);
 		return (NULL);
+	}
 	f = fdopen(fd, "r");
 	if (getline(&line, &linecap, f) > 0) {
 		chomp(line);
 		fclose(f);
 		unlinkat(dfd, param, 0);
+		close(dfd);
 		return (line);
 	}
+	close(dfd);
 	fclose(f);
 
 	return (NULL);
