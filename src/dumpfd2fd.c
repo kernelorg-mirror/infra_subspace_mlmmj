@@ -62,7 +62,7 @@ int dumpfd2fd(int from, int to)
 #ifdef HAVE_COPY_FILE_RANGE
 		if (cfr) {
 			r = copy_file_range(from, NULL, to, NULL, SSIZE_MAX, 0);
-			if (r < 0 && errno == EINVAL) {
+			if (r < 0 && (errno == EINVAL || errno == EXDEV)) {
 				/* probably a non seekable FD */
 				cfr = false;
 			}
