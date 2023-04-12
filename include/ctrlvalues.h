@@ -21,11 +21,10 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef CTRLVALUES_H
-#define CTRLVALUES_H
+#pragma once
 
 #include "mlmmj.h"
+#include <stdbool.h>
 
 strlist *ctrlvalues(int ctrlfd, const char *ctrlstr);
-
-#endif /* CTRLVALUES_H */
+bool ctrlvalues_contains(int ctrlfd, const char *ctrlstr, const char *pattern, bool sensitivity);

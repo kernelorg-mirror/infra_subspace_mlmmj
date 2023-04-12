@@ -28,6 +28,9 @@
 #include "chomp.h"
 #include "mlmmj.h"
 
+
+typedef int (cmpf)(const char *s1, const char *s2);
+
 strlist *ctrlvalues(int ctrlfd, const char *ctrlstr)
 {
 	char *line = NULL;
@@ -52,4 +55,34 @@ strlist *ctrlvalues(int ctrlfd, const char *ctrlstr)
 	fclose(f);
 
 	return ret;
+}
+
+bool
+ctrlvalues_contains(int ctrlfd, const char *ctrlstr, const char *comp, bool casesensitive)
+{
+	char *line = NULL;
+	size_t linecap = 0;
+	FILE *f;
+	int fd;
+	cmpf *cmp;
+
+	cmp = casesensitive ? strcmp : strcasecmp;
+
+	fd = openat(ctrlfd, ctrlstr, O_RDONLY|O_CLOEXEC);
+	if (fd == -1 || (f = fdopen(fd, "r")) == NULL)
+		return (false);
+	while (getline(&line, &linecap, f) > 0) {
+		chomp(line);
+		if (*line == '\0')
+			continue;
+		if (cmp(comp, line) == 0) {
+			free(line);
+			fclose(f);
+			return (true);
+		}
+	}
+
+	free(line);
+	fclose(f);
+	return (false);
 }

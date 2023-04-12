@@ -1335,6 +1335,10 @@ ATF_TC_BODY(controls, tc)
 	ATF_REQUIRE_EQ(ctrlcontent(-1, "plop"), NULL);
 	ATF_REQUIRE_EQ(ctrlcontent(ctrlfd, "plop"), NULL);
 	ATF_REQUIRE_EQ(ctrlvalues(ctrlfd, "plop"), NULL);
+	ATF_REQUIRE(!ctrlvalues_contains(ctrlfd, "plop", "nope", false));
+	ATF_REQUIRE(ctrlvalues_contains(ctrlfd, "listaddress", "test@test", false));
+	ATF_REQUIRE(!ctrlvalues_contains(ctrlfd, "listaddress", "tesT@test", true));
+	ATF_REQUIRE(ctrlvalues_contains(ctrlfd, "listaddress", "tesT@test", false));
 	ATF_REQUIRE_STREQ(ctrlcontent(ctrlfd, "listaddress"), "test@test\n");
 	ATF_REQUIRE_EQ(ctrltimet(ctrlfd, "listaddress", 0), 0);
 	ATF_REQUIRE_EQ(ctrltimet(ctrlfd, "plop", 0), 0);
@@ -1361,6 +1365,10 @@ ATF_TC_BODY(controls, tc)
 	ATF_REQUIRE_EQ(textcontent(ctrlfd, "text"), NULL);
 	atf_utils_create_file("control/text/text", "this is a test");
 	ATF_REQUIRE_STREQ(textcontent(ctrlfd, "text"), "this is a test");
+
+	ATF_REQUIRE(ctrlvalues_contains(ctrlfd, "val", "line2", true));
+	ATF_REQUIRE(!ctrlvalues_contains(ctrlfd, "val", "Line2", true));
+	ATF_REQUIRE(ctrlvalues_contains(ctrlfd, "val", "Line2", false));
 }
 
 ATF_TC_BODY(incindexfile, tc)
