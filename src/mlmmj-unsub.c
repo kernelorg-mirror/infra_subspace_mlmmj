@@ -70,9 +70,9 @@ static void print_help(const char *prg)
 int main(int argc, char **argv)
 {
 	int opt;
-	int normal = 0, digest = 0, nomail = 0, subbed;
-	int unsubconfirm = 0, notifysub = 0;
-	int changeuid = 1, quiet = 0;
+	bool normal = false, digest = false, nomail = false, subbed;
+	bool unsubconfirm = false, notifysub = false;
+	bool changeuid = true, quiet = false;
 	bool inform_not_subscribed = true;
 	bool send_goodbye_mail = false;
 	char *address = NULL;
@@ -101,22 +101,22 @@ int main(int argc, char **argv)
 			send_goodbye_mail = true;
 			break;
 		case 'C':
-			unsubconfirm = 1;
+			unsubconfirm = true;
 			break;
 		case 'd':
-			digest = 1;
+			digest = true;
 			break;
 		case 'h':
 			print_help(argv[0]);
 			break;
 		case 'n':
-			nomail = 1;
+			nomail = true;
 			break;
 		case 'N':
-			normal = 1;
+			normal = true;
 			break;
 		case 'q':
-			quiet = 1;
+			quiet = true;
 			break;
 		case 'r':
 			reasonsub = SUB_REQUEST;
@@ -128,7 +128,7 @@ int main(int argc, char **argv)
 			inform_not_subscribed = false;
 			break;
 		case 'U':
-			changeuid = 0;
+			changeuid = false;
 			break;
 		case 'V':
 			print_version(argv[0]);
@@ -153,7 +153,6 @@ int main(int argc, char **argv)
 		typesub = SUB_NOMAIL;
 	if(normal)
 		typesub = SUB_NORMAL;
-
 
 	if(send_goodbye_mail && unsubconfirm) {
 		errx(EXIT_FAILURE, "Cannot specify both -C and -c\n"
