@@ -335,7 +335,7 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 		}
 		log_oper(ml->fd, OPLOGFNAME, "mlmmj-sub: %s confirmed"
 			" subscription to %s", tmpstr, subtypename);
-		exec_or_die(mlmmjsub, "-L", ml->dir, "-a", tmpstr, "-n",
+		exec_or_die(mlmmjsub, "-L", ml->dir, "-a", tmpstr, subtype,
 		    "-R", "-c", NULL);
 		break;
 
