@@ -11,7 +11,8 @@ tests_init \
 	subscribe_nomail_confunsub \
 	subscribe_digest_confunsub \
 	subscribe_both \
-	ctrl_list
+	ctrl_list \
+	ctrl_help
 
 mlmmjreceive=$(command -v mlmmj-receive)
 
@@ -1452,4 +1453,72 @@ EOF
 	touch list/control/nolistsubsemail
 	atf_check $mlmmjreceive -L list -F <ctrllist
 	atf_check -s exit:1 test -f mail-3.txt
+}
+
+ctrl_help_body() {
+	atf_check $srcdir/fakesmtpd
+	trap kill_fakesmtp EXIT TERM
+	init_ml list
+	rmdir list/text
+	ln -s ${srcdir}/../listtexts/en list/text
+	echo test@mlmmjtest > list/control/listaddress
+	echo "25678" > list/control/smtpport
+	echo "heloname" > list/control/smtphelo
+
+	cat > ctrlhelp << EOF
+From: bob@test
+To: test+help@mlmmjtest
+Return-Path: jane@test
+EOF
+
+cat > expected-1.txt << EOF
+EHLO heloname
+MAIL FROM:<test+bounces-help@mlmmjtest>
+RCPT TO:<bob@test>
+DATA
+Subject: =?utf-8?q?Information_for_test=40mlmmjtest?=
+From: test+owner@mlmmjtest
+To: bob@test
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+Here is some information about the list.
+
+You can subscribe to the following versions:
+
+- The normal version: Every time a post is sent to the list, subscribers
+  receive a copy of it. Subscribe by emailing <test+subscribe@mlmmjtest>.
+
+- The digest version: Subscribers receive multiple posts in a single mail
+  message, at regular intervals, or when a lot of posts have accumulated.
+  Subscribe by emailing <test+subscribe-digest@mlmmjtest>.
+
+- The no-mail version: Subscribers do not receive any posts to the list.
+  This means, though, they are able to post to a list which only
+  subscribers may post to, while they follow the list using a web archive
+  or another subscribed email address. Subscribe by emailing
+  <test+subscribe-nomail@mlmmjtest>.
+
+Unsubscribe by emailing <test+unsubscribe@mlmmjtest>.
+
+Posts are made by emailing <test@mlmmjtest>.
+
+Subscribers can retrieve message number N from the list's archive by
+sending a message to <test+get-N@mlmmjtest> (change the N to the number of
+the desired message).
+
+You can retrieve the frequently asked questions document for the list by
+sending a message to <test+faq@mlmmjtest>.
+
+To contact the list owner, send a message to <test+owner@mlmmjtest>.
+
+
+.
+QUIT
+EOF
+	atf_check $mlmmjreceive -L list -F <ctrlhelp
+	atf_check -o file:expected-1.txt sed -e "/^Message-ID:/d; /^Date:/d" mail-1.txt
 }

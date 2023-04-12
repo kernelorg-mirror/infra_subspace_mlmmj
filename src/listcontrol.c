@@ -268,7 +268,7 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 			log_error(LOG_ARGS, "A subscribe-both request was"
 				" denied");
 			txt = open_text(ml->fd, "deny", "sub", "disabled",
-					"both", "sub-deny-digest");
+				"both", "sub-deny-digest");
 			MY_ASSERT(txt);
 			register_default_unformatted(txt, ml);
 			register_unformatted(txt, "subaddr",
