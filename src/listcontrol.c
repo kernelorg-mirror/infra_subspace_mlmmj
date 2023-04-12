@@ -129,8 +129,7 @@ get_ctrl_command(const char *controlstr, char **param)
 
 int listcontrol(strlist *fromemails, struct ml *ml,
 		const char *controlstr, const char *mlmmjsub,
-		const char *mlmmjunsub, const char *mlmmjsend,
-		const char *mailname)
+		const char *mlmmjsend, const char *mailname)
 {
 	char *bouncenr, *tmpstr;
 	char *param = NULL, *moderatefilename, *gatekeepfilename;
@@ -142,6 +141,7 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 	strlist *owners;
 	text *txt;
 	char *queuefilename;
+	enum subtype ts = SUB_NONE;
 	const char *subtype = NULL;
 	const char *subtypename = NULL;
 	bounce_t bret;
@@ -379,20 +379,20 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 
 	/* listname+unsubconf-digest-COOKIE@domain.tld */
 	case CTRL_CONFUNSUB_DIGEST:
-		subtype = "-d";
+		ts = SUB_DIGEST;
 		subtypename = "-digest";
 		__attribute__ ((fallthrough));
 	/* listname+unsubconf-nomail-COOKIE@domain.tld */
 	case CTRL_CONFUNSUB_NOMAIL:
-		if (subtype == NULL) {
-			subtype = "-n";
+		if (ts == SUB_NONE) {
+			ts = SUB_NOMAIL;
 			subtypename = "-nomail";
 		}
 		__attribute__ ((fallthrough));
 	/* listname+unsubconf-COOKIE@domain.tld */
 	case CTRL_CONFUNSUB:
-		if (subtype == NULL) {
-			subtype = "";
+		if (ts == SUB_NONE) {
+			ts = SUB_ALL;
 			subtypename = "";
 		}
 		tmpstr = get_subcookie_content(ml->fd, true, param);
@@ -404,8 +404,9 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 				" Ignoring mail", subtypename);
 			return -1;
 		}
-		exec_or_die(mlmmjunsub, "-L", ml->dir, "-a", tmpstr, "-R", "-c",
-		    subtype, NULL);
+		do_unsubscribe(ml, tmpstr, ts, SUB_CONFIRM,
+		    false, false, false, true);
+		exit(EXIT_SUCCESS);
 		break;
 
 	/* listname+bounces-INDEX-user=example.tld@domain.tld */

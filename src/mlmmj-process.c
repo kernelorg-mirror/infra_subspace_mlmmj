@@ -382,7 +382,7 @@ int main(int argc, char **argv)
 	bool subonlypost, modonlypost, modnonsubposts, foundaddr = false;
 	char *mailfile = NULL, *donemailname = NULL;
 	char *randomstr = NULL, *mqueuename, *omitfilename;
-	char *mlmmjsend, *mlmmjsub, *mlmmjunsub;
+	char *mlmmjsend, *mlmmjsub;
 	char *bindir, *subjectprefix, *discardname;
 	text *txt;
 	char *queuefilename, *recipextra = NULL, *owner = NULL;
@@ -423,7 +423,6 @@ int main(int argc, char **argv)
 	bindir = mydirname(argv[0]);
 	xasprintf(&mlmmjsend, "%s/mlmmj-send", bindir);
 	xasprintf(&mlmmjsub, "%s/mlmmj-sub", bindir);
-	xasprintf(&mlmmjunsub, "%s/mlmmj-unsub", bindir);
 	free(bindir);
 
 	while ((opt = getopt(argc, argv, "hVPm:L:")) != -1) {
@@ -676,7 +675,7 @@ int main(int argc, char **argv)
 			    efrom, "-s", owner, "-a", "-m", donemailname, NULL);
 		}
 #if 0
-		log_error(LOG_ARGS, "listcontrol(from, %s, %s, %s, %s, %s, %s, %s)\n", listdir, toemails.emaillist[0], mlmmjsub, mlmmjunsub, mlmmjsend, mlmmjbounce, donemailname);
+		log_error(LOG_ARGS, "listcontrol(from, %s, %s, %s, %s, %s, %s, %s)\n", listdir, toemails.emaillist[0], mlmmjsub, mlmmjsend, mlmmjbounce, donemailname);
 #endif
 		unlink(mailfile);
 		if (tll_length(originalfromemails) > 0)
@@ -684,8 +683,7 @@ int main(int argc, char **argv)
 		else
 			testfrom = &fromemails;
 		listcontrol(testfrom, &ml, recipextra,
-			    mlmmjsub, mlmmjunsub, mlmmjsend,
-			    donemailname);
+			    mlmmjsub, mlmmjsend, donemailname);
 
 		return EXIT_SUCCESS;
 	}

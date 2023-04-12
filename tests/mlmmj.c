@@ -2442,20 +2442,20 @@ ATF_TC_BODY(listcontrol, tc)
 	strlist fromemails = tll_init();
 
 	ATF_REQUIRE(ml_open(&ml, false));
-	ATF_REQUIRE_EQ(listcontrol(NULL, &ml, "plop", NULL, NULL, NULL, "meh"), -1);
+	ATF_REQUIRE_EQ(listcontrol(NULL, &ml, "plop", NULL, NULL, "meh"), -1);
 
-	ATF_REQUIRE_EQ(listcontrol(&fromemails, &ml, "help", NULL, NULL, NULL, "meh"), -1);
+	ATF_REQUIRE_EQ(listcontrol(&fromemails, &ml, "help", NULL, NULL, "meh"), -1);
 
 	atf_utils_create_file("list/control/closedlist", "");
 	atf_utils_create_file("meh", "mail");
 	tll_push_back(fromemails, "plop@test");
-	ATF_REQUIRE_EQ(listcontrol(&fromemails, &ml, "unsubscribe", NULL, NULL, NULL, "meh"), -1);
+	ATF_REQUIRE_EQ(listcontrol(&fromemails, &ml, "unsubscribe", NULL, NULL, "meh"), -1);
 	if (atf_utils_file_exists("me"))
 		atf_tc_fail("mail should have been removed");
 
 	unlink("list/control/closedlist");
 	atf_utils_create_file("list/control/closedlistsub", "");
-	ATF_REQUIRE_EQ(listcontrol(&fromemails, &ml, "subscribe", NULL, NULL, NULL, "meh"), -1);
+	ATF_REQUIRE_EQ(listcontrol(&fromemails, &ml, "subscribe", NULL, NULL, "meh"), -1);
 }
 
 ATF_TC_BODY(send_help, tc)
