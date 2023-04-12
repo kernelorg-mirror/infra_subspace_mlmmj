@@ -662,7 +662,7 @@ permit:
 				}
 			}
 		}
-		if (owner != NULL) {
+		if (owner == NULL) {
 			errno = 0;
 			log_error(LOG_ARGS, "A list request was sent to the"
 				" list from a non-owner address."

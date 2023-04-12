@@ -10,7 +10,8 @@ tests_init \
 	subscribe_nomail \
 	subscribe_nomail_confunsub \
 	subscribe_digest_confunsub \
-	subscribe_both
+	subscribe_both \
+	ctrl_list
 
 mlmmjreceive=$(command -v mlmmj-receive)
 
@@ -1370,4 +1371,85 @@ the list.
 QUIT
 EOF
 	atf_check -o file:expected-5.txt sed -e "/^Message-ID:/d; /^Date:/d" mail-5.txt
+}
+
+ctrl_list_body() {
+	atf_check $srcdir/fakesmtpd
+	trap kill_fakesmtp EXIT TERM
+	init_ml list
+	rmdir list/text
+	ln -s ${srcdir}/../listtexts/en list/text
+	echo test@mlmmjtest > list/control/listaddress
+	echo "25678" > list/control/smtpport
+	echo "heloname" > list/control/smtphelo
+
+	cat > ctrllist << EOF
+From: bob@test
+To: test+list@mlmmjtest
+Return-Path: jane@test
+EOF
+
+	atf_check $mlmmjreceive -L list -F <ctrllist
+	atf_check -s exit:1 test -f mail-1.txt
+
+	echo "bob@test" > list/control/owner
+	atf_check $mlmmjreceive -L list -F <ctrllist
+
+cat > expected-1.txt << EOF
+EHLO heloname
+MAIL FROM:<test+bounces-help@mlmmjtest>
+RCPT TO:<bob@test>
+DATA
+Subject: =?utf-8?q?Subscribers_to_test=40mlmmjtest?=
+From: test+owner@mlmmjtest
+To: bob@test
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+Here is the list of subscribers (to all versions of the list):
+
+
+
+.
+QUIT
+EOF
+	atf_check -o file:expected-1.txt sed -e "/^Message-ID:/d; /^Date:/d" mail-1.txt
+
+	printf "bob@test" > list/control/owner
+	printf "jane@doe.org\njo@bob.org\n" > list/subscribers.d/j
+	printf "jane@doe.org\n" > list/digesters.d/j
+	printf "bob@doe.org" > list/nomailsubs.d/b
+cat > expected-2.txt << EOF
+EHLO heloname
+MAIL FROM:<test+bounces-help@mlmmjtest>
+RCPT TO:<bob@test>
+DATA
+Subject: =?utf-8?q?Subscribers_to_test=40mlmmjtest?=
+From: test+owner@mlmmjtest
+To: bob@test
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+Here is the list of subscribers (to all versions of the list):
+
+- jane@doe.org
+- jo@bob.org
+- jane@doe.org
+- bob@doe.org
+
+
+.
+QUIT
+EOF
+	atf_check $mlmmjreceive -L list -F <ctrllist
+	atf_check -o file:expected-2.txt sed -e "/^Message-ID:/d; /^Date:/d" mail-2.txt
+	touch list/control/nolistsubsemail
+	atf_check $mlmmjreceive -L list -F <ctrllist
+	atf_check -s exit:1 test -f mail-3.txt
 }
