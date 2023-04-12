@@ -38,6 +38,7 @@
 #include "tllist.h"
 #include "xmalloc.h"
 #include "ctrlvalue.h"
+#include "utils.h"
 
 int
 initsmtp(int *sockfd, const char *relayhost, unsigned short port, const char *heloname)
@@ -451,5 +452,134 @@ requeuemail(int listfd, int index, strlist *addrs, const char *addr)
 	close(addrfd);
 
 	return (true);
+}
+
+char *
+get_bounce_from_adr(const char *recipient, struct ml *ml,
+    const char *mailfilename, int index)
+{
+	char *bounceaddr, *myrecipient;
+	char *a = NULL, *mymailfilename;
+	char *staticbounceaddr, *staticbounceaddr_localpart;
+	char *staticbounceaddr_domain;
+
+	mymailfilename = xstrdup(mailfilename);
+
+	myrecipient = xstrdup(recipient);
+	a = strchr(myrecipient, '@');
+	if (a)
+		*a = '=';
+
+	staticbounceaddr = ctrlvalue(ml->ctrlfd, "staticbounceaddr");
+	if (staticbounceaddr) {
+		staticbounceaddr_localpart = genlistname(staticbounceaddr);
+		staticbounceaddr_domain = genlistfqdn(staticbounceaddr);
+	} else {
+		staticbounceaddr_localpart = NULL;
+		staticbounceaddr_domain = NULL;
+	}
+
+	if (staticbounceaddr) {
+		xasprintf(&bounceaddr, "%s%s%s-bounces-%d-%s@%s",
+			staticbounceaddr_localpart, ml->delim, ml->name,
+			index, myrecipient, staticbounceaddr_domain);
+
+		free(staticbounceaddr);
+		free(staticbounceaddr_localpart);
+		free(staticbounceaddr_domain);
+	} else {
+		xasprintf(&bounceaddr, "%s%sbounces-%d-%s@%s", ml->name,
+		    ml->delim, index, myrecipient, ml->fqdn);
+	}
+
+	free(myrecipient);
+	free(mymailfilename);
+
+	return bounceaddr;
+}
+
+char *
+bounce_from_adr(const char *recipient, const char *listadr,
+		      const char *listdelim, const char *mailfilename,
+		      int ctrlfd)
+{
+	char *bounceaddr, *myrecipient, *mylistadr;
+	char *listdomain, *a = NULL, *mymailfilename;
+	char *staticbounceaddr, *staticbounceaddr_localpart;
+	char *staticbounceaddr_domain;
+	int index;
+
+	mymailfilename = xstrdup(mailfilename);
+
+	index = get_index_from_filename(mymailfilename);
+
+	myrecipient = xstrdup(recipient);
+	a = strchr(myrecipient, '@');
+	if (a)
+		*a = '=';
+
+	mylistadr = xstrdup(listadr);
+	listdomain = strchr(mylistadr, '@');
+	if (!listdomain) {
+		free(mymailfilename);
+		free(myrecipient);
+		free(mylistadr);
+		return NULL;
+	}
+	*listdomain++ = '\0';
+
+	staticbounceaddr = ctrlvalue(ctrlfd, "staticbounceaddr");
+	if (staticbounceaddr) {
+		staticbounceaddr_localpart = genlistname(staticbounceaddr);
+		staticbounceaddr_domain = genlistfqdn(staticbounceaddr);
+	} else {
+		staticbounceaddr_localpart = NULL;
+		staticbounceaddr_domain = NULL;
+	}
+
+	if (staticbounceaddr) {
+		xasprintf(&bounceaddr, "%s%s%s-bounces-%d-%s@%s",
+			staticbounceaddr_localpart, listdelim, mylistadr,
+			index, myrecipient, staticbounceaddr_domain);
+
+		free(staticbounceaddr);
+		free(staticbounceaddr_localpart);
+		free(staticbounceaddr_domain);
+	} else {
+		xasprintf(&bounceaddr, "%s%sbounces-%d-%s@%s", mylistadr, listdelim,
+			index, myrecipient, listdomain);
+	}
+
+	free(myrecipient);
+	free(mylistadr);
+	free(mymailfilename);
+
+	return bounceaddr;
+}
+
+int
+get_index_from_filename(const char *filename)
+{
+	char *myfilename, *indexstr;
+	int ret;
+	size_t len;
+
+	myfilename = xstrdup(filename);
+	len = strlen(myfilename);
+	if (len > 9 && (strcmp(myfilename + len - 9, "/mailfile") == 0)) {
+		myfilename[len - 9] = '\0';
+	}
+
+	indexstr = strrchr(myfilename, '/');
+	if (indexstr) {
+		indexstr++;  /* skip the slash */
+	} else {
+		indexstr = myfilename;
+	}
+
+	ret = strtoim(indexstr, 0, INT_MAX, NULL);
+	free(myfilename);
+
+	return ret;
 }
 

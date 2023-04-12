@@ -44,3 +44,7 @@ int do_bouncemail(int listfd, int ctrlfd, const char *from);
 bool send_single_mail(struct mail *mail, struct ml *ml, bool bounce);
 void save_queue(const char *queuefilename, struct mail *mail);
 bool requeuemail(int listfd, int index, strlist *addrs, const char *addr);
+char *bounce_from_adr(const char *recipient, const char *listadr, const char *listdelim, const char *mailfilename, int ctrlfd);
+char *get_bounce_from_adr(const char *recipient, struct ml *ml, const char *mailfilename, int index);
+int get_index_from_filename(const char *filename);
+

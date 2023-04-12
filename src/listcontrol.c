@@ -21,13 +21,15 @@
  * IN THE SOFTWARE.
  */
 
+#include <sys/param.h>
+#include <sys/types.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <sys/types.h>
 #include <ctype.h>
 
 #include "xmalloc.h"
@@ -36,6 +38,7 @@
 #include "prepstdreply.h"
 #include "send_help.h"
 #include "send_list.h"
+#include "send_mail.h"
 #include "log_error.h"
 #include "statctrl.h"
 #include "mygetline.h"
@@ -627,16 +630,22 @@ permit:
 			    " non-digits in index. Ignoring mail");
 			return -1;
 		}
-		xasprintf(&archivefilename, "%s/archive/%s", ml->dir, param);
-		if(access(archivefilename, R_OK) < 0) {
+		int index = strtoim(param, 0, INT_MAX, NULL);
+		xasprintf(&archivefilename, "archive/%d", index);
+		int fd = openat(ml->fd, archivefilename, O_RDONLY|O_CLOEXEC);
+		if (fd == -1) {
 			log_error(LOG_ARGS, "Unable to open archive file");
+			free(archivefilename);
 			return -1;
 		}
+		struct mail mail = { 0 };
+		mail.to = tll_front(*fromemails);
+		mail.from = get_bounce_from_adr(mail.to, ml, archivefilename, index);
+		mail.fp = fdopen(fd, "r");
 		log_oper(ml->fd, OPLOGFNAME, "%s got archive/%s",
-				tll_front(*fromemails), archivefilename);
-		exec_or_die(mlmmjsend, "-T", tll_front(*fromemails), "-L",
-		    ml->dir, "-l", "6", "-m", archivefilename, "-a", "-D",
-		    NULL);
+				tll_front(*fromemails), param);
+		if (!send_single_mail(&mail, ml, false))
+			return (-1);
 		break;
 
 	/* listname+list@domain.tld */
