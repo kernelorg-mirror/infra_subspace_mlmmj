@@ -623,18 +623,16 @@ permit:
 			}
 		}
 		/* sanity check--is it all digits? */
-		for(c = param; *c != '\0'; c++) {
-			if(!isdigit((int)*c)) {
-				errno = 0;
-				log_error(LOG_ARGS, "The get request contained"
-					" non-digits in index. Ignoring mail");
-				return -1;
-			}
+		if (param[strspn(param, "0123456789")] != '\0') {
+			errno = 0;
+			log_error(LOG_ARGS, "The get request contained"
+			    " non-digits in index. Ignoring mail");
+			return -1;
 		}
 		xasprintf(&archivefilename, "%s/archive/%s", ml->dir, param);
 		if(access(archivefilename, R_OK) < 0) {
 			log_error(LOG_ARGS, "Unable to open archive file");
-			exit(EXIT_FAILURE);
+			return -1;
 		}
 		log_oper(ml->fd, OPLOGFNAME, "%s got archive/%s",
 				tll_front(*fromemails), archivefilename);
