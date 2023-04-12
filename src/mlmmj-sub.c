@@ -320,10 +320,11 @@ int main(int argc, char **argv)
 	char *mlmmjsend, *bindir;
 	char *address = NULL, *modstr = NULL;
 	bool send_welcome_mail = false;
-	int opt, subconfirm = 0, notifysub;
-	int changeuid = 1, digest = 0, nomail = 0, both = 0;
-	int nogensubscribed = 0;
-	int force = 0, quiet = 0;
+	int opt;
+	bool subconfirm = false, notifysub;
+	bool changeuid = true, digest = false, nomail = false, both = false;
+	bool nogensubscribed = false;
+	bool force = false, quiet = false;
 	enum subtype subbed;
 	struct stat st;
 	uid_t uid;
@@ -349,19 +350,19 @@ int main(int argc, char **argv)
 			address = optarg;
 			break;
 		case 'b':
-			both = 1;
+			both = true;
 			break;
 		case 'c':
 			send_welcome_mail = true;
 			break;
 		case 'C':
-			subconfirm = 1;
+			subconfirm = true;
 			break;
 		case 'd':
-			digest = 1;
+			digest = true;
 			break;
 		case 'f':
-			force = 1;
+			force = true;
 			break;
 		case 'h':
 			print_help(argv[0]);
@@ -373,10 +374,10 @@ int main(int argc, char **argv)
 			modstr = optarg;
 			break;
 		case 'n':
-			nomail = 1;
+			nomail = true;
 			break;
 		case 'q':
-			quiet = 1;
+			quiet = true;
 			break;
 		case 'r':
 			reasonsub = SUB_REQUEST;
@@ -385,10 +386,10 @@ int main(int argc, char **argv)
 			reasonsub = SUB_CONFIRM;
 			break;
 		case 's':
-			nogensubscribed = 1;
+			nogensubscribed = true;
 			break;
 		case 'U':
-			changeuid = 0;
+			changeuid = false;
 			break;
 		case 'V':
 			print_version(argv[0]);
