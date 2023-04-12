@@ -379,53 +379,33 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 
 	/* listname+unsubconf-digest-COOKIE@domain.tld */
 	case CTRL_CONFUNSUB_DIGEST:
-		tmpstr = get_subcookie_content(ml->fd, true, param);
-		if (tmpstr == NULL) {
-			/* invalid COOKIE */
-			errno = 0;
-			log_error(LOG_ARGS, "An unsubconf-digest request was"
-				" sent with a mismatching cookie."
-				" Ignoring mail");
-			return -1;
-		}
-		log_oper(ml->fd, OPLOGFNAME, "mlmmj-unsub: %s confirmed"
-			" unsubscribe from digest", tmpstr);
-		exec_or_die(mlmmjunsub, "-L", ml->dir, "-a", tmpstr, "-d",
-		    "-R", "-c", NULL);
-		break;
-
+		subtype = "-d";
+		subtypename = "-digest";
+		__attribute__ ((fallthrough));
 	/* listname+unsubconf-nomail-COOKIE@domain.tld */
 	case CTRL_CONFUNSUB_NOMAIL:
-		tmpstr = get_subcookie_content(ml->fd, true, param);
-		if (tmpstr == NULL) {
-			/* invalid COOKIE */
-			errno = 0;
-			log_error(LOG_ARGS, "An unsubconf-nomail request was"
-				" sent with a mismatching cookie."
-				" Ignoring mail");
-			return -1;
+		if (subtype == NULL) {
+			subtype = "-n";
+			subtypename = "-nomail";
 		}
-		log_oper(ml->fd, OPLOGFNAME, "mlmmj-unsub: %s confirmed"
-			" unsubscribe from nomail", tmpstr);
-		exec_or_die(mlmmjunsub, "-L", ml->dir, "-a", tmpstr, "-n",
-		    "-R", "-c", NULL);
-		break;
-
+		__attribute__ ((fallthrough));
 	/* listname+unsubconf-COOKIE@domain.tld */
 	case CTRL_CONFUNSUB:
+		if (subtype == NULL) {
+			subtype = "";
+			subtypename = "";
+		}
 		tmpstr = get_subcookie_content(ml->fd, true, param);
 		if (tmpstr == NULL) {
 			/* invalid COOKIE */
 			errno = 0;
-			log_error(LOG_ARGS, "An unsubconf request was"
+			log_error(LOG_ARGS, "An unsubconf%s request was"
 				" sent with a mismatching cookie."
-				" Ignoring mail");
+				" Ignoring mail", subtypename);
 			return -1;
 		}
-		log_oper(ml->fd, OPLOGFNAME, "mlmmj-unsub: %s confirmed"
-			" unsubscribe from regular list", tmpstr);
 		exec_or_die(mlmmjunsub, "-L", ml->dir, "-a", tmpstr, "-R", "-c",
-		    NULL);
+		    subtype, NULL);
 		break;
 
 	/* listname+bounces-INDEX-user=example.tld@domain.tld */
