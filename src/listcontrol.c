@@ -136,8 +136,8 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 	char *omitfilename;
 	char *omit = NULL;
 	char *c, *archivefilename, *sendfilename, *tosend;
-	bool nosubconfirm, subonlyget;
-	int tmpfd, noget;
+	bool nosubconfirm;
+	int tmpfd;
 	text *txt;
 	char *queuefilename;
 	enum subtype ts = SUB_NONE;
@@ -603,15 +603,13 @@ permit:
 
 	/* listname+get-INDEX@domain.tld */
 	case CTRL_GET:
-		noget = statctrl(ml->ctrlfd, "noget");
-		if(noget) {
+		if (statctrl(ml->ctrlfd, "noget")) {
 			errno = 0;
 			log_error(LOG_ARGS, "A get request was sent to a list"
 				" with the noget option set. Ignoring mail");
 			return -1;
 		}
-		subonlyget = statctrl(ml->ctrlfd, "subonlyget");
-		if(subonlyget) {
+		if (statctrl(ml->ctrlfd, "subonlyget")) {
 			if(is_subbed(ml->fd, tll_front(*fromemails), 0) ==
 					SUB_NONE) {
 				errno = 0;
