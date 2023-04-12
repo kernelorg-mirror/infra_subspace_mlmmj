@@ -181,7 +181,7 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 	close_text(txt);
 
 	/* we might need to exec more than one mlmmj-send */
-	
+
 	notifymod = !efromismod && statctrl(ml->ctrlfd,"notifymod");
 
 	if (notifymod) {
@@ -821,7 +821,7 @@ int main(int argc, char **argv)
 			moderated = 1;
 			modreason = ACCESS;
 		} else if (accret == DISCARD) {
-			xasprintf(&discardname, "%s/queue/discardrd/%s", ml.dir,
+			xasprintf(&discardname, "%s/queue/discarded/%s", ml.dir,
 			    randomstr);
 			free(randomstr);
                 	if(rename(donemailname, discardname) < 0) {
