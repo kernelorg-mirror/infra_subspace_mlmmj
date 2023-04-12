@@ -13,7 +13,8 @@ tests_init \
 	subscribe_both \
 	ctrl_list \
 	ctrl_help \
-	ctrl_faq
+	ctrl_faq \
+	ctrl_get
 
 mlmmjreceive=$(command -v mlmmj-receive)
 
@@ -1561,3 +1562,89 @@ EOF
 	atf_check $mlmmjreceive -L list -F <ctrlhelp
 	atf_check -o file:expected-1.txt sed -e "/^Message-ID:/d; /^Date:/d" mail-1.txt
 }
+
+ctrl_get_body() {
+	atf_check $srcdir/fakesmtpd
+	trap kill_fakesmtp EXIT TERM
+	init_ml list
+	rmdir list/text
+	ln -s ${srcdir}/../listtexts/en list/text
+	echo test@mlmmjtest > list/control/listaddress
+	echo "25678" > list/control/smtpport
+	echo "heloname" > list/control/smtphelo
+
+	cat > ctrlget << EOF
+From: bob@test
+To: test+get-1@mlmmjtest
+Return-Path: jane@test
+EOF
+
+	cat > ctrlbadget <<EOF
+From: bob@text
+To: test+get-1ab2@mlmmjtest
+Return-Path: jane@test
+EOF
+	touch list/control/noget
+	atf_check -s exit:0 $mlmmjreceive -L list -F <ctrlget
+	atf_check -s exit:1 test -f mail-1.txt
+
+	rm list/control/noget
+	touch list/control/subonlyget
+	atf_check -s exit:0 $mlmmjreceive -L list -F <ctrlget
+	atf_check -s exit:1 test -f mail-1.txt
+
+	echo "bob@test" > list/subscribers.d/b
+	atf_check -s exit:0 $mlmmjreceive -L list -F <ctrlget
+	atf_check -s exit:1 test -f mail-1.txt
+
+	rm list/control/subonlyget
+	atf_check -s exit:0 $mlmmjreceive -L list -F <ctrlget
+	atf_check -s exit:1 test -f mail-1.txt
+
+	atf_check -s exit:0 $mlmmjreceive -L list -F <ctrlbadget
+	atf_check -s exit:1 test -f mail-1.txt
+
+cat > list/archive/1 <<EOF
+meh
+EOF
+
+cat > expected-1.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-1-bob=test@mlmmjtest>
+RCPT TO:<bob@test>
+DATA
+meh
+
+.
+QUIT
+EOF
+	atf_check -s exit:0 $mlmmjreceive -L list -F <ctrlget
+	atf_check -o file:expected-1.txt sed -e "/^Message-ID:/d; /^Date:/d" mail-1.txt
+
+cat > list/archive/1 <<EOF
+From: plop
+To: test@mlmmjtest
+Subject: meh
+
+meh
+EOF
+
+cat > expected-1.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-1-bob=test@mlmmjtest>
+RCPT TO:<bob@test>
+DATA
+From: plop
+To: test@mlmmjtest
+Subject: meh
+
+meh
+
+.
+QUIT
+EOF
+	atf_check -s exit:0 $mlmmjreceive -L list -F <ctrlget
+	atf_check -o file:expected-1.txt sed -e "/^Message-ID:/d; /^Date:/d" mail-2.txt
+}
+
+
