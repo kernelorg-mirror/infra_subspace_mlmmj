@@ -107,28 +107,15 @@ char *bounce_from_adr(const char *recipient, const char *listadr,
 	int index;
 
 	mymailfilename = xstrdup(mailfilename);
-	if (!mymailfilename) {
-		return NULL;
-	}
 
 	index = get_index_from_filename(mymailfilename);
 
 	myrecipient = xstrdup(recipient);
-	if (!myrecipient) {
-		free(mymailfilename);
-		return NULL;
-	}
 	a = strchr(myrecipient, '@');
 	if (a)
 		*a = '=';
 
 	mylistadr = xstrdup(listadr);
-	if (!mylistadr) {
-		free(mymailfilename);
-		free(myrecipient);
-		return NULL;
-	}
-
 	listdomain = strchr(mylistadr, '@');
 	if (!listdomain) {
 		free(mymailfilename);
