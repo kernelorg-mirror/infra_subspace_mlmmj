@@ -657,7 +657,7 @@ permit:
 					log_oper(ml->fd, OPLOGFNAME,
 							"%s requested sub list",
 					tll_front(*fromemails));
-					owner = it->item;
+					owner = tll_front(*fromemails);
 					break;
 				}
 			}
@@ -668,9 +668,8 @@ permit:
 				" list from a non-owner address."
 				" Ignoring mail");
 			return -1;
-		} else {
-			send_list(ml, owner);
 		}
+		send_list(ml, owner);
 		if (owners != NULL)
 			tll_free_and_free(*owners, free);
 		free(owners);
