@@ -209,9 +209,9 @@ int main(int argc, char **argv)
 
 	notifysub = !quiet && statctrl(ml.ctrlfd, "notifysub");
 
-        /* Notify list owner about subscription */
-        if (notifysub)
-                notify_sub(&ml, address, typesub, reasonsub, false);
+	/* Notify list owner about subscription */
+	if (notifysub)
+		notify_sub(&ml, address, typesub, reasonsub, false);
 
 	free(address);
 
