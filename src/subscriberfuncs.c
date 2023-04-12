@@ -371,6 +371,7 @@ do_unsubscribe(struct ml *ml, const char *addr, enum subtype typesub,
 		if (fd == -1) {
 			log_error(LOG_ARGS, "Could not opendir(%s/%s)", ml->dir,
 			    subdir);
+			free(address);
 			return (false);
 		}
 		subscribed = is_subbed_in(fd, subdir, address);
@@ -380,6 +381,7 @@ do_unsubscribe(struct ml *ml, const char *addr, enum subtype typesub,
 	if (!subscribed) {
 		if (inform_not_subscribed)
 			generate_subscription(ml, address, typesub, false);
+		free(address);
 		return (true);
 	}
 	if (confirm_unsubscription)
