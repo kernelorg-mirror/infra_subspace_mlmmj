@@ -494,7 +494,7 @@ EOF
 
 	cat > unsubscribe <<EOF
 From: bob@test
-To: test+unsubscribe@mlmmjtest
+To: test+unsubscribe-digest@mlmmjtest
 Return-Path: jane@test
 EOF
 	atf_check $mlmmjreceive -L list -F <unsubscribe
@@ -560,7 +560,7 @@ the list.
 QUIT
 EOF
 	atf_check -o file:expected-5.txt sed -e "/^Message-ID:/d; /^Date:/d" mail-5.txt
-	atf_check -s exit:1 test -f list/subscribers.d/b
+	atf_check -s exit:1 test -f list/digesters.d/b
 }
 
 subscribe_nomail_body()
@@ -697,7 +697,7 @@ EOF
 
 	cat > unsubscribe <<EOF
 From: bob@test
-To: test+unsubscribe@mlmmjtest
+To: test+unsubscribe-nomail@mlmmjtest
 Return-Path: jane@test
 EOF
 	atf_check $mlmmjreceive -L list -F <unsubscribe
@@ -763,7 +763,7 @@ the list.
 QUIT
 EOF
 	atf_check -o file:expected-5.txt sed -e "/^Message-ID:/d; /^Date:/d" mail-5.txt
-	atf_check -s exit:1 test -f list/subscribers.d/b
+	atf_check -s exit:1 test -f list/nomailsubs.d/b
 }
 
 subscribe_both_body()
@@ -964,4 +964,5 @@ QUIT
 EOF
 	atf_check -o file:expected-5.txt sed -e "/^Message-ID:/d; /^Date:/d" mail-5.txt
 	atf_check -s exit:1 test -f list/subscribers.d/b
+	atf_check -s exit:1 test -f list/digesters.d/b
 }
