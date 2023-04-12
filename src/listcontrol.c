@@ -579,18 +579,18 @@ permit:
 		send_help(ml, queuefilename, tll_front(*fromemails));
 		break;
 
-       /* listname+faq@domain.tld */
-        case CTRL_FAQ:
-               if(!strchr(tll_front(*fromemails), '@')) {
-                       /* Not a valid From: address */
-                       errno = 0;
-                       log_error(LOG_ARGS, "A faq request was"
-                               " sent with an invalid From: header."
-                               " Ignoring mail");
-                       return -1;
-               }
-               log_oper(ml->fd, OPLOGFNAME, "%s requested faq",
-                               tll_front(*fromemails));
+	/* listname+faq@domain.tld */
+	case CTRL_FAQ:
+		if(!strchr(tll_front(*fromemails), '@')) {
+			/* Not a valid From: address */
+			errno = 0;
+			log_error(LOG_ARGS, "A faq request was"
+			    " sent with an invalid From: header."
+			    " Ignoring mail");
+			return -1;
+		}
+		log_oper(ml->fd, OPLOGFNAME, "%s requested faq",
+		    tll_front(*fromemails));
 		txt = open_text(ml->fd, "faq", NULL, NULL, NULL, "listfaq");
 		MY_ASSERT(txt);
 		register_default_unformatted(txt, ml);
@@ -599,7 +599,7 @@ permit:
 		MY_ASSERT(queuefilename);
 		close_text(txt);
 		send_help(ml, queuefilename, tll_front(*fromemails));
-               break;
+		break;
 
 	/* listname+get-INDEX@domain.tld */
 	case CTRL_GET:
