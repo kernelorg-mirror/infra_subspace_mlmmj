@@ -138,7 +138,6 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 	char *c, *archivefilename, *sendfilename, *tosend;
 	bool nosubconfirm, subonlyget;
 	int tmpfd, noget;
-	strlist *owners;
 	text *txt;
 	char *queuefilename;
 	enum subtype ts = SUB_NONE;
@@ -648,21 +647,8 @@ permit:
 	case CTRL_LIST:
 		if(statctrl(ml->ctrlfd, "nolistsubsemail"))
 			return -1;
-		const char *owner = NULL;
-		owners = ctrlvalues(ml->ctrlfd, "owner");
-		if (owners != NULL) {
-			tll_foreach(*owners, it) {
-				if(strcasecmp(tll_front(*fromemails),
-							it->item) == 0) {
-					log_oper(ml->fd, OPLOGFNAME,
-							"%s requested sub list",
-					tll_front(*fromemails));
-					owner = tll_front(*fromemails);
-					break;
-				}
-			}
-		}
-		if (owner == NULL) {
+		const char *owner = tll_front(*fromemails);
+		if (!ctrlvalues_contains(ml->ctrlfd, "owner", owner, false)) {
 			errno = 0;
 			log_error(LOG_ARGS, "A list request was sent to the"
 				" list from a non-owner address."
@@ -670,9 +656,6 @@ permit:
 			return -1;
 		}
 		send_list(ml, owner);
-		if (owners != NULL)
-			tll_free_and_free(*owners, free);
-		free(owners);
 		break;
 
 	/* listname+???@domain.tld */
