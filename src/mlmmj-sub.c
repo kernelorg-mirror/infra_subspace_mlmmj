@@ -319,7 +319,8 @@ int main(int argc, char **argv)
 {
 	char *mlmmjsend, *bindir;
 	char *address = NULL, *modstr = NULL;
-	int opt, subconfirm = 0, confirmsub = 0, notifysub;
+	bool send_welcome_mail = false;
+	int opt, subconfirm = 0, notifysub;
 	int changeuid = 1, digest = 0, nomail = 0, both = 0;
 	int nogensubscribed = 0;
 	int force = 0, quiet = 0;
@@ -351,7 +352,7 @@ int main(int argc, char **argv)
 			both = 1;
 			break;
 		case 'c':
-			confirmsub = 1;
+			send_welcome_mail = true;
 			break;
 		case 'C':
 			subconfirm = 1;
@@ -490,8 +491,8 @@ int main(int argc, char **argv)
 		subscribe_type(ml.fd, address, typesub);
 	}
 
-	if(confirmsub)
-		confirm_sub(&ml, address, typesub, reasonsub, true);
+	if(send_welcome_mail)
+		send_confirmation_mail(&ml, address, typesub, reasonsub, true);
 
 	notifysub = !quiet && reasonsub != SUB_SWITCH &&
 			statctrl(ml.ctrlfd, "notifysub");

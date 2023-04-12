@@ -34,4 +34,4 @@ void notify_sub(struct ml *ml, const char *subaddr, enum subtype typesub,
 void generate_subscription(struct ml *ml, const char *subaddr, enum subtype typesub, bool sub);
 void generate_subconfirm(struct ml *ml, const char *subaddr, enum subtype typesub,
     enum subreason reasonsub, bool sub);
-void confirm_sub(struct ml *ml, const char *subaddr, enum subtype typesub, enum subreason reasonsub, bool sub);
+void send_confirmation_mail(struct ml *ml, const char *subaddr, enum subtype typesub, enum subreason reasonsub, bool sub);

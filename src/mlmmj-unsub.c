@@ -71,9 +71,10 @@ int main(int argc, char **argv)
 {
 	int opt;
 	int normal = 0, digest = 0, nomail = 0, subbed;
-	int confirmunsub = 0, unsubconfirm = 0, notifysub = 0;
+	int unsubconfirm = 0, notifysub = 0;
 	int changeuid = 1, quiet = 0;
-	int nogennotsubscribed = 0;
+	bool inform_not_subscribed = true;
+	bool send_goodbye_mail = false;
 	char *address = NULL;
 	const char *subdir;
 	enum subtype typesub = SUB_ALL;
@@ -97,7 +98,7 @@ int main(int argc, char **argv)
 			address = optarg;
 			break;
 		case 'c':
-			confirmunsub = 1;
+			send_goodbye_mail = true;
 			break;
 		case 'C':
 			unsubconfirm = 1;
@@ -124,7 +125,7 @@ int main(int argc, char **argv)
 			reasonsub = SUB_CONFIRM;
 			break;
 		case 's':
-			nogennotsubscribed = 1;
+			inform_not_subscribed = false;
 			break;
 		case 'U':
 			changeuid = 0;
@@ -154,7 +155,7 @@ int main(int argc, char **argv)
 		typesub = SUB_NORMAL;
 
 
-	if(confirmunsub && unsubconfirm) {
+	if(send_goodbye_mail && unsubconfirm) {
 		errx(EXIT_FAILURE, "Cannot specify both -C and -c\n"
 		    "%s -h for help", argv[0]);
 	}
@@ -193,7 +194,7 @@ int main(int argc, char **argv)
 
 	if(!subbed) {
 		/* Address is not subscribed */
-		if(!nogennotsubscribed)
+		if(inform_not_subscribed)
 			generate_subscription(&ml, address, typesub, false);
 		exit(EXIT_SUCCESS);
 	}
@@ -203,8 +204,8 @@ int main(int argc, char **argv)
 
 	unsubscribe(ml.fd, address, typesub);
 
-	if(confirmunsub)
-		confirm_sub(&ml, address, typesub, reasonsub, false);
+	if(send_goodbye_mail)
+		send_confirmation_mail(&ml, address, typesub, reasonsub, false);
 
 	notifysub = !quiet && statctrl(ml.ctrlfd, "notifysub");
 

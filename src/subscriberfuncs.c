@@ -318,7 +318,7 @@ generate_subconfirm(struct ml *ml, const char *subaddr, enum subtype typesub,
 }
 
 void
-confirm_sub(struct ml *ml, const char *subaddr, enum subtype typesub,
+send_confirmation_mail(struct ml *ml, const char *subaddr, enum subtype typesub,
     enum subreason reasonsub, bool sub)
 {
 	text *txt;
