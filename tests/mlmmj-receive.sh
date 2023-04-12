@@ -12,7 +12,8 @@ tests_init \
 	subscribe_digest_confunsub \
 	subscribe_both \
 	ctrl_list \
-	ctrl_help
+	ctrl_help \
+	ctrl_faq
 
 mlmmjreceive=$(command -v mlmmj-receive)
 
@@ -1514,6 +1515,44 @@ You can retrieve the frequently asked questions document for the list by
 sending a message to <test+faq@mlmmjtest>.
 
 To contact the list owner, send a message to <test+owner@mlmmjtest>.
+
+
+.
+QUIT
+EOF
+	atf_check $mlmmjreceive -L list -F <ctrlhelp
+	atf_check -o file:expected-1.txt sed -e "/^Message-ID:/d; /^Date:/d" mail-1.txt
+}
+
+ctrl_faq_body() {
+	atf_check $srcdir/fakesmtpd
+	trap kill_fakesmtp EXIT TERM
+	init_ml list
+	rmdir list/text
+	ln -s ${srcdir}/../listtexts/en list/text
+	echo test@mlmmjtest > list/control/listaddress
+	echo "25678" > list/control/smtpport
+	echo "heloname" > list/control/smtphelo
+
+	cat > ctrlhelp << EOF
+From: bob@test
+To: test+faq@mlmmjtest
+Return-Path: jane@test
+EOF
+
+cat > expected-1.txt << EOF
+EHLO heloname
+MAIL FROM:<test+bounces-help@mlmmjtest>
+RCPT TO:<bob@test>
+DATA
+Subject: =?utf-8?q?Frequently_asked_questions_of_test=40mlmmjtest?=
+From: test+owner@mlmmjtest
+To: bob@test
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+Sorry, no FAQ available yet.
 
 
 .
