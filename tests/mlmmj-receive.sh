@@ -7,7 +7,8 @@ tests_init \
 	simple \
 	subscribe \
 	subscribe_digest \
-	subscribe_nomail
+	subscribe_nomail \
+	subscribe_both
 
 mlmmjreceive=$(command -v mlmmj-receive)
 
@@ -664,6 +665,206 @@ QUIT
 EOF
 	atf_check -o file:expected-2.txt sed -e "/^Message-ID:/d; /^Date:/d" mail-2.txt
 	atf_check -o inline:"bob@test\n" cat list/nomailsubs.d/b
+	atf_check -s exit:1 test -f list/subconf/${var}
+
+# second confirmation
+	atf_check $mlmmjreceive -L list -F <confirm
+	atf_check -s exit:1 test -f mail-3.txt
+	cat > expected-3.txt << EOF
+EHLO heloname
+MAIL FROM:<test+bounces-help@mlmmjtest>
+RCPT TO:<bob@test>
+DATA
+Subject: =?utf-8?q?Unable_to_subscribe_to_test=40mlmmjtest?=
+From: test+help@mlmmjtest
+To: bob@test
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+You were unable to be subscribed to the list because you are already
+subscribed.
+
+
+.
+QUIT
+EOF
+	# New subscribtion
+	atf_check $mlmmjreceive -L list -F <subscribe
+	atf_check -o file:expected-3.txt sed -e "/^Message-ID:/d; /^Date:/d" mail-3.txt
+
+	cat > unsubscribe <<EOF
+From: bob@test
+To: test+unsubscribe@mlmmjtest
+Return-Path: jane@test
+EOF
+	atf_check $mlmmjreceive -L list -F <unsubscribe
+	cat > expected-4.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-confunsub-@mlmmjtest>
+RCPT TO:<bob@test>
+DATA
+Subject: =?utf-8?q?Confirm_unsubscribe_from_test=40mlmmjtest?=
+From: test+help@mlmmjtest
+To: bob@test
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Reply-To: test+confunsub-@mlmmjtest
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+Somebody (and we hope it was you) has requested that the email address
+<bob@test> be removed from the list.
+
+To confirm you want to do this, please send a message to
+<test+confunsub-@mlmmjtest> which can usually be done
+simply by replying to this message. The subject and the body of the message
+can be anything.
+
+After doing so, you should receive a reply informing you that the operation
+succeeded.
+
+If you do not want to do this, simply ignore this message.
+
+
+.
+QUIT
+EOF
+	atf_check -o file:expected-4.txt sed -e "/^Message-ID:/d; /^Date:/d; s/confunsub-.*@mlmmjtest/confunsub-@mlmmjtest/g" mail-4.txt
+	var=$(ls list/unsubconf)
+	cat > confirm-unsub << EOF
+From: bob@test
+To: test+confunsub-${var##*/}@mlmmjtest
+Return-Path: jane@test
+EOF
+	atf_check $mlmmjreceive -L list -F <confirm-unsub
+	cat > expected-5.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-help@mlmmjtest>
+RCPT TO:<bob@test>
+DATA
+Subject: =?utf-8?q?Goodbye_from_test=40mlmmjtest?=
+From: test+help@mlmmjtest
+To: bob@test
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+Thank you for confirming your unsubscribe. You have now been removed from
+the list.
+
+
+.
+QUIT
+EOF
+	atf_check -o file:expected-5.txt sed -e "/^Message-ID:/d; /^Date:/d" mail-5.txt
+	atf_check -s exit:1 test -f list/subscribers.d/b
+}
+
+subscribe_both_body()
+{
+	atf_check $srcdir/fakesmtpd
+	trap kill_fakesmtp EXIT TERM
+	init_ml list
+	rmdir list/text
+	ln -s ${srcdir}/../listtexts/en list/text
+	echo test@mlmmjtest > list/control/listaddress
+	echo "25678" > list/control/smtpport
+	echo "heloname" > list/control/smtphelo
+
+	cat > subscribe << EOF
+From: bob@test
+To: test+subscribe-both@mlmmjtest
+Return-Path: jane@test
+Subject: subscribe
+
+this is a subscribtion test
+EOF
+	atf_check $mlmmjreceive -L list -F <subscribe
+
+cat > expected-1.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-confsub-@mlmmjtest>
+RCPT TO:<bob@test>
+DATA
+Subject: =?utf-8?q?Confirm_subscription_to_test=40mlmmjtest?=
+From: test+help@mlmmjtest
+To: bob@test
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Reply-To: test+confsub-both@mlmmjtest
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+Somebody (and we hope it was you) has requested that your email address
+<bob@test> be added
+
+To confirm you want to do this, please send a message to
+<test+confsub-both@mlmmjtest> which can usually be done
+simply by replying to this message. The subject and the body of the message
+can be anything.
+
+After doing so, you should receive a reply informing you that the operation
+succeeded.
+
+If you do not want to do this, simply ignore this message.
+
+
+.
+QUIT
+EOF
+	atf_check -o file:expected-1.txt sed -e "/^Message-ID:/d; /^Date:/d; s/confsub-both.*@mlmmjtest/confsub-both@mlmmjtest/g; s/bounces-confsub-.*@mlmmjtest/bounces-confsub-@mlmmjtest/g" mail-1.txt
+	var=$(ls list/subconf)
+
+	cat > confirm << EOF
+From: bob@test
+To: test+confsub-both-${var##*/}@mlmmjtest
+Return-Path: jane@test
+Subject: subscribe
+
+this is a subscribtion test
+EOF
+	atf_check $mlmmjreceive -L list -F <confirm
+	cat > expected-2.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-help@mlmmjtest>
+RCPT TO:<bob@test>
+DATA
+Subject: =?utf-8?q?Welcome_to_test=40mlmmjtest?=
+From: test+help@mlmmjtest
+To: bob@test
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+Thank you for confirming your subscription. You have now been added to the
+version of the list.
+
+The email address you are subscribed with is <bob@test>.
+
+If you ever wish to unsubscribe, send a message to
+<test+unsubscribe@mlmmjtest> using this email address. The subject and the
+body of the message can be anything. You will then receive confirmation or
+further instructions.
+
+For other information and help about this list, send a message to
+<test+help@mlmmjtest>.
+
+
+.
+QUIT
+EOF
+	atf_check -o file:expected-2.txt sed -e "/^Message-ID:/d; /^Date:/d" mail-2.txt
+	atf_check -o inline:"bob@test\n" cat list/subscribers.d/b
+	atf_check -o inline:"bob@test\n" cat list/digesters.d/b
 	atf_check -s exit:1 test -f list/subconf/${var}
 
 # second confirmation
