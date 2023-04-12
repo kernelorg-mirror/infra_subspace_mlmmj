@@ -372,9 +372,9 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 		}
 		log_oper(ml->fd, OPLOGFNAME, "mlmmj-unsub: %s requests"
 			" unsubscribe", tll_front(*fromemails));
-		exec_or_die(mlmmjunsub, "-L", ml->dir, "-a",
-		    tll_front(*fromemails), "-r",
-		    (nosubconfirm ? "-c" : "-C"), NULL);
+		do_unsubscribe(ml, tll_front(*fromemails), SUB_ALL, SUB_REQUEST,
+		    false, !nosubconfirm, false, nosubconfirm);
+		exit(EXIT_SUCCESS);
 		break;
 
 	/* listname+unsubconf-digest-COOKIE@domain.tld */

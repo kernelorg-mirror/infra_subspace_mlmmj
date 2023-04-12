@@ -39,6 +39,7 @@
 #include "send_mail.h"
 #include "strgen.h"
 #include "send_help.h"
+#include "statctrl.h"
 
 char *subtype_strs[] = {
 	"normal",
@@ -350,4 +351,48 @@ send_confirmation_mail(struct ml *ml, const char *subaddr, enum subtype typesub,
 	close_text(txt);
 
 	send_help_noexit(ml, queuefilename, subaddr);
+}
+
+bool
+do_unsubscribe(struct ml *ml, const char *addr, enum subtype typesub,
+     enum subreason reasonsub, bool inform_not_subscribed,
+     bool confirm_unsubscription, bool quiet, bool send_goodbye_mail)
+{
+	char *address;
+	bool subscribed = false;
+
+	address = lowercase(addr);
+
+	if (typesub == SUB_ALL) {
+		subscribed = is_subbed(ml->fd, address, false) != SUB_NONE;
+	} else {
+		const char *subdir;
+		int fd = open_subscriber_directory(ml->fd, typesub, &subdir);
+		if (fd == -1) {
+			log_error(LOG_ARGS, "Could not opendir(%s/%s)", ml->dir,
+			    subdir);
+			return (false);
+		}
+		subscribed = is_subbed_in(fd, subdir, address);
+		close(fd);
+	}
+
+	if (!subscribed) {
+		if (inform_not_subscribed)
+			generate_subscription(ml, address, typesub, false);
+		return (true);
+	}
+	if (confirm_unsubscription)
+		generate_subconfirm(ml, address, typesub, reasonsub, false);
+
+	unsubscribe(ml->fd, address, typesub);
+	if (send_goodbye_mail)
+		send_confirmation_mail(ml, address, typesub, reasonsub, false);
+
+	/* Notify list owner about subscription */
+	if (!quiet && statctrl(ml->ctrlfd, "notifysub"))
+		notify_sub(ml, address, typesub, reasonsub, false);
+
+	free(address);
+	return (true);
 }

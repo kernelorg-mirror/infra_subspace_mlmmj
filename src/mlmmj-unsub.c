@@ -70,13 +70,12 @@ static void print_help(const char *prg)
 int main(int argc, char **argv)
 {
 	int opt;
-	bool normal = false, digest = false, nomail = false, subbed;
-	bool unsubconfirm = false, notifysub = false;
+	bool normal = false, digest = false, nomail = false;
+	bool unsubconfirm = false;
 	bool changeuid = true, quiet = false;
 	bool inform_not_subscribed = true;
 	bool send_goodbye_mail = false;
 	char *address = NULL;
-	const char *subdir;
 	enum subtype typesub = SUB_ALL;
 	enum subreason reasonsub = SUB_ADMIN;
 	uid_t uid;
@@ -135,7 +134,7 @@ int main(int argc, char **argv)
 			exit(0);
 		}
 	}
-	if(ml.dir == 0 || address == 0) {
+	if(ml.dir == NULL || address == NULL) {
 		errx(EXIT_FAILURE, "You have to specify -L and -a\n"
 		    "%s -h for help", argv[0]);
 	}
@@ -164,9 +163,6 @@ int main(int argc, char **argv)
 		    "%s -h for help", argv[0]);
 	}
 
-	/* Make the address lowercase */
-	address = lowercase(address);
-
 	if(changeuid) {
 		uid = getuid();
 		if(!uid && fstat(ml.fd, &st) == 0 && uid != st.st_uid) {
@@ -179,40 +175,8 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-
-	if (typesub == SUB_ALL) {
-		subbed = is_subbed(ml.fd, address, false) != SUB_NONE;
-	} else {
-		int subdirfd = open_subscriber_directory(ml.fd, typesub, &subdir);
-		if (subdirfd == -1) {
-			log_error(LOG_ARGS, "Could not opendir(%s/%s)", ml.dir, subdir);
-			exit(EXIT_FAILURE);
-		}
-		subbed = is_subbed_in(subdirfd, subdir, address);
-	}
-
-	if(!subbed) {
-		/* Address is not subscribed */
-		if(inform_not_subscribed)
-			generate_subscription(&ml, address, typesub, false);
-		exit(EXIT_SUCCESS);
-	}
-
-	if(unsubconfirm)
-		generate_subconfirm(&ml, address, typesub, reasonsub, false);
-
-	unsubscribe(ml.fd, address, typesub);
-
-	if(send_goodbye_mail)
-		send_confirmation_mail(&ml, address, typesub, reasonsub, false);
-
-	notifysub = !quiet && statctrl(ml.ctrlfd, "notifysub");
-
-	/* Notify list owner about subscription */
-	if (notifysub)
-		notify_sub(&ml, address, typesub, reasonsub, false);
-
-	free(address);
-
-	return EXIT_SUCCESS;
+	if (do_unsubscribe(&ml, address, typesub, reasonsub, inform_not_subscribed,
+	    unsubconfirm, quiet, send_goodbye_mail))
+		return(EXIT_SUCCESS);
+	return(EXIT_FAILURE);
 }
