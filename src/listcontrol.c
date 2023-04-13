@@ -644,8 +644,10 @@ permit:
 		mail.fp = fdopen(fd, "r");
 		log_oper(ml->fd, OPLOGFNAME, "%s got archive/%s",
 				tll_front(*fromemails), param);
-		if (!send_single_mail(&mail, ml, false))
+		if (!send_single_mail(&mail, ml, true)) {
+			/* TODO: save to queue */
 			return (-1);
+		}
 		break;
 
 	/* listname+list@domain.tld */
