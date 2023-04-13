@@ -487,7 +487,7 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 		log_oper(ml->fd, OPLOGFNAME, "%s released %s",
 				tll_front(*fromemails), param);
 
-		xasprintf(&tosend, "%s/sendfilename", ml->dir);
+		xasprintf(&tosend, "%s/%s", ml->dir, sendfilename);
 		if (omit != NULL)
 			exec_or_die(mlmmjsend, "-L", ml->dir, "-o", omit,
 			    "-m", tosend, NULL);
