@@ -29,7 +29,7 @@
 char *random_str(void);
 char *random_plus_addr(const char *addr);
 char *genlistname(const char *listaddr);
-char *genlistfqdn(const char *listaddr);
+const char *genlistfqdn(const char *listaddr);
 char *hostnamestr(void);
 char *mydirname(const char *path);
 const char *mybasename(const char *path);

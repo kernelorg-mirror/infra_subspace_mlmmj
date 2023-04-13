@@ -460,8 +460,8 @@ get_bounce_from_adr(const char *recipient, struct ml *ml,
 {
 	char *bounceaddr, *myrecipient;
 	char *a = NULL, *mymailfilename;
-	char *staticbounceaddr, *staticbounceaddr_localpart;
-	char *staticbounceaddr_domain;
+	char *staticbounceaddr, *staticbounceaddr_localpart = NULL;
+	const char *staticbounceaddr_domain = NULL;
 
 	mymailfilename = xstrdup(mailfilename);
 
@@ -474,9 +474,6 @@ get_bounce_from_adr(const char *recipient, struct ml *ml,
 	if (staticbounceaddr) {
 		staticbounceaddr_localpart = genlistname(staticbounceaddr);
 		staticbounceaddr_domain = genlistfqdn(staticbounceaddr);
-	} else {
-		staticbounceaddr_localpart = NULL;
-		staticbounceaddr_domain = NULL;
 	}
 
 	if (staticbounceaddr) {
@@ -486,7 +483,6 @@ get_bounce_from_adr(const char *recipient, struct ml *ml,
 
 		free(staticbounceaddr);
 		free(staticbounceaddr_localpart);
-		free(staticbounceaddr_domain);
 	} else {
 		xasprintf(&bounceaddr, "%s%sbounces-%d-%s@%s", ml->name,
 		    ml->delim, index, myrecipient, ml->fqdn);
@@ -505,8 +501,8 @@ bounce_from_adr(const char *recipient, const char *listadr,
 {
 	char *bounceaddr, *myrecipient, *mylistadr;
 	char *listdomain, *a = NULL, *mymailfilename;
-	char *staticbounceaddr, *staticbounceaddr_localpart;
-	char *staticbounceaddr_domain;
+	char *staticbounceaddr, *staticbounceaddr_localpart = NULL;
+	const char *staticbounceaddr_domain = NULL;
 	int index;
 
 	mymailfilename = xstrdup(mailfilename);
@@ -532,9 +528,6 @@ bounce_from_adr(const char *recipient, const char *listadr,
 	if (staticbounceaddr) {
 		staticbounceaddr_localpart = genlistname(staticbounceaddr);
 		staticbounceaddr_domain = genlistfqdn(staticbounceaddr);
-	} else {
-		staticbounceaddr_localpart = NULL;
-		staticbounceaddr_domain = NULL;
 	}
 
 	if (staticbounceaddr) {
@@ -544,7 +537,6 @@ bounce_from_adr(const char *recipient, const char *listadr,
 
 		free(staticbounceaddr);
 		free(staticbounceaddr_localpart);
-		free(staticbounceaddr_domain);
 	} else {
 		xasprintf(&bounceaddr, "%s%sbounces-%d-%s@%s", mylistadr, listdelim,
 			index, myrecipient, listdomain);

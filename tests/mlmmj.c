@@ -880,12 +880,12 @@ ATF_TC_BODY(genlistname, tc)
 
 ATF_TC_BODY(genlistfqdn, tc)
 {
-	char *ret;
+	const char *ret;
 
 	ret = genlistfqdn("plop@bla");
 	ATF_REQUIRE_STREQ(ret, "bla");
 	ret = genlistfqdn("plop@bla@meh");
-	ATF_REQUIRE_STREQ(ret, "bla@meh");
+	ATF_REQUIRE_STREQ(ret, "meh");
 }
 
 ATF_TC_BODY(smtp, tc)

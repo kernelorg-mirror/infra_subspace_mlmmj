@@ -57,13 +57,14 @@ char *genlistname(const char *listaddr)
 	return (xstrndup(listaddr, atsign - listaddr));
 }
 
-char *genlistfqdn(const char *listaddr)
+const char *genlistfqdn(const char *listaddr)
 {
 	const char *atsign;
 
-	atsign = strchr(listaddr, '@');
-	MY_ASSERT(atsign);
-	return (xstrdup(atsign + 1));
+	atsign = strrchr(listaddr, '@');
+	if (atsign == NULL)
+		return (NULL);
+	return (atsign + 1);
 }
 
 char *hostnamestr(void)
