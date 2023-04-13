@@ -435,10 +435,7 @@ int main(int argc, char **argv)
 		}
 		break;
 	case '6':
-		deletewhensent = 0;
-		archivefilename = xstrdup(mailfilename);
-		bounceaddr = bounce_from_adr(mail.to, ml.addr, ml.delim,
-						archivefilename, ml.ctrlfd);
+		errx(EXIT_FAILURE, "-l 6 option does not exist anymore");
 		break;
 	default: /* normal list mail -- now handled when forking */
 		mail.addtohdr = statctrl(ml.ctrlfd, "addtohdr");
@@ -466,17 +463,6 @@ int main(int argc, char **argv)
 	case '5': /* bounceprobe - handle relayhost local users bouncing*/
 		break;
 	case '6':
-		initsmtp(&sockfd, relayhost, smtpport, smtphelo);
-		mail.from = bounceaddr;
-		if(send_mail(sockfd, &mail, ml.fd, ml.ctrlfd, false)) {
-			close(sockfd);
-			sockfd = -1;
-			/* error, so keep it in the queue */
-			deletewhensent = 0;
-			save_queue(mailfilename, &mail);
-		} else {
-			endsmtp(&sockfd);
-		}
 		break;
 	case '2': /* Moderators */
 		initsmtp(&sockfd, relayhost, smtpport, smtphelo);
