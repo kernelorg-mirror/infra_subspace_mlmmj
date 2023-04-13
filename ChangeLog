@@ -1,5 +1,6 @@
 1.4.0-a3
  o Fix a potential crash with mail without separator between headers and body
+ o mlmmj-send: -l 6 has been removed
  o mlmmj-send: accept file descriptor number as -s argument
  o mlmmj-send: accept file descriptor number as -m argument
 1.4.0-a2
