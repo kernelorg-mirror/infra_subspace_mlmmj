@@ -14,7 +14,8 @@ tests_init \
 	ctrl_list \
 	ctrl_help \
 	ctrl_faq \
-	ctrl_get
+	ctrl_get \
+	subscription_moderation
 
 mlmmjreceive=$(command -v mlmmj-receive)
 
@@ -1647,4 +1648,191 @@ EOF
 	atf_check -o file:expected-1.txt sed -e "/^Message-ID:/d; /^Date:/d" mail-2.txt
 }
 
+subscription_moderation_body() {
+	atf_check $srcdir/fakesmtpd
+	trap kill_fakesmtp EXIT TERM
+	init_ml list
+	rmdir list/text
+	ln -s ${srcdir}/../listtexts/en list/text
+	echo test@mlmmjtest > list/control/listaddress
+	echo "25678" > list/control/smtpport
+	echo "heloname" > list/control/smtphelo
 
+	echo "me@modos" > list/control/owner
+	touch list/control/submod
+
+cat > subs <<EOF
+From: bob@test
+To: test+subscribe@mlmmjtest
+Return-Path: bob@test
+EOF
+	atf_check -s exit:0 $mlmmjreceive -L list -F <subs
+
+cat > expected-1.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-confsub-@mlmmjtest>
+RCPT TO:<bob@test>
+DATA
+Subject: =?utf-8?q?Confirm_subscription_to_test=40mlmmjtest?=
+From: test+help@mlmmjtest
+To: bob@test
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Reply-To: test+confsub-@mlmmjtest
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+Somebody (and we hope it was you) has requested that your email address
+<bob@test> be added to the list. This means every time a post is sent to
+the list, you will receive a copy of it.
+
+To confirm you want to do this, please send a message to
+<test+confsub-@mlmmjtest> which can usually be done simply
+by replying to this message. The subject and the body of the message can be
+anything.
+
+After doing so, you should receive a reply informing you that the operation
+succeeded.
+
+If you do not want to do this, simply ignore this message.
+
+
+.
+QUIT
+EOF
+	atf_check -o file:expected-1.txt sed -e "/^Message-ID:/d; /^Date:/d; s/confsub-.*@mlmmjtest/confsub-@mlmmjtest/g" mail-1.txt
+	var=$(ls list/subconf)
+	cat > confirm << EOF
+From: bob@test
+To: test+confsub-${var##*/}@mlmmjtest
+Return-Path: bob@test
+Subject: subscribe
+
+this is a subscribtion test
+EOF
+	atf_check $mlmmjreceive -L list -F <confirm
+cat > expected-2.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-help@mlmmjtest>
+RCPT TO:<bob@test>
+DATA
+Subject: =?utf-8?q?Awaiting_permission_to_join_test=40mlmmjtest?=
+From: test+owner@mlmmjtest
+To: bob@test
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+Your request to join the list has been received. However, the gatekeepers
+are being asked to review it before permitting you to join.
+
+
+.
+QUIT
+EOF
+	atf_check -o file:expected-2.txt sed -e "/^Message-ID:/d; /^Date:/d" mail-2.txt
+	cat > expected-3.txt << EOF
+EHLO heloname
+MAIL FROM:<test+owner@mlmmjtest>
+RCPT TO:<me@modos>
+DATA
+Subject: =?utf-8?q?Subscription_request_for_test=40mlmmjtest:_bob=40test?=
+From: test+owner@mlmmjtest
+To: test-moderators@mlmmjtest
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Reply-To: test+permit-@mlmmjtest
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+There has been a request from <bob@test> to join the normal version of the
+list.
+
+To permit this, please send a message to
+<test+permit-@mlmmjtest> which can usually be done simply
+by replying to this message.
+
+If you do not want to do this, either send a message to
+<test+obstruct-@mlmmjtest> or simply ignore this message.
+
+The following gatekeepers have received this mail:
+- me@modos
+
+
+.
+QUIT
+EOF
+	atf_check -o file:expected-3.txt sed -e "/^Message-ID:/d; /^Date:/d; s/permit-.*@mlmmjtest/permit-@mlmmjtest/g; s/obstruct-.*@mlmmjtest/obstruct-@mlmmjtest/g" mail-3.txt
+	var=$(ls list/moderation/subscribe*)
+	cat > reject << EOF
+From: me@modos
+To: test+obstruct-${var##*/subscribe}@mlmmjtest
+Return-Path: bob@test
+Subject: subscribe
+
+this is a subscribtion test
+EOF
+	atf_check $mlmmjreceive -L list -F <reject
+	atf_check -s exit:1 test -f mail-4.txt
+	atf_check -s exit:1 test -f $var
+	atf_check $mlmmjreceive -L list -F <subs
+	atf_check -s exit:1 test -f mail-5.txt
+	atf_check -s exit:1 test -f mail-6.txt
+	var=$(ls list/subconf)
+	cat > confirm << EOF
+From: bob@test
+To: test+confsub-${var##*/}@mlmmjtest
+Return-Path: bob@test
+Subject: subscribe
+
+this is a subscribtion test
+EOF
+	atf_check $mlmmjreceive -L list -F <confirm
+	var=$(ls list/moderation/subscribe*)
+	cat > permit << EOF
+From: me@modos
+To: test+permit-${var##*/subscribe}@mlmmjtest
+Return-Path: bob@test
+Subject: subscribe
+
+this is a subscribtion test
+EOF
+	atf_check $mlmmjreceive -L list -F <permit
+	atf_check -o inline:"bob@test\n" cat list/subscribers.d/b
+	cat > expected-7.txt << EOF
+EHLO heloname
+MAIL FROM:<test+bounces-help@mlmmjtest>
+RCPT TO:<bob@test>
+DATA
+Subject: =?utf-8?q?Welcome_to_test=40mlmmjtest?=
+From: test+help@mlmmjtest
+To: bob@test
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+A gatekeeper has permitted you to join us. You have now been added to the
+normal version of the list.
+
+The email address you are subscribed with is <bob@test>.
+
+If you ever wish to unsubscribe, send a message to
+<test+unsubscribe@mlmmjtest> using this email address. The subject and the
+body of the message can be anything. You will then receive confirmation or
+further instructions.
+
+For other information and help about this list, send a message to
+<test+help@mlmmjtest>.
+
+
+.
+QUIT
+EOF
+	atf_check -o file:expected-7.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-7.txt
+}
