@@ -76,8 +76,8 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 		 strlist *allhdrs, const char *prefix)
 {
 	char *hdrline, *unfolded, *unqp;
-	int hdrsadded = 0;
-	int subject_present = 0;
+	bool hdrsadded = false;
+	bool subject_present = false;
 
 	for(;;) {
 		hdrline = gethdrline(infd, &unfolded);
@@ -85,8 +85,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 		/* add extra headers before MIME* headers,
 		   or after all headers */
 		if(!hdrsadded &&
-				(hdrline == NULL ||
-				 strncasecmp(hdrline, "mime", 4) == 0)) {
+		    (hdrline == NULL || strncasecmp(hdrline, "mime", 4) == 0)) {
 			if(hdrfd >= 0) {
 				if(dumpfd2fd(hdrfd, outfd) < 0) {
 					log_error(LOG_ARGS, "Could not "
@@ -97,7 +96,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 				}
 				fsync(outfd);
 			}
-			hdrsadded = 1;
+			hdrsadded = true;
 		}
 
 		/* end of headers */ 
@@ -106,7 +105,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 			   and a prefix is defined */
 			if (prefix && !subject_present) {
 				dprintf(outfd, "Subject: %s\n", prefix);
-				subject_present = 1;
+				subject_present = true;
 			}
 			/* write LF */
 			if(dprintf(outfd, "\n") < 0) {
