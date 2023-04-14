@@ -130,6 +130,19 @@ get_ctrl_command(const char *controlstr, char **param)
 	return (NULL);
 }
 
+static bool
+is_valid_email(const char *email, const char *log)
+{
+	if (strchr(email, '@') == NULL) {
+		errno = 0;
+		log_error(LOG_ARGS, "%s request was "
+			    " sent with an invalid From: header."
+			    " Ignoring mail", log);
+		return (false);
+	}
+	return (true);
+}
+
 int listcontrol(strlist *fromemails, struct ml *ml,
 		const char *controlstr, const char *mlmmjsub,
 		const char *mlmmjsend, const char *mailname)
@@ -188,14 +201,9 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 
 	/* listname+subscribe-digest@domain.tld */
 	case CTRL_SUBSCRIBE_DIGEST:
-		if (!strchr(tll_front(*fromemails), '@')) {
-			/* Not a valid From: address */
-			errno = 0;
-			log_error(LOG_ARGS, "A subscribe-digest request was"
-				" sent with an invalid From: header."
-				" Ignoring mail");
+		if (!is_valid_email(tll_front(*fromemails),
+		    "A subscribe-digest"))
 			return -1;
-		}
 		if (statctrl(ml->ctrlfd, "nodigestsub")) {
 			errno = 0;
 			log_error(LOG_ARGS, "A subscribe-digest request was"
@@ -223,14 +231,9 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 
 	/* listname+subscribe-nomail@domain.tld */
 	case CTRL_SUBSCRIBE_NOMAIL:
-		if (!strchr(tll_front(*fromemails), '@')) {
-			/* Not a valid From: address */
-			errno = 0;
-			log_error(LOG_ARGS, "A subscribe-nomail request was"
-				" sent with an invalid From: header."
-				" Ignoring mail");
+		if (!is_valid_email(tll_front(*fromemails),
+		    "A subscribe-nomail"))
 			return -1;
-		}
 		if (statctrl(ml->ctrlfd, "nonomailsub")) {
 			errno = 0;
 			log_error(LOG_ARGS, "A subscribe-nomail request was"
@@ -258,14 +261,9 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 
 	/* listname+subscribe-both@domain.tld */
 	case CTRL_SUBSCRIBE_BOTH:
-		if (!strchr(tll_front(*fromemails), '@')) {
-			/* Not a valid From: address */
-			errno = 0;
-			log_error(LOG_ARGS, "A subscribe-both request was"
-				" sent with an invalid From: header."
-				" Ignoring mail");
+		if (!is_valid_email(tll_front(*fromemails),
+		    "A subscribe-both"))
 			return -1;
-		}
 		if (statctrl(ml->ctrlfd, "nodigestsub")) {
 			errno = 0;
 			log_error(LOG_ARGS, "A subscribe-both request was"
@@ -293,14 +291,9 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 
 	/* listname+subscribe@domain.tld */
 	case CTRL_SUBSCRIBE:
-		if (!strchr(tll_front(*fromemails), '@')) {
-			/* Not a valid From: address */
-			errno = 0;
-			log_error(LOG_ARGS, "A subscribe request was"
-				" sent with an invalid From: header."
-				" Ignoring mail");
+		if (!is_valid_email(tll_front(*fromemails),
+		    "A subscribe"))
 			return -1;
-		}
 		log_oper(ml->fd, OPLOGFNAME, "mlmmj-sub: request for regular"
 			" subscription from %s", tll_front(*fromemails));
 		exec_or_die(mlmmjsub, "-L", ml->dir, "-a",
@@ -364,14 +357,9 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 	case CTRL_UNSUBSCRIBE_NOMAIL:
 	/* listname+unsubscribe@domain.tld */
 	case CTRL_UNSUBSCRIBE:
-		if (!strchr(tll_front(*fromemails), '@')) {
-			/* Not a valid From: address */
-			errno = 0;
-			log_error(LOG_ARGS, "An unsubscribe request was"
-				" sent with an invalid From: header."
-				" Ignoring mail");
+		if (!is_valid_email(tll_front(*fromemails),
+		   "An unsubscribe"))
 			return -1;
-		}
 		log_oper(ml->fd, OPLOGFNAME, "mlmmj-unsub: %s requests"
 			" unsubscribe", tll_front(*fromemails));
 		do_unsubscribe(ml, tll_front(*fromemails), SUB_ALL, SUB_REQUEST,
@@ -562,14 +550,8 @@ permit:
 
 	/* listname+help@domain.tld */
 	case CTRL_HELP:
-		if(!strchr(tll_front(*fromemails), '@')) {
-			/* Not a valid From: address */
-			errno = 0;
-			log_error(LOG_ARGS, "A help request was"
-				" sent with an invalid From: header."
-				" Ignoring mail");
+		if (!is_valid_email(tll_front(*fromemails), "A help"))
 			return -1;
-		}
 		log_oper(ml->fd, OPLOGFNAME, "%s requested help",
 				tll_front(*fromemails));
 		txt = open_text(ml->fd, "help", NULL, NULL, NULL, "listhelp");
@@ -584,14 +566,8 @@ permit:
 
 	/* listname+faq@domain.tld */
 	case CTRL_FAQ:
-		if(!strchr(tll_front(*fromemails), '@')) {
-			/* Not a valid From: address */
-			errno = 0;
-			log_error(LOG_ARGS, "A faq request was"
-			    " sent with an invalid From: header."
-			    " Ignoring mail");
+		if (!is_valid_email(tll_front(*fromemails), "A faq"))
 			return -1;
-		}
 		log_oper(ml->fd, OPLOGFNAME, "%s requested faq",
 		    tll_front(*fromemails));
 		txt = open_text(ml->fd, "faq", NULL, NULL, NULL, "listfaq");
