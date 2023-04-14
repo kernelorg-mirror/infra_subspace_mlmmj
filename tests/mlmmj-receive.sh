@@ -18,7 +18,9 @@ tests_init \
 	subscription_moderation \
 	moderation \
 	moderation_notmetoo \
-	moderation_reject_invalid
+	moderation_reject_invalid \
+	maxmailsize \
+	maxmailsize0
 
 mlmmjreceive=$(command -v mlmmj-receive)
 
@@ -2173,4 +2175,140 @@ EOF
 	atf_check -s exit:0 $mlmmjreceive -L list -F <reject
 	atf_check -s exit:0 test -f list/moderation/${var}
 	atf_check -s exit:0 test -f list/moderation/${var}.omit
+}
+
+maxmailsize_body() {
+	atf_check $srcdir/fakesmtpd
+	trap kill_fakesmtp EXIT TERM
+	init_ml list
+	rmdir list/text
+	ln -s ${srcdir}/../listtexts/en list/text
+	echo test@mlmmjtest > list/control/listaddress
+	echo "25678" > list/control/smtpport
+	echo "heloname" > list/control/smtphelo
+
+	echo "1" > list/control/maxmailsize
+	printf "user@test\nuser2@test" > list/subscribers.d/u
+
+cat > first <<EOF
+From: bob@test
+To: test@mlmmjtest
+Return-path: bob@test
+Subject: yeah
+
+Let's go, first email
+EOF
+	atf_check -s exit:0 $mlmmjreceive -L list -F <first
+
+cat > expected-1.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-help@mlmmjtest>
+RCPT TO:<bob@test>
+DATA
+Subject: =?utf-8?q?Post_to_test=40mlmmjtest_denied:_yeah?=
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary
+Content-Transfer-Encoding: 8bit
+From: test+owner@mlmmjtest
+To: bob@test
+
+--=RANDOM=
+Content-Type: text/plain; charset=utf8
+Content-Transfer-Encoding: 8bit
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+The message from <bob@test> with subject "yeah" was unable to be delivered
+to the list because it exceeded the maximum allowed message size of 1
+bytes.
+
+(The beginning of the denied message is below.)
+
+--=RANDOM=
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="message.eml"
+
+From: bob@test
+To: test@mlmmjtest
+Subject: yeah
+
+Let's go, first email
+--=RANDOM=--
+
+.
+QUIT
+EOF
+	atf_check -o file:expected-1.txt sed -e "/^Message-ID:/d; /^Date:/d; s/boundary=.*/boundary/g; s/--=.*=/--=RANDOM=/g" mail-1.txt
+	atf_check -s exit:1 test -f mail-2.txt
+	return
+}
+
+maxmailsize0_body() {
+	atf_check $srcdir/fakesmtpd
+	trap kill_fakesmtp EXIT TERM
+	init_ml list
+	rmdir list/text
+	ln -s ${srcdir}/../listtexts/en list/text
+	echo test@mlmmjtest > list/control/listaddress
+	echo "25678" > list/control/smtpport
+	echo "heloname" > list/control/smtphelo
+
+	echo "0" > list/control/maxmailsize
+	printf "user@test\nuser2@test" > list/subscribers.d/u
+
+cat > first <<EOF
+From: bob@test
+To: test@mlmmjtest
+Return-path: bob@test
+Subject: yeah
+
+Let's go, first email
+EOF
+	atf_check -s exit:0 $mlmmjreceive -L list -F <first
+
+cat > expected-1.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-help@mlmmjtest>
+RCPT TO:<bob@test>
+DATA
+Subject: =?utf-8?q?Post_to_test=40mlmmjtest_denied:_yeah?=
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary
+Content-Transfer-Encoding: 8bit
+From: test+owner@mlmmjtest
+To: bob@test
+
+--=RANDOM=
+Content-Type: text/plain; charset=utf8
+Content-Transfer-Encoding: 8bit
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+The message from <bob@test> with subject "yeah" was unable to be delivered
+to the list because it exceeded the maximum allowed message size of 0
+bytes.
+
+(The beginning of the denied message is below.)
+
+--=RANDOM=
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="message.eml"
+
+From: bob@test
+To: test@mlmmjtest
+Subject: yeah
+
+Let's go, first email
+--=RANDOM=--
+
+.
+QUIT
+EOF
+	atf_check -o file:expected-1.txt sed -e "/^Message-ID:/d; /^Date:/d; s/boundary=.*/boundary/g; s/--=.*=/--=RANDOM=/g" mail-1.txt
+	atf_check -s exit:1 test -f mail-2.txt
+	return
 }
