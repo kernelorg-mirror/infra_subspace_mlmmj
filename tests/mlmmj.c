@@ -66,6 +66,7 @@
 #include "prepstdreply.h"
 #include "mlmmj_tests.h"
 #include "send_help.h"
+#include "gethdrline.h"
 
 ATF_TC_WITHOUT_HEAD(random_int);
 ATF_TC_WITHOUT_HEAD(chomp);
@@ -147,6 +148,7 @@ ATF_TC_WITHOUT_HEAD(send_confirmation_mail);
 ATF_TC_WITHOUT_HEAD(listcontrol);
 ATF_TC_WITHOUT_HEAD(send_help);
 ATF_TC_WITHOUT_HEAD(requeuemail);
+ATF_TC_WITHOUT_HEAD(gethdrline);
 
 ATF_TC_BODY(random_int, tc)
 {
@@ -2550,6 +2552,49 @@ ATF_TC_BODY(requeuemail, tc)
 	close(dfd);
 }
 
+ATF_TC_BODY(gethdrline, tc)
+{
+	atf_utils_create_file("mail1", "");
+	atf_utils_create_file("mail2", "\n");
+	atf_utils_create_file("mail3", "From: bob");
+	atf_utils_create_file("mail4", "From: bob\nTo: Jane\nSubject: bla\r\n\nplop.\n");
+	atf_utils_create_file("mail5", "From: bob\n  grmbl\nTo: Jane\n\t");
+	int fd;
+	char *plop, *l;
+	fd = open("mail1", O_RDONLY);
+	ATF_REQUIRE(gethdrline(fd, NULL) == NULL);
+	ATF_REQUIRE(gethdrline(fd, &plop) == NULL);
+	ATF_REQUIRE(plop == NULL);
+	close(fd);
+	fd = open("mail2", O_RDONLY);
+	ATF_REQUIRE(gethdrline(fd, NULL) == NULL);
+	close(fd);
+	fd = open("mail3", O_RDONLY);
+	l = gethdrline(fd, NULL);
+	ATF_REQUIRE_STREQ(l, "From: bob");
+	close(fd);
+	fd = open("mail4", O_RDONLY);
+	l = gethdrline(fd, NULL);
+	ATF_REQUIRE_STREQ(l, "From: bob");
+	l = gethdrline(fd, &plop);
+	ATF_REQUIRE_STREQ(l, "To: Jane");
+	ATF_REQUIRE_STREQ(plop, "To: Jane\n");
+	l = gethdrline(fd, &plop);
+	ATF_REQUIRE_STREQ(l, "Subject: bla");
+	ATF_REQUIRE_STREQ(plop, "Subject: bla\r\n");
+	l = gethdrline(fd, &plop);
+	ATF_REQUIRE(l == NULL);
+	close(fd);
+	fd = open("mail5", O_RDONLY);
+	l = gethdrline(fd, &plop);
+	ATF_REQUIRE_STREQ(l, "From: bob  grmbl");
+	ATF_REQUIRE_STREQ(plop, "From: bob\n  grmbl\n");
+	l = gethdrline(fd, &plop);
+	ATF_REQUIRE_STREQ(l, "To: Jane\t");
+	ATF_REQUIRE_STREQ(plop, "To: Jane\n\t");
+	close(fd);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -2632,6 +2677,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, listcontrol);
 	ATF_TP_ADD_TC(tp, send_help);
 	ATF_TP_ADD_TC(tp, requeuemail);
+	ATF_TP_ADD_TC(tp, gethdrline);
 
 	return (atf_no_error());
 }
