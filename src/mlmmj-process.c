@@ -689,17 +689,15 @@ int main(int argc, char **argv)
 	}
 
 	/* checking incoming mail's size */
+	errno = 0;
 	maxmailsize = ctrlsizet(ml.ctrlfd, "maxmailsize", 0);
-	maxmailsizestr = ctrlvalue(ml.ctrlfd, "maxmailsize");
-	if(maxmailsizestr) {
-		maxmailsize = atol(maxmailsizestr);
+	if(errno != ENOENT) {
 		if(stat(donemailname, &st) < 0) {
 			log_error(LOG_ARGS, "stat(%s,..) failed", donemailname);
 			exit(EXIT_FAILURE);
 		}
 
 		if(st.st_size > maxmailsize) {
-
 			if (statctrl(ml.ctrlfd, "nomaxmailsizedenymails")) {
 				errno = 0;
 				log_error(LOG_ARGS, "Discarding %s due to"
@@ -708,7 +706,6 @@ int main(int argc, char **argv)
 				unlink(donemailname);
 				unlink(mailfile);
 				free(donemailname);
-				free(maxmailsizestr);
 				exit(EXIT_SUCCESS);
 			}
 
@@ -718,6 +715,7 @@ int main(int argc, char **argv)
 			register_default_unformatted(txt, &ml);
 			register_unformatted(txt, "subject", subject);
 			register_unformatted(txt, "posteraddr", posteraddr);
+			xasprintf(&maxmailsizestr, "%d", maxmailsize);
 			register_unformatted(txt, "maxmailsize", maxmailsizestr);
 			register_originalmail(txt, donemailname);
 			queuefilename = prepstdreply(txt, &ml, "$listowner$",
