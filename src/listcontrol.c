@@ -605,7 +605,7 @@ permit:
 		}
 		struct mail mail = { 0 };
 		mail.to = tll_front(*fromemails);
-		mail.from = get_bounce_from_adr(mail.to, ml, archivefilename, index);
+		mail.from = get_bounce_from_adr(mail.to, ml, index);
 		mail.fp = fdopen(fd, "r");
 		log_oper(ml->fd, OPLOGFNAME, "%s got archive/%s",
 				tll_front(*fromemails), param);

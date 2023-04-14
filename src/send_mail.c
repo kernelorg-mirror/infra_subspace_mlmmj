@@ -455,15 +455,12 @@ requeuemail(int listfd, int index, strlist *addrs, const char *addr)
 }
 
 char *
-get_bounce_from_adr(const char *recipient, struct ml *ml,
-    const char *mailfilename, int index)
+get_bounce_from_adr(const char *recipient, struct ml *ml, int index)
 {
 	char *bounceaddr, *myrecipient;
-	char *a = NULL, *mymailfilename;
+	char *a = NULL;
 	char *staticbounceaddr, *staticbounceaddr_localpart = NULL;
 	const char *staticbounceaddr_domain = NULL;
-
-	mymailfilename = xstrdup(mailfilename);
 
 	myrecipient = xstrdup(recipient);
 	a = strchr(myrecipient, '@');
@@ -489,7 +486,6 @@ get_bounce_from_adr(const char *recipient, struct ml *ml,
 	}
 
 	free(myrecipient);
-	free(mymailfilename);
 
 	return bounceaddr;
 }
