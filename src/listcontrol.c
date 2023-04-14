@@ -485,23 +485,21 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 	/* listname+reject-COOKIE@domain.tld */
 	case CTRL_REJECT:
 		xasprintf(&moderatefilename, "moderation/%s", param);
-		if (faccessat(ml->fd, moderatefilename, F_OK, 0) < 0) {
+		if (unlinkat(ml->fd, moderatefilename, 0) != 0) {
+			if (errno == ENOENT) {
+				errno = 0;
+				log_error(LOG_ARGS, "A reject request was"
+					" sent with a mismatching cookie."
+					" Ignoring mail");
+			} else {
+				log_error(LOG_ARGS, "Could not unlink %s",
+				    moderatefilename);
+			}
 			free(moderatefilename);
-			/* no mail to moderate */
-			errno = 0;
-			log_error(LOG_ARGS, "A reject request was"
-				" sent with a mismatching cookie."
-				" Ignoring mail");
 			return -1;
 		}
 		log_oper(ml->fd, OPLOGFNAME, "%s rejected %s",
 			tll_front(*fromemails), param);
-		if (unlinkat(ml->fd, moderatefilename, 0) != 0) {
-			log_error(LOG_ARGS, "Could not unlink %s",
-					moderatefilename);
-			free(moderatefilename);
-			exit(EXIT_FAILURE);
-		}
 		free(moderatefilename);
 		xasprintf(&moderatefilename, "moderation/%s.omit", param);
 		unlinkat(ml->fd, moderatefilename, 0);
