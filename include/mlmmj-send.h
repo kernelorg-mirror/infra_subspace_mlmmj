@@ -30,9 +30,9 @@
 #include "mlmmj.h"
 
 int send_mail_many_fd(int sockfd, struct mail *mail, struct ml *ml, int subfd,
-		   const char *listaddr, const char *archivefilename);
+    const char *archivefilename);
 int send_mail_many_list(int sockfd, struct mail *mail, struct ml *ml, strlist *addrs,
-		   const char *listaddr, const char *archivefilename);
+    const char *archivefilename);
 int send_mail_verp(int sockfd, strlist *addrs, struct mail *mail, const char *extra);
 
 #endif /* MMJML_SEND_H */
