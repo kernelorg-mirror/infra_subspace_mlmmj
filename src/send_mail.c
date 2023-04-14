@@ -490,61 +490,6 @@ get_bounce_from_adr(const char *recipient, struct ml *ml, int index)
 	return bounceaddr;
 }
 
-char *
-bounce_from_adr(const char *recipient, const char *listadr,
-		      const char *listdelim, const char *mailfilename,
-		      int ctrlfd)
-{
-	char *bounceaddr, *myrecipient, *mylistadr;
-	char *listdomain, *a = NULL, *mymailfilename;
-	char *staticbounceaddr, *staticbounceaddr_localpart = NULL;
-	const char *staticbounceaddr_domain = NULL;
-	int index;
-
-	mymailfilename = xstrdup(mailfilename);
-
-	index = get_index_from_filename(mymailfilename);
-
-	myrecipient = xstrdup(recipient);
-	a = strchr(myrecipient, '@');
-	if (a)
-		*a = '=';
-
-	mylistadr = xstrdup(listadr);
-	listdomain = strchr(mylistadr, '@');
-	if (!listdomain) {
-		free(mymailfilename);
-		free(myrecipient);
-		free(mylistadr);
-		return NULL;
-	}
-	*listdomain++ = '\0';
-
-	staticbounceaddr = ctrlvalue(ctrlfd, "staticbounceaddr");
-	if (staticbounceaddr) {
-		staticbounceaddr_localpart = genlistname(staticbounceaddr);
-		staticbounceaddr_domain = genlistfqdn(staticbounceaddr);
-	}
-
-	if (staticbounceaddr) {
-		xasprintf(&bounceaddr, "%s%s%s-bounces-%d-%s@%s",
-			staticbounceaddr_localpart, listdelim, mylistadr,
-			index, myrecipient, staticbounceaddr_domain);
-
-		free(staticbounceaddr);
-		free(staticbounceaddr_localpart);
-	} else {
-		xasprintf(&bounceaddr, "%s%sbounces-%d-%s@%s", mylistadr, listdelim,
-			index, myrecipient, listdomain);
-	}
-
-	free(myrecipient);
-	free(mylistadr);
-	free(mymailfilename);
-
-	return bounceaddr;
-}
-
 int
 get_index_from_filename(const char *filename)
 {
