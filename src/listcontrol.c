@@ -437,21 +437,20 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 		}
 
 		xasprintf(&moderatefilename, "moderation/%s", param);
-		if (faccessat(ml->fd, moderatefilename, F_OK, 0) < 0) {
-			free(moderatefilename);
-			/* no mail to moderate */
-			errno = 0;
-			log_error(LOG_ARGS, "A release request was"
-				" sent with a mismatching cookie."
-				" Ignoring mail");
-			return -1;
-		}
-
 		xasprintf(&sendfilename, "%s.sending", moderatefilename);
 		/* Rename it to avoid mail being sent twice */
-		if(renameat(ml->fd, moderatefilename, ml->fd, sendfilename) < 0) {
-			log_error(LOG_ARGS, "Could not rename to .sending");
-			exit(EXIT_FAILURE);
+		if(renameat(ml->fd, moderatefilename, ml->fd, sendfilename) != 0) {
+			if (errno == ENOENT) {
+				errno = 0;
+				log_error(LOG_ARGS, "A release request was"
+					" sent with a mismatching cookie."
+					" Ignoring mail");
+			} else {
+				log_error(LOG_ARGS, "Could not rename to .sending");
+			}
+			free(sendfilename);
+			free(moderatefilename);
+			return (-1);
 		}
 
 		xasprintf(&omitfilename, "%s.omit", moderatefilename);
