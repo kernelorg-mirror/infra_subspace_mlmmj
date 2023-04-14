@@ -386,7 +386,6 @@ int main(int argc, char **argv)
 	char *bindir, *subjectprefix, *discardname;
 	text *txt;
 	char *queuefilename, *recipextra = NULL, *owner = NULL;
-	char *maxmailsizestr;
 	char *subject = NULL, *posteraddr = NULL;
 	char *envstr;
 	const char *efrom = "";
@@ -698,6 +697,7 @@ int main(int argc, char **argv)
 		}
 
 		if(st.st_size > maxmailsize) {
+			char *maxmailsizestr;
 			if (statctrl(ml.ctrlfd, "nomaxmailsizedenymails")) {
 				errno = 0;
 				log_error(LOG_ARGS, "Discarding %s due to"
