@@ -518,24 +518,23 @@ permit:
 	/* listname+obstruct-COOKIE@domain.tld */
 	case CTRL_OBSTRUCT:
 		xasprintf(&gatekeepfilename, "moderation/subscribe%s", param);
-		if (faccessat(ml->fd, gatekeepfilename, F_OK, 0) < 0) {
+		if (unlinkat(ml->fd, gatekeepfilename, 0) != 0) {
+			if (errno == ENOENT) {
+				errno = 0;
+				log_error(LOG_ARGS, "An obstruct request was"
+					" sent with a mismatching cookie."
+					" Ignoring mail");
+			} else {
+				log_error(LOG_ARGS, "Could not unlink %s/%s",
+				    ml->dir, gatekeepfilename);
+			}
+			free(param);
 			free(gatekeepfilename);
-			/* no mail to moderate */
-			errno = 0;
-			log_error(LOG_ARGS, "An obstruct request was"
-				" sent with a mismatching cookie."
-				" Ignoring mail");
 			return -1;
 		}
 		log_oper(ml->fd, OPLOGFNAME, "%s obstructed %s",
 			tll_front(*fromemails), param);
 		free(param);
-		if (unlinkat(ml->fd, gatekeepfilename, 0) != 0) {
-			log_error(LOG_ARGS, "Could not unlink %s/%s",
-			    ml->dir, gatekeepfilename);
-			free(gatekeepfilename);
-			exit(EXIT_FAILURE);
-		}
 		free(gatekeepfilename);
 		break;
 
