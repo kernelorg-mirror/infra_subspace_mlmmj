@@ -3,6 +3,8 @@
  o mlmmj-send: -l 6 has been removed
  o mlmmj-send: accept file descriptor number as -s argument
  o mlmmj-send: accept file descriptor number as -m argument
+ o cleanup .omit files leftover if moderated emails are rejected and notmetoo
+   is set.
 1.4.0-a2
  o Fix a crash with forged probe emails
  o mlmmj-send does not need anymore absolute path

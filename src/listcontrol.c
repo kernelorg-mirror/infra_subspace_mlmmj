@@ -496,7 +496,6 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 		}
 		log_oper(ml->fd, OPLOGFNAME, "%s rejected %s",
 			tll_front(*fromemails), param);
-		free(param);
 		if (unlinkat(ml->fd, moderatefilename, 0) != 0) {
 			log_error(LOG_ARGS, "Could not unlink %s",
 					moderatefilename);
@@ -504,6 +503,10 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 			exit(EXIT_FAILURE);
 		}
 		free(moderatefilename);
+		xasprintf(&moderatefilename, "moderation/%s.omit", param);
+		unlinkat(ml->fd, moderatefilename, 0);
+		free(moderatefilename);
+		free(param);
 		break;
 
 	/* listname+permit-COOKIE@domain.tld */
