@@ -640,7 +640,7 @@ int main(int argc, char **argv)
 	if(recipextra) {
 		int ownfd = openat(ml.ctrlfd, "owner", O_RDONLY);
 		xasprintf(&owner, "%d", ownfd);
-		if(owner && strcmp(recipextra, "owner") == 0) {
+		if(strcmp(recipextra, "owner") == 0) {
 			/* Why is this here, and not in listcontrol() ?
 			 * -- mortenp 20060409 */
 			/* strip envelope from before resending */
