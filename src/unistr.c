@@ -63,24 +63,6 @@ void unistr_free(unistr *str)
 }
 
 
-int unistr_cmp(const unistr *str1, const unistr *str2)
-{
-	unsigned int i;
-
-	for (i=0; i<str1->len; i++) {
-		if (str1->chars[i] < str2->chars[i]) {
-			return -1;
-		} else if (str1->chars[i] > str2->chars[i]) {
-			return 1;
-		}
-	}
-	if (str2->len > str1->len) {
-		return 1;
-	}
-	return 0;
-}
-
-
 unistr *unistr_dup(const unistr *str)
 {
 	unistr *ret;
