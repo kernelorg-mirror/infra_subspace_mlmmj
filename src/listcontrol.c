@@ -41,10 +41,10 @@
 #include "send_mail.h"
 #include "log_error.h"
 #include "statctrl.h"
-#include "mygetline.h"
 #include "chomp.h"
 #include "log_oper.h"
 #include "ctrlvalues.h"
+#include "ctrlvalue.h"
 #include "subscriberfuncs.h"
 #include "utils.h"
 
@@ -153,7 +153,6 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 	char *omit = NULL;
 	char *c, *archivefilename, *sendfilename, *tosend;
 	bool nosubconfirm;
-	int tmpfd;
 	text *txt;
 	char *queuefilename;
 	enum subtype ts = SUB_NONE;
@@ -456,20 +455,11 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 		}
 
 		xasprintf(&omitfilename, "%s.omit", moderatefilename);
-		if(faccessat(ml->fd, omitfilename, F_OK, 0) == 0) {
-			tmpfd = openat(ml->fd, omitfilename, O_RDONLY);
-			if(tmpfd < 0) {
-				log_error(LOG_ARGS, "Could not open %s",
-						omitfilename);
-			} else {
-				omit = mygetline(tmpfd);
-				close(tmpfd);
-				chomp(omit);
-			}
+		errno = 0;
+		omit = ctrlvalue(ml->fd, omitfilename);
+		if (omit != NULL || errno != ENOENT)
 			unlinkat(ml->fd, omitfilename, 0);
-			free(omitfilename);
-		}
-
+		free(omitfilename);
 		free(moderatefilename);
 
 		log_oper(ml->fd, OPLOGFNAME, "%s released %s",
