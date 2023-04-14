@@ -160,9 +160,8 @@ int send_mail_verp(int sockfd, strlist *addrs, struct mail *mail,
 	return 0;
 }
 
-int send_mail_many_fd(int sockfd, struct mail *mail, int subfd,
-		      const char *listaddr, const char *listdelim,
-		      const char *archivefilename, int listfd, int ctrlfd)
+int send_mail_many_fd(int sockfd, struct mail *mail, struct ml *ml, int subfd,
+		      const char *listaddr, const char *archivefilename)
 {
 	int res, ret;
 	strlist stl = tll_init();
@@ -171,9 +170,8 @@ int send_mail_many_fd(int sockfd, struct mail *mail, int subfd,
 	do {
 		res = getaddrsfromfile(&stl, f, maxverprecips);
 		if(tll_length(stl) == maxverprecips) {
-			ret = send_mail_many_list(sockfd, mail, &stl,
-					listaddr, listdelim, archivefilename,
-					listfd, ctrlfd);
+			ret = send_mail_many_list(sockfd, mail, ml, &stl,
+					listaddr, archivefilename);
 			tll_free_and_free(stl, free);
 			if(ret < 0)
 				return ret;
@@ -182,8 +180,8 @@ int send_mail_many_fd(int sockfd, struct mail *mail, int subfd,
 	fclose(f);
 
 	if(tll_length(stl)) {
-		ret = send_mail_many_list(sockfd, mail, &stl, listaddr, listdelim,
-				archivefilename, listfd, ctrlfd);
+		ret = send_mail_many_list(sockfd, mail, ml, &stl, listaddr,
+		    archivefilename);
 		tll_free_and_free(stl, free);
 		return ret;
 	}
@@ -191,9 +189,8 @@ int send_mail_many_fd(int sockfd, struct mail *mail, int subfd,
 	return 0;
 }
 
-int send_mail_many_list(int sockfd, struct mail *mail, strlist *addrs,
-		   const char *listaddr, const char *listdelim,
-		   const char *archivefilename, int listfd, int ctrlfd)
+int send_mail_many_list(int sockfd, struct mail *mail, struct ml *ml, strlist *addrs,
+		   const char *listaddr, const char *archivefilename)
 {
 	int res = 0, status, index;
 	char *bounceaddr, *addr;
@@ -213,17 +210,17 @@ int send_mail_many_list(int sockfd, struct mail *mail, strlist *addrs,
 			log_error(LOG_ARGS, "TERM signal received, "
 						"shutting down.");
 			index = get_index_from_filename(archivefilename);
-			status = requeuemail(listfd, index, addrs, addr);
+			status = requeuemail(ml->fd, index, addrs, addr);
 			free(addr);
 			return status;
 		}
 		if (mail->from == NULL) {
-			bounceaddr = bounce_from_adr(addr, listaddr, listdelim,
-			    archivefilename, ctrlfd);
+			int i = get_index_from_filename(archivefilename);
+			bounceaddr = get_bounce_from_adr(addr, ml, i);
 			mail->from = bounceaddr;
 		}
 		mail->to = addr;
-		res = send_mail(sockfd, mail, listfd, ctrlfd, bounceaddr != NULL);
+		res = send_mail(sockfd, mail, ml->fd, ml->ctrlfd, bounceaddr != NULL);
 		if (bounceaddr != NULL) {
 			free(bounceaddr);
 			mail->from = NULL;
@@ -231,7 +228,7 @@ int send_mail_many_list(int sockfd, struct mail *mail, strlist *addrs,
 		if(res && listaddr && archivefilename) {
 			/* we failed, so save the addresses and bail */
 			index = get_index_from_filename(archivefilename);
-			status = requeuemail(listfd, index, addrs, addr);
+			status = requeuemail(ml->fd, index, addrs, addr);
 			free(addr);
 			return status;
 		}
@@ -468,7 +465,7 @@ int main(int argc, char **argv)
 		initsmtp(&sockfd, relayhost, smtpport, smtphelo);
 		mail.from = bounceaddr;
 		mail.replyto = NULL;
-		if(send_mail_many_fd(sockfd, &mail, subfd, NULL, NULL, NULL, ml.fd, ml.ctrlfd)) {
+		if(send_mail_many_fd(sockfd, &mail, &ml, subfd, NULL, NULL)) {
 			close(sockfd);
 			sockfd = -1;
 		} else {
@@ -479,8 +476,7 @@ int main(int argc, char **argv)
 		initsmtp(&sockfd, relayhost, smtpport, smtphelo);
 		mail.from = NULL;
 		mail.replyto = NULL;
-		if(send_mail_many_fd(sockfd, &mail, subfd, ml.addr, ml.delim,
-				mailfilename, ml.fd, ml.ctrlfd)) {
+		if(send_mail_many_fd(sockfd, &mail, &ml, subfd, ml.addr, mailfilename)) {
 			close(sockfd);
 			sockfd = -1;
 		} else {
@@ -492,8 +488,7 @@ int main(int argc, char **argv)
 		initsmtp(&sockfd, relayhost, smtpport, smtphelo);
 		mail.from = bounceaddr;
 		mail.replyto = NULL;
-		if(send_mail_many_fd(sockfd, &mail, subfd, ml.addr, ml.delim,
-				mailfilename, ml.fd, ml.ctrlfd)) {
+		if(send_mail_many_fd(sockfd, &mail, &ml, subfd, ml.addr, mailfilename)) {
 			close(sockfd);
 			sockfd = -1;
 		} else {
@@ -603,7 +598,7 @@ int main(int argc, char **argv)
 					} else {
 						mail.from = NULL;
 						mail.replyto = NULL;
-						sendres = send_mail_many_list( sockfd, &mail, &stl, ml.addr, ml.delim, archivefilename, ml.fd, ml.fd);
+						sendres = send_mail_many_list( sockfd, &mail, &ml, &stl, ml.addr, archivefilename);
 					}
 				    	if (sendres) {
 					    	close(sockfd);
@@ -627,7 +622,7 @@ int main(int argc, char **argv)
 			} else {
 				mail.from = NULL;
 				mail.replyto = NULL;
-				sendres = send_mail_many_list(sockfd, &mail, &stl, ml.addr, ml.delim, archivefilename, ml.fd, ml.ctrlfd);
+				sendres = send_mail_many_list(sockfd, &mail, &ml, &stl, ml.addr, archivefilename);
 			}
 			if (sendres) {
 				close(sockfd);
