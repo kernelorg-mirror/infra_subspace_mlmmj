@@ -17,7 +17,8 @@ tests_init \
 	ctrl_get \
 	subscription_moderation \
 	moderation \
-	moderation_notmetoo
+	moderation_notmetoo \
+	moderation_reject_invalid
 
 mlmmjreceive=$(command -v mlmmj-receive)
 
@@ -2084,4 +2085,92 @@ Let's go, first email
 QUIT
 EOF
 	atf_check -o file:expected-3.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-3.txt
+}
+
+moderation_reject_invalid_body() {
+	atf_check $srcdir/fakesmtpd
+	trap kill_fakesmtp EXIT TERM
+	init_ml list
+	rmdir list/text
+	ln -s ${srcdir}/../listtexts/en list/text
+	echo test@mlmmjtest > list/control/listaddress
+	echo "25678" > list/control/smtpport
+	echo "heloname" > list/control/smtphelo
+
+	echo "me@modos" > list/control/moderators
+	touch list/control/moderated
+	touch list/control/notmetoo
+	printf "user@test\nuser2@test" > list/subscribers.d/u
+
+cat > first <<EOF
+From: bob@test
+To: test@mlmmjtest
+Return-path: bob@test
+Subject: yeah
+
+Let's go, first email
+EOF
+	atf_check -s exit:0 $mlmmjreceive -L list -F <first
+
+cat > expected-1.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+owner@mlmmjtest>
+RCPT TO:<me@modos>
+DATA
+Subject: =?utf-8?q?Please_moderate_test=40mlmmjtest:_yeah?=
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="boundary"
+Content-Transfer-Encoding: 8bit
+From: test+owner@mlmmjtest
+To: test-moderators@mlmmjtest
+Reply-To: test+release-@mlmmjtest
+
+--=boundary=
+Content-Type: text/plain; charset=utf8
+Content-Transfer-Encoding: 8bit
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+A message from <bob@test> with subject "yeah" has been submitted for
+posting. You are being asked to moderate because this is a moderated list.
+The message is below.
+
+To release it to the list, please send a message to
+<test+release-@mlmmjtest> which can usually be done simply
+by replying to this message.
+
+If you do not want to do any of this, either send a message to
+<test+reject-@mlmmjtest> or simply ignore this message.
+
+The following moderators have received this mail:
+- me@modos
+
+--=boundary=
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="message.eml"
+
+From: bob@test
+To: test@mlmmjtest
+Subject: yeah
+
+Let's go, first email
+--=boundary=--
+
+.
+QUIT
+EOF
+	atf_check -o file:expected-1.txt sed -e "/^Message-ID:/d; /^Date:/d; s/release-.*@mlmmjtest/release-@mlmmjtest/g; s/reject-.*@mlmmjtest/reject-@mlmmjtest/g; s/boundary=\".*\"/boundary=\"boundary\"/g; s/^--=.*=/--=boundary=/g" mail-1.txt
+	atf_check -s exit:1 test -f mail-2.txt
+	var=$(ls list/moderation/ | grep -v omit)
+	atf_check -o inline:"bob@test" cat list/moderation/${var}.omit
+	cat > reject << EOF
+From: test@modos
+To: test+reject-nopenope@mlmmjtest
+Return-path: test@modos
+EOF
+	atf_check -s exit:0 $mlmmjreceive -L list -F <reject
+	atf_check -s exit:0 test -f list/moderation/${var}
+	atf_check -s exit:0 test -f list/moderation/${var}.omit
 }
