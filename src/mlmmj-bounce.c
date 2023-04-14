@@ -46,7 +46,6 @@
 #include "prepstdreply.h"
 #include "xmalloc.h"
 #include "find_email_adr.h"
-#include "gethdrline.h"
 #include "utils.h"
 #include "send_mail.h"
 

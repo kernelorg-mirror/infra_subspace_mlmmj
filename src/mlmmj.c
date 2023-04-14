@@ -405,20 +405,22 @@ save_lastbouncedmsg(int listfd, const char *address, const char *mailname)
 
 char *dsnparseaddr(const char *mailname)
 {
-	int fd;
+	FILE *f;
+	char *buf = NULL;
+	size_t bufcap = 0;
 	char *line, *hdr, *walk, *addr = NULL, *boundary = NULL;
 	bool quoted = false;
 	bool indsn = false;
 	strlist emails = tll_init();
 
-	fd = open(mailname, O_RDONLY);
-	if(fd < 0) {
+	f = fopen(mailname, "r");
+	if(f == NULL) {
 		log_error(LOG_ARGS, "Could not open bounceindexfile %s",
 				mailname);
 		return NULL;
 	}
 
-	while((line = gethdrline(fd, NULL))) {
+	while((line = gethdrline(f, NULL))) {
 		if (strncasecmp(line, "content-type:", 13) != 0) {
 			free(line);
 			continue;
@@ -458,13 +460,12 @@ char *dsnparseaddr(const char *mailname)
 	/* this is not a miltipart/report mail see RFC1839 */
 	if (boundary == NULL)
 		return NULL;
-	while ((line = mygetline(fd))) {
-		chomp(line);
+	while ((getline(&buf, &bufcap, f) > 0)) {
+		chomp(buf);
 		if (indsn) {
-			if (strncasecmp(line, "Final-Recipient:", 16) == 0) {
-				walk = strchr(line, ';');
+			if (strncasecmp(buf, "Final-Recipient:", 16) == 0) {
+				walk = strchr(buf, ';');
 				if (walk == NULL) {
-					free(line);
 					break;
 				}
 				find_email_adr(walk+1, &emails);
@@ -472,17 +473,16 @@ char *dsnparseaddr(const char *mailname)
 					addr = xstrdup(tll_front(emails));
 					tll_free_and_free(emails, free);
 				}
-				free(line);
 				break;
 			}
 		}
-		if (strcmp(line, boundary) == 0) {
+		if (strcmp(buf, boundary) == 0) {
 			if (indsn) {
-				free(line);
+				free(buf);
 				break;
 			}
 			/* check our content type is a valid one */
-			while ((hdr = gethdrline(fd, NULL))) {
+			while ((hdr = gethdrline(f, NULL))) {
 				if (indsn) {
 					/* skip the rest of the headers if any */
 					free(hdr);
@@ -503,8 +503,8 @@ char *dsnparseaddr(const char *mailname)
 				indsn = true;
 			}
 		}
-		free(line);
 	}
+	free(line);
 	return addr;
 }
 

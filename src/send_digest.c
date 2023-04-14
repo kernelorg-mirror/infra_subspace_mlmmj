@@ -86,8 +86,10 @@ static thread_list_state *init_thread_list(
 static void rewind_thread_list(void * state)
 {
 	thread_list_state *s = (thread_list_state *)state;
+	FILE *archivef;
 	int i, j, archivefd, thread_idx;
-	char *line, *tmp, *subj, *from, *tmpfrom;
+	char *line = NULL, *tmp, *subj, *from, *tmpfrom;
+	size_t linecap = 0;
 	char *archivename;
 	int num_threads = 0;
 	struct thread *threads = NULL;
@@ -102,16 +104,16 @@ static void rewind_thread_list(void * state)
 
 	for (i=s->firstindex; i<=s->lastindex; i++) {
 		xasprintf(&archivename, "%s/archive/%d", s->listdir, i);
-		archivefd = open(archivename, O_RDONLY);
+		archivef = fopen(archivename, "r");
 		free(archivename);
 
-		if (archivefd < 0)
+		if (archivef == NULL)
 			continue;
 
 		subj = NULL;
 		from = NULL;
 
-		while ((line = gethdrline(archivefd, NULL))) {
+		while (getline(&line, &linecap, archivef) > 0) {
 			if (strncasecmp(line, "Subject:", 8) == 0) {
 				free(subj);
 				subj = unistr_header_to_utf8(line + 8);
@@ -120,7 +122,6 @@ static void rewind_thread_list(void * state)
 				free(from);
 				from = unistr_header_to_utf8(line + 5);
 			}
-			free(line);
 		}
 
 		if (!subj) {
@@ -182,8 +183,9 @@ static void rewind_thread_list(void * state)
 		free(subj);
 		free(from);
 
-		close(archivefd);
+		fclose(archivef);
 	}
+	free(line);
 
 	s->num_threads = num_threads;
 	s->threads = threads;

@@ -34,65 +34,46 @@
 #include "chomp.h"
 
 
-char *gethdrline(int fd, char **unfolded)
+char *gethdrline(FILE *f, char **unfolded)
 {
 	char *line = NULL, *retstr = NULL, *oldretstr = NULL, *oldunfolded = NULL;
 	char ch;
-	ssize_t n;
+	size_t linecap = 0;
 
-	retstr = mygetline(fd);
-	if (!retstr) {
+	if (getline(&line, &linecap, f) <= 0) {
 		if (unfolded != NULL)
 			*unfolded = NULL;
 		return NULL;
 	}
 
 	if (unfolded != NULL)
-		*unfolded = xstrdup(retstr);
+		*unfolded = xstrdup(line);
 
-	chomp(retstr);
+	chomp(line);
 
 	/* end-of-headers */
-	if (*retstr == '\0') {
+	if (*line == '\0') {
 		if (unfolded != NULL) {
 			free(*unfolded);
 			*unfolded = NULL;
 		}
-		free(retstr);
+		free(line);
 		return NULL;
 	}
 
+	retstr = xstrdup(line);
 	for(;;) {
 		/* look ahead one char to determine if we need to fold */
-		n = readn(fd, &ch, 1);
-		if (n == 0) {  /* end of file, and therefore also headers */
-			return retstr;
-		} else if (n == -1) {  /* error */
-			log_error(LOG_ARGS, "readn() failed in gethdrline()");
-			if (unfolded != NULL) {
-				free(*unfolded);
-				*unfolded = NULL;
-			}
-			free(retstr);
-			return NULL;
-		}
+		ch = fgetc(f);
+		if (ch == EOF)
+			goto out;
 
-		if (lseek(fd, -1, SEEK_CUR) == (off_t)-1) {
-			log_error(LOG_ARGS, "lseek() failed in gethdrline()");
-			if (unfolded != NULL) {
-				free(*unfolded);
-				*unfolded = NULL;
-			}
-			free(retstr);
-			return NULL;
-		}
-
+		ungetc(ch, f);
 		if ((ch != '\t') && (ch != ' '))  /* no more folding */
-			return retstr;
+			goto out;
 
-		line = mygetline(fd);
-		if (!line)
-			return retstr;
+		if (getline(&line, &linecap, f) <= 0)
+			goto out;
 
 		if (unfolded != NULL) {
 			oldunfolded = *unfolded;
@@ -106,7 +87,8 @@ char *gethdrline(int fd, char **unfolded)
 		xasprintf(&retstr, "%s%s",
 		    oldretstr != NULL ? oldretstr : "", line);
 		free(oldretstr);
-
-		free(line);
 	}
+out:
+	free(line);
+	return (retstr);
 }

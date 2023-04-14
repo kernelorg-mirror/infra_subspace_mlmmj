@@ -78,9 +78,11 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 	char *hdrline, *unfolded, *unqp;
 	bool hdrsadded = false;
 	bool subject_present = false;
+	int localfd = dup(infd);
+	FILE *f = fdopen(localfd, "r");
 
 	for(;;) {
-		hdrline = gethdrline(infd, &unfolded);
+		hdrline = gethdrline(f, &unfolded);
 
 		/* add extra headers before MIME* headers,
 		   or after all headers */
@@ -150,11 +152,13 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 		free(unfolded);
 	}
 
+	lseek(localfd, ftello(f), SEEK_SET);
 	/* Just print the rest of the mail */
-	if(dumpfd2fd(infd, outfd) < 0) {
+	if(dumpfd2fd(localfd, outfd) < 0) {
 		log_error(LOG_ARGS, "Error when dumping rest of mail");
 		return -1;
 	}
+	fclose(f);
 
 	/* No more, let's add the footer if one */
 	if(footfd >= 0)
