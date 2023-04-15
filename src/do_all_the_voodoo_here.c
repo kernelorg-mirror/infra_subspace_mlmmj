@@ -35,7 +35,7 @@
 #include "log_error.h"
 #include "wrappers.h"
 
-int
+bool
 findit(const char *line, const strlist *headers)
 {
 	size_t len;
@@ -43,10 +43,10 @@ findit(const char *line, const strlist *headers)
 	tll_foreach(*headers, it) {
 		len = strlen(it->item);
 		if(strncasecmp(line, it->item, len) == 0)
-			return 1;
+			return true;
 	}
 
-	return 0;
+	return false;
 }
 
 void getinfo(const char *line, struct mailhdr *readhdrs)

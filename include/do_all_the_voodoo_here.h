@@ -1,6 +1,6 @@
-/* Copyright (C) 2004 Mads Martin Joergensen <mmj at mmj.dk>
- *
- * $Id$
+/*
+ * Copyright (C) 2004 Mads Martin Joergensen <mmj at mmj.dk>
+ * Copyright (C) 2023 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -21,15 +21,12 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef DO_ALL_THE_VOODOO_HERE_H
-#define DO_ALL_THE_VOODOO_HERE_H
+#pragma once
 
 #include "mlmmj.h" /* For struct mailhdr and struct strlist */
 
-int findit(const char *line, const strlist *headers);
+bool findit(const char *line, const strlist *headers);
 void getinfo(const char *line, struct mailhdr *readhdrs);
 int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 	      const strlist *delhdrs, struct mailhdr *readhdrs,
 	      strlist *allhdrs, const char *subjectprefix);
-
-#endif /* DO_ALL_THE_VOODOO_HERE_H */
