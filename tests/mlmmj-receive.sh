@@ -22,7 +22,8 @@ tests_init \
 	maxmailsize \
 	maxmailsize0 \
 	normail_email \
-	delheaders
+	delheaders \
+	customheaders
 
 mlmmjreceive=$(command -v mlmmj-receive)
 
@@ -2485,13 +2486,6 @@ Subject: yeah
 Let's go, first email
 EOF
 
-cat > nosubject <<EOF
-From: bob@test
-To: test@mlmmjtest
-Return-path: bob@test
-
-Let's go, first email
-EOF
 	atf_check -s exit:0 $mlmmjreceive -L list -F <first
 	cat >> expected-1.txt <<EOF
 EHLO heloname
@@ -2518,4 +2512,100 @@ Let's go, first email
 QUIT
 EOF
 	atf_check -o file:expected-1.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-1.txt
+}
+
+customheaders_body()
+{
+	atf_check $srcdir/fakesmtpd
+	trap kill_fakesmtp EXIT TERM
+	init_ml list
+	rmdir list/text
+	ln -s ${srcdir}/../listtexts/en list/text
+	echo test@mlmmjtest > list/control/listaddress
+	echo "25678" > list/control/smtpport
+	echo "heloname" > list/control/smtphelo
+	printf "X-H1: test\nNope: really not\n" > list/control/customheaders
+
+	printf "user@test\nuser2@test" > list/subscribers.d/u
+cat > first <<EOF
+From: bob@test
+To: test@mlmmjtest
+Return-path: bob@test
+Subject: yeah
+
+Let's go, first email
+EOF
+
+	atf_check -s exit:0 $mlmmjreceive -L list -F <first
+	cat >> expected-1.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-1-user=test@mlmmjtest>
+RCPT TO:<user@test>
+DATA
+From: bob@test
+To: test@mlmmjtest
+Subject: yeah
+X-H1: test
+Nope: really not
+
+Let's go, first email
+
+.
+MAIL FROM:<test+bounces-1-user2=test@mlmmjtest>
+RCPT TO:<user2@test>
+DATA
+From: bob@test
+To: test@mlmmjtest
+Subject: yeah
+X-H1: test
+Nope: really not
+
+Let's go, first email
+
+.
+QUIT
+EOF
+	atf_check -o file:expected-1.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-1.txt
+cat > second <<EOF
+From: bob@test
+To: test@mlmmjtest
+Return-path: bob@test
+Mime: really
+Subject: yeah
+
+Let's go, first email
+EOF
+
+	atf_check -s exit:0 $mlmmjreceive -L list -F <second
+	cat >> expected-2.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-1-user=test@mlmmjtest>
+RCPT TO:<user@test>
+DATA
+From: bob@test
+To: test@mlmmjtest
+X-H1: test
+Nope: really not
+Mime: really
+Subject: yeah
+
+Let's go, first email
+
+.
+MAIL FROM:<test+bounces-1-user2=test@mlmmjtest>
+RCPT TO:<user2@test>
+DATA
+From: bob@test
+To: test@mlmmjtest
+X-H1: test
+Nope: really not
+Mime: really
+Subject: yeah
+
+Let's go, first email
+
+.
+QUIT
+EOF
+	atf_check -o file:expected-2.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-2.txt
 }
