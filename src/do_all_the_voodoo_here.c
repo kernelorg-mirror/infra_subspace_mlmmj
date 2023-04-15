@@ -52,20 +52,17 @@ findit(const char *line, const strlist *headers)
 void getinfo(const char *line, struct mailhdr *readhdrs)
 {
 	int i = 0;
-	size_t tokenlen, valuelen;
+	size_t tokenlen;
 
 	while(readhdrs[i].token) {
 		tokenlen = strlen(readhdrs[i].token);
 		if(strncasecmp(line, readhdrs[i].token, tokenlen) == 0) {
 			readhdrs[i].valuecount++;
-			valuelen = strlen(line) - tokenlen;
 			readhdrs[i].values =
 				(char **)xrealloc(readhdrs[i].values,
 				  readhdrs[i].valuecount * sizeof(char *));
 			readhdrs[i].values[readhdrs[i].valuecount - 1] =
-					(char *)xmalloc(valuelen + 1);
-			strcpy(readhdrs[i].values[readhdrs[i].valuecount - 1],
-						line+tokenlen);
+				xstrdup(line + tokenlen);
 		}
 		i++;
 	}
