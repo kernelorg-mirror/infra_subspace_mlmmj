@@ -20,7 +20,8 @@ tests_init \
 	moderation_notmetoo \
 	moderation_reject_invalid \
 	maxmailsize \
-	maxmailsize0
+	maxmailsize0 \
+	normail_email
 
 mlmmjreceive=$(command -v mlmmj-receive)
 
@@ -2311,4 +2312,151 @@ EOF
 	atf_check -o file:expected-1.txt sed -e "/^Message-ID:/d; /^Date:/d; s/boundary=.*/boundary/g; s/--=.*=/--=RANDOM=/g" mail-1.txt
 	atf_check -s exit:1 test -f mail-2.txt
 	return
+}
+
+normail_email_body()
+{
+	atf_check $srcdir/fakesmtpd
+	trap kill_fakesmtp EXIT TERM
+	init_ml list
+	rmdir list/text
+	ln -s ${srcdir}/../listtexts/en list/text
+	echo test@mlmmjtest > list/control/listaddress
+	echo "25678" > list/control/smtpport
+	echo "heloname" > list/control/smtphelo
+
+	printf "user@test\nuser2@test" > list/subscribers.d/u
+cat > first <<EOF
+From: bob@test
+To: test@mlmmjtest
+Return-path: bob@test
+Subject: yeah
+
+Let's go, first email
+EOF
+
+cat > nosubject <<EOF
+From: bob@test
+To: test@mlmmjtest
+Return-path: bob@test
+
+Let's go, first email
+EOF
+	atf_check -s exit:0 $mlmmjreceive -L list -F <first
+	cat >> expected-1.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-1-user=test@mlmmjtest>
+RCPT TO:<user@test>
+DATA
+From: bob@test
+To: test@mlmmjtest
+Subject: yeah
+
+Let's go, first email
+
+.
+MAIL FROM:<test+bounces-1-user2=test@mlmmjtest>
+RCPT TO:<user2@test>
+DATA
+From: bob@test
+To: test@mlmmjtest
+Subject: yeah
+
+Let's go, first email
+
+.
+QUIT
+EOF
+	atf_check -o file:expected-1.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-1.txt
+	touch list/control/footer
+	atf_check -s exit:0 $mlmmjreceive -L list -F <first
+	atf_check -o file:expected-1.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-2.txt
+	printf "myfooter\nreally" > list/control/footer
+	touch list/control/prefix
+	atf_check -s exit:0 $mlmmjreceive -L list -F <first
+	cat >> expected-2.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-1-user=test@mlmmjtest>
+RCPT TO:<user@test>
+DATA
+From: bob@test
+To: test@mlmmjtest
+Subject: yeah
+
+Let's go, first email
+myfooter
+really
+.
+MAIL FROM:<test+bounces-1-user2=test@mlmmjtest>
+RCPT TO:<user2@test>
+DATA
+From: bob@test
+To: test@mlmmjtest
+Subject: yeah
+
+Let's go, first email
+myfooter
+really
+.
+QUIT
+EOF
+	atf_check -o file:expected-2.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-3.txt
+	echo "[plop]" > list/control/prefix
+	atf_check -s exit:0 $mlmmjreceive -L list -F <first
+	cat >> expected-3.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-1-user=test@mlmmjtest>
+RCPT TO:<user@test>
+DATA
+From: bob@test
+To: test@mlmmjtest
+Subject: [plop] yeah
+
+Let's go, first email
+myfooter
+really
+.
+MAIL FROM:<test+bounces-1-user2=test@mlmmjtest>
+RCPT TO:<user2@test>
+DATA
+From: bob@test
+To: test@mlmmjtest
+Subject: [plop] yeah
+
+Let's go, first email
+myfooter
+really
+.
+QUIT
+EOF
+	atf_check -o file:expected-3.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-4.txt
+
+	atf_check -s exit:0 $mlmmjreceive -L list -F <nosubject
+	cat >> expected-4.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-1-user=test@mlmmjtest>
+RCPT TO:<user@test>
+DATA
+From: bob@test
+To: test@mlmmjtest
+Subject: [plop]
+
+Let's go, first email
+myfooter
+really
+.
+MAIL FROM:<test+bounces-1-user2=test@mlmmjtest>
+RCPT TO:<user2@test>
+DATA
+From: bob@test
+To: test@mlmmjtest
+Subject: [plop]
+
+Let's go, first email
+myfooter
+really
+.
+QUIT
+EOF
+	atf_check -o file:expected-4.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-5.txt
 }
