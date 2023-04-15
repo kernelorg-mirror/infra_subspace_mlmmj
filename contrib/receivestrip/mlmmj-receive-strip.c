@@ -47,6 +47,7 @@
 #include "ctrlvalue.h"
 #include "ctrlvalues.h"
 #include "utils.h"
+#include "do_all_the_voodoo_here.h"
 
 #include "log_error.h"
 #include "wrappers.h"
@@ -54,22 +55,6 @@
 #include "utils.h"
 
 #define UNWANTED_MIME_HDR "X-ThisMailContainsUnwantedMimeParts: N\n"
-
-static int findit(char *line, strlist *headers)
-{
-	size_t len;
-
-	if (headers == NULL)
-		return (0);
-
-	tll_foreach(*headers, hdr) {
-		len = strlen(hdr->item);
-		if(strncasecmp(line, hdr->item, len) == 0)
-			return 1;
-	}
-
-	return 0;
-}
 
 /* extract mime_type and boundary from the Content-Type header
  * allocates a string for the mime_type if one is found
