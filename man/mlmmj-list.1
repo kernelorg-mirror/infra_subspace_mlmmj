@@ -1,27 +1,32 @@
-.TH mlmmj-list "1" "November 2004" mlmmj-receive
-.SH NAME
-mlmmj-list \- list people / subscribers associated with a list
-.SH SYNOPSIS
-.B mlmmj-list
-\fI\-L /path/to/listdir \fR[\fI\-c\fR] \fR[\fI\-d\fR] \fR[\fI\-h\fR] [\fI\-m\fR] [\fI\-n\fR] [\fI\-o\fR] \fR[\fI\-s\fR] \fR[\fI\-V\fR]
-.HP
-\fB\-c\fR: Count the emailaddresses
-.HP
-\fB\-d\fR: Print for digesters list
-.HP
-\fB\-L\fR: Full path to list directory
-.HP
-\fB\-m\fR: Print moderators for list
-.HP
-\fB\-n\fR: Print for nomail version of list
-.HP
-\fB\-o\fR: Print the owner(s) of the list
-.HP
-\fB\-s\fR: Print normail subscribers (default)
-.HP
-\fB\-V\fR: Print version
-
-.SH AUTHORS
+.Dd April 17, 2023
+.Dt mlmmj-list "1"
+.Os
+.Sh NAME
+.Nm "mlmmj-list
+.Nd list people / subscribers associated with a list
+.Sh SYNOPSIS
+.Nm
+.Op Fl L Ar /path/to/listdir
+.Op Fl cdhmosV
+.Sh DESCRIPTION
+.Bl -tag -width pathXXX
+.It Fl c
+Count the emailaddresses
+.It Fl d
+Print the digesters list
+.It Fl L Ar path
+Full path of the list directory
+.It Fl m
+Print moderators for list
+.It Fl -n
+Print for nomail version of list
+.It Fl o
+Print the owner(s) of the list
+.It Fl s
+Print normail subscribers (default)
+.It Fl V
+Print version
+.El
+.Sh AUTHORS
 This manual page was written by the following person:
-.HP
-Mads Martin J\[/o]rgensen <mmj@mmj.dk>
+.An Mads Martin J\[/o]rgensen Aq Mt mmj@mmj.dk
