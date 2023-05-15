@@ -1,4 +1,5 @@
-1.4.0-a3
+1.4.0-b1
+ o manpage converted from man(7) to mdoc(7)
  o Fix a potential crash with mail without separator between headers and body
  o mlmmj-send: -l 6 has been removed
  o mlmmj-send: accept file descriptor number as -s argument
