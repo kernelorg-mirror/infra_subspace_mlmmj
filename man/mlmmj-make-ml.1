@@ -1,29 +1,46 @@
-.TH mlmmj-make-ml "1" "September 2004" mlmmj-make-ml
-.SH NAME
-mlmmj-make-ml \- create a mailing list for mlmmj
-.SH SYNOPSIS
-.B mlmmj-make-ml
-[\fI\-h\fR] [\fI\-L listname\fR] [\fI\-s spooldir\fR] [\fI\-a\fR] [\fI\-c user\fR] [\fI\-z\fR]
-.HP
-\fB\-h\fR: Display help
-.HP
-\fB\-L\fR: The name of the mailing list
-.HP
-\fB\-s\fR: Your spool directory (default /var/spool/mlmmj)
-.HP
-\fB\-a\fR: Create the needed entries in your /etc/aliases file
-.HP
-\fB\-c\fR: User to chown the spool directory to (default not to chown at all)
-.HP
-\fB\-z\fR: Do nothing for now
-.SH DESCRIPTION
+.Dd September 1, 2004
+.Dt mlmmj-make-ml 1
+.Os
+.Sh NAME
+.Nm mlmmj-make-ml
+.Nd create a mailing list for mlmmj
+.Sh SYNOPSIS
+.Nm
+.Op Fl h
+.Op Fl L Ar listname
+.Op Fl s Ar spooldir
+.Op Fl a
+.Op Fl user
+.Op Fl z
+.Sh DESCRIPTION
+.Bl -tag -width pathXXXXXXX
+.It Fl h
+Display help
+.It Fl L Ar listname
+The name of the mailing list
+.It Fl s Ar spooldir
+Your spool directory
+.Po
+default
+.Pa /var/spool/mlmmj
+.Pc
+.It Fl a
+Create the needed entries in your
+.Pa /etc/aliases
+file
+.It Fl c
+User to chown the spool directory to
+.Pq default not to chown at all
+.It Fl z
+Do nothing for now
+.El
+.Pp
 This is an interactive script which creates the mailing list directory and thus
 the list itself for being run by mlmmj.
-.SH BUGS
-It's not possible to create a list entirely on the command line.
-.SH AUTHORS
+.Sh AUTHORS
 This manual page was written by the following persons:
-.HP
-S\[/o]ren Boll Overgaard <boll@debian.org> (based on html2man output)
-.HP
-Mads Martin J\[/o]rgensen <mmj@mmj.dk>
+.An S\[/o]ren Boll Overgaard Aq Mt boll@debian.org
+.Pq based on html2man output
+.An Mads Martin J\[/o]rgensen Aq Mt mmj@mmj.dk
+.Sh BUGS
+It's not possible to create a list entirely on the command line.

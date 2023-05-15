@@ -1,41 +1,63 @@
-.TH mlmmj-receive "1" "September 2004" mlmmj-receive
-.SH NAME
-mlmmj-receive \- receive mails for an mlmmj managed mailinglist
-.SH SYNOPSIS
-.B mlmmj-receive
-\fI\-L /path/to/listdir \fR[\fI\-h\fR] [\fI\-V\fR] [\fI\-P\fR] [\fI\-F\fR]
-.HP
-\fB\-h\fR: This help
-.HP
-\fB\-F\fR: Don't fork in the background (debugging only)
-.HP
-\fB\-L\fR: Full path to list directory
-.HP
-\fB\-P\fR: Don't execute mlmmj-process (debugging only)
-.HP
-\fB\-V\fR: Print version
-.SH DESCRIPTION
+.Dd September 1, 2004
+.Dt mlmmj-receive 1
+.Os
+.Sh NAME
+.Nm mlmmj-receive
+.Nd receive mails for an mlmmj managed mailinglist
+.Sh SYNOPSIS
+.Nm
+.Fl L Ar /path/to/listdir
+.Op Fl h
+.Op Fl V
+.Op Fl P
+.Op Fl F
+.Sh DESCRIPTION
+.Bl -tag -width pathXXXXX
+.It Fl h
+Print help
+.It Fl F
+Don't fork in the background
+.Qq debugging only
+.It Fl L Ar path
+Full path to list directory
+.It Fl P
+Don't execute
+.Xr mlmmj-process 1
+.Qq debugging only
+.It Fl V
+Print version
+.El
+.Pp
 The mlmmj-receive binary is the one specified in the mailserver configuration
-file (aliases file), which writes the mail to the <listdir>/incoming directory
-and invokes mlmmj-process unless the \fB\-P\fR option is specified. On systems
-using mailservers supporting the \fB/etc/aliases\fR file, a line to activate
-an mlmmj managed mailinglist would look like this:
-.LP
+file
+.Pq aliases file ,
+which writes the mail to the
+.Pa <listdir>/incoming directory
+and invokes
+.Xr mlmmj-process 1
+unless the
+.Fl P
+option is specified.
+On systems using mailservers supporting the
+.Pa /etc/aliases
+file, a line to activate an mlmmj managed mailinglist would look like this:
+.Bd -literal -offset indent
 list: "|/usr/bin/mlmmj-receive \-L /var/spool/mlmmj/list/"
-
+.Ed
+.Pp
 It's very important to specify the full path to the binary, or the mailinglist
 will not function.
-
-When the \fB\-F\fR option is used, it will not fork in the background. The
-reason it forks is that if delivery of a mail takes longer time than the mail
-server will allow a command to be idle before presumed dead, the mail server
-would kill it.
-
-.SH "SEE ALSO"
-mlmmj-process(1)
-.SH AUTHORS
+.Pp
+When the
+.Fl F
+option is used, it will not fork in the background.
+The reason it forks is that if delivery of a mail takes longer time than the
+mail server will allow a command to be idle before presumed dead, the mail
+server would kill it.
+.Sh SEE ALSO
+.Xr mlmmj-process 1
+.Sh AUTHORS
 This manual page was written by the following persons:
-.HP
-S\[/o]ren Boll Overgaard <boll@debian.org> (based on html2man output)
-.HP
-Mads Martin J\[/o]rgensen <mmj@mmj.dk>
+.An S\[/o]ren Boll Overgaard Aq Mt boll@debian.org
+.Pq based on html2man output
+.An Mads Martin J\[/o]rgensen Aq Mt mmj@mmj.dk

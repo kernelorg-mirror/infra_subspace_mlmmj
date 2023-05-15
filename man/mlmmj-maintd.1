@@ -1,39 +1,57 @@
-.TH mlmmj-maintd "1" "September 2004" mlmmj-maintd
-.SH NAME
-mlmmj-maintd \- maintenance for mlmmj maintained lists
-.SH SYNOPSIS
-.B mlmmj-maintd
-[\fI\-F\fR] \fI[\-d\fR | \fI\-L\fR] /path/to/dir
-.HP
-\fB\-d\fR: Full path to directory with lists
-.HP
-\fB\-L\fR: Full path to list directory
-.HP
-\fB\-F\fR: Don't fork, performing one maintenance run only.
-.SH DESCRIPTION
-This is the program doing the maintenance for an mlmmj based mailing list. It
-will unsubscribe people who have bounced for long enough, send out bounce
+.Dd September 1, 2004
+.Dt mlmmj-maintd 1
+.Os
+.Sh NAME
+.Nm mlmmj-maintd
+.Nd maintenance for mlmmj maintained lists
+.Sh SYNOPSIS
+.Nm
+.Op Fl F
+.Op Fl d Ar /path/to/dir | Fl L Ar /path/to/dir
+.Sh DESCRIPTION
+.Bl -tag -width pathXXXXX
+.It Fl d Ar <path>
+Full path to directory with lists
+.It Fl L Ar <path>
+Full path to list directory
+.It Fl F
+Don't fork, performing one maintenance run only.
+.El
+.Pp
+This is the program doing the maintenance for an mlmmj based mailing list.
+It will unsubscribe people who have bounced for long enough, send out bounce
 probes, resend mails that couldn't be delivered to relayhost, clean out stale
 requests for e.g. subscription, resend list mails and clean up leftover files
 etc.
-
-If a directory containing several lists exists, the \fB\-d\fR can be used to
+.Pp
+If a directory containing several lists exists, the
+.Fl d
+can be used to
 specify this, making mlmmj-maintd perform a maintenance run in every listdir
 below the specified one.
-
-Only either \fB\-d\fR or \fB\-L\fR can be specified at the same time.
-
-It will run as a daemon, unless the \fB\-F\fR switch is specified, in which
-case it just runs once.  The \fB\-F\fR  option should be used when one wants to
-avoid running another daemon, and use e.g. cron to control it instead. In case
-cron is used, mlmmj-maintd should be run every 2 hours or so. An example
-crontab entry:
-
-.LP
+.Pp
+Only either
+.Fl d
+or
+.Fl L
+can be specified at the same time.
+.Pp
+It will run as a daemon, unless the
+.Fl F
+switch is specified, in which case it just runs once.
+The
+.Fl F
+option should be used when one wants to
+avoid running another daemon, and use e.g. cron to control it instead.
+In case cron is used,
+.Nm
+should be run every 2 hours or so.
+An example crontab entry:
+.Bd -literal -offset indent
 0 */2 * * * /usr/bin/mlmmj-maintd \-F \-L /path/to/list
-.SH AUTHORS
+.Ed
+.Sh AUTHORS
 This manual page was written by the following persons:
-.HP
-S\[/o]ren Boll Overgaard <boll@debian.org> (based on html2man output)
-.HP
-Mads Martin J\[/o]rgensen <mmj@mmj.dk>
+.An S\[/o]ren Boll Overgaard Aq Mt boll@debian.org
+.Pq based on html2man output
+.An Mads Martin J\[/o]rgensen Aq Mt mmj@mmj.dk

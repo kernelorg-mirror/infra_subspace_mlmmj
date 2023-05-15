@@ -1,66 +1,77 @@
-.TH mlmmj-process "1" "September 2004" mlmmj-process
-.SH NAME
-mlmmj-process \- process mail for an mlmmj managed mailinglist
-.SH SYNOPSIS
-.B mlmmj-process
-\fI\-L /path/to/list \-m /path/to/mail \fR[\fI\-h\fR] [\fI\-P\fR] [\fI\-V\fR]
-.HP
-\fB\-h\fR: This help
-.HP
-\fB\-L\fR: Full path to list directory
-.HP
-\fB\-m\fR: Full path to mail file
-.HP
-\fB\-P\fR: Don't execute mlmmj-send (debugging only)
-.HP
-\fB\-V\fR: Print version
-.SH DESCRIPTION
-This is the binary which processes a mail. Examples of what such processing
-is:
-.RS 0
-.IP \(bu 4
-.B
-Access control
-
-Using the access rules specified in <listdir>/control/access to perform access
-control to the list. This is done before headers are stripped, so one can
-create allow rules based on headers that are later stripped.
-.IP \(bu 4
-.B
-Header stripping
-
-Headers specified in <listdir>/control/delheaders are deleted from the mail.
-.IP \(bu 4
-.B
-Header addition
-
-Headers specified in <listdir>/control/customheaders are added to the mail.
-This could be headers like List-ID: or Reply-To:
-.IP \(bu 4
-.B
-List control
-
+.Dd September 1, 2004
+.Dt mlmmj-process 1
+.Os
+.Sh NAME
+.Nm mlmmj-process
+.Nd process mail for an mlmmj managed mailinglist
+.Sh SYNOPSIS
+.Nm
+.Fl Ar /path/to/list
+.Fl m /path/to/mail
+.Op Fl h
+.Op Fl P
+.Op Fl V
+.Sh DESCRIPTION
+.Bl -tag -width pathXXX
+.It Fl h
+Print help
+.It Fl L Ar path
+Full path to list directory
+.It Fl m Ar mail
+Full path to mail file
+.It Fl P
+Don't execute mlmmj-send
+.Pq debugging only
+.It Fl V
+Print version
+.El
+.Pp
+This is the binary which processes a mail.
+Examples of what such processing is:
+.Bl -tag -width 6n
+.It Access control
+Using the access rules specified in
+.Pa <listdir>/control/access
+to perform access control to the list.
+This is done before headers are stripped, so one can create allow rules based
+on headers that are later stripped.
+.It Header stripping
+Headers specified in
+.Pa <listdir>/control/delheaders
+are deleted from the mail.
+.It Header addition
+Headers specified in
+.Pa <listdir>/control/customheaders
+are added to the mail.
+This could be headers like
+.Qq List-ID:
+or
+.Qq Reply-To:
+.It List control
 In case there's a mail with a recipient delimiter it's not a regular list mail.
-Processing of these happens in mlmmj-receive as well. Examples of such are
-subscription requests, mails to owner etc.
-It will base it's recipient delimiter detection on the Delivered-To: header if
-present. If not, the To: header is used.
-.IP \(bu 4
-.B
-Moderation
-
+Processing of these happens in mlmmj-receive as well.
+.Pp
+Examples of such are: subscription requests, mails to owner etc.
+.Pp
+It will base it's recipient delimiter detection on the
+.Qq Delivered-To:
+header if present. If not, the
+.Qq To:
+header is used.
+.It Moderation
 If the list is moderated, it will happen in mlmmj-process.
-.RE
-
+.El
+.Pp
 When processing is done, it will invoke the needed binary according to whatever
-mail it is. If it's a subscription request it will invoke mlmmj-sub, if it's a
-regular list mail it will invoke mlmmj-send.
-.SH "SEE ALSO"
+mail it is.
+If it's a subscription request it will invoke mlmmj-sub, if it's a regular list
+mail it will invoke
+.Xr mlmmj-send 1 .
+.Sh SEE ALSO
 The file TUNABLES from the mlmmj source distribution or in the documentation
 directory of the operating system distribution.
-.SH AUTHORS
+.Sh AUTHORS
 This manual page was written by the following persons:
-.HP
-S\[/o]ren Boll Overgaard <boll@debian.org> (based on html2man output)
-.HP
-Mads Martin J\[/o]rgensen <mmj@mmj.dk>
+.An S\[/o]ren Boll Overgaard Aq Mt boll@debian.org
+.Pq based on html2man output
+.An Mads Martin J\[/o]rgensen Aq Mt mmj@mmj.dk

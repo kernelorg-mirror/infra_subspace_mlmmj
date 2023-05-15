@@ -1,63 +1,95 @@
-.TH mlmmj-unsub "1" "September 2004" mlmmj-unsub
-.SH NAME
-mlmmj-unsub \- unsubscribe address from a mailinglist run by mlmmj
-.SH SYNOPSIS
-.B mlmmj-unsub
-\fI\-L /path/to/list \-a john@doe.org\fR [\fI\-c\fR | \fI\-C\fR]
-[\fI\-d\fR | \fI\-n\fR | \fI\-N\fR] [\fI\-h\fR] [\fI\-q\fR] [\fI\-r\fR | \fI\-R\fR] [\fI\-s\fR] [\fI\-U\fR] [\fI\-V\fR]
-.HP
-\fB\-a\fR: Email address to unsubscribe
-.HP
-\fB\-c\fR: Send goodbye mail
-.HP
-\fB\-C\fR: Request mail confirmation
-.HP
-\fB\-d\fR: Unsubscribe from the digest version of the list
-.HP
-\fB\-h\fR: This help
-.HP
-\fB\-L\fR: Full path to list directory
-.HP
-\fB\-n\fR: Unsubscribe from the nomail version of the list
-.HP
-\fB\-N\fR: Unsubscribe from the normal version of the list
-.HP
-\fB\-q\fR: Be quiet (don't notify owner about the unsubscribe)
-.HP
-\fB\-r\fR: Behave as if request arrived via email (internal use)
-.HP
-\fB\-R\fR: Behave as if confirmation arrived via email (internal use)
-.HP
-\fB\-s\fR: Don't send a mail to the address if not subscribed
-.HP
-\fB\-U\fR: Don't switch to the user id of the listdir owner
-.HP
-\fB\-V\fR: Print version
-.SH DESCRIPTION
-This utility is used to unsubscribe people from the specified mailinglist. It
-will remove the specified email address from every file in the
-<listdir>/subscribers.d/, <listdir>/digesters.d/ and <listdir>/nomailsubs.d/
-directories (or if the \-d, \-n or \-N switch is given, only the one relevant
-directory).
-
-Unless the \fB\-U\fR switch is used it will switch its user id to the user id
-owning the list directory. This is done to make sure that new files created are
-having correct permissions.
-
+.Dd September 1, 2004
+.Dt mlmmj-unsub 1
+.Os
+.Sh NAME
+.Nm mlmmj-unsub
+.Nd unsubscribe address from a mailinglist run by mlmmj
+.Sh SYNOPSIS
+.Nm
+.Fl L Ar /path/to/list
+.Fl a Ar john@doe.org
+.Op Fl cCdnNhqrRsUV
+.Sh DESCRIPTION
+.Bl -tag -width pathXXX
+.It Fl a Ar email
+Email address to unsubscribe
+.It Fl c
+Send goodbye mail
+.It Fl C
+Request mail confirmation
+.It Fl d
+Unsubscribe from the digest version of the list
+.It Fl h
+Print help
+.It Fl L Ar path
+Full path to list directory
+.It Fl n
+Unsubscribe from the nomail version of the list
+.It Fl N
+Unsubscribe from the normal version of the list
+.It Fl q
+Be quiet
+.Pq don't notify owner about the unsubscribe
+.It Fl r
+Behave as if request arrived via email
+.Pq internal use
+.It Fl R
+Behave as if confirmation arrived via email
+.Pq internal use
+.It Fl s
+Don't send a mail to the address if not subscribed
+.It Fl U
+Don't switch to the user id of the listdir owner
+.It Fl V
+Print version
+.El
+.Pp
+This utility is used to unsubscribe people from the specified mailinglist.
+It will remove the specified email address from every file in the
+.Pa <listdir>/subscribers.d/ ,
+.Pa <listdir>/digesters.d/
+and
+.Pa <listdir>/nomailsubs.d/
+directories
+.Po
+or if the
+.Fl d ,
+.Fl n
+or
+.Fl N
+switch is given, only the one relevant directory
+.Pc .
+.Pp
+Unless the
+.Fl U
+switch is used it will switch its user id to the user id owning the list
+directory.
+This is done to make sure that new files created are having correct
+permissions.
+.Pp
 Normally a mail is sent to the person being unsubscribed if the address is not
-subscribed to the list. If the \fB\-s\fR switch is used such a mail will not be
-sent.
-
-When neither \fB\-c\fR nor \fB\-C\fR is specified, unsubscription happens
-silently from the point of view of the subscriber. When \fB\-q\fR is specified,
-unsubscription happens silently from the point of view of the list owner. Use
-of \fB\-s\fR is recommended to ensure you don't spam unsubscribed addresses by
-accident.
-.SH "SEE ALSO"
-mlmmj-sub(1)
-.SH AUTHORS
+subscribed to the list.
+If the
+.Fl s
+switch is used such a mail will not be sent.
+.Pp
+When neither
+.Fl c
+nor
+.Fl C
+is specified, unsubscription happens silently from the point of view of the
+subscriber.
+When
+.Fl q
+is specified, unsubscription happens silently from the point of view of the
+list owner.
+Use of
+.Fl s
+is recommended to ensure you don't spam unsubscribed addresses by accident.
+.Sh SEE ALSO
+.Xr mlmmj-sub 1
+.Sh AUTHORS
 This manual page was written by the following persons:
-.HP
-S\[/o]ren Boll Overgaard <boll@debian.org> (based on html2man output)
-.HP
-Mads Martin J\[/o]rgensen <mmj@mmj.dk>
+.An S\[/o]ren Boll Overgaard Aq Mt boll@debian.org
+.Pq based on html2man output
+.An Mads Martin J\[/o]rgensen Aq Mt mmj@mmj.dk

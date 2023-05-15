@@ -1,42 +1,58 @@
-.TH mlmmj-bounce "1" "September 2004" mlmmj-bounce
-.SH NAME
-mlmmj-bounce \- bounce handling utility for mlmmj
-.SH SYNOPSIS
-.B mlmmj-bounce
-\fI\-L /path/to/list \fR[\fI\-a john=doe.org | \-d\fR]\fI \fR[\fI\-n num | \-p\fR]
-.HP
-\fB\-a\fR: Address string that bounces
-.HP
-\fB\-d\fR: Parse the mail to extract the address via the DSN (RFC1891)
-.HP
-\fB\-h\fR: This help
-.HP
-\fB\-L\fR: Full path to list directory
-.HP
-\fB\-n\fR: Message number in the archive that bounced
-.HP
-\fB\-p\fR: Send out a probe
-.HP
-\fB\-V\fR: Print version
-.SH DESCRIPTION
-mlmmj-bounce is used to handle mails that are bouncing. When a mail arrives to
-the system, mlmmj-bounce will register in <listdir>/bounce/<addrstring> info
-about which number that bounced at what time. An example of such a line could
-be:
-.LP
+.Dd September 1, 2004
+.Dt mlmmj-bounce 1
+.Os
+.Sh NAME
+.Nm mlmmj-bounce
+.Nd bounce handling utility for mlmmj
+.Sh SYNOPSIS
+.Nm
+.Fl -L Ar /path/to/list
+.Op Fl a Ar john=doe.org | Fl d
+.Op Fl n Ar num | Fl p
+.Sh DESCRIPTION
+.Bl -tag -width pathXXX
+.It Fl a
+Address string that bounces
+.It Fl d
+Parse the mail to extract the address via the DSN
+.Pq RFC1891
+.It Fl h
+Print help
+.It Fl L Ar path
+Full path to list directory
+.It Fl n
+Message number in the archive that bounced
+.It Fl p
+Send out a probe
+.It Fl V
+Print version
+.El
+.Pp
+.Nm
+is used to handle mails that are bouncing.
+When a mail arrives to the system, mlmmj-bounce will register in
+.Pa <listdir>/bounce/<addrstring>
+info about which number that bounced at what time.
+An example of such a line could be:
+.Bd -literal -offset indent
 109:1094409801 # Sun Sep  5 20:43:21 2004
-
+.Ed
+.Pp
 The above shows that message number 109 bounced 1094409801 seconds after epoch
 which is in human date stamps is Sunday September 5th 20:43:21 2004.
-
-The last bounce mail received to the address is saved in <listdir>/bounce/<addrstring>.lastmsg.
-
-When the \fB\-p\fR option is used it sends out a probe email including info
-that it's a bounce probe and a list of the bounced message numbers. The
-existance of a <listdir>/bounce/<addrstring>.probe file indicates that a probe have been sent out.
-.SH AUTHORS
+.Pp
+The last bounce mail received to the address is saved in
+.Pa <listdir>/bounce/<addrstring>.lastmsg .
+.Pp
+When the
+.Fl p
+option is used it sends out a probe email including info
+that it's a bounce probe and a list of the bounced message numbers.
+The existance of a
+.Pa <listdir>/bounce/<addrstring>.probe
+file indicates that a probe have been sent out.
+.Sh AUTHORS
 This manual page was written by the following persons:
-.HP
-S\[/o]ren Boll Overgaard <boll@debian.org> (based on html2man output)
-.HP
-Mads Martin J\[/o]rgensen <mmj@mmj.dk>
+.An S\[/o]ren Boll Overgaard Aq Mt boll@debian.org
+(based on html2man output)
+.An Mads Martin J\[/o]rgensen Aq Mt mmj@mmj.dk

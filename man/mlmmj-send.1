@@ -1,69 +1,79 @@
-.TH mlmmj-send "1" "January 2010" mlmmj-send
-.SH NAME
-mlmmj-send \- send mail to a mailinglist or similar
-.SH SYNOPSIS
-.B mlmmj-send
-[\fI\-L\fR /path/to/list | \fI\-l\fR listctrl] \fI\-m\fR /path/to/mail
-[\fI\-a\fR] [\fI\-D\fR] [\fI\-F\fR] [\fI\-h\fR] [\fI\-o\fR] [\fI\-r\fR] [\fI\-R\fR]
-[\fI\-s\fR] [\fI\-T\fR] [\fI\-V\fR]
-.HP
-\fB\-a\fR: Don't archive the mail
-.HP
-\fB\-D\fR: Don't delete the mail after it's sent
-.HP
-\fB\-F\fR: What to use as MAIL FROM:
-.HP
-\fB\-h\fR: This help
-.HP
-\fB\-l\fR: List control variable.
-.HP
-\fB\-L\fR: Full path to list directory
-.HP
-\fB\-m\fR: Full path to mail file
-.HP
-\fB\-o\fR: Address to omit from distribution (normal mail only)
-.HP
-\fB\-r\fR: Relayhost IP address (defaults to 127.0.0.1)
-.HP
-\fB\-R\fR: What to use as Reply-To: header
-.HP
-\fB\-s\fR: Subscribers file name
-.HP
-\fB\-T\fR: What to use as RCPT TO:
-.HP
-\fB\-V\fR: Print version
-.SH DESCRIPTION
+.Dd September 1, 2004
+.Dt mlmmj-send 1
+.Os
+.Sh NAME
+.Nm mlmmj-send
+.Nd send mail to a mailinglist or similar
+.Sh SYNOPSIS
+.Nm
+.Op Fl L Ar /path/to/list | Fl l Ar listctrl
+.Fl m Ar mail
+.Op Fl aDFhorsTV
+.Sh DESCRIPTION
+.Bl -tag -width pathXXXXX
+.It Fl a
+Don't archive the mail
+.It Fl D
+Don't delete the mail after it's sent
+.It Fl F
+What to use as MAIL FROM:
+.It Fl h
+Print help
+.It Fl l
+List control variable.
+.It Fl L path
+Full path to list directory
+.It Fl m
+Full path to mail file
+.It Fl o
+Address to omit from distribution
+.Pq normal mail only
+.It Fl r
+Relayhost IP address
+.Pq defaults to 127.0.0.1
+.It Fl R
+What to use as
+.Qq Reply-To:
+header
+.It Fl s
+Subscribers file name
+.It Fl T
+What to use as RCPT TO:
+.It Fl V
+Print version
+.El
+.Pp
 This binary is used to send all kinds of mail to mlmmj managed mailinglists,
 but can potentially be used standalone for sending mails.
-
-The only option that is not self explanatory is the \fB\-l\fR list control
-option:
-.IP
-\&'1' means 'send a single mail'
-
+.Pp
+The only option that is not self explanatory is the
+.Fl l list control option:
+.Bl -tag -width 1 -offset indent
+.It Ar 1
+send a single mail.
+.Pp
 This is used together with \fB\-F\fR and \fB\-T\fR to send one mail to one
 recipient.
-
-\&'2' means 'mail to moderators'
-
+.It Ar 2
+mail to moderators.
+.Pp
 Used for sending mails to the moderators of a list.
-
-\&'3' means 'resend failed list mail'
-
-\&'4' means 'send to file with recipients'
-
-\&'5' means 'bounceprobe'
-
-\&'6' means 'single listmail to single recipient'
-
-.SH BUGS
-This manual page is very scarce documentation of the mlmmj-send binary. The
-reason for this is that it's really not supposed to be used by any human, but
-only supposed to be invoked from other mlmmj binaries. So in case more
-documentation is needed, please read the source.
-.SH AUTHORS
+.It Ar 3
+resend failed list mail
+.It Ar 4
+send to file with recipients
+.It Ar 5
+bounceprobe
+.It Ar 6
+single listmail to single recipient
+.El
+.Sh AUTHORS
 This manual page was written by the following persons:
-.HP
-S\[/o]ren Boll Overgaard <boll@debian.org> (based on html2man output)
-.HP
-Mads Martin J\[/o]rgensen <mmj@mmj.dk>
+.An S\[/o]ren Boll Overgaard Aq Mt boll@debian.org
+.Pq based on html2man output
+.An Mads Martin J\[/o]rgensen Aq Mt mmj@mmj.dk
+.Sh BUGS
+This manual page is very scarce documentation of the mlmmj-send binary.
+The reason for this is that it's really not supposed to be used by any human,
+but only supposed to be invoked from other mlmmj binaries.
+So in case more documentation is needed, please read the source.
