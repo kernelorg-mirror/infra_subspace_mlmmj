@@ -477,10 +477,8 @@ char *dsnparseaddr(const char *mailname)
 			}
 		}
 		if (strcmp(buf, boundary) == 0) {
-			if (indsn) {
-				free(buf);
+			if (indsn)
 				break;
-			}
 			/* check our content type is a valid one */
 			while ((hdr = gethdrline(f, NULL))) {
 				if (indsn) {
@@ -504,7 +502,7 @@ char *dsnparseaddr(const char *mailname)
 			}
 		}
 	}
-	free(line);
+	free(buf);
 	return addr;
 }
 
