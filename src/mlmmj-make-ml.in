@@ -15,18 +15,13 @@ $0
  -s: your spool directory (default $DEFAULTDIR)
  -a: create the needed entries in your $ALIASFILE file
  -c: user to chown the spool directory to (default not to chown at all)
- -z: do nothing for now
 "
 
-while getopts ":hL:s:azc:" Option
+while getopts ":hL:s:ac:" Option
 do
-case "$Option" in 
+case "$Option" in
 	h )
 	echo "$USAGE"
-	exit 0
-	;;
-	z )
-	echo -n "nothing"
 	exit 0
 	;;
 	L )
@@ -55,11 +50,11 @@ if [ -z "$SPOOLDIR" ]; then
 	SPOOLDIR="$DEFAULTDIR"
 fi
 
-echo "Creating Directorys below $SPOOLDIR. Use '-s spooldir' to change"
+echo "Creating Directories below $SPOOLDIR. Use '-s spooldir' to change"
 
 if [ -z "$LISTNAME" ]; then
-	echo -n "What should the name of the Mailinglist be? [mlmmj-test] : "
-	read LISTNAME
+	printf 'What should the name of the Mailinglist be? [mlmmj-test] : '
+	read -r LISTNAME
 	if [ -z "$LISTNAME" ]; then
 	LISTNAME="mlmmj-test"
 	fi
@@ -67,67 +62,78 @@ fi
 
 LISTDIR="$SPOOLDIR/$LISTNAME"
 
-mkdir -p $LISTDIR
+mkdir -p "$LISTDIR"
 
 for DIR in incoming queue queue/discarded archive text subconf unsubconf \
 	   bounce control moderation subscribers.d digesters.d requeue \
 	   nomailsubs.d
 do
-	mkdir "$LISTDIR"/"$DIR"
+	mkdir "$LISTDIR/$DIR"
 done
 
-test -f "$LISTDIR"/index || touch "$LISTDIR"/index
+test -f "$LISTDIR/index" || touch "$LISTDIR/index"
 
-echo -n "The Domain for the List? [] : "
-read FQDN
+printf 'The Domain for the List? [] : '
+read -r FQDN
 if [ -z "$FQDN" ]; then
-	FQDN=`domainname -f`
+	FQDN="$(domainname -f)"
 fi
 
-echo -n "The emailaddress of the list owner? [postmaster] : "
-read OWNER
+printf 'The emailaddress of the list owner? [postmaster] : '
+read -r OWNER
 if [ -z "$OWNER" ]; then
 	OWNER="postmaster"
 fi
-echo "$OWNER" > "$LISTDIR"/"control/owner"
+echo "$OWNER" > "$LISTDIR/control/owner"
 
-(
-	cd "@textlibdir@"
-	echo
-	echo "For the list texts you can choose between the following languages or"
-	echo "give a absolute path to a directory containing the texts."
-	echo
-	echo "Available languages:"
-	ls
+TEXTLIBDIR="@textlibdir@"
 
-	TEXTPATHDEF=en
-	echo -n "The path to texts for the list? [$TEXTPATHDEF] : "
-	read TEXTPATHIN
-	if [ -z "$TEXTPATHIN" ] ; then
-		TEXTPATH="$TEXTPATHDEF"
-	else
-		TEXTPATH="$TEXTPATHIN"
-	fi
-	if [ ! -d "$TEXTPATH" ]; then
-		echo
-		echo "**NOTE** Could not copy the texts for the list"
-		echo "Please manually copy the files from the listtexts/ directory"
-		echo "in the source distribution of mlmmj."
-		sleep 2
-	else
-		cp "$TEXTPATH"/* "$LISTDIR"/"text"
-	fi
-)
+if [ ! -d "$TEXTLIBDIR" ]; then
+	echo "List text library directory not found! Please check compile options." >&2
+	exit 1
+fi
+
+echo
+echo "For the list texts you can choose between the following languages or"
+echo "give a absolute path to a directory containing the texts."
+echo
+echo "Available languages:"
+ls "$TEXTLIBDIR"
+
+TEXTPATHDEF=en
+printf 'The path to texts for the list? [%s] : ' $TEXTPATHDEF
+read -r TEXTPATHIN
+if [ -z "$TEXTPATHIN" ] ; then
+	TEXTPATH="$TEXTPATHDEF"
+else
+	TEXTPATH="$TEXTPATHIN"
+fi
+
+case "$TEXTPATH" in
+	/*) ;;
+	*)
+		TEXTPATH="$TEXTLIBDIR/$TEXTPATH"
+esac
+
+if [ -d "$TEXTPATH" ]; then
+	cp "$TEXTPATH"/* "$LISTDIR/text"
+else
+	echo
+	echo "**NOTE** Could not copy the texts for the list"
+	echo "Please manually copy the files from the listtexts/ directory"
+	echo "in the source distribution of mlmmj."
+	sleep 2
+fi
 
 LISTADDRESS="$LISTNAME@$FQDN"
-echo "$LISTADDRESS" > "$LISTDIR"/control/"listaddress"
+echo "$LISTADDRESS" > "$LISTDIR/control/listaddress"
 
-MLMMJRECEIVE=`which mlmmj-receive 2>/dev/null`
+MLMMJRECEIVE=$(which mlmmj-receive 2>/dev/null)
 if [ -z "$MLMMJRECEIVE" ]; then
 	MLMMJRECEIVE="/path/to/mlmmj-receive"
 fi
 
-MLMMJMAINTD=`which mlmmj-maintd 2>/dev/null`
+MLMMJMAINTD=$(which mlmmj-maintd 2>/dev/null)
 if [ -z "$MLMMJMAINTD" ]; then
 	MLMMJMAINTD="/path/to/mlmmj-maintd"
 fi
@@ -139,8 +145,8 @@ if [ -n "$A_CREATE" ]; then
 	echo "I want to add the following to your $ALIASFILE file:"
 	echo "$ALIAS"
 
-	echo -n "is this ok? [y/N] : "
-	read OKIDOKI
+	printf 'is this ok? [y/N] : '
+	read -r OKIDOKI
 	case $OKIDOKI in
 		y|Y)
 		echo "$ALIAS" >> $ALIASFILE
@@ -159,11 +165,11 @@ fi
 
 if [ "$DO_CHOWN" ] ; then
 	echo
-	echo -n "chown -R $CHOWN $SPOOLDIR/$LISTNAME? [y/n]: "
-	read OKIDOKI
+	printf 'chown -R %s %s/%s? [y/n]: ' "$CHOWN" "$SPOOLDIR" "$LISTNAME"
+	read -r OKIDOKI
 	case $OKIDOKI in
 		y|Y)
-			chown -R $CHOWN $SPOOLDIR/$LISTNAME
+			chown -R "$CHOWN" "$SPOOLDIR/$LISTNAME"
 		;;
 		n|N)
 			exit 0
@@ -181,6 +187,6 @@ echo "$CRONENTRY"
 
 echo
 echo " ** FINAL NOTES **
-1) The mailinglist directory have to be owned by the user running the 
+1) The mailinglist directory have to be owned by the user running the
 mailserver (i.e. starting the binaries to work the list)
 2) Run newaliases"
