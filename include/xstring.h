@@ -59,6 +59,8 @@ do {                          \
 static inline char *
 xstring_get(xstring *str)
 {
+	if (str == NULL)
+		return (NULL);
 	fclose(str->fp);
 	char *ret = str->buf;
 	free(str);
