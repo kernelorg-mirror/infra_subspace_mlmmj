@@ -460,7 +460,6 @@ text *open_text(int listfd, const char *purpose, const char *action,
 		filename[filenamelen-len-1] = '\0';
 		if ((txt = open_text_file(listfd, filename)) != NULL) break;
 		filename[filenamelen-len-1] = '-';
-		filenamelen -= len + 1;
 		if ((txt = open_text_file(listfd, compat)) != NULL) {
 			free(filename);
 			filename = xstrdup(compat);
