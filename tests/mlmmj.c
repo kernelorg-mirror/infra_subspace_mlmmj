@@ -222,7 +222,7 @@ ATF_TC_BODY(mygetline, tc)
 	ATF_REQUIRE(res != NULL);
 	dprintf(fd, "\nab\n");
 	lseek (fd, 0, SEEK_SET);
-	res = mygetline(fd);
+	mygetline(fd);
 	res = mygetline(fd);
 	ATF_REQUIRE(res != NULL);
 	ATF_REQUIRE_STREQ(res, "ab\n");
@@ -918,7 +918,7 @@ ATF_TC_BODY(smtp, tc)
 		};
 		dprintf(smtppipe[0], "220 me fake smtp\n");
 		for (uint8_t i = 0; i < NELEM(replies); i++) {
-			reply = atf_utils_readline(smtppipe[0]);
+			atf_utils_readline(smtppipe[0]);
 			dprintf(smtppipe[0], "%s", replies[i]);
 		}
 		exit (0);
