@@ -324,7 +324,6 @@ int send_digest(struct ml *ml, int firstindex, int lastindex,
 		tmp = unistr_utf8_to_header(tmp);
 		xasprintf(&subject, "Subject: %s", tmp);
 		free(tmp);
-		free(line);
 
 		/* Skip the empty line after the subject */
 		line = get_processed_text_line(txt, true, ml);
@@ -334,7 +333,7 @@ int send_digest(struct ml *ml, int firstindex, int lastindex,
 			goto fallback_subject;
 		}
 
-		if (line != NULL) free(line);
+		free(line);
 		line = NULL;
 	} else {
 		log_error(LOG_ARGS, "No subject or invalid "
@@ -415,12 +414,12 @@ errdighdrs:
 			line = get_processed_text_line(txt, false, ml);
 			if (line == NULL) break;
 			if(dprintf(fd, "%s\n", line) < 0) {
-				free(line);
 				log_error(LOG_ARGS, "Could not write"
 						" std mail");
 				break;
 			}
 			free(line);
+			line = NULL;
 		}
 
 		finish_thread_list(tls);
