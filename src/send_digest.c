@@ -87,7 +87,7 @@ static void rewind_thread_list(void * state)
 {
 	thread_list_state *s = (thread_list_state *)state;
 	FILE *archivef;
-	int i, j, archivefd, thread_idx;
+	int i, j, thread_idx;
 	char *line = NULL, *tmp, *subj, *from, *tmpfrom;
 	size_t linecap = 0;
 	char *archivename;
@@ -451,7 +451,6 @@ errdighdrs:
 			close(archivefd);
 			unlink(queuename);
 			free(boundary);
-			free(tmp);
 			free(queuename);
 			return -1;
 		}
