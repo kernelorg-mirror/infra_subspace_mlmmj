@@ -11,7 +11,6 @@ getaddrsfromfile(strlist *slist, FILE *f, size_t max)
 {
 	char *line = NULL;
 	size_t linecap = 0;
-	ssize_t linelen;
 
 	if (max == 0)
 		return -1;
@@ -19,7 +18,7 @@ getaddrsfromfile(strlist *slist, FILE *f, size_t max)
 		return -1;
 	if (feof(f))
 		return (-1);
-	while ((linelen = getline(&line, &linecap, f)) > 0) {
+	while (getline(&line, &linecap, f) > 0) {
 		chomp(line);
 		if (*line == '\0')
 			continue;

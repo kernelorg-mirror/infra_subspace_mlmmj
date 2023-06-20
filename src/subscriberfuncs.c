@@ -66,11 +66,10 @@ find_subscriber(int fd, const char *address)
 	FILE *f;
 	char *line = NULL;
 	size_t linecap = 0;
-	ssize_t linelen;
 	bool ret = false;
 
 	f = fdopen(fd, "r");
-	while ((linelen = getline(&line, &linecap, f)) > 0) {
+	while (getline(&line, &linecap, f) > 0) {
 		chomp(line);
 		if (strcasecmp(address, line) == 0) {
 			ret = true;
