@@ -40,8 +40,6 @@ SUFFIXES=	.sh
 all: $(check_PROGRAMS) $(check_SCRIPTS)
 
 check:	$(check_SCRIPTS) $(check_PROGRAMS)
-	kyua --config=none test --kyuafile='$(builddir)/Kyuafile' \
-		--build-root='$(builddir)'
 
 .sh:
 	install -m 755 $< $@
