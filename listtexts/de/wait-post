@@ -1,0 +1,38 @@
+Subject: Warte auf Moderation für $list$@$domain$: $subject$
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="=_$random0$$random1$_="
+Content-Transfer-Encoding: 8bit
+
+--=_$random0$$random1$_=
+Content-Type: text/plain; charset=utf8
+Content-Transfer-Encoding: 8bit
+
+%text prologue%
+
+%wrap%Die Mail von <$posteraddr$> mit dem Betreff "$subject$" wurde an die
+Liste eingereicht. Jedoch ist vor der Weiterleitung eine Moderation
+erforderlich,
+%ifreason moderated%
+  da es sich um eine moderierte Liste handelt.
+%endif%
+%ifreason access%
+  da eine Zugangsregel dies erfordert.
+%endif%
+%ifreason modnonsubposts%
+  weil Sie nicht auf der Liste eingeschrieben sind.
+
+  %ifncontrol closedlist%%ifncontrol closedlistsub%
+    %^%%text subrelease%
+  %endif%%endif%
+%endif%
+
+(Die ist unten angefügt.)
+
+--=_$random0$$random1$_=
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="message.eml"
+
+%originalmail%
+--=_$random0$$random1$_=--

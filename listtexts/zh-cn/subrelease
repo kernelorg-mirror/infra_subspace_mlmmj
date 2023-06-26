@@ -1,0 +1,15 @@
+%^%%wrap%然而\=，这是开放列表\=。如果您愿意\=，可以发邮件
+到 <$listsubreleaseaddr$> 同时订阅与发表帖子\=，通常回复本邮件即可\=。邮件
+主题与正文任意\=。
+
+%ifncontrol nodigestsub%
+  %^%%wrap%或者您可以发邮件到 <$digestsubreleaseaddr$> 同时订阅本列表的汇总
+  版本与发表帖子\=，这样您将定期或累积一定数量后在单封邮件中收到多条帖
+  子\=。
+%endif%
+
+%ifncontrol nonomailsub%
+  %^%%wrap%或者您可以发邮件到 <$nomailsubreleaseaddr$> 同时订阅本列表的无邮
+  件版与发表帖子\=，这样您将不会收到发往本列表的邮件\=。这意味着您可能看不
+  到回复内容\=，除非您通过网页存档或用其他邮箱订阅了列表的其他版本\=。
+%endif%

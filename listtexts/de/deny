@@ -1,0 +1,78 @@
+%ifaction sub%Subject: Liste $list$@$domain$ kann nicht abonniert werden%endif%
+%ifaction unsub%Subject: Abonnement von $list$@$domain$ kann nicht abbestellt werden%endif%
+%ifaction release reject%Subject: Kann $list$@$domain$ nicht moderieren%endif%
+%ifaction permit obstruct%Subject: Kann $list$@$domain$ nicht zurückweisen%endif%
+
+%text prologue%
+
+%ifaction sub%
+  %^%%wrap%Sie konnten der Liste nicht als Abonnent hinzugefügt werden,
+  %ifreason disabled%
+    weil die
+    %iftype normal% normale Version %endif%
+    %iftype digest% Digest-Version %endif%
+    %iftype nomail% No-Mail-Version %endif%
+    der Liste abgeschaltet ist.
+  %endif%
+  %ifreason closed%
+    weil das Abonnieren dieser Liste per Mail nicht gestattet ist.
+    because people are not allowed to subscribe to this list by email.
+  %endif%
+  %ifreason subbed%
+    weil Sie unter dieser Mailadresse bereits als Abonnent eingetragen sind.
+  %endif%
+  %ifreason expired%
+    weil Ihr Antrag zu lange unbearbeitet geblieben ist.
+  %endif%
+  %ifreason obstruct%
+    weil ein Moderator Ihren Antrag abgewiesen hat.
+  %endif%
+%endif%
+
+%ifaction unsub%
+  %^%%wrap%Sie konnten die Liste nicht abbestellen,
+  %ifreason unsubbed%
+    weil Sie (unter dieser Mailadresse) nicht als Abonnent geführt werden.
+
+    %^%%wrap%Sollten Sie Nachrichten von der Liste erhalten, könnte es sein,
+    dass Sie mit einer anderen Mailadresse eingeschrieben sind. Um
+    herauszufinden, mit welcher Mailadresse Sie eingeschrieben sind, sehen
+    Sie sich in den Kopfzeilen einer Listenmail die Zeile "Return-Path" an.
+  %endif%
+%endif%
+
+%ifaction release reject%
+  %^%%wrap%
+  %ifaction release%
+    Sie konnten diese Nachricht nicht an die Liste durchlassen,
+  %endif%
+  %ifaction reject%
+    Sie konnten diese Nachricht nicht abweisen,
+  %endif%
+  %ifreason notfound%
+    weil die Nachricht nicht gefunden werden konnte. Möglicherweise
+    hat ein anderer Moderator die Nachricht bereits bearbeitet, oder
+    die Bearbeitungsfrist war abgelaufen.
+  %endif%
+  %ifreason moderators%
+    weil sie kein Moderator dieser Liste sind.
+  %endif%
+%endif%
+
+%ifaction permit obstruct%
+  %^%%wrap%
+  %ifaction permit%
+    Sie konnten den Abonnement-Antrag nicht zulassen,
+  %endif%
+  %ifaction obstruct%
+    Sie konnten den Abonnement-Antrag nicht abweisen,
+  %endif%
+  %ifreason notfound%
+    weil er nicht gefunden wurde. Möglicherweise hat ein anderer
+    Moderator ihn bearbeitet, oder die Bearbeitungsfrist war abgelaufen.
+  %endif%
+  %ifreason gatekeepers%
+    weil Sie kein Moderator dieser Liste sind.
+  %endif%
+%endif%
+

@@ -1,0 +1,43 @@
+%ifaction sub%Subject: 订阅 $list$@$domain$：$subaddr$%endif%
+%ifaction unsub%Subject: 取消订阅 $list$@$domain$：$subaddr$%endif%
+
+%text prologue%
+
+%ifaction sub%
+  %^%%wrap%
+  %ifreason request%
+    由于收到加入请求\=，
+  %endif%
+  %ifreason confirm%
+    由于加入请求得到确认\=，
+  %endif%
+  %ifreason admin%
+    由于管理员命令\=，
+  %endif%
+  %ifreason permit%
+    由于掌门人批准\=，
+  %endif%
+  地址 <$subaddr$> 已成功订阅本列表的
+  %iftype normal%常规%endif%
+  %iftype digest%汇总%endif%
+  %iftype nomail%无邮件%endif%
+  版本\=。
+%endif%
+
+%ifaction unsub%
+  %^%%wrap%
+  %ifreason request%
+    由于收到了取消订阅的请求\=，
+  %endif%
+  %ifreason confirm%
+    由于取消订阅请求得到确认\=，
+  %endif%
+  %ifreason admin%
+    由于管理员命令\=，
+  %endif%
+  %ifreason bouncing%
+    由于退回过久\=，
+  %endif%
+  地址 <$subaddr$> 已成功从本列表退订\=。
+%endif%
+

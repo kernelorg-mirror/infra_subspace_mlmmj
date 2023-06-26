@@ -1,0 +1,49 @@
+%ifaction sub%Subject: Potvrzení přihlášení do $list$@$domain$%endif%
+%ifaction unsub%Subject: Potvrzení odhlášení z $list$@$domain$%endif%
+
+%text prologue%
+
+%ifaction sub%
+  %^%%wrap%
+  %ifreason admin%
+    Správce
+  %endif%
+  %ifreason request%
+    Někdo (doufáme, že vy)
+  %endif%
+  vyžádal přidání vaší emailové adresy <$subaddr$>
+  %iftype normal%
+    do konference. To znamená, že kdykoli, když někdo pošle zprávu do konference, 
+    dostanete kopii této zprávy.
+  %endif%
+  %iftype digest%
+    do Digest verze konference. To znamená, že zprávy zaslané do konference 
+    budete dostávat v jedné zprávě. Buďto po uplynutí pravidelné lhůty, nebo 
+    až se naschromáždí dostatek zpráv.
+  %endif%
+  %iftype nomail%
+    do No-mail verze konference. To znamená, že nebudete dostávat žádné zprávy,
+    ale jste považován za člena konference. Takže pokud je někde přístupný archiv, 
+    můžete jej procházet a hlavně můžete do konference zasílat zprávy (a být třeba
+    prihlášen ještě pod jinou adresou).
+  %endif%
+%endif%
+
+%ifaction unsub%
+  %^%%wrap%
+  %ifreason admin%
+    Správce
+  %endif%
+  %ifreason request%
+    Někdo (doufáme, že vy)
+  %endif%
+  požádal o vyřazení adresy <$subaddr$> z konference.
+%endif%
+
+%wrap%Pro potvrzení odhlášení zašlete prosím zprávu na <$confaddr$>,
+což většinou znamená jen odpovědět na tento email. Předmět a obsah
+mailu nehrají roli, může to být cokoli.
+
+Až tak učiníte, měl/a byste dostat zprávu potvrzující úspěch odhlášení.
+Pokud si akci nepřejete, prostě tento email ignorujte.
+

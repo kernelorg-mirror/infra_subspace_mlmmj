@@ -1,0 +1,19 @@
+Subject: Požadavek na přihlášení $subaddr$ do $list$@$domain$
+
+%text prologue%
+
+%wrap%Požadavek od <$subaddr$> na přihlášení do
+%iftype normal% normal %endif%
+%iftype digest% digest %endif%
+%iftype nomail% no-mail %endif%
+verze konference.
+
+%wrap%K potvrzení požadavku zašlete zprávu na <$permitaddr$>,
+což lze většinou udělat jen odpovědí na tento emailový požadavek.
+
+%wrap%Pokud požadavek nechcete potvrdit, zašlete zprávu na <$obstructaddr$>,
+nebo prostě jednoduše tento pozadavek ignorujte.
+
+Následující osoby dostaly tento požadavek:
+- %gatekeepers%
+

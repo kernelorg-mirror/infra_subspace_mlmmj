@@ -1,0 +1,38 @@
+Subject: Mensagem à espera de publicação em $list$@$domain$: $subject$
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="=_$random0$$random1$_="
+Content-Transfer-Encoding: 8bit
+
+--=_$random0$$random1$_=
+Content-Type: text/plain; charset=utf8
+Content-Transfer-Encoding: 8bit
+
+%text prologue%
+
+%wrap%A mensagem de <$posteraddr$> com o assunto "$subject$" foi enviada
+para a lista. Contudo, os moderadores ainda não a publicaram pois está em
+lista de espera para revisão
+%ifreason moderated%
+  porque esta é uma lista moderada.
+%endif%
+%ifreason access%
+  em virtude de uma regra.
+%endif%
+%ifreason modnonsubposts%
+  porque você não é um subscritor.
+
+  %ifncontrol closedlist%%ifncontrol closedlistsub%
+    %^%%text subrelease%
+  %endif%%endif%
+%endif%
+
+(Mensagem segue em baixo.)
+
+--=_$random0$$random1$_=
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="message.eml"
+
+%originalmail%
+--=_$random0$$random1$_=--

@@ -1,0 +1,38 @@
+Subject: Awaiting release to $list$@$domain$: $subject$
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="=_$random0$$random1$_="
+Content-Transfer-Encoding: 8bit
+
+--=_$random0$$random1$_=
+Content-Type: text/plain; charset=utf8
+Content-Transfer-Encoding: 8bit
+
+%text prologue%
+
+%wrap%The message from <$posteraddr$> with subject "$subject$" has been
+submitted to the list. However, the moderators are being asked to review it
+before releasing it to the list
+%ifreason moderated%
+  because this is a moderated list.
+%endif%
+%ifreason access%
+  because of an access rule.
+%endif%
+%ifreason modnonsubposts%
+  because you are not a subscriber.
+
+  %ifncontrol closedlist%%ifncontrol closedlistsub%
+    %^%%text subrelease%
+  %endif%%endif%
+%endif%
+
+(The message is below.)
+
+--=_$random0$$random1$_=
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="message.eml"
+
+%originalmail%
+--=_$random0$$random1$_=--

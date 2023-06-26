@@ -1,0 +1,68 @@
+Subject: Το μήνυμα με θέμα $subject$ απορρίφθηκε απο τη $list$@$domain$:
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="=_$random0$$random1$_="
+Content-Transfer-Encoding: 8bit
+
+--=_$random0$$random1$_=
+Content-Type: text/plain; charset=utf8
+Content-Transfer-Encoding: 8bit
+
+%text prologue%
+
+%wrap%Το μήνυμα με διεύθυνση αποστολέα <$posteraddr$> και θέμα "$subject$"
+δεν παραλήφθηκε από τη λίστα ταχυδρομείου
+%ifreason maxmailsize%
+  καθώς ξεπερνά το μέγιστο επιτρεπτό μέγεθος των $maxmailsize$ bytes.
+%endif%
+%ifreason tocc%
+  καθώς η διεύθυνση της λίστας ταχυδρομείου δεν βρέθηκε στα πεδία To: ή CC:.
+%endif%
+%ifreason access%
+  λόγω ενός περιορισμού πρόσβασης που έχει επιβληθεί από τον/τους
+  διαχειριστές της λίστας.
+%endif%
+%ifreason expired%
+  καθώς έχει παρέλθει μεγάλο χρονικό διάστημα χωρίς κάποιος διαχειριστής να
+  το έχει διεκπεραιώσει.
+%endif%
+%ifreason reject%
+  καθώς κάποιος από τους διαχειριστές της λίστας το απέρριψε.
+%endif%
+%ifreason subonlypost%
+  καθώς δεν είστε εγγεγραμμένος στη λίστα.
+
+  %ifncontrol closedlist%%ifncontrol closedlistsub%
+    %^%%text subrelease%
+  %endif%%endif%
+
+  %ifcontrol closedlist closedlistsub%
+    %^%%wrap%Αν επιθυμείτε να εγγραφείτε στη λίστα ταχυδρομείου, αρκεί να
+    ενημερώσετε κάποιον απο τους διαχειριστές της, στέλλοντας email στη
+    διεύθυνση <$list+$owner@$domain$>.
+  %endif%
+
+  %^%%wrap%Αν νομίζετε πως είστε ήδη εγγεγραμμένος τότε επιβεβαιώστε πως
+  αποστείλατε το αρχικό μήνυμά σας από τη διεύθυνση που είχατε
+  χρησιμοποιήσει για την εγγραφή σας. Για την επιβεβαίωση της διεύθυνσης Θα
+  σας βοηθήσει αν αναζητήσετε το αρχικό μήνυμα καλωσορίσματος στη λίστα
+  ταχυδρομείου.
+%endif%
+
+%ifreason maxmailsize%
+  %^%(Παρακάτω ακολουθεί ένα μέρος από το μήνυμα που απορρίφθηκε)
+%else%
+  %^%(Παρακάτω ακολουθεί το μήνυμα που απορρίφθηκε)
+%endif%
+
+--=_$random0$$random1$_=
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="message.eml"
+
+%ifreason maxmailsize%
+  %^%%originalmail 300%
+%else%
+  %^%%originalmail%
+%endif%
+--=_$random0$$random1$_=--

@@ -1,0 +1,10 @@
+Subject: $list$@$domain$ 被退回的邮件
+
+%text prologue%
+
+您的部分邮件无法投递\=。如果您看到本邮件\=，说明已经恢复正常\=，仅供参
+考\=。
+
+已退回的邮件列表\=：
+- %bouncenumbers%
+

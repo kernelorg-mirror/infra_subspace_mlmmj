@@ -1,0 +1,11 @@
+Subject: Messages rejetés de $list$@$domain$
+
+%text prologue%
+
+Certains messages ne peuvent pas vous être délivrés. Si vous voyez ce
+message, cela signifie que les choses sont revenues à la normal et c'est
+principalement pour votre information.
+
+Veuillez trouver ci-après la liste des messages rejetés :
+- %bouncenumbers%
+

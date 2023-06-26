@@ -1,0 +1,10 @@
+Subject: Mensagens pendentes de $list$@$domain$
+
+%text prologue%
+
+Algumas mensagens não foram entregues. Se recebeu esta mensagem, os
+problemas já foram resolvidos e esta mensagem é meramente informativa.
+
+Esta é a lista de mensagens pendentes:
+- %bouncenumbers%
+

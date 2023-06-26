@@ -1,0 +1,70 @@
+Subject: Viesti listalle $list$@$domain$ hylättiin: $subject$
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="=_$random0$$random1$_="
+Content-Transfer-Encoding: 8bit
+
+--=_$random0$$random1$_=
+Content-Type: text/plain; charset=utf8
+Content-Transfer-Encoding: 8bit
+
+%text prologue%
+
+%wrap%Viestiä osoitteesta <$posteraddr$> otsikolla "$subject$" ei voitu
+välittää postituslistalle,
+%ifreason maxmailsize%
+  koska sen koko on suurempi kuin suurin sallittu koko $maxmailsize$
+  tavua.
+%endif%
+%ifreason tocc%
+  koska postituslistan osoite ei ollut To- eikä CC-vastaanottajissa.
+%endif%
+%ifreason access%
+  koska listan ylläpitäjän asettamat postitusoikeudet eivät sallineet
+  kyseisen viestin lähetystä.
+%endif%
+%ifreason expired%
+  koska kukaan postituslistan moderaattoreista ei hyväksynyt viestiä
+  riittävän ajan kuluessa.
+%endif%
+%ifreason reject%
+  koska postituslistan moderaattori esti viestin lähettämisen.
+%endif%
+%ifreason subonlypost%
+  koska et ole postituslistan tilaaja.
+
+  %ifncontrol closedlist%%ifncontrol closedlistsub%
+    %^%%text subrelease%
+  %endif%%endif%
+
+  %ifcontrol closedlist closedlistsub%
+    %^%%wrap%Jos haluta liittyä postituslistalle, ota yhteyttä listan
+    ylläpitäjään. Ylläpitäjään saat yhteyden lähettämällä sähköpostia
+    osoitteeseen <$list+$owner@$domain$>.
+  %endif%
+
+  %^%%wrap%Jos tiedät olevasi tämän postituslistan tilaaja, olet
+  todennäköisesti tilannut sen jollakin toisella sähköpostiosoitteella. Voit
+  selvittää listalle liitetyn osoitteen viestistä, jossa sinut toivotetaan
+  tervetulleeksi listalle. Jos se ei ole enää tallessa, katso
+  "Return-Path"-otsikkotieto viimeisimmästä viestistä, jonka olet saanut
+  postituslistalta.
+%endif%
+
+%ifreason maxmailsize%
+  %^%(Alkuosa viestistä, jota ei lähetetty listalle, on alla.)
+%else%
+  %^%(Viesti, jota ei lähetetty listalle, on luettavissa alla.)
+%endif%
+
+--=_$random0$$random1$_=
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="message.eml"
+
+%ifreason maxmailsize%
+  %^%%originalmail 300%
+%else%
+  %^%%originalmail%
+%endif%
+--=_$random0$$random1$_=--

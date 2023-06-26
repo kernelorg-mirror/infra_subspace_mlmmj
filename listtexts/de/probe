@@ -1,0 +1,11 @@
+Subject: Erfolglose Nachrichtenzustellung von $list$@$domain$
+
+%text prologue%
+
+Einige Mails an Sie konnten nicht zugestellt werden. Wenn Sie diese
+Nachricht erhalten, scheint die Störung beseitigt zu sein, und diese
+Nachricht dient lediglich Ihrer Information.
+
+Es folgt eine Liste der abgewiesenen Nachrichten:
+- %bouncenumbers%
+

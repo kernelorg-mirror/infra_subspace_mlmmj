@@ -1,0 +1,12 @@
+Subject: Välittämättä jääneitä viestejä listalta $list$@$domain$
+
+%text prologue%
+
+Sinulle on yritetty lähettää viestejä postituslistalta, mutta ne eivät ole
+menneet perille. Jos saat tämän viestin, toimii viestien välitys jälleen, ja
+asiat ovat nyt kunnossa. Tämä viesti on vain tiedonanto siitä, että joitakin
+viestejä on jäänyt saapumatta.
+
+Tässä on lista viesteistä, joita sinulle ei saatu lähetettyä:
+- %bouncenumbers%
+

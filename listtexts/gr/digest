@@ -1,0 +1,5 @@
+Subject: Συγκεντρωτική ενημέρωση της λίστας ταχυδρομείου $list$@$domain$ τεύχος $digestissue$ ($digestinterval$)
+
+Θέματα (μηνύματα από $digestfirst$ έως $digestlast$):
+- %digestthreads%
+

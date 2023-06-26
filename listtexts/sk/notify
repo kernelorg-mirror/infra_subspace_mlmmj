@@ -1,0 +1,40 @@
+%ifaction sub%Subject: Prihlásenie do $list$@$domain$: $subaddr$%endif%
+%ifaction unsub%Subject: Odhlásenie z $list$@$domain$: $subaddr$%endif%
+
+%text prologue%
+
+%ifaction sub%
+  %^%%wrap%Adresa <$subaddr$> bola zaradená do zoznamu abonentov
+  %iftype normal% normálnej verzie mailovej diskusie, %endif%
+  %iftype digest% mailovej diskusie s prijímaním súhrnných správ (digest) %endif%
+  %iftype nomail% mailovej diskusie bez zasielania správ, %endif%
+  %ifreason request%
+    lebo sme obdržali požiadavku na prihlásenie.
+  %endif%
+  %ifreason confirm%
+    lebo požiadavka na prihlásenie bola odsúhlasená.
+  %endif%
+  %ifreason admin%
+    lebo tak rozhodol administrátor.
+  %endif%
+  %ifreason permit%
+    lebo tak rozhodol správca.
+  %endif%
+%endif%
+
+%ifaction unsub%
+  %^%%wrap%Adresa <$subaddr$> bola vyradená do zoznamu abonentov
+  %ifreason request%
+    lebo sme obdržali požiadavku na odhlásenie.
+  %endif%
+  %ifreason confirm%
+    lebo požiadavka na prihlásenie bola potvrdená.
+  %endif%
+  %ifreason admin%
+    lebo tak rozhodol administrátor.
+  %endif%
+  %ifreason bouncing%
+    lebo jej overovanie trvalo príliš dlho.
+  %endif%
+%endif%
+

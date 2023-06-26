@@ -1,0 +1,50 @@
+Subject: Prosba o moderovanie $list$@$domain$: $subject$
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="=_$random0$$random1$_="
+Content-Transfer-Encoding: 8bit
+
+--=_$random0$$random1$_=
+Content-Type: text/plain; charset=utf8
+Content-Transfer-Encoding: 8bit
+
+%text prologue%
+
+%wrap%Od <$posteraddr$> bola na zverejnenie doručená správa s predmetom
+"$subject$". Žiadame Vás o jej preverenie,
+%ifreason modnonsubposts%
+  lebo jej odosielateľ nie je abonentom diskusie.
+%endif%
+%ifreason moderated%
+  lebo táto mailová diskusia je moderovaná.
+%endif%
+%ifreason access%
+  lebo to vyžaduje nastavenie prístupových pravidiel.
+%endif%
+Správa je pripojená nižšie.
+
+%wrap%Ak chcete povoliť zverejnenie správy, pošlite mail na adresu
+<$releaseaddr$>, čo možno spraviť odpovedaním na tento mail.
+
+%ifcontrol subonrelease%
+  %^%%wrap%Ak chcete, môžete súčasne so zverejnením správy jej odosielateľa
+  prihlásiť do diskusie. Spravíte to tak, že pošlete mail na jednu z
+  nasledujúcich adries:%nowrap%
+  %^%- %wrap%Normálna verzia: <$listsubreleaseaddr$>%nowrap%
+  %^%- %wrap%Súhrnné správy (digest): <$digestsubreleaseaddr$>%nowrap%
+  %^%- %wrap%Verzia bez zasielania mailov: <$nomailsubreleaseaddr$>%nowrap%
+%endif%
+
+%wrap%Ak nechcete vykonať žiadnu z týchto akcií, pošlite mail na
+<$rejectaddr$> alebo jednoducho túto správu ignorujte.
+
+Túto správu dostali nasledujúci moderátori:
+- %moderators%
+
+--=_$random0$$random1$_=
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="message.eml"
+
+%originalmail%
+--=_$random0$$random1$_=--

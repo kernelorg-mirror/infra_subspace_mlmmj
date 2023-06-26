@@ -1,0 +1,51 @@
+%ifaction unsub%Subject: Nashledanou v $list$@$domain$%endif%
+%ifaction release reject%Subject: Moderovaná konference $list$@$domain$: $subject$%endif%
+%ifaction permit obstruct%Subject: Chráněná konference $list$@$domain$: $subaddr$%endif%
+%ifaction post%Subject: Zasláno do $list$@$domain$: $subject$%endif%
+
+%text prologue%
+
+%ifaction unsub%
+  %^%%wrap%
+  %ifreason request%
+  %endif%
+  %ifreason confirm%
+    Děkujeme za potvrzení odhlášení.
+  %endif%
+  %ifreason admin%
+    Správce vás odhlásil z konference.
+  %else%
+    Byl jste odhlášen z konference.
+  %endif%
+%endif%
+
+%ifaction release%
+  %^%%wrap%Úspěšně jste zaslal zpravu od <$posteraddr$> s předmětem "$subject$" do konference.
+%endif%
+
+%ifaction reject%
+  %^%%wrap%Úspěšně jste zamítnul zprávu od <$posteraddr$> s předmětem "$subject$".
+%endif%
+
+%ifaction permit%
+  %^%%wrap%Úspěšně jste povolil přihlášení <$subaddr$> do konference.
+%endif%
+
+%ifaction obstruct%
+  %^%%wrap%Úspěšně jste zamítnul přihlášení <$subaddr$> do konference.
+%endif%
+
+%ifaction post%
+  %^%%wrap%
+  %ifreason confirm%
+    Děkujeme za potvrzení
+  %endif%
+  %ifreason release%
+    Moderátor umožnil zaslání
+  %endif%
+  %ifreason request%
+    Děkujeme za
+  %endif%
+  zpráva s předmětem "$subject$". Nyní je odesílána do konference.
+%endif%
+

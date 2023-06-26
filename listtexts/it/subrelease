@@ -1,0 +1,20 @@
+%^%%wrap%Questa è, comunque, una lista aperta. Se vuoi, puoi iscriverti e
+contemporaneamente rilasciare il tuo messaggio inviandone uno a
+<$listsubreleaseaddr$>, azione in genere eseguita semplicemente rispondendo
+a questo messaggio. L'oggetto e il corpo del messaggio possono essere vuoti.
+
+%ifncontrol nodigestsub%
+  %^%%wrap%O puoi iscriverti alla versione digest della lista e
+  contemporaneamente rilasciare il tuo messaggio inviandone uno a
+  <$digestsubreleaseaddr$>; riceverai così più messaggi in un singolo
+  messaggio, a intervalli regolari o quando se ne sono accumulati un po'.
+%endif%
+
+%ifncontrol nonomailsub%
+  %^%%wrap%O puoi iscriverti alla versione no-mail della lista e
+  contemporaneamente rilasciare il tuo messaggio inviandone uno a
+  <$nomailsubreleaseaddr$>, così da non ricevere i messaggi diretti alla
+  lista. Ciò comporta il fatto che non vedrai le risposte al tuo messaggio,
+  a meno che tu non segua la lista tramite un archivio web o un altro
+  indirizzo di posta con cui sei iscritto a un'altra versione della lista.
+%endif%

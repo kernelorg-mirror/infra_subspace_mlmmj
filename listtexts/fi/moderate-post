@@ -1,0 +1,50 @@
+Subject: Viesti listalle $list$@$domain$ odottaa hyväksyntää: $subject$
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="=_$random0$$random1$_="
+Content-Transfer-Encoding: 8bit
+
+--=_$random0$$random1$_=
+Content-Type: text/plain; charset=utf8
+Content-Transfer-Encoding: 8bit
+
+%text prologue%
+
+%wrap%Viesti osoitteesta <$posteraddr$> otsikolla "$subject$" on lähetetty
+listalle välitettäväksi. Sinua pyydetään moderoimaan viesti, koska
+%ifreason modnonsubposts%
+  viestin lähettäjä ei ole listan tilaaja.
+%endif%
+%ifreason moderated%
+  tämän listan kaikki viestit moderoidaan.
+%endif%
+%ifreason access%
+  tämän listan välityssäännöt vaativat niin.
+%endif%
+Viesti on luettavissa alla.
+
+%wrap%Salliaksesi viestin välittämisen listalle lähetä viesti osoitteeseen
+<$releaseaddr$>. Tämän voi tavallisesti tehdä vastaamalla tähän viestiin.
+
+%ifcontrol subonrelease%
+  %^%%wrap%Halutessasi voit viestin hyväksymisen lisäksi liittää lähettäjän
+  postituslistalle. Tämä onnistuu lähettämällä viesti yhteen seuraavista
+  osoitteista:%nowrap%
+  %^%- %wrap%Tavallinen tilaus: <$listsubreleaseaddr$>%nowrap%
+  %^%- %wrap%Viestikoosteiden tilaus: <$digestsubreleaseaddr$>%nowrap%
+  %^%- %wrap%Tilaus ilman viestien välitystä: <$nomailsubreleaseaddr$>%nowrap%
+%endif%
+
+%wrap%Jos et halua viestiä hyväksyttävän, lähetä viesti osoitteeseen
+<$rejectaddr$> tai jätä tämä viesti kokonaan huomioimatta.
+
+Seuraavat moderaattorit ovat saaneet tämän viestin:
+- %moderators%
+
+--=_$random0$$random1$_=
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="message.eml"
+
+%originalmail%
+--=_$random0$$random1$_=--

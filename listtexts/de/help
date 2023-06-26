@@ -1,0 +1,91 @@
+Subject: Informationen für die Liste $list$@$domain$
+
+%text prologue%
+
+Mit dieser Mail erhalten Sie ein paar Informationen zur Mailingliste.
+
+Sie können folgende Listenverionen abonnieren:
+
+- %wrap%Die Normalversion: Von jeder Nachricht, die an die Liste gesandt
+wird, wird eine Kopie an die Abonennten verteilt.
+%ifcontrol closedlist closedlistsub%
+  Zum Anmelden kontaktieren Sie bitte den Listenadministrator.
+%else%
+  Zum Anmelden senden Sie eine Mail an <$list+$subscribe@$domain$>.
+%endif%
+
+%ifncontrol nodigestsub%
+  %^%- %wrap%Die Digest-Version: Hierbei erhalten die Abonnenten mehrere
+  Nachrichten in einer einzigen Mail verpackt, entweder in regelmäßigen
+  Abständen, oder wenn sich genügend Nachrichten angesammelt haben.
+  %ifcontrol closedlist closedlistsub%
+    Zum Anmelden kontaktieren Sie bitte den Listenadministrator.
+  %else%
+    Zum Anmelden senden Sie eine Mail an
+    <$list+$subscribe-digest@$domain$>.
+  %endif%
+%endif%
+
+%ifncontrol nonomailsub%
+  %^%- %wrap%Die No-Mail-Version: Abonnenten erhalten keine Mails von der
+  Liste. Das heißt, sie dürfen an eine Liste schreiben, an welche nur
+  Abonnenten schreiben dürfen, verfolgen die Listendiskussionen jedoch über
+  ein Webarchiv oder eine andere angemeldete Mailadresse.
+  %ifcontrol closedlist closedlistsub%
+    Zum Anmelden kontaktieren Sie bitte den Listenadministrator.
+  %else%
+    Zum Anmelden senden Sie eine Mail an
+    <$list+$subscribe-nomail@$domain$>.
+  %endif%
+%endif%
+
+%ifcontrol submod%
+  %^%%wrap%Anmeldeanträge an die Liste werden durch Moderatoren bearbeitet.
+%endif%
+
+%ifcontrol closedlist%
+  %^%%wrap%Zum Abmelden kontaktieren Sie einen Listenadministrator.
+%else%
+  %^%%wrap%Zum Abmelden senden Sie eine Mail an
+  <$list+$unsubscribe@$domain$>.
+%endif%
+
+%wrap%Zum Schreiben an die Liste senden Sie eine Mail an <$list$@$domain$>.
+
+%ifcontrol subonlypost%%ifncontrol modnonsubposts%
+  %^%%wrap%Es werden jedoch nur Mails von angemeldeten Teilnehmern verteilt.
+%endif%%endif%
+
+%ifcontrol moderated%
+  %^%%wrap%Alle Mails an die Liste werden durch Moderatoren geprüft, bevor
+  sie an die Liste weitergeleitet werden.
+%else%
+  %ifcontrol subonlypost%%ifcontrol modnonsubposts%
+    %^%%wrap%Die Listenmoderatoren prüfen alle Mails von Nicht-Abonnenten,
+    bevor sie sie an die Liste weiterleiten.
+  %endif%%endif%
+%endif%
+
+%ifcontrol access%
+  %^%%wrap%Für die Liste sind Zugangsregeln vorhanden, mit denen gesteuert
+  wird, wer an die Liste schreiben darf und wessen Mails moderiert werden.
+%endif%
+
+%ifncontrol noget%%ifncontrol noarchive%
+  %^%%wrap%
+  %ifcontrol subonlyget%
+    Alle
+  %else%
+    Abonnenten
+  %endif%
+  können eine Nachricht Nummer N aus dem Listenarchiv nachbestellen, indem
+  sie eine Mail an <$list+$get-N@$domain$> schicken (ersetzen Sie N mit der
+  Nummer der gewünschten Nachricht).
+%endif%%endif%
+
+%wrap%Sie können die FAQ (Liste der häufigen Fragen) durch eine Mail an
+<$list+$faq@$domain$> anfordern.
+
+%wrap%Zum Kontaktieren des Listeneigentümers senden Sie eine Mail an
+<$list+$owner@$domain$>.
+

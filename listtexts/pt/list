@@ -1,0 +1,25 @@
+Subject: Subscritores de $list$@$domain$
+
+%text prologue%
+
+%wrap%Esta é lista de subscritores
+%iftype all%
+  de todas as versões da lista:
+%else%
+  da versão
+  %iftype normal% normal %endif%
+  %iftype digest% resumida %endif%
+  %iftype nomail% no-mail %endif%
+  da lista:
+%endif%
+
+%iftype all normal%
+  %^%- %listsubs%
+%endif%
+%iftype all digest%
+  %^%- %digestsubs%
+%endif%
+%iftype all nomail%
+  %^%- %nomailsubs%
+%endif%
+

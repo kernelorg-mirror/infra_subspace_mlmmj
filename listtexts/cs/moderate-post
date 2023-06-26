@@ -1,0 +1,48 @@
+Subject: Žádost o moderování $list$@$domain$: $subject$
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="=_$random0$$random1$_="
+Content-Transfer-Encoding: 8bit
+
+--=_$random0$$random1$_=
+Content-Type: text/plain; charset=utf8
+Content-Transfer-Encoding: 8bit
+
+%text prologue%
+
+%wrap%Zpráva od <$posteraddr$> s předmětem "$subject$" byla zaslána a nastal požadavek na moderování,
+%ifreason modnonsubposts%
+  protože odesílatel není členem konference.
+%endif%
+%ifreason moderated%
+  protože jde o moderovanou konferenci.
+%endif%
+%ifreason access%
+  protože nastalo omezení přístupovými právy.
+%endif%
+Zpráva je uvedena níže.
+
+%wrap%K potvrzení a odeslání do konference zašlete zprávu na <$releaseaddr$>,
+což lze většinou udělat jen odpovědí na tento emailový požadavek.
+
+%ifcontrol subonrelease%
+  %^%%wrap%Pokud si přejete, je možné zároveň potvrdit zaslání zprávy
+  a přihlásit odesílatele zasláním na jednu z následujících adres:%nowrap%
+  %^%- %wrap%Normální verze: <$listsubreleaseaddr$>%nowrap%
+  %^%- %wrap%Digest verze: <$digestsubreleaseaddr$>%nowrap%
+  %^%- %wrap%No-mail verze: <$nomailsubreleaseaddr$>%nowrap%
+%endif%
+
+%wrap%Pokud nechcete zprávu odeslat, zašlete zprávu na <$rejectaddr$>, 
+nebo prostě jednoduše tento email ignorujte.
+
+Následující moderátoři obrželi tento požadavek:
+- %moderators%
+
+--=_$random0$$random1$_=
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="message.eml"
+
+%originalmail%
+--=_$random0$$random1$_=--

@@ -1,0 +1,44 @@
+Subject: Tervetuloa postituslistalle $list$@$domain$
+
+%text prologue%
+
+%wrap%
+%ifreason request%
+  Kiitos, että haluat liittyä tälle postituslistalle.
+%endif%
+%ifreason confirm%
+  Kiitos, että vahvistit postituslistalle liittymisen.
+%endif%
+%ifreason permit%
+  Pyyntösi liittyä tälle postituslistalle on hyväksytty.
+%endif%
+%ifreason switch%
+  Postituslistasi tilaus on muutettu
+%else%
+  %ifreason admin%
+    Postituslistan ylläpitäjä on liittänyt sinut
+  %else%
+    Sinut on lisätty 
+  %endif%
+%endif%
+%iftype normal% postituslistan normaaliksi tilaajaksi. %endif%
+%iftype digest% postituslistan viestikoosteiden tilaajaksi. %endif%
+%iftype nomail% postituslistan jäseneksi ilman viestien jakelua. %endif%
+
+%wrap%Osoite, joka postituslistalle on liitetty, on <$subaddr$>.
+
+%ifcontrol closedlist%
+  %^%%wrap%Jos haluat lopettaa postituslistan tilauksen, ota yhteyttä listan
+  ylläpitäjään. Yhteydenotto onnistuu lähettämällä sähköpostia osoitteeseen
+  <$list+$owner@$domain$>.
+%else%
+  %^%%wrap%Jos haluat lopettaa postituslistan tilauksen, lähetä viesti
+  osoitteeseen <$list+$unsubscribe@$domain$> samasta osoitteesta, joka
+  listalle on liitetty. Viestin otsikolla ja sisällöllä ei ole merkitystä.
+  Tehtyäsi tämän sinulle lähetetään vahvistus tai lisäohjeita postituslistan
+  tilauksen lopettamisesta.
+%endif%
+
+%wrap%Lisätietoa ja ohjeita tämän postituslistan käytöstä saa lähettämällä
+viestin osoitteeseen <$list+$help@$domain$>.
+

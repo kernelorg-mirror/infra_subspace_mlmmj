@@ -1,0 +1,92 @@
+Subject: Information pour $list$@$domain$
+
+%text prologue%
+
+Vous trouverez ci-après des informations à propos de la liste
+
+Vous pouvez vous inscrire aux versions suivantes :
+
+- %wrap%la version normale\ : à chaque fois qu'un message est envoyé à la
+liste, les inscrits reçoivent une copie de celui-ci.
+%ifcontrol closedlist closedlistsub%
+  Inscrivez-vous en contactant un administrateur de la liste.
+%else%
+  Inscrivez-vous en envoyant un e-mail à <$list+$subscribe@$domain$>.
+%endif%
+
+%ifncontrol nodigestsub%
+  %^%- %wrap%La version digest\ : les inscrits reçoivent des messages
+  multiples dans un seul e-mail, à des intervalles réguliers, ou lorsque
+  plusieurs messages se sont accumulés.
+  %ifcontrol closedlist closedlistsub%
+    Inscrivez-vous en contactant un administrateur de la liste.
+  %else%
+    Inscrivez-vous en envoyant un e-mail à
+    <$list+$subscribe-digest@$domain$>.
+  %endif%
+%endif%
+
+%ifncontrol nonomailsub%
+  %^%- %wrap%La version no-mail\ : les inscrits ne reçoivent aucun message de
+  la liste. Cela signifie qu'alors qu'ils peuvent poster des messages à la
+  liste que seuls les inscrits peuvent envoyer, ils suivent la liste en
+  utilisant une archive web ou via une autre adresse e-mail inscrite.
+  %ifcontrol closedlist closedlistsub%
+    Inscrivez-vous en contactant un administrateur de la liste.
+  %else%
+    Inscrivez-vous en envoyant un e-mail à
+    <$list+$subscribe-nomail@$domain$>.
+  %endif%
+%endif%
+
+%ifcontrol submod%
+  %^%%wrap%La liste a un modérateur qui vérifiera les demandes d'inscription
+  avant d'autoriser les nouveaux membres.
+%endif%
+
+%ifcontrol closedlist%
+  %^%%wrap%Désinscrivez-vous en contactant un administrateur de la liste.
+%else%
+  %^%%wrap%Désinscrivez-vous en envoyant un e-mail à
+  <$list+$unsubscribe@$domain$>.
+%endif%
+
+%wrap%Les messages sont envoyés à <$list$@$domain$>.
+
+%ifcontrol subonlypost%%ifncontrol modnonsubposts%
+  %^%%wrap%Cependant, seuls les inscrits peuvent poster sur la liste.
+%endif%%endif%
+
+%ifcontrol moderated%
+  %^%%wrap%La liste a des modérateurs qui vérifieront tous les messages
+  avant de les délivrer à la liste.
+%else%
+  %ifcontrol subonlypost%%ifcontrol modnonsubposts%
+    %^%%wrap%La liste a des modérateurs qui vérifieront tous les messages
+    des non-incrits avant de les délivrer à la liste.
+  %endif%%endif%
+%endif%
+
+%ifcontrol access%
+  %^%%wrap%La liste a également des règles d'accès qui peuvent concerner
+  ceux qui peuvent poster et les messages qui sont modérés.
+%endif%
+
+%ifncontrol noget%%ifncontrol noarchive%
+  %^%%wrap%
+  %ifcontrol subonlyget%
+    Tous 
+  %else%
+    Les inscrits
+  %endif%
+  peuvent retirer le message numéro N des archives de la liste en envoyant
+  un message à <$list+$get-N@$domain$> (remplacez le N par le numéro du
+  message souhaité).
+%endif%%endif%
+
+%wrap%Vous pouvez obtenir le document contenant les questions fréquemment
+posées pour la liste en envoyant un message à <$list+$faq@$domain$>.
+
+%wrap%Pour contacter le propriétaire de la liste envoyé un message à
+<$list+$owner@$domain$>.
+

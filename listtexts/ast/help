@@ -1,0 +1,90 @@
+Subject: Información de $list$@$domain$
+
+%text prologue%
+
+Equí hai dalguna información tocante a la llista.
+
+Pues subscribite a les siguientes versiones:
+
+- %wrap%La versión normal: Cada vegada que s'unvia un mensaxe a la llista,
+los suscriptores reciben una copia del mesmu.
+%ifcontrol closedlist closedlistsub%
+  Pa subscribite comunicate con un alministrador de la llista.
+%else%
+  Pa subscribite manda un corréu a <$list+$subscribe@$domain$>.
+%endif%
+
+%ifncontrol nodigestsub%
+  %^%- %wrap%La versión resumida: Los suscriptores reciben dellos mensaxes
+  nun únicu corréu, a intervalos regulares, o cuando s'acumulen mensaxes
+  abondo.
+  %ifcontrol closedlist closedlistsub%
+    Pa subscribite comunicate con un alministrador de la llista.
+  %else%
+    Pa subscribite manda un corréu a <$list+$subscribe-digest@$domain$>.
+  %endif%
+%endif%
+
+%ifncontrol nonomailsub%
+  %^%- %wrap%La versión ensin corréu: Los suscriptores nun reciben dengunu
+  de los mensaxes de la llista. Poro, esto significa que puen espublizar
+  nuna llista onde namái los suscriptores puen facelo, mentanto siguen la
+  llista per un archivu web o per otra direición de corréu suscrita.
+  %ifcontrol closedlist closedlistsub%
+    Pa subscribite comunicate con un alministrador de la llista.
+  %else%
+    Pa subscribite manda un corréu a <$list+$subscribe-nomail@$domain$>.
+  %endif%
+%endif%
+
+%ifcontrol submod%
+  %^%%wrap%La llista tien supervisores que revisarán les solicitúes de
+  suscripción enantes de permitir nuevos miembros.
+%endif%
+
+%ifcontrol closedlist%
+  %^%%wrap%Pa des-subscribite comunicate con un alministrador de la llista.
+%else%
+  %^%%wrap%Pa des-subscribite manda un corréu a
+  <$list+$unsubscribe@$domain$>.
+%endif%
+
+%wrap%Los mensaxes s'asoleyen mandando un corréu a <$list$@$domain$>.
+
+%ifcontrol subonlypost%%ifncontrol modnonsubposts%
+  %^%%wrap%Sicasí, namái los suscriptores puen escribir a la llista.
+%endif%%endif%
+
+%ifcontrol moderated%
+  %^%%wrap%La llista tien moderadores que revisarán los mensaxes enantes de
+  lliberalos a la llista.
+%else%
+  %ifcontrol subonlypost%%ifcontrol modnonsubposts%
+    %^%%wrap%La llista tien moderadores que revisarán los mensaxes de los
+    non-suscriptores enantes de lliberalos a la llista.
+  %endif%%endif%
+%endif%
+
+%ifcontrol access%
+  %^%%wrap%La llista tamién tien regles d'accesu que puen afeutar a quién
+  pue mandar mensaxes y qué mensaxes se moderen.
+%endif%
+
+%ifncontrol noget%%ifncontrol noarchive%
+  %^%%wrap%
+  %ifcontrol subonlyget%
+    Toles persones
+  %else%
+    Los suscriptores
+  %endif%
+  puen rcuperar el mensaxe númberu N del archivu de la llista unviando un
+  mensaxe a <$list+$get-N@$domain$> (camuda N pol númberu del mensaxe
+  deseáu).
+%endif%%endif%
+
+%wrap%Pues recuperar el documentu d'entrugues frecuentes de la llista
+unviando un mensaxe a <$list+$faq@$domain$>.
+
+%wrap%Pa comunicate col propietariu de la llista, manda un mensaxe a
+<$list+$owner@$domain$>.
+

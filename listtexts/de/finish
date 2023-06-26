@@ -1,0 +1,61 @@
+%ifaction unsub%Subject: Auf Wiedersehen bei $list$@$domain$%endif%
+%ifaction release reject%Subject: $list$@$domain$ moderiert: $subject$%endif%
+%ifaction permit obstruct%Subject: Abgewiesen von $list$@$domain$: $subaddr$%endif%
+%ifaction post%Subject: Verteilt über $list$@$domain$: $subject$%endif%
+
+%text prologue%
+
+%ifaction unsub%
+  %^%%wrap%
+  %ifreason request%
+  %endif%
+  %ifreason confirm%
+    Vielen Dank für Ihre Abmeldebestätigung.
+  %endif%
+  %ifreason admin%
+    Ein Administrator hat Sie von der Liste gelöscht.
+  %else%
+    Sie wurden von der Liste gelöscht.
+  %endif%
+%endif%
+
+%ifaction release%
+  %^%%wrap%Sie haben die Nachricht von <$posteraddr$> mit dem Betreff
+  "$subject$" erfolgreich an die Liste weitergeleitet.
+%endif%
+
+%ifaction reject%
+  %^%%wrap%Sie haben die Nachricht von <$posteraddr$> mit dem Betreff
+  "$subject$" erfolgreich abgewiesen.
+%endif%
+
+%ifaction permit%
+  %^%%wrap%Sie haben die Listenanmeldung von <$subaddr$> erfolgreich
+  zugelassen.
+%endif%
+
+%ifaction obstruct%
+  %^%%wrap%Sie haben die Listenanmeldung von <$subaddr$> erfolgreich
+  abgewiesen.
+%endif%
+
+%ifaction post%
+  %^%%wrap%
+  %ifreason confirm%
+    Vielen Dank für die Bestätigung Ihrer
+  %endif%
+  %ifreason release%
+    Ein Moderator hat Ihre
+  %endif%
+  %ifreason request%
+    Danke für Ihre
+  %endif%
+  Nachricht mit dem Betreff
+  %ifreason release%
+    "$subject$" weitergeleitet.
+  %else%
+    "$subject$".
+  %endif%
+  Sie wird nun über die Liste verteilt.
+%endif%
+

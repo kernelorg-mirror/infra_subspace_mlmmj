@@ -1,0 +1,54 @@
+%ifaction unsub%Subject: Cancelamento da subscrição em $list$@$domain$%endif%
+%ifaction release reject%Subject: Moderação em $list$@$domain$: $subject$%endif%
+%ifaction permit obstruct%Subject: Rejeição em $list$@$domain$: $subaddr$%endif%
+%ifaction post%Subject: Publicação em $list$@$domain$: $subject$%endif%
+
+%text prologue%
+
+%ifaction unsub%
+  %^%%wrap%
+  %ifreason request%
+  %endif%
+  %ifreason confirm%
+    Agradecemos a confirmação do cancelamento da subscrição.
+  %endif%
+  %ifreason admin%
+    Um administrador removeu-o da lista.
+  %else%
+    Você foi removido da lista.
+  %endif%
+%endif%
+
+%ifaction release%
+  %^%%wrap%Você publicou a mensagem de <$posteraddr$> com o assunto
+  "$subject$".
+%endif%
+
+%ifaction reject%
+  %^%%wrap%Você rejeitou a mensagem de <$posteraddr$> com o assunto
+  "$subject$".
+%endif%
+
+%ifaction permit%
+  %^%%wrap%Você permitiu que <$subaddr$> fosse integrado na lista.
+%endif%
+
+%ifaction obstruct%
+  %^%%wrap%Você não permitiu que <$subaddr$> fosse integrado na lista.
+%endif%
+
+%ifaction post%
+  %^%%wrap%
+  %ifreason confirm%
+    Agradecemos a confirmação da
+  %endif%
+  %ifreason release%
+    O moderador publicou a
+  %endif%
+  %ifreason request%
+    Agradecemos a
+  %endif%
+  sua mensagem com o assunto "$subject$". Está, neste momento, a ser
+  publicada na lista.
+%endif%
+

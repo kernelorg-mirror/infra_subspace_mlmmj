@@ -1,0 +1,55 @@
+%ifaction sub%Subject: Anmeldebestätigung für Liste $list$@$domain$%endif%
+%ifaction unsub%Subject: Abmeldebestätigung für Liste $list$@$domain$%endif%
+
+%text prologue%
+
+%ifaction sub%
+  %^%%wrap%
+  %ifreason admin%
+    Ein Listenadministrator
+  %endif%
+  %ifreason request%
+    Jemand (hoffentlich Sie selbst)
+  %endif%
+  hat darum gebeten, Ihre Mailadresse <$subaddr$>
+  %iftype normal%
+    der Liste hinzuzufügen. Das heißt, dass Sie eine Kopie jeder Mail
+    erhalten, die an die Liste geschickt wird.
+  %endif%
+  %iftype digest%
+    der Liste (im Digest-Modus) hinzuzufügen. Das heißt, dass Sie die an die
+    Liste gesandten Mails in regelmäßigen Abständen (oder nach Erreichen
+    einer bestimmten Nachrichtenmenge) zu einer Sammelmail zusammengefasst
+    erhalten.
+  %endif%
+  %iftype nomail%
+    der Liste (im No-Mail-Modus) hinzuzufügen. Das heißt, Sie erhalten zwar
+    keine Nachrichten von der Liste, werden jedoch als Teilnehmer geführt.
+    So dürfen Sie z.B. Nachrichten an die Liste senden und können die
+    Diskussionen in einem Webarchiv oder über eine zweite angemeldete
+    Mailadresse verfolgen
+  %endif%
+%endif%
+
+%ifaction unsub%
+  %^%%wrap%
+  %ifreason admin%
+    Ein Listenadministrator
+  %endif%
+  %ifreason request%
+    Jemand (hoffentlich Sie selbst)
+  %endif%
+  hat eine Löschung der Mitgliedschaft Ihrer Mailadresse <$subaddr$> von der
+  Liste beantragt.
+%endif%
+
+%wrap%Um sicher zu stellen, dass Sie das wirklich wollen, senden Sie eine
+Nachricht an <$confaddr$>, was gewöhnlich durch einfaches Antworten auf
+diese Mail erfolgen kann. Betreff und Text Ihrer Antwort können beliebig
+sein.
+
+Nach dem Absenden Ihrer Antwortmail sollten Sie eine Antwortnachricht
+erhalten, dass die Operation erfolgreich war.
+
+Sollten Sie das nicht wollen, können Sie diese Mail einfach ignorieren.
+

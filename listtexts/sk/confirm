@@ -1,0 +1,52 @@
+%ifaction sub%Subject: Potvrdenie prihlásenia do $list$@$domain$%endif%
+%ifaction unsub%Subject: Potvrdenie odhlásenia z $list$@$domain$%endif%
+
+%text prologue%
+
+%ifaction sub%
+  %^%%wrap%
+  %ifreason admin%
+    Administrátor
+  %endif%
+  %ifreason request%
+    Niekto (veríme, že Vy)
+  %endif%
+  požiadal, aby Vaša emailová adresa <$subaddr$> bola pridaná
+  %iftype normal%
+    do mailovej diskusie. To znamená, že zakaždým, keď do diskusie bude
+    poslaná správa, dostanete jej kópiu.
+  %endif%
+  %iftype digest%
+    do mailovej diskusie, aby ste prijímali súhrnné správy. To znamená, že
+    budete dostávať viacero správ naraz v pravidelných intervaloch, alebo
+    keď sa zozbiera dostatočný počet správ.
+  %endif%
+  %iftype nomail%
+    do mailovej diskusie, bez posielania mailov. To znamená, že mailom
+    nebudete dostávať žiadne správy, ale budete považovaný/považovaná za
+    člena. Budete teda mať pávo posielať správy do diskusie, určenej len pre
+    členov, pričom zaslané správy budete môcť čítať v archíve diskusie alebo
+    na inej mailovej adrese. 
+  %endif%
+%endif%
+
+%ifaction unsub%
+  %^%%wrap%
+  %ifreason admin%
+    Administrátor
+  %endif%
+  %ifreason request%
+    Niekto (veríme, že Vy)
+  %endif%
+  požiadal, aby Vaša emailová adresa <$subaddr$> bola odstránená z mailovej
+  diskusie.
+%endif%
+
+%wrap%Tento úmysel môžete potvrdiť poslaním správy na <$confaddr$>, čo
+jednoducho spravíte odpoveďou na tento mail. Na predmete a obsahu správy
+nezáleží.
+
+Následne dostanete správu s informáciou o úspešnom vykonaní operácie.
+
+Ak sa odhlásiť nechcete, túto správu ignorujte.
+

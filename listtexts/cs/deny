@@ -1,0 +1,76 @@
+%ifaction sub%Subject: Není možné přihlásit se do $list$@$domain$%endif%
+%ifaction unsub%Subject: Není možné odhlásit se z $list$@$domain$%endif%
+%ifaction release reject%Subject: Není možné moderovat $list$@$domain$%endif%
+%ifaction permit obstruct%Subject: Není možné spravovat $list$@$domain$%endif%
+
+%text prologue%
+
+%ifaction sub%
+  %^%%wrap%Není možné přihlásit se do konference,
+  %ifreason disabled%
+    protože
+    %iftype normal% normal %endif%
+    %iftype digest% digest %endif%
+    %iftype nomail% no-mail %endif%
+    verze zasílání je vypnutá.
+  %endif%
+  %ifreason closed%
+    protože je zakázáno přihlásit se prostřednictvím zaslání zprávy.
+  %endif%
+  %ifreason subbed%
+    protože adresa je již do konference přihlášená.
+  %endif%
+  %ifreason expired%
+    protože uplynulo příliš mnoho času a nikdo neschválil žádost.
+  %endif%
+  %ifreason obstruct%
+    protože žádost o přihlášení byla zamítnuta.
+  %endif%
+%endif%
+
+%ifaction unsub%
+  %^%%wrap%Není možné odhlásit se z konference,
+  %ifreason unsubbed%
+    protože adresa není přihlášena.
+
+    %^%%wrap%Pokud si myslíte (nebo víte), že jste členem konference, jste 
+    pravděpodobně přihlášen/a s jinou emailovou adresou. Můžete ji zjistit 
+    z uvítacího emailu při přihlášení do konference, který jste odbržel/a. 
+    (Podívejte se na pole "Return-Path" v hlavičce uvítacího emailu.)
+  %endif%
+%endif%
+
+%ifaction release reject%
+  %^%%wrap%
+  %ifaction release%
+    Není možné uvolnit/rozeslat zprávu do konference,
+  %endif%
+  %ifaction reject%
+    Není možné zamítnout zprávu do konference,
+  %endif%
+  %ifreason notfound%
+    protože zprávu nejde nalézt. Možná ji rozeslal/zamítnul někdo jiný (jiný moderátor), 
+    nebo již požadavek vypršel.
+  %endif%
+  %ifreason moderators%
+    protože nejste moderátorem konference.
+  %endif%
+%endif%
+
+%ifaction permit obstruct%
+  %^%%wrap%
+  %ifaction permit%
+    Není možné schválit požadavek na přihlášení do konference,
+  %endif%
+  %ifaction obstruct%
+    Není možné zamítnout požadavek na přihlášení do konference,
+  %endif%
+  %ifreason notfound%
+    protože ho nejde nalézt. Možná ho rozeslal/zamítnul někdo jiný (jiný správce), 
+    nebo již požadavek vypršel.
+  %endif%
+  %ifreason gatekeepers%
+    protože nejste správcem konference.
+  %endif%
+%endif%
+

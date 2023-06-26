@@ -1,0 +1,53 @@
+Subject: Παρακαλώ διαχειριστείτε $list$@$domain$: $subject$
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="=_$random0$$random1$_="
+Content-Transfer-Encoding: 8bit
+
+--=_$random0$$random1$_=
+Content-Type: text/plain; charset=utf8
+Content-Transfer-Encoding: 8bit
+
+%text prologue%
+
+%wrap%Το μήνυμα με αποστολέα <$posteraddr$> και θέμα "$subject$" πρέπει να
+ελεγχθεί πριν τη δημοσίευσή του
+%ifreason modnonsubposts%
+  καθώς ο αποστολέας του μηνύματος δεν είναι εγγεγραμμένος στη λίστα.
+%endif%
+%ifreason moderated%
+  καθώς αυτή είναι μία λίστα με ελεγχόμενη δημοσίευση.
+%endif%
+%ifreason access%
+  καθώς αυτό επιβάλλεται από τις ρυθμίσεις ασφαλείας.
+%endif%
+
+Ακολουθεί το μήνυμα.
+
+%wrap%Για να αποδεχθείτε το μήνυμα αυτό, αρκεί η αποστολή ενός μηνύματος στη
+διεύθυνση <$releaseaddr$>, επιλέγοντας "Απάντηση".
+
+%ifcontrol subonrelease%
+  %^%%wrap%Για να εγγράψετε παράλληλα τον αποστολέα ως μέλος στη λίστα με
+  την παράλληλη αποδοχή του μηνύματος αρκεί ένα μήνυμα στις παρακάτω
+  διευθύνσεις\ :%nowrap%
+  %^%- %wrap%Κανονική εγγραφή\ : <$listsubreleaseaddr$>%nowrap%
+  %^%- %wrap%Εγγραφή με λήψη συγκεντρωτικών μηνυμάτων (digest version):
+  <$digestsubreleaseaddr$>%nowrap%
+  %^%- %wrap%Εγγραφή χωρίς λήψη μηνυμάτων. (no-mail version):
+  <$nomailsubreleaseaddr$>%nowrap%
+%endif%
+
+%wrap%Αν δεν επιθυμείτε να κάνετε τίποτα από τα παραπάνω τότε στείλτε ένα
+μήνυμα στο <$rejectaddr$> ή απλά αγνοήστε το μήνυμα αυτό.
+
+Το μήνυμα αυτό απεστάλη στους παρακάτω διαχειριστές :
+- %moderators%
+
+--=_$random0$$random1$_=
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="message.eml"
+
+%originalmail%
+--=_$random0$$random1$_=--

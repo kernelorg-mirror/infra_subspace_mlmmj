@@ -1,0 +1,54 @@
+%ifaction unsub%Subject: Arrivederci da $list$@$domain$%endif%
+%ifaction release reject%Subject: $list$@$domain$ moderata: $subject$%endif%
+%ifaction permit obstruct%Subject: $list$@$domain$ controllata: $subaddr$%endif%
+%ifaction post%Subject: Inviato a $list$@$domain$: $subject$%endif%
+
+%text prologue%
+
+%ifaction unsub%
+  %^%%wrap%
+  %ifreason request%
+  %endif%
+  %ifreason confirm%
+    Grazie per aver confermato la rimozione della tua iscrizione.
+  %endif%
+  %ifreason admin%
+    Un amministratore ti ha rimosso dalla lista.
+  %else%
+    Ora sei stato/a rimosso/a dalla lista.
+  %endif%
+%endif%
+
+%ifaction release%
+  %^%%wrap%Hai rilasciato correttamente il messaggio alla lista da
+  <$posteraddr$> con oggetto "$subject$".
+%endif%
+
+%ifaction reject%
+  %^%%wrap%Hai rifiutato correttamente il messaggio da <$posteraddr$> con
+  oggetto "$subject$".
+%endif%
+
+%ifaction permit%
+  %^%%wrap%Hai permesso correttamente a <$subaddr$> di unirsi alla lista.
+%endif%
+
+%ifaction obstruct%
+  %^%%wrap%Hai bloccato correttamente l'ingresso alla lista di <$subaddr$>.
+%endif%
+
+%ifaction post%
+  %^%%wrap%
+  %ifreason confirm%
+    Grazie per la conferma
+  %endif%
+  %ifreason release%
+    Un moderatore ha rilasciato
+  %endif%
+  %ifreason request%
+    Grazie per
+  %endif%
+  il tuo messaggio con oggetto "$subject$". Ora verrà distribuito alla
+  lista.
+%endif%
+

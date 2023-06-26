@@ -1,0 +1,80 @@
+Subject: $list$@$domain$ 信息
+
+%text prologue%
+
+以下是关于本列表的一些信息\=。
+
+您可以订阅下述版本\=：
+
+- %wrap%常规版本\=：每当有邮件发到列表\=，订户都将收到一份副本\=。
+%ifcontrol closedlist closedlistsub%
+  请联系列表管理员订阅\=。
+%else%
+  请发邮件到该地址订阅\=：<$list+$subscribe@$domain$>。
+%endif%
+
+%ifncontrol nodigestsub%
+  %^%- %wrap%汇总版本\=：订户定期或累积到一定数量时在单封邮件中收到多条帖
+  子\=。
+  %ifcontrol closedlist closedlistsub%
+    请联系列表管理员订阅\=。
+  %else%
+    请发邮件到该地址订阅\=：<$list+$subscribe-digest@$domain$>。
+  %endif%
+%endif%
+
+%ifncontrol nonomailsub%
+  %^%- %wrap%无邮件版本\=：订户不会收到发往列表的任何帖子\=。这意味着\=，尽
+  管他们能在只有订户能发帖的列表中发帖\=，但他们可以通过 web 存档或订阅该列
+  表的其他电子邮箱地址跟踪回应\=。
+  %ifcontrol closedlist closedlistsub%
+    请联系列表管理员订阅\=。
+  %else%
+    请发邮件到该地址订阅\=：<$list+$subscribe-nomail@$domain$>。
+  %endif%
+%endif%
+
+%ifcontrol submod%
+  %^%%wrap%列表掌门人会审阅订阅请求再批准新成员\=。
+%endif%
+
+%ifcontrol closedlist%
+  %^%%wrap%请联系列表管理员取消订阅\=。
+%else%
+  %^%%wrap%请发邮件到该地址取消订阅\=：<$list+$unsubscribe@$domain$>。
+%endif%
+
+%^%%wrap%发帖请寄往 <$list$@$domain$>。
+
+%ifcontrol subonlypost%%ifncontrol modnonsubposts%
+  %^%%wrap%然而\=，只有订户能在列表中发帖\=。
+%endif%%endif%
+
+%ifcontrol moderated%
+  %^%%wrap%本列表版主将审阅所有帖子\=，再通过到列表\=。
+%else%
+  %ifcontrol subonlypost%%ifcontrol modnonsubposts%
+    %^%%wrap%本列表版主将审阅所有非订户的帖子\=，再通过到列表\=。
+  %endif%%endif%
+%endif%
+
+%ifcontrol access%
+  %^%%wrap%本列表还设有权限规则\=，可能影响用户能否发帖\=，以及哪些帖子需要
+  审核\=。
+%endif%
+
+%ifncontrol noget%%ifncontrol noarchive%
+  %^%%wrap%
+  %ifcontrol subonlyget%
+    任何人
+  %else%
+    订户
+  %endif%
+  可以通过发邮件到 <$list+$get-N@$domain$> （\=将 N 换成所需邮件的序号\=）
+  从列表存档提取邮件序号为 N 的邮件\=。
+%endif%%endif%
+
+%^%%wrap%您可以发邮件到 <$list+$faq@$domain$> 了解本列表的常见问题文档\=。
+
+%^%%wrap%如需联系列表所有者\=，请发邮件到 <$list+$owner@$domain$>。
+

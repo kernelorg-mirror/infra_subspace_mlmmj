@@ -1,0 +1,96 @@
+Subject: Informácie o $list$@$domain$
+
+%text prologue%
+
+Informácie o používaní mailovej diskusie.
+
+Prihlásiť sa môžete do nasledujúcich verzií:
+
+- %wrap%Normálna verzia: Zakaždým, keď sa do diskusie pošle príspevok,
+abonenti dostanú jeho kópiu v samostatnej mailovej správe.
+%ifcontrol closedlist closedlistsub%
+  Do tejto verzie diskusie sa možno prihlásiť poslaním mailu
+  administrátorovi.
+%else%
+  Do tejto verzie diskusie sa možno prihlásiť poslaním mailu na
+  <$list+$subscribe@$domain$>.
+%endif%
+
+%ifncontrol nodigestsub%
+  %^%- %wrap%Verzia s prijímaním súhrnných správ (digest): Abonenti
+  dostávajú viaceré príspevky naraz v jednej mailovej správe buď v
+  pravidelných intervaloch, alebo keď sa zozbiera dostatočný počet správ.
+  %ifcontrol closedlist closedlistsub%
+    Do tejto verzie diskusie sa možno prihlásiť poslaním mailu
+    administrátorovi.
+  %else%
+    Do tejto verzie diskusie sa možno prihlásiť poslaním mailu na
+    <$list+$subscribe-digest@$domain$>.
+  %endif%
+%endif%
+
+%ifncontrol nonomailsub%
+  %^%- %wrap%Verzia bez posielania mailových správ: Abonenti nedostávajú
+  mailom žiadne správy. To znamená, že do diskusie môžu posielať príspevky
+  tak, ako ostatní abonenti, pričom príspevky diskusie sledujú v archíve
+  diskusie alebo na inej mailovej adrese, ktorou sú do diskusie už
+  prihlásení.
+  %ifcontrol closedlist closedlistsub%
+    Do tejto verzie diskusie sa možno prihlásiť poslaním mailu
+    administrátorovi.
+  %else%
+    Do tejto verzie diskusie sa možno prihlásiť poslaním mailu na
+    <$list+$subscribe-nomail@$domain$>.
+  %endif%
+%endif%
+
+%ifcontrol submod%
+  %^%%wrap%Diskusia má administrátorov, ktorí každú žiadosť o pripojenie
+  musia odsúhlasiť.
+%endif%
+
+%ifcontrol closedlist%
+  %^%%wrap%Z diskusie sa možno ohlásiť poslaním mailu administrátorovi.
+%else%
+  %^%%wrap%Z diskusie sa možno ohlásiť poslaním mailu na
+  <$list+$unsubscribe@$domain$>.
+%endif%
+
+%wrap%Príspevky sa posielajú na adresu <$list$@$domain$>.
+
+%ifcontrol subonlypost%%ifncontrol modnonsubposts%
+  %^%%wrap%Príspevky do diskusie môžu posielať len jej abonenti.
+%endif%%endif%
+
+%ifcontrol moderated%
+  %^%%wrap%Diskusia je moderovaná. To znamená, že každý príspevok je pred
+  jeho zverejnením preverený moderátorom.
+%else%
+  %ifcontrol subonlypost%%ifcontrol modnonsubposts%
+    %^%%wrap%Diskusia má moderátorov, ktorí pred jeho zverejnením preveria
+    každý príspevok od neprihláseného odosielateľa
+  %endif%%endif%
+%endif%
+
+%ifcontrol access%
+  %^%%wrap%Mailová diskusia má definované prístupové pravidlá, ktoré určujú,
+  kto môže zasielať príspevky a ktoré príspevky sú moderované.
+%endif%
+
+%ifncontrol noget%%ifncontrol noarchive%
+  %^%%wrap%
+  %ifcontrol subonlyget%
+    Ktokoľvek si môže
+  %else%
+    Abonenti si môžu
+  %endif%
+  vyžiadať zaslanie správy N z archívu konferencie zaslaním mailu na
+  <$list+$get-N@$domain$> (N treba zmeniť na číslo správy).
+%endif%%endif%
+
+%wrap%Odpovede na často kladené otázky (FAQ) si môžete vyžiadať zaslaním
+mailu na <$list+$faq@$domain$>.
+
+%wrap%Správcu mailovej diskusie môžete kontaktovať na adrese
+<$list+$owner@$domain$>.
+

@@ -1,0 +1,18 @@
+Subject: Požiadavka na prihlásenie do $list$@$domain$: $subaddr$
+
+%text prologue%
+
+%wrap%Z adresy <$subaddr$> prišla prihláška do
+%iftype normal% normálnej verzie mailovej diskusie.%endif%
+%iftype digest% mailovej diskusie so zasielaním súhrnných správ.%endif%
+%iftype nomail% mailovej diskusie bez zasielania správ.%endif%
+
+%wrap%Ak chcete prihlášku povoliť, pošlite správu na adresu <$permitaddr$>.
+Spravíte tak odoslaním odpovede na tento mail.
+
+%wrap%%Ak nechcete prihlášku povoliť, pošlite správu na adresu
+<$obstructaddr$> alebo túto správu ignorujte.
+
+Túto správu dostali nasledujúci administrátori:
+- %gatekeepers%
+

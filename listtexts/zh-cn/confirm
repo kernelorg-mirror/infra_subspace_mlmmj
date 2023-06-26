@@ -1,0 +1,46 @@
+%ifaction sub%Subject: 确认订阅 $list$@$domain$%endif%
+%ifaction unsub%Subject: 确认取消订阅 $list$@$domain$%endif%
+
+%text prologue%
+
+%ifaction sub%
+  %^%%wrap%
+  %ifreason admin%
+    一位管理员
+  %endif%
+  %ifreason request%
+    有人（\=但愿是您\=）
+  %endif%
+  请求将您的电子邮箱地址 <$subaddr$> 添加到
+  %iftype normal%
+    此列表\=。这意味着每当有人向该列表发邮件\=，您都会收到邮件的副本\=。
+  %endif%
+  %iftype digest%
+    此列表\=，收取讨论汇总\=。这意味着您将在单封邮件中收到多条消息\=，间隔
+    一定时间\=，或达到一定数量时发送\=。
+  %endif%
+  %iftype nomail%
+    此列表\=，但不收取邮件\=。这意味着您将不会接收到任何发往列表的邮件\=，
+    但仍保持成员身份\=。也就是说\=，例如\=，您可以在只有订阅者能发送消息的
+    列表中发言\=，但通过网页存档或其他电邮跟踪进展\=。
+  %endif%
+%endif%
+
+%ifaction unsub%
+  %^%%wrap%
+  %ifreason admin%
+    一位管理员
+  %endif%
+  %ifreason request%
+    有人（\=但愿是您\=）
+  %endif%
+  请求将您的电子邮箱地址 <$subaddr$> 从列表移除\=。
+%endif%
+
+%wrap%要确认是您的请求\=，请发邮件到 <$confaddr$> （\=通常可直接回复本邮
+件\=）\=。邮件主题与正文任意\=。
+
+完成后\=，您应该会收到确认操作成功的回复\=。
+
+如果您不打算取消订阅\=，可直接忽略本邮件\=。
+

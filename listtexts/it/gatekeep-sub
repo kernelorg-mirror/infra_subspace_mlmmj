@@ -1,0 +1,20 @@
+Subject: Richiesta di iscrizione per $list$@$domain$: $subaddr$
+
+%text prologue%
+
+%wrap%C'è stata una richiesta da parte di <$subaddr$> per unirsi alla
+versione
+%iftype normal% normal %endif%
+%iftype digest% digest %endif%
+%iftype nomail% no-mail %endif%
+della lista.
+
+%wrap%Per completare la procedura, invia un messaggio a <$permitaddr$>, che
+viene in genere fatto semplicemente rispondendo a questo messaggio.
+
+%wrap%Per annullare la procedura, invia un messaggio a <$obstructaddr$>
+oppure ignora questo messaggio.
+
+Questo messaggio è stato ricevuto dai seguenti controllori:
+- %gatekeepers%
+

@@ -1,0 +1,19 @@
+%^%%wrap%No entanto, esta é uma lista aberta. Se quiser, pode subscrever a
+lista e simultaneamente publicar a mensagem, enviando uma mensagem para
+<$listsubreleaseaddr$> bastando, para o efeito, responder a esta mensagem. O
+assunto e o texto podem ser qualquer coisa.
+
+%ifncontrol nodigestsub%
+  %^%%wrap%Pode também subscrever à versão resumida da lista e publicar a
+  mensagem, enviando uma mensagem para <$digestsubreleaseaddr$> e passará a
+  receber diversas mensagens numa única mensagem, em intervalos periódicos,
+  ou quando se acumularem um determinado conjunto de mensagens.
+%endif%
+
+%ifncontrol nonomailsub%
+  %^%%wrap%Pode também subscrever à versão no-mail da lista e publicar a
+  mensagem, enviando uma mensagem para <$nomailsubreleaseaddr$>. Isto
+  significa que você não receberá quaisquer mensagens, enquanto segue as
+  mensagens através de um arquivo web ou através de outro endereço
+  eletrónico.
+%endif%

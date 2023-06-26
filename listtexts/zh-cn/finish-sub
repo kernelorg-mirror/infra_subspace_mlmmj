@@ -1,0 +1,42 @@
+Subject: 欢迎加入 $list$@$domain$
+
+%text prologue%
+
+%wrap%
+%ifreason request%
+  感谢您申请加入我们\=。
+%endif%
+%ifreason confirm%
+  感谢您确认订阅\=。
+%endif%
+%ifreason permit%
+  一位掌门人已批准您的加入\=。
+%endif%
+%ifreason switch%
+  您的订阅已切换为
+%else%
+  %ifreason admin%
+    一位管理员已将您加入本列表的
+  %else%
+    您已被加入本列表的
+  %endif%
+%endif%
+%iftype normal%常规%endif%
+%iftype digest%汇总%endif%
+%iftype nomail%无邮件%endif%
+版本\=。
+
+%wrap%您订阅所用的电子邮箱地址为 <$subaddr$>\=。
+
+%ifcontrol closedlist%
+  %^%%wrap%如果您打算取消订阅\=，需要联系一位管理员\=。您可以发电子邮件
+  到 <$list+$owner@$domain$> 联系列表所有者\=。
+%else%
+  %^%%wrap%如果您打算取消订阅\=，请使用本电子邮箱地址发邮件
+  到 <$list+$unsubscribe@$domain$>\=。邮件主题与正文任意\=。随后您将收到确
+  认或进一步说明\=。
+%endif%
+
+%wrap%要获取关于本列表的其他信息及帮助\=，请发邮件
+到 <$list+$help@$domain$>。
+

@@ -1,0 +1,21 @@
+%^%%wrap%Toto je však otvorená mailová diskusia. Ak chcete, môžete sa
+súčasne prihlásiť a zverejniť svoj príspevok zaslaním mailu na
+<$listsubreleaseaddr$>, čo sa obvykle jednoducho dá spraviť odpoveďou na
+túto správu. Na predmete a obsahu správy nezáleží.
+
+%ifncontrol nodigestsub%
+  %^%%wrap%Alebo, zaslaním svojho príspevku na adresu
+  <$digestsubreleaseaddr$> sa súčasne s jeho zverejnením prihlásite na
+  prijímanie súhrnných správ. Následne budete dostávať viaceré príspevky
+  naraz v jednej mailovej správe buď v pravidelných intervaloch, alebo keď
+  sa zozbiera dostatočný počet správ.
+%endif%
+
+%ifncontrol nonomailsub%
+  %^%%wrap%Alebo, zaslaním svojho príspevku na adresu
+  <$nomailsubreleaseaddr$> sa súčasne s jeho zverejnením prihlásite v režime
+  bez budúceho prijímania správ. To znamená, že do diskusie budete môcť
+  posielať príspevky tak, ako ostatní abonenti, pričom príspevky diskusie
+  môžte sledovať v archíve diskusie alebo na inej mailovej adrese, ktorou
+  ste do diskusie už prihlásená/prihlásený.
+%endif%

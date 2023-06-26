@@ -1,0 +1,23 @@
+%^%%wrap%Cependant, c'est une liste ouverte. Si vous le souhaitez vous
+pouvez simultanément vous inscrire et délivrer votre message en envoyant un
+message à <$listsubreleaseaddr$> ce qui peut habituellement être fait
+simplement en répondant à ce message. Le sujet et le corps du message
+peuvent contenir n'importe quoi.
+
+%ifncontrol nodigestsub%
+  %^%%wrap%Ou vous pouvez simultanément vous inscrire à la version digest de
+  la liste et délivrer votre message en envoyant un message à
+  <$digestsubreleaseaddr$> et vous recevrez des messages multiples groupés
+  en un seul message, à intervalles réguliers ou lorsque plusieurs messages
+  se sont accumulés.
+%endif%
+
+%ifncontrol nonomailsub%
+  %^%%wrap%Ou vous pouvez simultanément vous inscrire à la version no-mail
+  de la liste et délivrer votre message en envoyant un message à
+  <$nomailsubreleaseaddr$> et vous ne recevrez pas les messages envoyés à la
+  liste. Cela signifie que vous ne verrez pas les réponses à votre message à
+  moins que vous ne suiviez la liste en utilisant une archive web ou que
+  vous n'inscriviez une autre adresse e-mail à une autre version de la
+  liste.
+%endif%

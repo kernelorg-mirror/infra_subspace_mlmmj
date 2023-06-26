@@ -1,0 +1,25 @@
+Subject: Suscriptores a $list$@$domain$
+
+%text prologue%
+
+%wrap%Esta ye la llista de suscriptores
+%iftype all%
+  (a toles versiones de la llista):
+%else%
+  a la versión
+  %iftype normal% normal %endif%
+  %iftype digest% resumida %endif%
+  %iftype nomail% ensin corréu %endif%
+  de la llista:
+%endif%
+
+%iftype all normal%
+  %^%- %listsubs%
+%endif%
+%iftype all digest%
+  %^%- %digestsubs%
+%endif%
+%iftype all nomail%
+  %^%- %nomailsubs%
+%endif%
+

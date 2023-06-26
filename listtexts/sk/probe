@@ -1,0 +1,11 @@
+Subject: Nedoručené správy z $list$@$domain$
+
+%text prologue%
+
+Nepodarilo sa Vám doručiť viaceré správy. Ak čítate tento mail, tak situácia
+sa už vrátila do normálneho stavu a jeho obsah slúži len pre Vašu
+informáciu.
+
+Zoznam nedoručených správ:
+- %bouncenumbers%
+

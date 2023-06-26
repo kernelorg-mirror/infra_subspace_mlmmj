@@ -1,0 +1,38 @@
+Subject: čaká sa na zverejnenie do $list$@$domain$: $subject$
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="=_$random0$$random1$_="
+Content-Transfer-Encoding: 8bit
+
+--=_$random0$$random1$_=
+Content-Type: text/plain; charset=utf8
+Content-Transfer-Encoding: 8bit
+
+%text prologue%
+
+%wrap%Z adresy <$posteraddr$> bola do mailovej diskusie zaslaná správa s
+predmetom "$subject$". Pred jej zverejnením boli moderátori požiadaní o jej
+odsúhlasenie, lebo
+%ifreason moderated%
+  ide o moderovanú mailovú diskusiu.
+%endif%
+%ifreason access%
+  to vyžadujú prístupové pravidlá diskusie.
+%endif%
+%ifreason modnonsubposts%
+  nie ste jej abonentom.
+
+  %ifncontrol closedlist%%ifncontrol closedlistsub%
+    %^%%text subrelease%
+  %endif%%endif%
+%endif%
+
+(Správa je pripojená.)
+
+--=_$random0$$random1$_=
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="message.eml"
+
+%originalmail%
+--=_$random0$$random1$_=--

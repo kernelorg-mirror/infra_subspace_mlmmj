@@ -1,0 +1,51 @@
+Subject: Bitte moderieren Sie $list$@$domain$: $subject$
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="=_$random0$$random1$_="
+Content-Transfer-Encoding: 8bit
+
+--=_$random0$$random1$_=
+Content-Type: text/plain; charset=utf8
+Content-Transfer-Encoding: 8bit
+
+%text prologue%
+
+%wrap%Eine Nachricht von <$posteraddr$> mit dem Betreff "$subject$" wurde an
+die Liste geschickt. Sie sollten die Nachricht moderieren,
+%ifreason modnonsubposts%
+  da der Absender kein Abonnent ist.
+%endif%
+%ifreason moderated%
+  da die Liste moderiert ist.
+%endif%
+%ifreason access%
+  wegen einer Zugangsregel.
+%endif%
+Die Nachricht befindet sich unten.
+
+%wrap%Um die Nachricht an die Liste durchzulassen, senden Sie eine Mail an
+<$releaseaddr$>. In der Regel genügt hierzu ein einfaches Antworten auf
+diese Nachricht.
+
+%ifcontrol subonrelease%
+  %^%%wrap%Sie können die Nachricht durchlassen und gleichzeitig den
+  Absender bei der Liste anmelden, indem Sie eine Mail an folgende Adressen
+  senden:%nowrap%
+  %^%- %wrap%Normalversion: <$listsubreleaseaddr$>%nowrap%
+  %^%- %wrap%Digest-Version: <$digestsubreleaseaddr$>%nowrap%
+  %^%- %wrap%No-Mail-Version: <$nomailsubreleaseaddr$>%nowrap%
+%endif%
+
+%wrap%Wenn Sie nichts davon ausführen möchten, Senden Sie eine Mail an
+<$rejectaddr$> oder ignorieren Sie einfach diese Mail.
+
+Folgende Moderatoren haben diese Mail erhalten:
+- %moderators%
+
+--=_$random0$$random1$_=
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="message.eml"
+
+%originalmail%
+--=_$random0$$random1$_=--

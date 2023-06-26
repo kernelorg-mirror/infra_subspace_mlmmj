@@ -1,0 +1,58 @@
+%ifaction unsub%Subject: Αποχαιρετισμός από τη $list$@$domain$%endif%
+%ifaction release reject%Subject: Διαχείριση $list$@$domain$: $subject$%endif%
+%ifaction permit obstruct%Subject: Προστασία $list$@$domain$: $subaddr$%endif%
+%ifaction post%Subject: Εμφάνιση μύνηματος στη $list$@$domain$: $subject$%endif%
+
+%text prologue%
+
+%ifaction unsub%
+  %^%%wrap%
+  %ifreason request%
+  %endif%
+  %ifreason confirm%
+    Ευχαριστούμε για την επιβεβαίωση της διαγραφής σας από τη λίστα
+    ταχυδρομείου.
+  %endif%
+  %ifreason admin%
+    Ένας από τους διαχειριστές σας διέγραψε από τους παραλήπτες τη λίστα
+    ταχυδρομείου. 
+  %else%
+    Έχετε επιτυχώς διαγράφει από τους παραλήπτες της λίστας ταχυδρομείου.
+  %endif%
+%endif%
+
+%ifaction release%
+  %^%%wrap%Η ανάρτηση του μηνύματος που υποβλήθηκε από τη <$posteraddr$> με
+  θέμα "$subject$"  έχει επιτυχώς διεκπεραιωθεί.
+%endif%
+
+%ifaction reject%
+  %^%%wrap%Η απόρριψη του μηνύματος που υποβλήθηκε από τη <$posteraddr$> με
+  θέμα "$subject$" έχει ολοκληρωθεί.
+%endif%
+
+%ifaction permit%
+  %^%%wrap%Η αποδοχή της αίτησης του/της <$subaddr$> για συμμετοχή στη λίστα
+  ταχυδρομείου πραγματοποιήθηκε επιτυχώς.
+%endif%
+
+%ifaction obstruct%
+  %^%%wrap%Έχετε επιτυχώς εμποδίσει την αίτηση του <$subaddr$> για συμμετοχή
+  στη λίστα ταχυδρομείου.
+%endif%
+
+%ifaction post%
+  %^%%wrap%
+  %ifreason confirm%
+    Ευχαριστούμε για την επιβεβαίωση του μηνύματος
+  %endif%
+  %ifreason release%
+    Ένας από τους διαχειριστές αποδέχθηκε το μήνυμα
+  %endif%
+  %ifreason request%
+    Ευχαριστούμε για το μήνυμα
+  %endif%
+  με θέμα "$subject$" το οποίο έχει γίνει ήδη διαθέσιμο στα υπόλοιπα μέλη
+  της λίστας.
+%endif%
+

@@ -1,0 +1,44 @@
+Subject: Bienveníu a $list$@$domain$
+
+%text prologue%
+
+%wrap%
+%ifreason request%
+  Gracies por solicitar xunite a nós.
+%endif%
+%ifreason confirm%
+  Gracies por confirmar la to suscripción.
+%endif%
+%ifreason permit%
+  Un supervisor te permitió xunite a nós.
+%endif%
+%ifreason switch%
+  La to suscripción camudóse a la versión
+%else%
+  %ifreason admin%
+    Un alministrador te subscribió a la versión
+  %else%
+    Agora tas amestáu a la versión
+  %endif%
+%endif%
+%iftype normal% normal %endif%
+%iftype digest% resumida %endif%
+%iftype nomail% ensin corréu %endif%
+de la llista.
+
+%wrap%La direición de corréu cola que tas suscritu ye <$subaddr$>.
+
+%ifcontrol closedlist%
+  %^%%wrap%Si nel futuru quies des-suscribite, tendrás de ponete'n contautu
+  con un alministrador de la llista. Pa facelo pues mandar un corréu a
+  <$list+$owner@$domain$>.
+%else%
+  %^%%wrap%Si nel futuru quies des-suscribite, manda un mensaxe a
+  <$list+$unsubscribe@$domain$> usando esta direición de corréu. L'asuntu y
+  cuerpu del mensaxe pue ser cualesquier cosa. Darréu recibirás una
+  confirmación o más instrucciones.
+%endif%
+
+%wrap%Pa más información y ayuda tocante a esta llista, unvia un mensaxe a
+<$list+$help@$domain$>.
+

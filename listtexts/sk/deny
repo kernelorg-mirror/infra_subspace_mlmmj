@@ -1,0 +1,77 @@
+%ifaction sub%Subject: Neúspešné prihlásenie do $list$@$domain$%endif%
+%ifaction unsub%Subject: Neúspešné odhlásenie z $list$@$domain$%endif%
+%ifaction release reject%Subject: Neúspešné moderovanie $list$@$domain$%endif%
+%ifaction permit obstruct%Subject: Neúspešné spravovanie $list$@$domain$%endif%
+
+%text prologue%
+
+%ifaction sub%
+  %^%%wrap%Vaše prihlásenie bolo neúspešné, lebo
+  %ifreason disabled%
+    %iftype normal% normálna verzia diskusie %endif%
+    %iftype digest% diskusia s prijímaním súhrnných správ %endif%
+    %iftype nomail% diskusia bez posielania správ %endif%
+    je vypnutá.
+  %endif%
+  %ifreason closed%
+    prihlasovanie mailom nie je povolené.
+  %endif%
+  %ifreason subbed%
+   ste už prihlásený/prihlásená.
+  %endif%
+  %ifreason expired%
+    uplynulo príliš veľa času bez toho, aby ho správca povolil.
+  %endif%
+  %ifreason obstruct%
+    lebo ho správca nepovolil.
+  %endif%
+%endif%
+
+%ifaction unsub%
+  %^%%wrap%Vaše odhlásenie z mailovej diskusie bolo neúspešné,
+  %ifreason unsubbed%
+    lebo nie ste prihlásený/prihlásená.
+
+    %^%%wrap%Tento mail ste dostali preto, lebo ste možno
+    prihlásený/prihlásená s inou adresou. Vašu prihlasovaciu adresu nájdete
+    v privítacej správe, ktorú ste z tejto diskusie dostali, alebo sa
+    pozrite do hlavičky správ, ktoré z tejto diskusie dostávate.
+  %endif%
+%endif%
+
+%ifaction release reject%
+  %^%%wrap%
+  %ifaction release%
+    Vaše povolenie správy na zverejnenie nebolo úspešné
+  %endif%
+  %ifaction reject%
+    Vaše odmietnutie správy na zverejnenie nebolo úspešné
+  %endif% 
+  %ifreason notfound%
+    lebo sa ju nepodarilo nájsť. Iný moderátor ju už asi povolil alebo
+    odmietol, alebo expirovala.
+  %endif%
+  %ifreason moderators%
+    lebo nie ste moderátorom tejto diskusie.
+  %endif%
+%endif%
+
+%ifaction permit obstruct%
+  %^%%wrap%
+  %ifaction permit%
+    Vami zaslané povolenie požiadavky na prihlásenie do mailovej diskusie
+    zlyhalo,
+  %endif%
+  %ifaction obstruct%
+    Vami zaslané odmietnutie požiadavky na prihlásenie do mailovej diskusie
+    zlyhalo,
+  %endif%
+  %ifreason notfound%
+    lebo sa ju nepodarilo nájsť. Iný správca ju už asi povolil alebo
+    odmietol, alebo expirovala.
+  %endif%
+  %ifreason gatekeepers%
+    lebo nie ste správcom tejto diskusie.
+  %endif%
+%endif%
+

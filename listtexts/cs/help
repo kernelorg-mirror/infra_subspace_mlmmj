@@ -1,0 +1,79 @@
+Subject: Informace pro $list$@$domain$
+
+%text prologue%
+
+Zde jsou informace o konferenci.
+
+Je možné se přihlásit k následujícím verzím:
+
+- %wrap%Normal: Pokaždé, když je zaslána zpráva do konference dostane každý její člen kopii.
+%ifcontrol closedlist closedlistsub%
+  Přihlášení se děje kontaktováním správce.
+%else%
+  Přihlášení je pomocí zaslání zprávy na <$list+$subscribe@$domain$>.
+%endif%
+
+%ifncontrol nodigestsub%
+  %^%- %wrap%Digest: Více zpráv je zasíláno v jedné zprávě v pravidelných intervalech, nebo když se zprávy nahromadí.
+  %ifcontrol closedlist closedlistsub%
+    Přihlášení se děje kontaktováním správce.
+  %else%
+    Přihlášení je pomocí zaslání zprávy na <$list+$subscribe-digest@$domain$>.
+  %endif%
+%endif%
+
+%ifncontrol nonomailsub%
+  %^%- %wrap%No-mail: Nejsou zasílány žádné zprávy z konference.
+  To znamená, že je možné zprávy zasílat do konference (zejména pokud je vyžadováno členství).
+  Zprávy je možné číst pomocí archivu konference (pokud existuje), nebo jsou zasílány na jinou adresu (adresy) přihlášené do konference.
+  %ifcontrol closedlist closedlistsub%
+    Přihlášení se děje kontaktováním správce.
+  %else%
+    Přihlášení je pomocí zaslání zprávy na <$list+$subscribe-nomail@$domain$>
+  %endif%
+%endif%
+
+%ifcontrol submod%
+  %^%%wrap%Konference má správce, který schvaluje nové požadavky na přihlášení do konference.
+%endif%
+
+%ifcontrol closedlist%
+  %^%%wrap%Odhlášení je možné kontaktovaním správce.
+%else%
+  %^%%wrap%Odhlášení je možné zasláním zprávy na <$list+$unsubscribe@$domain$>.
+%endif%
+
+%wrap%Adresa pro zasílání zpráv do konference je <$list$@$domain$>.
+
+%ifcontrol subonlypost%%ifncontrol modnonsubposts%
+  %^%%wrap%Do konference mohou zasílat zprávy jen její členové.
+%endif%%endif%
+
+%ifcontrol moderated%
+  %^%%wrap%Zprávy zaslané do konference podhléhají schválení moderátorem konference.
+%else%
+  %ifcontrol subonlypost%%ifcontrol modnonsubposts%
+    %^%%wrap%Zpravy zaslane nečleny konference podléhají schválení moderátorem konference.
+  %endif%%endif%
+%endif%
+
+%ifcontrol access%
+  %^%%wrap%Konference má nastavena přístupová pravidla pro zasílání a moderování zpráv.
+%endif%
+
+%ifncontrol noget%%ifncontrol noarchive%
+  %^%%wrap%
+  %ifcontrol subonlyget%
+    Kdokoli
+  %else%
+    Členové
+  %endif%
+  mohou získat zprávu číslo N z archivu konference zasláním zprávy na adresu
+  <$list+$get-N@$domain$> (místo N zadejte požadované číslo zprávy)
+%endif%%endif%
+
+%wrap%Můžete si vyžádat seznam častých otázek a odpovědí (FAQ) zasláním zprávy
+na adresu <$list+$faq@$domain$>.
+
+%wrap%Majitele konference je možné kontaktovat na adrese <$list+$owner@$domain$>.
+

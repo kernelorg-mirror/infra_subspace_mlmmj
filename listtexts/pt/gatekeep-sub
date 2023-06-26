@@ -1,0 +1,20 @@
+Subject: Pedido de subscrição em $list$@$domain$: $subaddr$
+
+%text prologue%
+
+%wrap%Foi solicitado um pedido de <$subaddr$> para receber a versão
+%iftype normal% normal %endif%
+%iftype digest% resumida %endif%
+%iftype nomail% no-mail %endif%
+da lista.
+
+%wrap%Para confirmar a operação, envie uma mensagem para <$permitaddr$>
+bastando, para o efeito, responder a esta mensagem. O assunto e o texto da
+mensagem pode estar vazio.
+
+%wrap%Se não pretende confirmar a operação, envie uma mensagem para
+<$obstructaddr$> ou ignore esta mensagem.
+
+Os seguintes administradores receberam a mensagem:
+- %gatekeepers%
+

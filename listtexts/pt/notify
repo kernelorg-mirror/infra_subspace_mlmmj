@@ -1,0 +1,41 @@
+%ifaction sub%Subject: Subscrição em $list$@$domain$: $subaddr$%endif%
+%ifaction unsub%Subject: Cancelamento da subscrição em $list$@$domain$: $subaddr$%endif%
+
+%text prologue%
+
+%ifaction sub%
+  %^%%wrap%O endereço <$subaddr$> foi adicionado à versão
+  %iftype normal% normal %endif%
+  %iftype digest% resumida %endif%
+  %iftype nomail% no-mail %endif%
+  da lista
+  %ifreason request%
+    porque foi recebido o pedido de subscrição.
+  %endif%
+  %ifreason confirm%
+    porque o pedido de subscrição foi aceite.
+  %endif%
+  %ifreason admin%
+    porque o administrador assim o decidiu.
+  %endif%
+  %ifreason permit%
+    porque o administrador o permitiu.
+  %endif%
+%endif%
+
+%ifaction unsub%
+  %^%%wrap%O endereço <$subaddr$> foi removido da lista
+  %ifreason request%
+    porque foi recebido o pedido de cancelamento de subscrição.
+  %endif%
+  %ifreason confirm%
+    porque o pedido de cancelamento de subscrição foi aceite.
+  %endif%
+  %ifreason admin%
+    porque o administrador assim o decidiu.
+  %endif%
+  %ifreason bouncing%
+    porque o administrador o permitiu.
+  %endif%
+%endif%
+

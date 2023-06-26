@@ -1,0 +1,5 @@
+Subject: Viestikooste $digestissue$ postituslistalta $list$@$domain$  ($digestinterval$)
+
+Aiheet (viestit $digestfirst$ - $digestlast$):
+- %digestthreads%
+

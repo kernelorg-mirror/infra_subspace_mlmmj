@@ -1,0 +1,25 @@
+Subject: Iscritti a $list$@$domain$
+
+%text prologue%
+
+%wrap%Di seguito l'elenco degli iscritti
+%iftype all%
+  (a tutte le versioni della lista):
+%else%
+  alla versione
+  %iftype normal% normal %endif%
+  %iftype digest% digest %endif%
+  %iftype nomail% no-mail %endif%
+  della lista:
+%endif%
+
+%iftype all normal%
+  %^%- %listsubs%
+%endif%
+%iftype all digest%
+  %^%- %digestsubs%
+%endif%
+%iftype all nomail%
+  %^%- %nomailsubs%
+%endif%
+

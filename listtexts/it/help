@@ -1,0 +1,92 @@
+Subject: Istruzioni per $list$@$domain$
+
+%text prologue%
+
+Di seguito, alcune informazioni sulla lista.
+
+Puoi iscriverti alle seguenti versioni:
+
+- %wrap%Versione normal: ogni volta che un messaggio viene inviato alla
+lista, gli iscritti ne ricevono una copia.
+%ifcontrol closedlist closedlistsub%
+  Iscriviti contattando un amministratore della lista.
+%else%
+  Iscriviti inviando una e-mail a <$list+$subscribe@$domain$>.
+%endif%
+
+%ifncontrol nodigestsub%
+  %^%- %wrap%Versione digest: gli iscritti ricevono più messaggi in un unico
+  messaggio, a intervalli regolari o quando si sono accumulati molti
+  messaggi.
+  %ifcontrol closedlist closedlistsub%
+    Iscriviti contattando un amministratore della lista.
+  %else%
+    Iscriviti inviando una e-mail a <$list+$subscribe-digest@$domain$>.
+  %endif%
+%endif%
+
+%ifncontrol nonomailsub%
+  %^%- %wrap%Versione no-mail: gli iscritti non ricevono alcun messaggio
+  diretto alla lista. Essi sono comunque in grado di inviare messaggi alla
+  lista, a cui è consentito ricevere messaggi solo dagli iscritti, mentre
+  possono seguire la lista tramite un archivio web o un altro indirizzo di
+  posta elettronica col quale sono iscritti.
+  %ifcontrol closedlist closedlistsub%
+    Iscriviti contattando un amministratore della lista.
+  %else%
+    Iscriviti inviando una e-mail a <$list+$subscribe-nomail@$domain$>.
+  %endif%
+%endif%
+
+%ifcontrol submod%
+  %^%%wrap%La lista ha controllori (gatekeeper) che verificano le richieste
+  di iscrizione prima di consentire l'ingresso di nuovi membri.
+%endif%
+
+%ifcontrol closedlist%
+  %^%%wrap%Rimuovi l'iscrizione contattando un amministratore della lista.
+%else%
+  %^%%wrap%Rimuovi l'iscrizione inviando una e-mail a
+  <$list+$unsubscribe@$domain$>.
+%endif%
+
+%wrap%I messaggi alla lista vanno inviati tramite e-mail a
+<$list$@$domain$>.
+
+%ifcontrol subonlypost%%ifncontrol modnonsubposts%
+  %^%%wrap%Solo gli iscritti, tuttavia, possono inviare messaggi alla lista.
+%endif%%endif%
+
+%ifcontrol moderated%
+  %^%%wrap%La lista ha moderatori che controllano previamente tutti i
+  messaggi diretti alla lista.
+%else%
+  %ifcontrol subonlypost%%ifcontrol modnonsubposts%
+    %^%%wrap%La lista ha moderatori che controllano previamente i messaggi
+    diretti alla lista inviati da non iscritti.
+  %endif%%endif%
+%endif%
+
+%ifcontrol access%
+  %^%%wrap%La lista possiede anche regole di accesso che possono coinvolgere
+  chi invia e quali messaggi debbano essere moderati.
+%endif%
+
+%ifncontrol noget%%ifncontrol noarchive%
+  %^%%wrap%
+  %ifcontrol subonlyget%
+    Tutti
+  %else%
+    Gli iscritti
+  %endif%
+  possono ricevere un numero di messaggi N dall'archivio della lista,
+  inviando un messaggio a <$list+$get-N@$domain$> (cambiare la lettera N nel
+  numero di messaggi che si desidera ricevere).
+%endif%%endif%
+
+%^%%wrap%Per ottenere il documento delle domande ricorrenti (FAQ) relative
+alla lista, invia un messaggio a <$list+$faq@$domain$>.
+
+%^%%wrap%Per contattare il responsabile della lista, invia un messaggio a
+<$list+$owner@$domain$>.
+

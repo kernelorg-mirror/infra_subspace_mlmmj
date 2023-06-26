@@ -226,6 +226,8 @@ int do_bouncemail(int listfd, int ctrlfd, const char *from)
 	free(listdelim);
 
 	bouncemail(listfd, num, addr);
+	free(tofree);
+	free(addr);
 	return 1;
 }
 

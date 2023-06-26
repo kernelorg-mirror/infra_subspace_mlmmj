@@ -1,0 +1,23 @@
+Subject: Zoznam abonentov $list$@$domain$
+
+%text prologue%
+
+%wrap%Zoznam abonentov
+%iftype all%
+  (všetkých verzií mailovej diskusie):
+%else%
+  %iftype normal% normálnej verzie mailovej diskusie:%endif%
+  %iftype digest% mailovej diskusie so zasielaním súhrnných správ:%endif%
+  %iftype nomail% mailovej diskusie bez zasielania správ:%endif%
+%endif%
+
+%iftype all normal%
+  %^%- %listsubs%
+%endif%
+%iftype all digest%
+  %^%- %digestsubs%
+%endif%
+%iftype all nomail%
+  %^%- %nomailsubs%
+%endif%
+

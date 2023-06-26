@@ -1,0 +1,45 @@
+Subject: Vitajte v $list$@$domain$
+
+%text prologue%
+
+%wrap%
+%ifreason request%
+  Ďakujeme Vám za záujem o spoluprácu.
+%endif%
+%ifreason confirm%
+  Ďakujeme Vám za potvrdenie prihlásenia.
+%endif%
+%ifreason permit%
+  Správca odsúhlasil Vašu žiadosť o zapojenie do mailovej diskusie.
+%endif%
+%ifreason switch%
+  Typ Vášho prihlásenia bol zmenený na
+  %iftype normal% štandardnú verziu mailovej diskusie.%endif%
+  %iftype digest% mailovú diskusiu s prijímaním súhrnných správ.%endif%
+  %iftype nomail% mailovú diskusiu bez posielania správ.%endif%
+%else%
+  %ifreason admin%
+    Administrátor Vás prihlásil do
+  %else%
+    Boli ste pridaný/pridaná do
+  %endif% 
+  %iftype normal% štandardnej verzie mailovej diskusie.%endif%
+  %iftype digest% mailovej diskusie s prijímaním súhrnných správ.%endif%
+  %iftype nomail% mailovej diskusie bez posielania správ.%endif%
+%endif%
+
+%wrap%Ste prihlásený/prihlásená s mailovou adresou <$subaddr$>.
+
+%ifcontrol closedlist%
+  %^%%wrap%Ak sa v budúcnosti budete chcieť odhlásiť, bude potrebné
+  kontaktovať administrátora. Zaslaním mailu na adresu
+  <$list+$owner@$domain$> sa skontaktujete so správcom tejto diskusie.
+%else%
+  %^%%wrap%Ak sa v budúcnosti budete chcieť odhlásiť, pošlite mail na adresu
+  <$list+$unsubscribe@$domain$>. Na predmete a obsahu správy nezáleží.
+  Následne dostanete potvrdenie s ďalšími inštrukciami. 
+%endif%
+
+%wrap%Pre ďalšie informácie a pomoc s touto mailovou diskusiou napíšte na
+adresu <$list+$help@$domain$>.
+

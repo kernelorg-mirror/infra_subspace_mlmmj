@@ -1,0 +1,40 @@
+Subject: 等待发布到 $list$@$domain$：$subject$
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="=_$random0$$random1$_="
+Content-Transfer-Encoding: 8bit
+
+--=_$random0$$random1$_=
+Content-Type: text/plain; charset=utf8
+Content-Transfer-Encoding: 8bit
+
+%text prologue%
+
+%wrap%来自 <$posteraddr$> 题为《\=$subject$\=》的邮件已提交至列表\=。然
+而\=，
+%ifreason moderated%
+  因为这是先审列表\=，
+%endif%
+%ifreason access%
+  由于访问规则\=，
+%endif%
+%ifreason modnonsubposts%
+  因为您不是订阅者\=，
+%endif%
+需要版主审核后才能发布到该列表\=。
+
+%ifreason modnonsubposts%
+  %ifncontrol closedlist%%ifncontrol closedlistsub%
+    %^%%text subrelease%
+  %endif%%endif%
+%endif%
+
+（\=下为邮件\=。\=）
+
+--=_$random0$$random1$_=
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="message.eml"
+
+%originalmail%
+--=_$random0$$random1$_=--

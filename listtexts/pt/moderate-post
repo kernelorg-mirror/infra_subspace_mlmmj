@@ -1,0 +1,50 @@
+Subject: Moderação em $list$@$domain$: $subject$
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="=_$random0$$random1$_="
+Content-Transfer-Encoding: 8bit
+
+--=_$random0$$random1$_=
+Content-Type: text/plain; charset=utf8
+Content-Transfer-Encoding: 8bit
+
+%text prologue%
+
+%wrap%A mensagem de <$posteraddr$> com o assunto "$subject$" foi enviada
+para publicação. Esta mensagem requer moderação
+%ifreason modnonsubposts%
+  porque o remetente não é um subscritor.
+%endif%
+%ifreason moderated%
+  porque esta é uma lista moderada.
+%endif%
+%ifreason access%
+  em virtude de uma regra.
+%endif%
+Mensagem segue em baixo.
+
+%wrap%Para a publicar na lista, envie uma mensagem para <$releaseaddr$>
+bastando, para o efeito, responder a esta mensagem.
+
+%ifcontrol subonrelease%
+  %^%%wrap%Se quiser, pode publicar a mensagem e simultaneamente adicionar o
+  remetente à lista, enviando uma mensagem para um dos seguintes endereços
+  eletrónicos:%nowrap%
+  %^%- %wrap%Normal version: <$listsubreleaseaddr$>%nowrap%
+  %^%- %wrap%Digest version: <$digestsubreleaseaddr$>%nowrap%
+  %^%- %wrap%No-mail version: <$nomailsubreleaseaddr$>%nowrap%
+%endif%
+
+%wrap%Se não o quiser fazer, envie uma mensagem para <$rejectaddr$> ou
+ignore esta mensagem.
+
+Os seguintes moderadores receberam esta mensagem:
+- %moderators%
+
+--=_$random0$$random1$_=
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="message.eml"
+
+%originalmail%
+--=_$random0$$random1$_=--

@@ -1,0 +1,11 @@
+Subject: Messaggi in restituzione (bouncing) da $list$@$domain$
+
+%text prologue%
+
+Alcuni messaggi a te indirizzati potrebbero non esserti stati consegnati.
+Questo messaggio è a puro scopo informativo, dato che le cose sono tornate
+alla normalità.
+
+Di seguito, l'elenco dei messaggi restituiti:
+- %bouncenumbers%
+

@@ -1,0 +1,44 @@
+Subject: Bienvenue à $list$@$domain$
+
+%text prologue%
+
+%wrap%
+%ifreason request%
+  Merci de votre demande pour nous rejoindre.
+%endif%
+%ifreason confirm%
+  Merci de confirmer votre inscription.
+%endif%
+%ifreason permit%
+  Un modérateur vous a permis de nous rejoindre.
+%endif%
+%ifreason switch%
+  Votre inscription a été transférée sur la version
+%else%
+  %ifreason admin%
+    Un administrateur vous a inscrit à la version
+  %else%
+    Vous avez maintenant été ajouté à la version
+  %endif%
+%endif%
+%iftype normal% normale %endif%
+%iftype digest% digest %endif%
+%iftype nomail% no-mail %endif%
+de la liste.
+
+%wrap%L'adresse e-mail avec laquelle vous avez été inscrit est <$subaddr$>.
+
+%ifcontrol closedlist%
+  %^%%wrap%Si vous souhaitez vous désinscrire, vous devez contacter un
+  administrateur de la liste. Vous pouvez envoyer un mail à
+  <$list+$owner@$domain$> pour contacter le propriétaire de la liste.
+%else%
+  %^%%wrap%Si vous souhaitez vous désinscrire, envoyez un message à
+  <$list+$unsubscribe@$domain$> en utilisant cette adresse e-mail. Le sujet
+  et le corps du message peuvent contenir n'importe quoi. Vous recevrez
+  ensuite une confirmation ou des instructions complémentaires.
+%endif%
+
+%wrap%Pour d'autres informations ou de l'aide à propos de cette liste,
+envoyez un message à <$list+$help@$domain$>.
+

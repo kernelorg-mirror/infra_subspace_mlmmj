@@ -1,0 +1,37 @@
+Subject: Čeká se na potvrzení $list$@$domain$: $subject$
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="=_$random0$$random1$_="
+Content-Transfer-Encoding: 8bit
+
+--=_$random0$$random1$_=
+Content-Type: text/plain; charset=utf8
+Content-Transfer-Encoding: 8bit
+
+%text prologue%
+
+%wrap%Zpráva od <$posteraddr$> s předmětem "$subject$" byla zaslána do konference.
+Moderátoři konference byli kontaktováni, aby tuto zprávu schválili před zasláním.
+%ifreason moderated%
+  Důvodem je to, že tato konference je moderovaná.
+%endif%
+%ifreason access%
+  Důvodem je nastavení přístupových práv ke konferenci.
+%endif%
+%ifreason modnonsubposts%
+  Důvodem je, že nejste členem konference (nebo píšete zprávu z adresy, se kterou nejste v konferenci přihlášen).
+
+  %ifncontrol closedlist%%ifncontrol closedlistsub%
+    %^%%text subrelease%
+  %endif%%endif%
+%endif%
+
+(Zpráva je uvedena níže.)
+
+--=_$random0$$random1$_=
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="message.eml"
+
+%originalmail%
+--=_$random0$$random1$_=--

@@ -1,0 +1,65 @@
+Subject: Mensaxe a $list$@$domain$ denegáu: $subject$
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="=_$random0$$random1$_="
+Content-Transfer-Encoding: 8bit
+
+--=_$random0$$random1$_=
+Content-Type: text/plain; charset=utf8
+Content-Transfer-Encoding: 8bit
+
+%text prologue%
+
+%wrap%El mensaxe de <$posteraddr$> con asuntu "$subject$" nun se pudo
+entregar a la llista
+%ifreason maxmailsize%
+  porque pasó del tamañu máximu permitíu de mensaxe de $maxmailsize$ bytes.
+%endif%
+%ifreason tocc%
+  porque la direición de la llista nun ta nes testeres Pa: o CC:.
+%endif%
+%ifreason access%
+  por una regla d'accesu configurada pol alministrador de la llista.
+%endif%
+%ifreason expired%
+  porque pasó muncho tiempu ensin que dengún moderador lu lliberara.
+%endif%
+%ifreason reject%
+  porque un moderador refugólu.
+%endif%
+%ifreason subonlypost%
+  porque nun yes suscriptor de la llista.
+
+  %ifncontrol closedlist%%ifncontrol closedlistsub%
+    %^%%text subrelease%
+  %endif%%endif%
+
+  %ifcontrol closedlist closedlistsub%
+    %^%%wrap%Si quies suscribite, tendrás de comunicate con un alministrador
+    de la llista. Pa facelo pues unviar un corréu al propietariu a
+    <$list+$owner@$domain$>.
+  %endif%
+
+  %^%%wrap%Si pienses que yá tas suscritu, ye probable que te suscribieras
+  con una direición de corréu distinta. Pa saber la direición cola que tas
+  suscritu, mira nel mensaxe de bienvenida a la llista, o mira na testera
+  "Return-Path" d'un mensaxe de corréu que recibas de la llista.
+%endif%
+
+%ifreason maxmailsize%
+  %^%(El principiu del mensaxe denegáu ta más abaxo.)
+%else%
+  %^%(El mensaxe denegáu ta más abaxo.)
+%endif%
+
+--=_$random0$$random1$_=
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="message.eml"
+
+%ifreason maxmailsize%
+  %^%%originalmail 300%
+%else%
+  %^%%originalmail%
+%endif%
+--=_$random0$$random1$_=--

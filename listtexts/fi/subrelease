@@ -1,0 +1,20 @@
+%^%%wrap%Koska tämä on avoin lista, voit halutessasi liittyä listalle ja
+samalla hyväksyä lähettämäsi viestin jakeluun. Tämä onnistuu lähettämällä
+viesti osoitteeseen <$listsubreleaseaddr$>, siis käytännössä vastaamalla
+tähän viestiin. Viestin otsikolla ja sisällöllä ei ole merkitystä.
+
+%ifncontrol nodigestsub%
+  %^%%wrap%Tai voit tilata listan viestikoosteversion ja samalla hyväksyä
+  viestisi jakeluun. Tämä onnistuu lähettämällä viesti osoitteeseen
+  <$digestsubreleaseaddr$>. Saat listalle tulevat viestit koottuna
+  laajemmiksi koosteiksi, jotka sisältävät yhtenä pakettina tietyllä
+  ajanjaksolla tai tietyn määrän listalle lähetettyjä viestejä.
+%endif%
+
+%ifncontrol nonomailsub%
+  %^%%wrap%Tai voit liittyä listalle ilman viestien jakelua ja samalla
+  hyväksyä viestisi jakeluun. Tämä onnistuu lähettämällä viesti osoitteeseen
+  <$nomailsubreleaseaddr$>. Huomaa, että tällöin et ehkä saa viestiisi
+  vastauksia, ellet seuraa postituslistaa www-arkiston tai toisen
+  sähköpostiosoitteen välityksellä.
+%endif%

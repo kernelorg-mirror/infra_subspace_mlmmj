@@ -1,0 +1,20 @@
+Subject: Demande d'inscription pour $list$@$domain$ : $subaddr$
+
+%text prologue%
+
+%wrap%Il y a eu une demande de la part de <$subaddr$> pour rejoindre la
+version
+%iftype normal% normale %endif%
+%iftype digest% digest %endif%
+%iftype nomail% no-mail %endif%
+de la liste.
+
+%wrap%Pour l'autoriser, veuillez envoyer un message à <$permitaddr$> ce qui
+peut être fait habituellement simplement en répondant à ce message.
+
+%wrap%Si vous ne souhaitez pas faire cela, envoyez un message à
+<$obstructaddr$> ou ignorez simplement ce message.
+
+Le modérateur suivant à reçu le message :
+- %gatekeepers%
+

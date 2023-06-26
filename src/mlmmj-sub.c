@@ -434,8 +434,10 @@ int main(int argc, char **argv)
 	/* Make the address lowercase */
 	address = lowercase(address);
 
-	if(strncasecmp(ml.addr, address, strlen(ml.addr)) == 0)
+	if(strncasecmp(ml.addr, address, strlen(ml.addr)) == 0) {
+		free(address);
 		errx(EXIT_FAILURE, "Cannot subscribe the list address to the list");
+	}
 
 	if(changeuid) {
 		uid = getuid();

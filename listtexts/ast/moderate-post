@@ -1,0 +1,49 @@
+Subject: Por favor, modera $list$@$domain$: $subject$
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="=_$random0$$random1$_="
+Content-Transfer-Encoding: 8bit
+
+--=_$random0$$random1$_=
+Content-Type: text/plain; charset=utf8
+Content-Transfer-Encoding: 8bit
+
+%text prologue%
+
+%wrap%Se recibió un mensaxe de <$posteraddr$> col asuntu "$subject$" unviáu
+pa espublizar. Te pedimos que lu moderes
+%ifreason modnonsubposts%
+  porque'l remitente nun ye suscriptor.
+%endif%
+%ifreason moderated%
+  porque esta ye una llista moderada.
+%endif%
+%ifreason access%
+  por una regla d'accesu.
+%endif%
+El mensaxe ta más abaxo.
+
+%wrap%Pa lliberalu a la llista, unvia un mensaxe a <$releaseaddr$> pa lo que
+de vezu val con simplemente responder a esti mensaxe.
+
+%ifcontrol subonrelease%
+  %^%%wrap%Si quies, pues simultaneamante lliberar el mensaxe y suscribir al
+  remitente unviando un mensaxe a una de les siguientes direiciones:%nowrap%
+  %^%- %wrap%Versión normal: <$listsubreleaseaddr$>%nowrap%
+  %^%- %wrap%Versión resumida: <$digestsubreleaseaddr$>%nowrap%
+  %^%- %wrap%Versión ensin corréu: <$nomailsubreleaseaddr$>%nowrap%
+%endif%
+
+%wrap%Si nun quies facer denguna d'estes coses, o manda un mensaxe a
+<$rejectaddr$> o simplemente salta esti mensaxe.
+
+Recibieron esti corréu los siguientes moderadores:
+- %moderators%
+
+--=_$random0$$random1$_=
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="message.eml"
+
+%originalmail%
+--=_$random0$$random1$_=--

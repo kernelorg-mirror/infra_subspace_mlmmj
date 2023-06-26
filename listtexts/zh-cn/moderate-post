@@ -1,0 +1,47 @@
+Subject: 请审核 $list$@$domain$：$subject$
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="=_$random0$$random1$_="
+Content-Transfer-Encoding: 8bit
+
+--=_$random0$$random1$_=
+Content-Type: text/plain; charset=utf8
+Content-Transfer-Encoding: 8bit
+
+%text prologue%
+
+%wrap%来自 <$posteraddr$> 题为《\=$subject$\=》的邮件已提交发布\=。
+%ifreason modnonsubposts%
+  由于请求者不是订户\=，
+%endif%
+%ifreason moderated%
+  由于本列表为受限列表\=，
+%endif%
+%ifreason access%
+  由于权限规则\=，
+%endif%
+您需要处理这封邮件\=。邮件内容如下\=。
+
+%wrap%要通过该邮件的发布\=，请发邮件到 <$releaseaddr$> （\=通常可直接回复本
+邮件完成\=）\=。
+
+%ifcontrol subonrelease%
+  %^%%wrap%如果您愿意\=，可以通过发送邮件到下述地址来同时通过帖子并订阅发布
+  者\=：
+  %^%- %wrap%常规版本\=：<$listsubreleaseaddr$>%nowrap%
+  %^%- %wrap%汇总版本\=：<$digestsubreleaseaddr$>%nowrap%
+  %^%- %wrap%无邮件版本\=：<$nomailsubreleaseaddr$>%nowrap%
+%endif%
+
+%wrap%如果您不打算通过\=，请发邮件到 <$rejectaddr$> 或直接忽略本邮件\=。
+
+本邮件已发给下述版主\=：
+- %moderators%
+
+--=_$random0$$random1$_=
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="message.eml"
+
+%originalmail%
+--=_$random0$$random1$_=--

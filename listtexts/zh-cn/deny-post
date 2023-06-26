@@ -1,0 +1,62 @@
+Subject: 发往 $list$@$domain$ 的邮件被拒绝：$subject$
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="=_$random0$$random1$_="
+Content-Transfer-Encoding: 8bit
+
+--=_$random0$$random1$_=
+Content-Type: text/plain; charset=utf8
+Content-Transfer-Encoding: 8bit
+
+%text prologue%
+
+%wrap%来自 <$posteraddr$> 题为《\=$subject$\=》的邮件无法投递到列表\=，
+%ifreason maxmailsize%
+  因为超出了所允许的最大邮件尺寸 $maxmailsize$ 字节\=。
+%endif%
+%ifreason tocc%
+  因为列表地址未出现在 To: 或 CC: 头部字段\=。
+%endif%
+%ifreason access%
+  因为管理员设置了权限规则\=。
+%endif%
+%ifreason expired%
+  因为过久没有版主通过\=。
+%endif%
+%ifreason reject%
+  因为有版主否决了该邮件\=。
+%endif%
+%ifreason subonlypost%
+  因为您不是列表订户\=。
+
+  %ifncontrol closedlist%%ifncontrol closedlistsub%
+    %text subrelease%
+  %endif%%endif%
+
+  %ifcontrol closedlist closedlistsub%
+    %^%%wrap%如果您打算成为订户\=，需要联系列表管理员\=。您可以发送邮件
+    到 <$list+$owner@$domain$> 联系列表所有者\=。
+  %endif%
+
+  %^%%wrap%如果您确信自己是订户\=，可能通过不同的电子邮箱地址订阅了\=。要查
+  明您订阅的地址\=，请参考欢迎您加入列表的邮件\=，或查阅您所收到的列表邮件
+  的\/“Return-Path”\/头\=。
+%endif%
+
+%ifreason maxmailsize%
+  %^%（\=被回绝的邮件开头如下\=。\=）
+%else%
+  %^%（\=被回绝的邮件如下\=。\=）
+%endif%
+
+--=_$random0$$random1$_=
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="message.eml"
+
+%ifreason maxmailsize%
+  %^%%originalmail 300%
+%else%
+  %^%%originalmail%
+%endif%
+--=_$random0$$random1$_=--

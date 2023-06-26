@@ -1,0 +1,69 @@
+Subject: Ihre Nachricht an $list$@$domain$ wurde abgewiesen: $subject$
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="=_$random0$$random1$_="
+Content-Transfer-Encoding: 8bit
+
+--=_$random0$$random1$_=
+Content-Type: text/plain; charset=utf8
+Content-Transfer-Encoding: 8bit
+
+%text prologue%
+
+%wrap%Die Nachricht von <$posteraddr$> mit dem Betreff "$subject$" konnte
+nicht über die Liste verteilt werden,
+%ifreason maxmailsize%
+  weil sie die maximal erlaubte Größe von $maxmailsize$ Bytes überschritten
+  hat
+%endif%
+%ifreason tocc%
+  weil die Listenadresse weder im An- noch im CC-Feld gefunden wurde
+%endif%
+%ifreason access%
+  aufgrund der vom Listenadministrator aufgestellten Zugangsregeln.
+%endif%
+%ifreason expired%
+  weil die Bearbeitungsfrist überschritten wurde und kein Moderator die
+  Nachricht weitergeleitet hat.
+%endif%
+%ifreason reject%
+  weil sie von einem Listenmoderator abgewiesen wurde.
+%endif%
+%ifreason subonlypost%
+  weil Sie die Liste nicht abonniert haben.
+
+  %ifncontrol closedlist%%ifncontrol closedlistsub%
+    %^%%text subrelease%
+  %endif%%endif%
+
+  %ifcontrol closedlist closedlistsub%
+    %^%%wrap%Wenn Sie die Liste abonnieren möchten, kontaktieren Sie einen
+    Listenadministrator. Senden Sie dazu eine Mail an
+    <$list+$owner@$domain$>.
+  %endif%
+
+  %^%%wrap%Wenn Sie denken, Sie hätten die Liste abonniert, so haben Sie
+  wahrscheinlich eine abweichende Mailadresse verwendet. Um herauszufinden,
+  unter welcher Mailadresse Sie die Liste abnoniert haben, sehen Sie
+  entweder in der Begrüßungsmail ("Willkommen...") oder im Feld
+  "Return-Path" in den Kopfzeilen einer über die Liste erhaltenen Nachricht
+  nach.
+%endif%
+
+%ifreason maxmailsize%
+  %^%(Der Anfang der abgewiesenen Mail ist unten gelistet.)
+%else%
+  %^%(Die abgewiesene Mail ist unten angehängt.)
+%endif%
+
+--=_$random0$$random1$_=
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="message.eml"
+
+%ifreason maxmailsize%
+  %^%%originalmail 300%
+%else%
+  %^%%originalmail%
+%endif%
+--=_$random0$$random1$_=--

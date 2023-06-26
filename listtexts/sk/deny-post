@@ -1,0 +1,65 @@
+Subject: Odmietnutie príspevku  $subject$ do $list$@$domain$
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="=_$random0$$random1$_="
+Content-Transfer-Encoding: 8bit
+
+--=_$random0$$random1$_=
+Content-Type: text/plain; charset=utf8
+Content-Transfer-Encoding: 8bit
+
+%text prologue%
+
+%wrap%Správu od <$posteraddr$> s predmetom "$subject$" nebolo možné doručiť
+do mailovej diskusie
+
+%ifreason maxmailsize%
+  lebo prekročila maximálnu veľkosť $maxmailsize$ bytov.
+%endif%
+%ifreason tocc%
+  lebo adresa diskusie nebola v poliach hlavičky Komu: ani Kópia: nájdená.
+%endif%
+%ifreason access%
+  z dôvodu administrátorom nastavených prístupových pravidiel.
+%endif%
+%ifreason expired %
+  lebo uplynula príliš dlhá doba bez toho, aby ju povolil moderátor.
+%endif%
+%ifreason reject%
+  lebo ju moderátor nepovolil.
+%endif%
+%ifreason subonlypost%
+  lebo nie ste abonentom diskusie.
+
+  %ifncontrol closedlist%%ifncontrol closedlistsub%
+    %^%%text subrelease%
+  %endif%%endif%
+
+  %ifcontrol closedlist closedlistsub%
+    %^%%wrap%Ak sa chcete stať abonentom, kontaktujte administrátora
+    diskusie tak, že  pošlete mail na <$list+$owner@$domain$>.
+  %endif%
+
+  %^%%wrap%Ak si myslíte, že ste abonentom diskusie, tak ste zrejme
+  prihlásený/prihlásená s inou mailovou adresou. Vašu prihlasovaciu adresu
+  nájdete v privítacej správe, ktorú ste z tejto diskusie dostali, alebo sa
+  pozrite do hlavičky správ, ktoré z tejto diskusie dostávate.
+%endif%
+
+%ifreason maxmailsize%
+  %^%(Úvod odmietnutej správy je uvedený nižšie.)
+%else%
+  %^%(Odmietnutá správa je uvedená nižšie.)
+%endif%
+
+--=_$random0$$random1$_=
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="message.eml"
+
+%ifreason maxmailsize%
+  %^%%originalmail 300%
+%else%
+  %^%%originalmail%
+%endif%
+--=_$random0$$random1$_=--

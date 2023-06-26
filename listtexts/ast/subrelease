@@ -1,0 +1,20 @@
+%^%%wrap%Sicasí, esta ye una llista abierta. Si quies, pues al mesmu tiempu
+suscribite y lliberar el mensaxe unviando un corréu a <$listsubreleaseaddr$>
+lo que de vezu pue facese simplemente respondiendo a esti mensaxe. L'asuntu
+y cuerpu del mensaxe puen ser cualesquier cosa.
+
+%ifncontrol nodigestsub%
+  %^%%wrap%O al mesmu tiempu pues suscribite a la versión resumida de la
+  llista y lliberar el mensaxe unviando un corréu a <$digestsubreleaseaddr$>
+  y recibirás múltiples mensaxes nun únicu corréu, a intervalos regulares, o
+  cuando s'acumule gran cantidá de mensaxes.
+%endif%
+
+%ifncontrol nonomailsub%
+  %^%%wrap%O al mesmu tiempu pues suscribite a la versión ensin corréu de la
+  llista y lliberar el mensaxe unviando un corréu a <$nomailsubreleaseaddr$>
+  y nun recibirás los mensaxes de la llista. Esto significa que podríes nun
+  ver les rempuestes al to mensaxe, nun siendo que sigas la llista usando un
+  archivu web o teas suscritu con otra direición de corréu a otra versión de
+  la llista.
+%endif%

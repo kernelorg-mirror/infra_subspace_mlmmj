@@ -1,0 +1,6 @@
+Subject: $list$@$domain$ 讨论汇总 第 $digestissue$ 期 （\=$digestinterval$\=）
+
+%charwrap%%wide%
+话题 （\=第 $digestfirst$ 至 $digestlast$ 封邮件\=）\=：
+- %digestthreads%
+

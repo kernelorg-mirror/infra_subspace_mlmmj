@@ -1,0 +1,42 @@
+%ifaction sub%Subject: Εγγραφή στη λίστα $list$@$domain$: $subaddr$%endif%
+%ifaction unsub%Subject: Διαγραφή από τη λίστα $list$@$domain$: $subaddr$%endif%
+
+%text prologue%
+
+%ifaction sub%
+  %^%%wrap%Η διεύθυνση <$subaddr$> χρησιμοποιήθηκε για εγγραφή 
+  %iftype normal% κανονικού μέλος %endif%
+  %iftype digest% μέλους με συγκεντρωτική ενημέρωση %endif%
+  %iftype nomail% μέλους χωρίς ενημέρωση %endif%
+  στη λίστα
+  %ifreason request%
+    ύστερα από ανάλογη αίτηση που παραλάβαμε.
+  %endif%
+  %ifreason confirm%
+    ύστερα από ανάλογη αίτηση που επιβεβαιώθηκε.
+  %endif%
+  %ifreason admin%
+    ύστερα απο αίτημα ενός από τους διαχειριστές.
+  %endif%
+  %ifreason permit%
+    ύστερα από άδεια ενός από τους διαχειριστές.
+  %endif%
+%endif%
+
+%ifaction unsub%
+  %^%%wrap%Η διεύθυνση <$subaddr$> διαγράφηκε από τους παραλήπτες της λίστας
+  ταχυδρομείου
+  %ifreason request%
+    ύστερα από ανάλογη αίτηση διαγραφής που παραλάβαμε.
+  %endif%
+  %ifreason confirm%
+    ύστερα από ανάλογη αίτηση διαγραφής που επιβεβαιώθηκε.
+  %endif%
+  %ifreason admin%
+    ύστερα απο αίτημα ενός από τους διαχειριστές.
+  %endif%
+  %ifreason bouncing%
+    καθώς εκκρεμούσε το αίτημα χωρίς αποδοχή για μεγάλο χρονικό διάστημα.
+  %endif%
+%endif%
+

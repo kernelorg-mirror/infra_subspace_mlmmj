@@ -1,0 +1,68 @@
+Subject: Messaggio a $list$@$domain$ negato: $subject$
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="=_$random0$$random1$_="
+Content-Transfer-Encoding: 8bit
+
+--=_$random0$$random1$_=
+Content-Type: text/plain; charset=utf8
+Content-Transfer-Encoding: 8bit
+
+%text prologue%
+
+%wrap%Non è stato possibile consegnare alla lista il messaggio da
+<$posteraddr$> con oggetto "$subject$"
+%ifreason maxmailsize%
+  perché ha superato la dimensione massima consentita di $maxmailsize$
+  byte.
+%endif%
+%ifreason tocc%
+  perché l'indirizzo della lista non è stato trovato nella intestazione A: o
+  CC:.
+%endif%
+%ifreason access%
+  a causa di una regola di accesso impostata dall'amministratore della
+  lista.
+%endif%
+%ifreason expired%
+  perché è trascorso troppo tempo senza che alcun moderatore lo confermasse.
+%endif%
+%ifreason reject%
+  perché un moderatore lo ha rifiutato.
+%endif%
+%ifreason subonlypost%
+  perché non sei iscritto/a alla lista.
+
+  %ifncontrol closedlist%%ifncontrol closedlistsub%
+    %^%%text subrelease%
+  %endif%%endif%
+
+  %ifcontrol closedlist closedlistsub%
+    %^%%wrap%Se desideri iscriverti, devi contattare l'amministratore della
+    lista. Puoi scrivere a <$list+$owner@$domain$> per contattarlo.
+  %endif%
+
+  %^%%wrap%Se sai di essere iscritto/a, probabilmente lo sei con un
+  indirizzo di posta diverso. Per vedere con quale indirizzo ti sei
+  iscritto/a, fai riferimento al messaggio di benvenuto ricevuto dalla
+  lista, o controlla l'intestazione "Return-Path" di un messaggio ricevuto
+  dalla lista.
+%endif%
+
+%ifreason maxmailsize%
+  %^%(L'inizio del messaggio rifiutato è riportato sotto.)
+%else%
+  %^%(Il messaggio rifiutato è riportato sotto.)
+%endif%
+
+--=_$random0$$random1$_=
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="message.eml"
+
+%ifreason maxmailsize%
+  %^%%originalmail 300%
+%else%
+  %^%%originalmail%
+%endif%
+--=_$random0$$random1$_=--

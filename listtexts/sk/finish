@@ -1,0 +1,53 @@
+%ifaction unsub%Subject: Dovidenia z $list$@$domain$%endif%
+%ifaction release reject%Subject: Moderovanie $list$@$domain$: $subject$%endif%
+%ifaction permit obstruct%Subject: Odmietnutie $list$@$domain$: $subaddr$%endif%
+%ifaction post%Subject: Zverejnenie v $list$@$domain$: $subject$%endif%
+
+%text prologue%
+
+%ifaction unsub%
+  %^%%wrap%
+  %ifreason request%
+  %endif%
+  %ifreason confirm%
+    Ďakujeme za potvrdenie požiadavky na odhlásenie.
+  %endif%
+  %ifreason admin%
+    Administrátor Vás odhlásil z mailovej diskusie.
+  %else%
+    Boli ste odhlásený/odhlásená z mailovej diskusie.
+  %endif%
+%endif%
+
+%ifaction release%
+  %^%%wrap%Správu "$subject$" na zverejnenie v diskusii od <$posteraddr$>
+  ste úspešne povolili.
+%endif%
+
+%ifaction reject%
+  %^%%wrap%Správu "$subject$" na zverejnenie v diskusii od <$posteraddr$>
+  ste úspešne odmietli.
+%endif%
+
+%ifaction permit%
+  %^%%wrap%Úspešne ste povolili prihlásenie <$subaddr$> do diskusie.
+%endif%
+
+%ifaction obstruct%
+  %^%%wrap%Úspešne ste zakázali prihlásenie <$subaddr$> do diskusie.
+%endif%
+
+%ifaction post%
+  %^%%wrap%
+  %ifreason confirm%
+    Ďakujeme za potvrdenie Vášho príspevku 
+  %endif%
+  %ifreason release%
+    Moderátor uvoľnil na zverejnenie príspevok 
+  %endif%
+  %ifreason request%
+    Ďakujeme za príspevok 
+  %endif%
+  s predmetom "$subject$". Príspevok bude odoslaný do mailovej diskusie.
+%endif%
+

@@ -1,0 +1,41 @@
+%ifaction sub%Subject: Iscrizione a $list$@$domain$: $subaddr$%endif%
+%ifaction unsub%Subject: Rimozione iscrizione da $list$@$domain$: $subaddr$%endif%
+
+%text prologue%
+
+%ifaction sub%
+  %^%%wrap%L'indirizzo <$subaddr$> è stato iscritto alla versione
+  %iftype normal% normal %endif%
+  %iftype digest% digest %endif%
+  %iftype nomail% no-mail %endif%
+  della lista
+  %ifreason request%
+    perché è stata ricevuta una richiesta di iscrizione.
+  %endif%
+  %ifreason confirm%
+    perché è stata confermata una richiesta di iscrizione.
+  %endif%
+  %ifreason admin%
+    dietro ordine impartito da un amministratore.
+  %endif%
+  %ifreason permit%
+    perché lo ha permesso un controllore.
+  %endif%
+%endif%
+
+%ifaction unsub%
+  %^%%wrap%L'indirizzo <$subaddr$> è stato rimosso della lista
+  %ifreason request%
+    perché è stata ricevuta una richiesta di rimozione.
+  %endif%
+  %ifreason confirm%
+    perché è stata confermata una richiesta di rimozione.
+  %endif%
+  %ifreason admin%
+    dietro ordine impartito da un amministratore.
+  %endif%
+  %ifreason bouncing%
+    perché i messaggi sono tornati indietro per troppo tempo.
+  %endif%
+%endif%
+

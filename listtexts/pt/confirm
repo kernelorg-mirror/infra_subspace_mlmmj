@@ -1,0 +1,53 @@
+%ifaction sub%Subject: Confirmação de subscrição em $list$@$domain$%endif%
+%ifaction unsub%Subject: Confirmação de cancelamento da subscrição em $list$@$domain$%endif%
+
+%text prologue%
+
+%ifaction sub%
+  %^%%wrap%
+  %ifreason admin%
+    Um administrador
+  %endif%
+  %ifreason request%
+    Alguém (esperamos que você)
+  %endif%
+  solicitou que o endereço eletrónico <$subaddr$> fosse adicionado
+  %iftype normal%
+    à lista de correio normal. Isto significa que, de cada vez que uma
+    mensagem for enviada para a lista, você receberá uma cópia.
+  %endif%
+  %iftype digest%
+    à lista de correio resumida. Isto significa que você receberá diversas
+    mensagens numa única mensagem, em intervalos periódicos, ou quando se
+    acumularem um determinado conjunto de mensagens.
+  %endif%
+  %iftype nomail%
+    à lista de correio no-mail. Isto significa que você não receberá
+    quaisquer mensagens, mas é considerado como membro. Isto significa que,
+    por exemplo você poderá enviar mensagens para a lista na qual só os
+    subscritores podem enviar, enquanto segue as mensagens através de um
+    arquivo web ou através de outro endereço eletrónico.
+  %endif%
+%endif%
+
+%ifaction unsub%
+  %^%%wrap%
+  %ifreason admin%
+    Um administrador
+  %endif%
+  %ifreason request%
+    Alguém (esperamos que você)
+  %endif%
+  solicitou que o endereço eletrónico <$subaddr$> fosse removido da lista de
+  correio.
+%endif%
+
+%wrap%Para confirmar a operação, envie uma mensagem para <$confaddr$>
+bastando, para o efeito, responder a esta mensagem. O assunto e o texto da
+mensagem pode estar vazio.
+
+Após o envio da mensagem, deve receber uma mensagem a confirmar que a
+operação foi councluída com sucesso.
+
+Se não solicitou esta operação, ignore esta mensagem.
+

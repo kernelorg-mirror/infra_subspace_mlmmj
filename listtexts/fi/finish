@@ -1,0 +1,53 @@
+%ifaction unsub%Subject: Vahvistus postituslistalta $list$@$domain$ poistumisesta%endif%
+%ifaction release reject%Subject: Moderoitu $list$@$domain$: $subject$%endif%
+%ifaction permit obstruct%Subject: Listalle $list$@$domain$ liittyminen käsitelty: $subaddr$%endif%
+%ifaction post%Subject: Lähetetty listalle $list$@$domain$: $subject$%endif%
+
+%text prologue%
+
+%ifaction unsub%
+  %^%%wrap%
+  %ifreason request%
+  %endif%
+  %ifreason confirm%
+    Kiitos, että vahvistit postituslistalta poistumisesi.
+  %endif%
+  %ifreason admin%
+    Ylläpitäjä on poistanut sinut postituslistalta.
+  %else%
+    Sähköpostiosoitteesi on nyt poistettu postituslistalta.
+  %endif%
+%endif%
+
+%ifaction release%
+  %^%%wrap%Osoitteesta <$posteraddr$> lähetetty viesti "$subject$" on
+  onnistuneesti hyväksytty välitettäväksi postituslistalle.
+%endif%
+
+%ifaction reject%
+  %^%%wrap%Osoitteesta <$posteraddr$> lähetetyn viestin "$subject$"
+  välittäminen postituslistalle on estetty.
+%endif%
+
+%ifaction permit%
+  %^%%wrap%Osoite <$subaddr$> on liitetty postituslistalle.
+%endif%
+
+%ifaction obstruct%
+  %^%%wrap%Osoitteen <$subaddr$> liittäminen postituslistalle on estetty.
+%endif%
+
+%ifaction post%
+  %^%%wrap%
+  %ifreason confirm%
+    Kiitos, että vahvistit viestisi
+  %endif%
+  %ifreason release%
+    Moderaattori on hyväksynyt viestisi
+  %endif%
+  %ifreason request%
+    Kiitos viestistäsi
+  %endif%
+  otsikolla "$subject$". Se välitetään postituslistan tilaajille.
+%endif%
+

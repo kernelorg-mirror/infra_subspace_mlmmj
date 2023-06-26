@@ -1,0 +1,56 @@
+%ifaction sub%Subject: Vahvista liittyminen listalle $list$@$domain$%endif%
+%ifaction unsub%Subject: Vahvista eroaminen listalta $list$@$domain$%endif%
+
+%text prologue%
+
+%ifaction sub%
+  %^%%wrap%
+  %ifreason admin%
+    Ylläpitäjä
+  %endif%
+  %ifreason request%
+    Joku (toivottavasti sinä)
+  %endif%
+  on pyytänyt, että sähköpostiosoitteesi <$subaddr$> lisättäisiin
+  %iftype normal%
+    postituslistan vastaanottajaksi. Aina kun postituslistalle lähetetään
+    viesti, siitä lähetetään kopio sähköpostiisi.
+  %endif%
+  %iftype digest%
+    postituslistan viestikoosteiden vastaanottajaksi. Sähköpostiisi
+    lähetetään kooste postituslistalle lähetetyistä viesteistä säännöllisin
+    väliajoin tai silloin, kun postituslistalle on kertynyt riittävän
+    monta viestiä.
+  %endif%
+  %iftype nomail%
+    postituslistalle ilman viestien välitystä. Sinulle ei lähetetä
+    postituslistan viestejä, mutta oikeutesi postituslistan käyttöön ovat
+    muuten samat kuin postituslistan normaaleilla tilaajilla. Voit
+    esimerkiksi lähettää viestejä listalle, jolle lähetysoikeus on vain
+    listan tilaajilla. Tämä on käytännöllistä silloin, kun seuraat listan
+    viestejä www-arkiston tai toiseen sähköpostiosoitteeseen tilattujen
+    viestien kautta.
+  %endif%
+%endif%
+
+%ifaction unsub%
+  %^%%wrap%
+  %ifreason admin%
+    Ylläpitäjä
+  %endif%
+  %ifreason request%
+    Joku (toivottavasti sinä)
+  %endif%
+  on pyytänyt, että sähköpostiosoite <$subaddr$> poistettaisiin
+  postituslistan.
+%endif%
+
+%wrap%Vahvistaaksesi toimenpiteen lähetä viesti osoitteeseen <$confaddr$>
+esimerkiksi vastaamalla tähän sähköpostiviestiin. Viestin otsikolla ja
+sisällöllä ei ole merkitystä.
+
+Kun olet lähettänyt viestin, saat vastauksen, jossa vahvistetaan toimenpide
+suoritetuksi.
+
+Jos et halua vahvistaa toimenpidettä, sinun ei tarvitse tehdä mitään.
+

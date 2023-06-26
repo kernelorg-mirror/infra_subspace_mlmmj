@@ -1,0 +1,45 @@
+Subject: Benvenuto/a in $list$@$domain$
+
+%text prologue%
+
+%wrap%
+%ifreason request%
+  Grazie per esserti unito/a a noi.
+%endif%
+%ifreason confirm%
+  Grazie per aver confermato la tua iscrizione.
+%endif%
+%ifreason permit%
+  Un controllore ti ha permesso di unirti a noi.
+%endif%
+%ifreason switch%
+  La tua iscrizione è stata cambiata nella versione
+%else%
+  %ifreason admin%
+    Un amministratore ti ha iscritto alla versione
+  %else%
+    Sei stato/a ora aggiunto/a alla versione
+  %endif%
+%endif%
+%iftype normal% normal %endif%
+%iftype digest% digest %endif%
+%iftype nomail% no-mail %endif%
+della lista.
+
+%wrap%L'indirizzo di posta elettronica con cui ti sei iscritto/a è
+<$subaddr$>.
+
+%ifcontrol closedlist%
+  %^%%wrap%Se desideri ancora rimuovere l'iscrizione, dovrai contattare un
+  amministratore della lista. Invia un messaggio a <$list+$owner@$domain$>
+  per contattarlo.
+%else%
+  %^%%wrap%Se desideri ancora rimuovere l'iscrizione, invia un messaggio a
+  <$list+$unsubscribe@$domain$> usando questo indirizzo di posta. L'oggetto
+  e il corpo del messaggio possono essere vuoti. Riceverai una conferma o
+  ulteriori istruzioni.
+%endif%
+
+%wrap%Per ulteriori informazioni e aiuto su questa lista, invia un messaggio
+a <$list+$help@$domain$>.
+

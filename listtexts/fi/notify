@@ -1,0 +1,40 @@
+%ifaction sub%Subject: Liitetty listalle $list$@$domain$: $subaddr$%endif%
+%ifaction unsub%Subject: Poistettu listalta $list$@$domain$: $subaddr$%endif%
+
+%text prologue%
+
+%ifaction sub%
+  %^%%wrap%Osoite <$subaddr$> on liitetty postituslistan
+  %iftype normal% tavalliseen versioon, %endif%
+  %iftype digest% viestikoosteita vastaanottavaan versioon, %endif%
+  %iftype nomail% ei viestien jakelua -versioon, %endif%
+  %ifreason request%
+    koska tilaaja pyysi saada liittyä listalle.
+  %endif%
+  %ifreason confirm%
+    koska tilaaja vahvisti pyyntönsä liittyä listalle.
+  %endif%
+  %ifreason admin%
+    koska listan ylläpitäjä liitti osoitteen listalle.
+  %endif%
+  %ifreason permit%
+    koska listan jäsenyyksistä vastaava henkilö hyväksyi liittymisen.
+  %endif%
+%endif%
+
+%ifaction unsub%
+  %^%%wrap%Osoite <$subaddr$> on poistettu postituslistan
+  %ifreason request%
+    koska tilaaja pyysi tilauksensa lopettamista.
+  %endif%
+  %ifreason confirm%
+    koska tilaaja vahvisti pyyntönsä tilauksensa lopettamisesta.
+  %endif%
+  %ifreason admin%
+    koska listan ylläpitäjä poisti osoitteen listalta.
+  %endif%
+  %ifreason bouncing%
+    koska viestien lähettäminen osoitteeseen on epäonnistunut toistuvasti.
+  %endif%
+%endif%
+

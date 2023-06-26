@@ -1,0 +1,38 @@
+Subject: Μήνυμα που εκκρεμεί για τη λίστα ταχυδρομείου $list$@$domain$: $subject$
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="=_$random0$$random1$_="
+Content-Transfer-Encoding: 8bit
+
+--=_$random0$$random1$_=
+Content-Type: text/plain; charset=utf8
+Content-Transfer-Encoding: 8bit
+
+%text prologue%
+
+%wrap%Ένα μήνυμα με αποστολέα <$posteraddr$> και θέμα "$subject$" έχει
+υποβληθεί για δημοσίευση στη λίστα. Για να εμφανιστεί πρέπει πρώτα να
+διαβαστεί και να επιβεβαιωθεί από κάποιον διαχειριστή
+%ifreason moderated%
+  καθώς αυτή είναι μία ελεγχόμενη λίστα.
+%endif%
+%ifreason access%
+  καθώς αυτό επιβάλλεται από τους κανόνες πρόσβασης της λίστας.
+%endif%
+%ifreason modnonsubposts%
+  καθώς δεν είστε εγγεγραμμένος χρήστης.
+
+  %ifncontrol closedlist%%ifncontrol closedlistsub%
+    %^%%text subrelease%
+  %endif%%endif%
+%endif%
+
+(Παρακάτω ακολουθεί το μήνυμα.)
+
+--=_$random0$$random1$_=
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="message.eml"
+
+%originalmail%
+--=_$random0$$random1$_=--

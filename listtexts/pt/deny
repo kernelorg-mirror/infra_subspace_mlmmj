@@ -1,0 +1,79 @@
+%ifaction sub%Subject: Não foi possível subscrever em $list$@$domain$%endif%
+%ifaction unsub%Subject: Não foi possível cancelar a subscrição em $list$@$domain$%endif%
+%ifaction release reject%Subject: Não foi possível moderar $list$@$domain$%endif%
+%ifaction permit obstruct%Subject: Não foi possível comunicar com o administrador de $list$@$domain$%endif%
+
+%text prologue%
+
+%ifaction sub%
+  %^%%wrap%Não foi possível concluir a subscrição à lista
+  %ifreason disabled%
+    porque a versão
+    %iftype normal% normal %endif%
+    %iftype digest% resumida %endif%
+    %iftype nomail% no-mail %endif%
+    da lista está inativa.
+  %endif%
+  %ifreason closed%
+    porque os utilizadores não podem subscrever a esta lista por correio
+    eletrónico.
+  %endif%
+  %ifreason subbed%
+    porque você já subscreveu esta lista.
+  %endif%
+  %ifreason expired%
+    porque o administrador da lista levou muito tempo a responder ao seu
+    pedido.
+  %endif%
+  %ifreason obstruct%
+    porque o administrador da lista bloqueou a sua subscrição.
+  %endif%
+%endif%
+
+%ifaction unsub%
+  %^%%wrap%Não foi possível cancelar a sua subscrição da lista
+  %ifreason unsubbed%
+    porque você não faz parte da lista.
+
+    %^%%wrap%Se você está a receber muitas mensagens, é possível que já
+    tenha subscrito à lista com outro endereço eletrónico. Para descobrir
+    com que endereço subscreveu, consulte a mensagem de boas vindas da lista
+    ou procure no cabeçalho "Return-Path" de uma mensagem que tenha
+    recebido.
+  %endif%
+%endif%
+
+%ifaction release reject%
+  %^%%wrap%
+  %ifaction release%
+    Você não consegue publicar a mensagem na lista
+  %endif%
+  %ifaction reject%
+    Você não consegue rejeitar a mensagem da lista
+  %endif%
+  %ifreason notfound%
+    porque ela não foi encontrada. É possível que outro moderador já a tenha
+    publicado, rejeitado ou que tenha expirado.
+  %endif%
+  %ifreason moderators%
+    porque você não é um moderador da lista.
+  %endif%
+%endif%
+
+%ifaction permit obstruct%
+  %^%%wrap%
+  %ifaction permit%
+    Você não consegue aceitar o pedido de subscrição 
+  %endif%
+  %ifaction obstruct%
+    Você não consegue cancelar o pedido de subscrição
+  %endif%
+  %ifreason notfound%
+    porque ele não foi encontrado. É possível que outro administrador da
+    lista já o tenha aceite, rejeitado ou que tenha expirado.
+  %endif%
+  %ifreason gatekeepers%
+    porque você não é um administrador desta lista.
+  %endif%
+%endif%
+

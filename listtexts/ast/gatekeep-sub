@@ -1,0 +1,19 @@
+Subject: Solicitú de suscripción a $list$@$domain$: $subaddr$
+
+%text prologue%
+
+%wrap%Hebo una solicitú de <$subaddr$> pa xunise a la versión
+%iftype normal% normal %endif%
+%iftype digest% resumida %endif%
+%iftype nomail% ensin corréu %endif%
+de la llista.
+
+%wrap%Pa permitilo, unvia un mensaxe a <$permitaddr$> lo que de vezu pue
+facese con sólo contestar a esti mensaxe.
+
+%wrap%Si nun quies facer esto, o bien pues unviar un mensaxe a
+<$obstructaddr$> o simplemente escaezte d'esti mensaxe.
+
+Los siguientes supervisores recibieron esti corréu:
+- %gatekeepers%
+

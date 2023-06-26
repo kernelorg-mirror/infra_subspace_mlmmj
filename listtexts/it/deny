@@ -1,0 +1,78 @@
+%ifaction sub%Subject: Impossibile effettuare l'iscrizione a $list$@$domain$%endif%
+%ifaction unsub%Subject: Impossibile rimuovere l'iscrizione da $list$@$domain$%endif%
+%ifaction release reject%Subject: Impossibile moderare $list$@$domain$%endif%
+%ifaction permit obstruct%Subject: Impossibile eseguire il gatekeeping su $list$@$domain$%endif%
+
+%text prologue%
+
+%ifaction sub%
+  %^%%wrap%Non sei in grado di iscriverti alla lista
+  %ifreason disabled%
+    perché la versione
+    %iftype normal% normal %endif%
+    %iftype digest% digest %endif%
+    %iftype nomail% no-mail %endif%
+    della lista è disattivata.
+  %endif%
+  %ifreason closed%
+    perché agli utenti non è consentito iscriversi a questa lista tramite
+    e-mail.
+  %endif%
+  %ifreason subbed%
+    perché sei già iscritto/a.
+  %endif%
+  %ifreason expired%
+    perché è trascorso troppo tempo senza che un controllore permettesse il
+    tuo ingresso.
+  %endif%
+  %ifreason obstruct%
+    perché un controllore ha bloccato il tuo ingresso.
+  %endif%
+%endif%
+
+%ifaction unsub%
+  %^%%wrap%Non sei in grado di rimuovere l'iscrizione dalla lista
+  %ifreason unsubbed%
+    perché non sei iscritto/a.
+
+    %^%%wrap%Se stai ricevendo messaggi, probabilmente sei iscritto/a con un
+    altro indirizzo e-mail. Per vedere l'indirizzo di iscrizione, fai
+    riferimento al messaggio di benvenuto ricevuto dalla lista, o controlla
+    l'intestazione "Return-Path" di un messaggio ricevuto dalla lista.
+  %endif%
+%endif%
+
+%ifaction release reject%
+  %^%%wrap%
+  %ifaction release%
+    Non hai potuto rilasciare il messaggio specificato nella lista
+  %endif%
+  %ifaction reject%
+    Non hai potuto rifiutare il messaggio specificato
+  %endif%
+  %ifreason notfound%
+    perché non è stato possibile trovarlo. Forse un altro moderatore
+    lo ha già rilasciato o rifiutato, o esso è scaduto.
+  %endif%
+  %ifreason moderators%
+    perché non sei un moderatore della lista.
+  %endif%
+%endif%
+
+%ifaction permit obstruct%
+  %^%%wrap%
+  %ifaction permit%
+    Non hai potuto consentire la specifica richiesta di iscrizione
+  %endif%
+  %ifaction obstruct%
+    Non hai potuto bloccare la specifica richiesta di iscrizione
+  %endif%
+  %ifreason notfound%
+    perché è stato impossibile trovarla. Forse un altro gatekeeper
+    l'ha già permessa o bloccata, o essa è scaduta.
+  %endif%
+  %ifreason gatekeepers%
+    perché non sei un gatekeeper della lista.
+  %endif%
+%endif%
+

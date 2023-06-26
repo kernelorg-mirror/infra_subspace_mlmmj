@@ -1,0 +1,78 @@
+%ifaction sub%Subject: Abonnement à $list$@$domain$%endif% impossible
+%ifaction unsub%Subject: Désabonnement de $list$@$domain$%endif% impossible
+%ifaction release reject%Subject: Impossible de modérer $list$@$domain$%endif%
+%ifaction permit obstruct%Subject: Impossible d'accepter / refuser $list$@$domain$%endif%
+
+%text prologue%
+
+%ifaction sub%
+  %^%%wrap%Il n'a pas été possible de vous inscrire à la liste
+  %ifreason disabled%
+    parce que la version 
+    %iftype normal% normale %endif%
+    %iftype digest% digest %endif%
+    %iftype nomail% no-mail %endif%
+    de la liste a été désactivée.
+  %endif%
+  %ifreason closed%
+    parce qu'il n'est pas possible de s'inscrire à cette liste par e-mail.
+  %endif%
+  %ifreason subbed%
+    parce que vous êtes déjà inscrit.
+  %endif%
+  %ifreason expired%
+    parce qu'il s'est écoulé trop de temps avant qu'un modérateur autorise
+    votre accès.
+  %endif%
+  %ifreason obstruct%
+    parce qu'un modérateur n'a pas autorisé votre accès.
+  %endif%
+%endif%
+
+%ifaction unsub%
+  %^%%wrap%Il n'a pas été possible de vous désinscrire de la liste 
+  %ifreason unsubbed%
+    parce que vous n'êtes pas inscrit.
+
+    %^%%wrap%Si vous recevez des messages, peut-être qu'une adresse
+    différente est inscrite. Pour connaître l'adresse avec laquelle vous
+    êtes inscrit, référez-vous au message de bienvenue à la liste, ou
+    examinez l'en-tête "Adresse de retour" du message que vous avez reçu de
+    la liste.
+  %endif%
+%endif%
+
+%ifaction release reject%
+  %^%%wrap%
+  %ifaction release%
+    Vous n'avez pu délivrer le message indiqué à la liste
+  %endif%
+  %ifaction reject%
+    Vous n'avez pu rejeter le message spécifié
+  %endif%
+  %ifreason notfound%
+    parce qu'il n'a pu être trouvé. Peut être qu'un autre modérateur l'a
+    déjà délivré ou rejeté ou bien a-t-il expiré.
+  %endif%
+  %ifreason moderators%
+    parce que vous n'êtes pas un modérateur de la liste.
+  %endif%
+%endif%
+
+%ifaction permit obstruct%
+  %^%%wrap%
+  %ifaction permit%
+    Vous n'avez pu autoriser cette demande d'inscription
+  %endif%
+  %ifaction obstruct%
+    Vous n'avez pu rejeter cette demande d'inscription
+  %endif%
+  %ifreason notfound%
+    parce qu'elle n'a pu être trouvée. Peut être qu'un autre modérateur l'a
+    déjà acceptée ou rejetée ou bien a-t-elle expirée.
+  %endif%
+  %ifreason gatekeepers%
+    parce que vous n'êtes pas un modérateur de la liste.
+  %endif%
+%endif%
+

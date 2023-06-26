@@ -1,0 +1,44 @@
+Subject: Herzlich Willkommen bei $list$@$domain$
+
+%text prologue%
+
+%wrap%
+%ifreason request%
+  Vielen Dank für Ihre Anmeldung.
+%endif%
+%ifreason confirm%
+  Vielen Dank für Ihre Anmeldebestätigung.
+%endif%
+%ifreason permit%
+  Ein Listenmoderator hat Ihre Anmeldung akzeptiert.
+%endif%
+%ifreason switch%
+  Ihr Listenabonnement wurde umgestellt auf die
+%else%
+  %ifreason admin%
+    Ein Administrator hat Sie angemeldet bei der
+  %else%
+    Sie wurden hinzugefügt zur
+  %endif%
+%endif%
+%iftype normal% Normalversion %endif%
+%iftype digest% Digest-Version %endif%
+%iftype nomail% No-Mail-Version %endif%
+der Liste.
+
+%wrap%Ihre Abonnement-Adresse lautet <$subaddr$>.
+
+%ifcontrol closedlist%
+  %^%%wrap%Zum Abmelden kontaktieren Sie bitte den Listenadministrator.
+  Senden Sie dazu eine Mail an <$list+$owner@$domain$>.
+%else%
+  %^%%wrap%Zum Abmelden senden Sie eine Mail an
+  <$list+$unsubscribe@$domain$> Bitte achten Sie darauf die oben genannte
+  Absender-Adresse zu benutzen. Betreff und Inhalt der Nachricht sind
+  unerheblich. Sie erhalten eine Abmeldebestätigungsaufforderung oder eine
+  Mail mit weiteren Instruktionen.
+%endif%
+
+%wrap%Um Hilfe und weitere Informationen zu dieser Liste zu erhalten, Senden
+Sie eine Mail an <$list+$help@$domain$>.
+

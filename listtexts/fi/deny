@@ -1,0 +1,78 @@
+%ifaction sub%Subject: Listalle $list$@$domain$ liittyminen epäonnistui%endif%
+%ifaction unsub%Subject: Listalta $list$@$domain$ poistuminen epäonnistui%endif%
+%ifaction release reject%Subject: Listan $list$@$domain$ viestin hyväksyntä epäonnistui%endif%
+%ifaction permit obstruct%Subject: Listan $list$@$domain$ tilauksen hallinta epäonnistui%endif%
+
+%text prologue%
+
+%ifaction sub%
+  %^%%wrap%Sinua ei voitu liittää postituslistalle,
+  %ifreason disabled%
+    koska listan
+    %iftype normal% tavallinen versio %endif%
+    %iftype digest% viestikoosteversio %endif%
+    %iftype nomail% ei postia -versio %endif%
+    ei ole käytössä.
+  %endif%
+  %ifreason closed%
+    koska tälle listalle ei voi liittyä omatoimisesti sähköpostiviestillä.
+  %endif%
+  %ifreason subbed%
+    koska olet jo aiemmin liittynyt listalle.
+  %endif%
+  %ifreason expired%
+    koska liittymistäsi ei hyväksytty riittävässä ajassa.
+  %endif%
+  %ifreason obstruct%
+    koska postituslistan jäsenistä vastaava henkilö esti liittymisesi listalle.
+  %endif%
+%endif%
+
+%ifaction unsub%
+  %^%%wrap%Jäsenyyttäsi postituslistalla ei voitu lopettaa,
+  %ifreason unsubbed%
+    koska et ole listan tilaaja.
+
+    %^%%wrap%Jos tästä huolimatta saat postituslistalta viestejä, olet ehkä
+    liittynyt listalle jollain toisella sähköpostiosoitteella. Voit
+    selvittää listalle liitetyn osoitteen viestistä, jossa sinut toivotetaan
+    tervetulleeksi listalle. Jos se ei ole enää tallessa, katso
+    "Return-Path"-otsikkotieto viimeisimmästä viestistä, jonka olet saanut
+    postituslistalta.
+  %endif%
+%endif%
+
+%ifaction release reject%
+  %^%%wrap%
+  %ifaction release%
+    Viestin hyväksyminen postituslistalle välitettäväksi ei onnistunut,
+  %endif%
+  %ifaction reject%
+    Viestin hylkääminen postituslistalta ei onnistunut,
+  %endif%
+  %ifreason notfound%
+    koska sitä ei löytynyt. Ehkäpä toinen moderaattori on jo hyväksynyt tai
+    hylännyt sen, tai viesti on vanhentunut.
+  %endif%
+  %ifreason moderators%
+    koska et ole tämän postituslistan moderaattori.
+  %endif%
+%endif%
+
+%ifaction permit obstruct%
+  %^%%wrap%
+  %ifaction permit%
+    Postituslistan liittymispyynnön hyväksyminen ei onnistunut,
+  %endif%
+  %ifaction obstruct%
+    Postituslistan liittymispyynnön hylkääminen ei onnistunut,
+  %endif%
+  %ifreason notfound%
+    koska sitä ei löytynyt. Ehkäpä toinen listan jäsenistä vastaava on jo
+    hyväksynyt tai hylännyt sen, tai liittymispyyntö on vanhentunut.
+  %endif%
+  %ifreason gatekeepers%
+    koska sinulla ei ole oikeutta hyväksyä postituslistan jäseniä.
+  %endif%
+%endif%
+

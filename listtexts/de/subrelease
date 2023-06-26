@@ -1,0 +1,21 @@
+%wrap%Dies ist eine offene Liste. Wenn Sie möchten, können Sie sich
+gleichzeitig anmelden und eine Nachricht an die Liste senden, indem Sie eine
+Mail an <$listsubreleaseaddr$> senden, was in der Regel durch einfaches
+Antworten an diese Mail erfolgen kann. Betreff und Nachrichtentext können
+Sie frei wählen.
+
+%ifncontrol nodigestsub%
+  %^%%wrap%Oder Sie können sich gleichzeitig bei der Digest-Version dieser
+  Liste anmelden und eine Nachricht an die Liste senden, indem sie eine Mail
+  an <$digestsubreleaseaddr$> senden. Sie erhalten dann mehrere
+  Listennachrichten zusammegefasst in einer Mail - entweder in regelmäßigen
+  Zeitabständen oder wenn sich ein Menge Nachrichten angehäuft hat.
+%endif%
+
+%ifncontrol nonomailsub%
+  %^%%wrap%Oder Sie können sich gleichzeitig bei der No-Mail-Version dieser
+  Liste anmelden und eine Nachricht an die Liste senden, indem sie eine Mail
+  an <$nomailsubreleaseaddr$> senden. Sie erhalten dann keine
+  Listennachrichten zugesandt, können diese aber in Webarchiven oder über
+  eine andere angemeldete Adresse lesen.
+%endif%

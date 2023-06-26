@@ -1,0 +1,20 @@
+Subject: Anmeldeantrag für $list$@$domain$: $subaddr$
+
+%text prologue%
+
+%wrap%Ein Antrag von <$subaddr$> zur Anmeldung bei der
+%iftype normal% Normalversion %endif%
+%iftype digest% Digest-Version %endif%
+%iftype nomail% No-Mail-Version %endif%
+der Liste ist eingegangen.
+
+%wrap%Um die Anmeldung zu erlauben, senden Sie eine mail an
+<$permitaddr$>\ - ein einfaches Antworten auf diese Mail sollte in der Regel
+genügen.
+
+%wrap%Um die Anmeldung abzulehnen, Senden Sie eine Mail an <$obstructaddr$>
+oder ignorieren Sie diese Nachricht einfach.
+
+Folgende Moderatoren haben diese Mail erhalten:
+- %gatekeepers%
+

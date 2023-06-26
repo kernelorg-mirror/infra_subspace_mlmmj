@@ -1,0 +1,95 @@
+Subject: Tietoja postituslistasta $list$@$domain$
+
+%text prologue%
+
+Tässä joitakin tietoja tästä postituslistasta.
+
+Voit tilata postituslistasta jonkin seuraavista versioista:
+
+- %wrap%Tavallinen jakelu: Aina kun postituslistalle lähetetään viesti, saat
+tilaajana siitä kopion sähköpostiisi.
+%ifcontrol closedlist closedlistsub%
+  Liity ottamalla yhteyttä postituslistan ylläpitäjään.
+%else%
+  Liity lähettämällä viesti osoitteeseen <$list+$subscribe@$domain$>.
+%endif%
+
+%ifncontrol nodigestsub%
+  %^%- %wrap%Viestikoosteiden jakelu: Saat koosteen postituslistalle
+  lähetetyistä viesteistä yhtenä viestinä säännöllisin väliajoin tai
+  silloin, kun listalle on kertynyt riittävä määrä viestejä.
+  %ifcontrol closedlist closedlistsub%
+    Liity ottamalla yhteyttä postituslistan ylläpitäjään.
+  %else%
+    Liity lähettämällä viesti osoitteeseen
+    <$list+$subscribe-digest@$domain$>.
+  %endif%
+%endif%
+
+%ifncontrol nonomailsub%
+  %^%- %wrap%Ei jakelua -jäsenyys: Osoitteeseesi ei välitetä lainkaan
+  listalle tulevia viestejä. Voit kuitenkin lähettää viestejä listalle kuten
+  listan tavanomaiset tilaajat. Tällainen liittyminen on järkevää, jos
+  seuraat postituslistaa listan www-arkiston kautta tai olet tilannut
+  viestit toiseen sähköpostiosoitteeseen.
+  %ifcontrol closedlist closedlistsub%
+    Liity ottamalla yhteyttä postituslistan ylläpitäjään.
+  %else%
+    Liity lähettämällä viesti osoitteeseen
+    <$list+$subscribe-nomail@$domain$>.
+  %endif%
+%endif%
+
+%ifcontrol submod%
+  %^%%wrap%Tälle listalle liittyminen edellyttää, että liittymispyynnön
+  hyväksyy joku listan jäsenyyksiä hallinnoiva henkilö.
+%endif%
+
+%ifcontrol closedlist%
+  %^%%wrap%Listalta voi poistua ottamalla yhteyttä listan ylläpitäjään.
+%else%
+  %^%%wrap%Listalta voi poistua lähettämällä postia osoitteeseen
+  <$list+$unsubscribe@$domain$>.
+%endif%
+
+%wrap%Listalle lähetetään postia lähettämällä viesti osoitteeseen
+<$list$@$domain$>.
+
+%ifcontrol subonlypost%%ifncontrol modnonsubposts%
+  %^%%wrap%Huomaa kuitenkin, että vain listan tilaajat voivat lähettää
+  viestejä tälle listalle.
+%endif%%endif%
+
+%ifcontrol moderated%
+  %^%%wrap%Tällä listalla on moderaattori, joka tarkastaa kaikki listalle
+  lähetetyt viestit ennen niiden välittämistä listalle.
+%else%
+  %ifcontrol subonlypost%%ifcontrol modnonsubposts%
+    %^%%wrap%Tällä listalla on moderaattori, joka tarkastaa muiden kuin
+    listan tilaajien lähettämät viestit ennen niiden välittämistä listalle.
+  %endif%%endif%
+%endif%
+
+%ifcontrol access%
+  %^%%wrap%Tällä listalla on myös käyttöoikeussääntöjä, jotka voivat
+  vaikuttaa viestien lähetysoikeuteen sekä siihen, mitkä viestit vaativat
+  moderaattorin hyväksynnän.
+%endif%
+
+%ifncontrol noget%%ifncontrol noarchive%
+  %^%%wrap%
+  %ifcontrol subonlyget%
+    Kuka tahansa voi
+  %else%
+    Listan tilaajat voivat
+  %endif%
+  hakea viestin numero N listan arkistosta lähettämällä viestin osoitteeseen
+  <$list+$get-N@$domain$> (korvaa N halutulla viestin numerolla).
+%endif%%endif%
+
+%wrap%Listan usein kysytyt kysymykset vastauksineen voi hakea lähettämällä
+viestin osoitteeseen <$list+$faq@$domain$>.
+
+%wrap%Listan ylläpitäjään saa yhteyden lähettämällä postia osoitteeseen
+<$list+$owner@$domain$>.
+

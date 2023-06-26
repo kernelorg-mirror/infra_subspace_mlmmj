@@ -1,0 +1,25 @@
+Subject: $list$@$domain$ 的订阅者列表
+
+%text prologue%
+
+%wrap%以下为订阅者列表
+%iftype all%
+  （\=本列表所有版本的订阅者\=）\=：
+%else%
+  本列表
+  %iftype normal%常规%endif%
+  %iftype digest%汇总%endif%
+  %iftype nomail%无邮件%endif%
+  版本的订阅者\=：
+%endif%
+
+%iftype all normal%
+  %^%- %listsubs%
+%endif%
+%iftype all digest%
+  %^%- %digestsubs%
+%endif%
+%iftype all nomail%
+  %^%- %nomailsubs%
+%endif%
+

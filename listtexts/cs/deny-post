@@ -1,0 +1,66 @@
+Subject: Zaslat email do $list$@$domain$ není možné ($subject$)
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="=_$random0$$random1$_="
+Content-Transfer-Encoding: 8bit
+
+--=_$random0$$random1$_=
+Content-Type: text/plain; charset=utf8
+Content-Transfer-Encoding: 8bit
+
+%text prologue%
+
+%wrap%Zprávu od <$posteraddr$> s předmětem "$subject$" není možné doručit.
+%ifreason maxmailsize%
+Zpráva je příliš velká, maximální velikost zprávy je $maxmailsize$ bajtů.
+%endif%
+%ifreason tocc%
+Adresa konference nebyla nalezena v poli Komu: (To:) nebo Kopie: (Cc:).
+%endif%
+%ifreason access%
+Zaslání bylo zamezeno přístupovými právy ke konferenci stanovenými správcem.
+%endif%
+%ifreason expired%
+Zpráva měla být schválena moderátorem konference, ale žádný ji delší čas neschválil.
+%endif%
+%ifreason reject%
+Zpráva byla zamítnuta moderátorem konference.
+%endif%
+%ifreason subonlypost%
+  Adresa, ze které byla zpráva zaslána, není v seznamu členů konference.
+
+  %ifncontrol closedlist%%ifncontrol closedlistsub%
+    %^%%text subrelease%
+  %endif%%endif%
+
+  %ifcontrol closedlist closedlistsub%
+    %^%%wrap%Pokud si přejete být členem konference kontaktujte správce.
+    Můžete použít emailovou adresu <$list+$owner@$domain$>.
+  %endif%
+
+  %^%%wrap%Pokud si myslíte (nebo víte), že jste členem konference, zaslal/a 
+  jste zprávu z jiné emailové adresy, než se kterou jste přihlášen/a.
+  Můžete ji zjistit z uvítacího emailu do konference, který jste odbržel/a.
+  (Podívejte se na pole "Return-Path" v hlavičce uvítacího emailu.)
+%endif%
+%ifreason modonlypost%
+  protože nejste moderator konference.
+%endif%
+
+%ifreason maxmailsize%
+  %^%(Začátek zprávy je uveden níže.)
+%else%
+  %^%(Zpráva je uvedena níže.)
+%endif%
+
+--=_$random0$$random1$_=
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="message.eml"
+
+%ifreason maxmailsize%
+  %^%%originalmail 300%
+%else%
+  %^%%originalmail%
+%endif%
+--=_$random0$$random1$_=--

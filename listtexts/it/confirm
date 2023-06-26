@@ -1,0 +1,53 @@
+%ifaction sub%Subject: Conferma iscrizione a $list$@$domain$%endif%
+%ifaction unsub%Subject: Conferma rimozione da $list$@$domain$%endif%
+
+%text prologue%
+
+%ifaction sub%
+  %^%%wrap%
+  %ifreason admin%
+    Un amministratore
+  %endif%
+  %ifreason request%
+    Qualcuno (che speriamo sia tu)
+  %endif%
+  ha richiesto l'aggiunta del tuo indirizzo di posta elettronica <$subaddr$>
+  %iftype normal%
+    alla lista. Ciò significa che ogni volta che un messaggio viene inviato
+    alla lista, tu ne riceverai una copia.
+  %endif%
+  %iftype digest%
+    alla lista, per ricevere digest. Ciò significa che riceverai più
+    messaggi in un unico messaggio di posta, a intervalli regolari, o quando
+    se ne sono accumulati un po'.
+  %endif%
+  %iftype nomail%
+    alla lista, senza invio della posta. Ciò significa che non riceverai
+    alcun messaggio relativo alla lista, ma ne sei sempre considerato/a un
+    membro. Per esempio, puoi inviare messaggi alla lista, cui solo gli
+    iscritti possono scrivere, ma la segui tramite un archivio web o un
+    altro indirizzo di posta con cui sei iscritto/a.
+  %endif%
+%endif%
+
+%ifaction unsub%
+  %^%%wrap%
+  %ifreason admin%
+    Un amministratore
+  %endif%
+  %ifreason request%
+    Qualcuno (che speriamo sia tu)
+  %endif%
+  ha richiesto la rimozione dell'indirizzo di posta elettronica <$subaddr$>
+  dalla lista.
+%endif%
+
+%wrap%Per confermare l'azione, invia un messaggio a <$confaddr$>, tale
+azione può essere eseguita semplicemente rispondendo al messaggio. L'oggetto
+e il corpo del messaggio possono essere vuoti.
+
+Dopo tale operazione riceverai una risposta che ti informerà della sua
+riuscita.
+
+Se non vuoi confermare l'azione, ignora questo messaggio.
+

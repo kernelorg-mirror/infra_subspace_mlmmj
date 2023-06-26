@@ -1,0 +1,53 @@
+%ifaction unsub%Subject: $list$@$domain$ 的道别%endif%
+%ifaction release reject%Subject: 已通过 $list$@$domain$：$subject$%endif%
+%ifaction permit obstruct%Subject: 已处理 $list$@$domain$：$subaddr$%endif%
+%ifaction post%Subject: 已发布到 $list$@$domain$：$subject$%endif%
+
+%text prologue%
+
+%ifaction unsub%
+  %^%%wrap%
+  %ifreason request%
+  %endif%
+  %ifreason confirm%
+    感谢确认您的退订\=。
+  %endif%
+  %ifreason admin%
+    一位版主已将您移出本列表\=。
+  %else%
+    您已经退出本列表\=。
+  %endif%
+%endif%
+
+%ifaction release%
+  %^%%wrap%您已成功通过 <$posteraddr$> 发布到本列表的题为《\=$subject$\=》
+  的邮件\=。
+%endif%
+
+%ifaction reject%
+  %^%%wrap%您已成功否决 <$posteraddr$> 发送的题为《\=$subject$\=》的邮
+  件\=。
+%endif%
+
+%ifaction permit%
+  %^%%wrap%您已成功批准 <$subaddr$> 加入本列表\=。
+%endif%
+
+%ifaction obstruct%
+  %^%%wrap%您已成功阻止 <$subaddr$> 加入本列表\=。
+%endif%
+
+%ifaction post%
+  %^%%wrap%
+  %ifreason confirm%
+    感谢您确认
+  %endif%
+  %ifreason release%
+    一位版主已经通过您
+  %endif%
+  %ifreason request%
+    感谢您发布
+  %endif%
+  题为《\=$subject$\=》的邮件\=。该邮件已分发到本列表\=。
+%endif%
+

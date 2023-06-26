@@ -1,0 +1,54 @@
+%ifaction unsub%Subject: Despedida de $list$@$domain$%endif%
+%ifaction release reject%Subject: Moderáu $list$@$domain$: $subject$%endif%
+%ifaction permit obstruct%Subject: Guardáu $list$@$domain$: $subaddr$%endif%
+%ifaction post%Subject: Unviáu a $list$@$domain$: $subject$%endif%
+
+%text prologue%
+
+%ifaction unsub%
+  %^%%wrap%
+  %ifreason request%
+  %endif%
+  %ifreason confirm%
+    Gracies por confirmar que dexes de tar suscritu.
+  %endif%
+  %ifreason admin%
+    Un alministrador te desanició de la llista.
+  %else%
+    Agora tas desaniciáu de la llista.
+  %endif%
+%endif%
+
+%ifaction release%
+  %^%%wrap%Lliberasti correutamente'l mensaxe de <$posteraddr$> con asuntu
+  "$subject$" a la llista.
+%endif%
+
+%ifaction reject%
+  %^%%wrap%Refugasti correutamente'l mensaxe de <$posteraddr$> con asuntu
+  "$subject$".
+%endif%
+
+%ifaction permit%
+  %^%%wrap%Permitisti correutamente que <$subaddr$> se xuna a la llista.
+%endif%
+
+%ifaction obstruct%
+  %^%%wrap%Torgasti correutamente que <$subaddr$> se xuniera a la llista.
+%endif%
+
+%ifaction post%
+  %^%%wrap%
+  %ifreason confirm%
+    Gracies por confirmar
+  %endif%
+  %ifreason release%
+    Un moderador lliberó
+  %endif%
+  %ifreason request%
+    Gracies por
+  %endif%
+  el to mensaxe con asuntu "$subject$". Agora ta distribuyendose a la
+  llista.
+%endif%
+

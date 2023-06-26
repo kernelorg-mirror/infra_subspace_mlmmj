@@ -1,0 +1,21 @@
+Subject: Pyyntö liittyä listalle $list$@$domain$: $subaddr$
+
+%text prologue%
+
+%wrap%Sähköpostiosoitteesta <$subaddr$> on lähetetty pyyntö liittyä
+postituslistalle
+%iftype normal% normaalina %endif%
+%iftype digest% viestikoosteiden %endif%
+%iftype nomail% ei jakelua -version %endif%
+tilaajana.
+
+%wrap%Salliaksesi liittymisen lähetä viesti osoitteeseen <$permitaddr$>.
+Tämä onnistuu tavallisesti vastaamalla tähän viestiin.
+
+%wrap%Jos et halua sallia listalle liittymistä, lähetä viesti osoitteeseen
+<$obstructaddr$> tai jätä tämä pyyntö kokonaan huomioimatta.
+
+Seuraavat postituslistan jäsenistä vastaavat henkilöt ovat saaneet tämän
+viestin:
+- %gatekeepers%
+

@@ -1,0 +1,41 @@
+%ifaction sub%Subject: Inscrit à $list$@$domain$ : $subaddr$%endif%
+%ifaction unsub%Subject: Désinscrit de $list$@$domain$ : $subaddr$%endif%
+
+%text prologue%
+
+%ifaction sub%
+  %^%%wrap%L'adresse' <$subaddr$> a été inscrite à la version
+  %iftype normal% normale %endif%
+  %iftype digest% digest %endif%
+  %iftype nomail% no-mail %endif%
+  de la liste
+  %ifreason request%
+    parce qu'une demande pour la rejoindre a été reçue.
+  %endif%
+  %ifreason confirm%
+    parce qu'une demande pour la rejoindre a été confirmée.
+  %endif%
+  %ifreason admin%
+    parce qu'un administrateur l'a demandé.
+  %endif%
+  %ifreason permit%
+    parce qu'un modérateur l'a permis.
+  %endif%
+%endif%
+
+%ifaction unsub%
+  %^%%wrap%L'adresse <$subaddr$> a été désinscrite de la liste
+  %ifreason request%
+    parce qu'une demande de désinscription a été reçue.
+  %endif%
+  %ifreason confirm%
+    parce qu'une demande de désinscription a été confirmée.
+  %endif%
+  %ifreason admin%
+    parce qu'un administrateur l'a demandé.
+  %endif%
+  %ifreason bouncing%
+    parce qu'il a été rejeté pendant trop longtemps.
+  %endif%
+%endif%
+

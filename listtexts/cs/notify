@@ -1,0 +1,41 @@
+%ifaction sub%Subject: Přihlášení do $list$@$domain$: $subaddr$%endif%
+%ifaction unsub%Subject: Odhlášení z $list$@$domain$: $subaddr$%endif%
+
+%text prologue%
+
+%ifaction sub%
+  %^%%wrap%Adresa <$subaddr$> byla přihlášena do 
+  %iftype normal% normal %endif%
+  %iftype digest% digest %endif%
+  %iftype nomail% no-mail %endif%
+  verze konference
+  %ifreason request%
+    z důvodu přijetí požadavku na přihlášení.
+  %endif%
+  %ifreason confirm%
+    z důvodu potvrzení požadavku na přihlášení.
+  %endif%
+  %ifreason admin%
+    z důvodu zadaní požadavku správcem.
+  %endif%
+  %ifreason permit%
+    z důvodu povolení adminstrací listu.
+  %endif%
+%endif%
+
+%ifaction unsub%
+  %^%%wrap%Adresa <$subaddr$> byla odhlášena z konference
+  %ifreason request%
+    z důvodu přijetí požadavku na odhlášení.
+  %endif%
+  %ifreason confirm%
+    z důvodu potvrzení požadavku na odhlášení.
+  %endif%
+  %ifreason admin%
+    z důvodu zadání požadavku správcem.
+  %endif%
+  %ifreason bouncing%
+    z důvodu nemožnosti odesílání po příliš dlohou dobu (bouncing).
+  %endif%
+%endif%
+

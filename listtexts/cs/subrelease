@@ -1,0 +1,20 @@
+%^%%wrap%Nicméně toto je otevřená konference. Pokud si přejete, můžete 
+se zároveň přihlásit a odeslat vaši zprávu zasláním zprávy na 
+<$listsubreleaseaddr$>. Což se dá většinou udělat tak, že dáte Odpovědět
+na tuto zprávu. Předmět a obsah zprávy může být jakýkoli.
+
+%ifncontrol nodigestsub%
+  %^%%wrap%Nebo se můžete zároveň přihlásit do Digest verze a odeslat 
+  vaši zprávu zasláním zprávy na <$digestsubreleaseaddr$>.
+  Pak budete dostávat více zpráv z konference v jedné zprávě (emailu)
+  v nastavených intervalech, nebo až se více zpráv nahromadí.
+%endif%
+
+%ifncontrol nonomailsub%
+  %^%%wrap%Nebo se můžete zároveň přihlásit do No-Mail verze a odeslat 
+  vaši zprávu zasláním zprávy na <$nomailsubreleaseaddr$>.
+  Pak nebudete dostávat žádné zprávy z konference (ale budete přihlášen).
+  To znamená, že ani neobdržíte žádné reakce a odpovědi na vaši zprávu,
+  pokud nebude sledovat webový archiv konference, nebo nebudete přihlášen
+  pod jinou emailovou adresu.
+%endif%

@@ -1,0 +1,76 @@
+%ifaction sub%Subject: Nun se pudo suscribir $list$@$domain$%endif%
+%ifaction unsub%Subject: Nun se pudo des-suscribir $list$@$domain$%endif%
+%ifaction release reject%Subject: Nun se pudo moderar $list$@$domain$%endif%
+%ifaction permit obstruct%Subject: Nun se pudo supervisar $list$@$domain$%endif%
+
+%text prologue%
+
+%ifaction sub%
+  %^%%wrap%Nun se pudo facer la suscripción a la llista
+  %ifreason disabled%
+    porque la versión
+    %iftype normal% normal %endif%
+    %iftype digest% resumida %endif%
+    %iftype nomail% ensin corréu %endif%
+    de la llista ta desactivada.
+  %endif%
+  %ifreason closed%
+    porque nun se permite que la xente se suscriba a esta llista per corréu.
+  %endif%
+  %ifreason subbed%
+    porque yá tas suscritu.
+  %endif%
+  %ifreason expired%
+    porque pasó muncho tiempu ensin qu'un supervisor te permita la entrada.
+  %endif%
+  %ifreason obstruct%
+    porque un supervisor te torgó la entrada.
+  %endif%
+%endif%
+
+%ifaction unsub%
+  %^%%wrap%Nun se pudo des-suscribite de la llista
+  %ifreason unsubbed%
+    porque nun tas suscritu.
+
+    %^%%wrap%Si tas recibiendo mensaxes, seique teas suscritu con otra
+    direición de corréu distinta. Pa saber con qué direición tas subscritu,
+    mira nel mensaxe que te da la bienvenida a la llista, o mira na testera
+    "Return-Path" d'un mensaxe del corréu que recibes de la llista.
+  %endif%
+%endif%
+
+%ifaction release reject%
+  %^%%wrap%
+  %ifaction release%
+    Nun pudisti desaniciar el mensaxe conseñáu de la llista
+  %endif%
+  %ifaction reject%
+    Nun pudisti refugar el mensaxe conseñáu
+  %endif%
+  %ifreason notfound%
+    porque nun se pudo alcontrar. Seique otru moderator yá lu desanició o lu
+    refugó, o espiró.
+  %endif%
+  %ifreason moderators%
+    porque nun yes moderador de la llista.
+  %endif%
+%endif%
+
+%ifaction permit obstruct%
+  %^%%wrap%
+  %ifaction permit%
+    Nun pudisti permitir la solicitú de suscripción conseñada
+  %endif%
+  %ifaction obstruct%
+    Nun pudisti torgar la solicitú de suscripción conseñada
+  %endif%
+  %ifreason notfound%
+    porque nun se pudo alcontrar. Seique otru moderator yá lu permitiera o
+    lu torgara, o espiró.
+  %endif%
+  %ifreason gatekeepers%
+    porque nun yes supervisor de la llista.
+  %endif%
+%endif%
+

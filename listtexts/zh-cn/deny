@@ -1,0 +1,76 @@
+%ifaction sub%Subject: 无法订阅 $list$@$domain$%endif%
+%ifaction unsub%Subject: 无法退订 $list$@$domain$%endif%
+%ifaction release reject%Subject: 无法管理 $list$@$domain$%endif%
+%ifaction permit obstruct%Subject: 无法看管 $list$@$domain$%endif%
+
+%text prologue%
+
+%ifaction sub%
+  %^%%wrap%
+  %ifreason disabled%
+    由于本列表的
+    %iftype normal%常规%endif%
+    %iftype digest%汇总%endif%
+    %iftype nomail%无邮件%endif%
+    版本已经关闭\=，
+  %endif%
+  %ifreason closed%
+    由于本列表不允许通过邮件订阅\=，
+  %endif%
+  %ifreason subbed%
+    由于您已经订阅\=，
+  %endif%
+  %ifreason expired%
+    由于掌门人过久没有通过您的加入请求\=，
+  %endif%
+  %ifreason obstruct%
+    由于掌门人否决了您的加入请求\=，
+  %endif%
+  您无法订阅本列表\=。
+%endif%
+
+%ifaction unsub%
+  %^%%wrap%
+  您无法从本列表退订\=，
+  %ifreason unsubbed%
+    因为您尚未订阅本列表\=。
+
+    %^%%wrap%如果您仍然收到邮件\=，可能通过其他邮箱地址订阅了\=。要查明您订
+    阅的地址\=，请参考欢迎您加入列表的邮件\=，或查看您收到的列表邮件的
+    "Return-Path“\/头\=。
+  %endif%
+%endif%
+
+%ifaction release reject%
+  %^%%wrap%
+  %ifaction release%
+    您无法将指定帖子通过到列表
+  %endif%
+  %ifaction reject%
+    您无法否决指定帖子
+  %endif%
+  %ifreason notfound%
+    因为找不到该帖子\=。可能其他版主已经通过或否决\=，也可能已经过期\=。
+  %endif%
+  %ifreason moderators%
+    因为您不是本列表的版主\=。
+  %endif%
+%endif%
+
+%ifaction permit obstruct%
+  %^%%wrap%
+  %ifaction permit%
+    您无法批准指定的订阅请求
+  %endif%
+  %ifaction obstruct%
+    您无法否决指定的订阅请求
+  %endif%
+  %ifreason notfound%
+    因为找不到该请求\=。可能其他掌门人已经批准或否决\=，或者该请求已经过
+    期\=。
+  %endif%
+  %ifreason gatekeepers%
+    因为您不是本列表的掌门人\=。
+  %endif%
+%endif%
+

@@ -1,0 +1,44 @@
+Subject: Bem vindo a $list$@$domain$
+
+%text prologue%
+
+%wrap%
+%ifreason request%
+  Agradecemos o seu pedido de integração na lista.
+%endif%
+%ifreason confirm%
+  Agradecemos a confirmação da subscrição.
+%endif%
+%ifreason permit%
+  Um administrador permitiu a sua integração na lista.
+%endif%
+%ifreason switch%
+  A sua subscrição foi alterada para a versão
+%else%
+  %ifreason admin%
+    Um administrador permitiu a sua subscrição na versão
+  %else%
+    Você foi adicionado(a) à versão
+  %endif%
+%endif%
+%iftype normal% normal %endif%
+%iftype digest% resumida %endif%
+%iftype nomail% no-mail %endif%
+da lista.
+
+%wrap%O endereço eletrónico da sua subscrição na lista é <$subaddr$>.
+
+%ifcontrol closedlist%
+  %^%%wrap%Caso pretenda cancelar a subscrição, tem que contactar um
+  administrador da lista. Para o efeito, basta enviar uma mensagem
+  eletrónica para <$list+$owner@$domain$>.
+%else%
+  %^%%wrap%Caso pretenda cancelar a subscrição, envie uma mensagem
+  eletrónica para <$list+$unsubscribe@$domain$>, utilizando este endereço
+  eletrónico. O assunto e o texto da mensagem pode estar vazio.
+  Posteriormente, receberá uma mensagem com as informações a seguir.
+%endif%
+
+%wrap%Para mais informações sobre a lista, envie uma mensagem eletrónica
+para <$list+$help@$domain$>.
+

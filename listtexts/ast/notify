@@ -1,0 +1,41 @@
+%ifaction sub%Subject: Suscritu a $list$@$domain$: $subaddr$%endif%
+%ifaction unsub%Subject: Des-suscritu de $list$@$domain$: $subaddr$%endif%
+
+%text prologue%
+
+%ifaction sub%
+  %^%%wrap%La direición <$subaddr$> suscribiose a la versión
+  %iftype normal% normal %endif%
+  %iftype digest% resumida %endif%
+  %iftype nomail% ensin corréu %endif%
+  de la llista
+  %ifreason request%
+    porque se recibió una solicitú pa xunise.
+  %endif%
+  %ifreason confirm%
+    porque se confirmó una solicitú pa xunise.
+  %endif%
+  %ifreason admin%
+    por mandatu d'un alministrador.
+  %endif%
+  %ifreason permit%
+    porque lo permitió un supervisor.
+  %endif%
+%endif%
+
+%ifaction unsub%
+  %^%%wrap%La direición <$subaddr$> se des-suscribió de la llista
+  %ifreason request%
+    porque se recibió una solicitú pa desaniciar la suscripción.
+  %endif%
+  %ifreason confirm%
+    porque se confirmó una solicitú pa desaniciar la suscripción.
+  %endif%
+  %ifreason admin%
+    por mandatu d'un alministrador.
+  %endif%
+  %ifreason bouncing%
+    porque tien rebotes d'hai demasiao tiempu.
+  %endif%
+%endif%
+

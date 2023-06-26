@@ -1,0 +1,25 @@
+Subject: Přihlášení členové do $list$@$domain$
+
+%text prologue%
+
+%wrap%Toto je seznam členů konference
+%iftype all%
+  (bez rozdílů členství normal/digest/no-mail):
+%else%
+  k verzi
+  %iftype normal% normal %endif%
+  %iftype digest% digest %endif%
+  %iftype nomail% no-mail %endif%
+  této konference:
+%endif%
+
+%iftype all normal%
+  %^%- %listsubs%
+%endif%
+%iftype all digest%
+  %^%- %digestsubs%
+%endif%
+%iftype all nomail%
+  %^%- %nomailsubs%
+%endif%
+

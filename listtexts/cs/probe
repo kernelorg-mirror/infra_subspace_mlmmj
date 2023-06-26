@@ -1,0 +1,11 @@
+Subject: Vracející se zprávy z $list$@$domain$
+
+%text prologue%
+
+Některé zprávy vám nemohly být doručeny. Pokud jste obdržel/a tuto zpravu
+znamená to, že se vše vrátilo k normalnímu stavu a berte celou věc jen 
+jako informaci.
+
+Zde je seznam nedoručených zpráv, které se vracely:
+- %bouncenumbers%
+

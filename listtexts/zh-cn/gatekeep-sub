@@ -1,0 +1,19 @@
+Subject: 请求订阅 $list$@$domain$：$subaddr$
+
+%text prologue%
+
+%wrap%来自 <$subaddr$> 的地址请求订阅本列表的
+%iftype normal%常规%endif%
+%iftype digest%汇总%endif%
+%iftype nomail%无邮件%endif%
+版本\=。
+
+%wrap%要批准该请求\=，请发送邮件到 <$permitaddr$> （\=通常可以通过直接回复
+本邮件完成\=）\=。
+
+%wrap%如果您不打算批准\=，请发送邮件到 <$obstructaddr$> 或直接忽略本邮
+件\=。
+
+下述掌门人已收到本邮件\=：
+- %gatekeepers%
+

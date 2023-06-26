@@ -1,0 +1,51 @@
+Subject: Veuillez modérer $list$@$domain$: $subject$
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="=_$random0$$random1$_="
+Content-Transfer-Encoding: 8bit
+
+--=_$random0$$random1$_=
+Content-Type: text/plain; charset=utf8
+Content-Transfer-Encoding: 8bit
+
+%text prologue%
+
+%wrap%Un message de <$posteraddr$> ayant pour sujet "$subject$" a été soumis
+pour envoi. Il vous est demandé de le modérer 
+%ifreason modnonsubposts%
+  parce que le demandeur n'est pas inscrit.
+%endif%
+%ifreason moderated%
+  parce que c'est une liste modérée.
+%endif%
+%ifreason access%
+  en raison d'une règle d'accès.
+%endif%
+Le message est ci-dessous.
+
+%wrap%Pour le délivrer à la liste, veuillez envoyer un message à
+<$releaseaddr$> ce qui peut habituellement être fait simplement en répondant
+à ce message.
+
+%ifcontrol subonrelease%
+  %^%%wrap%Si vous le souhaitez, vous pouvez simultanément délivrer le
+  message et inscrire le demandeur à la liste en envoyant un message à l'une
+  des adresses suivantes\ :%nowrap%
+  %^%- %wrap%Version normale\ : <$listsubreleaseaddr$>%nowrap%
+  %^%- %wrap%Version digest\ : <$digestsubreleaseaddr$>%nowrap%
+  %^%- %wrap%Version no-mail\ : <$nomailsubreleaseaddr$>%nowrap%
+%endif%
+
+%wrap%Si vous ne souhaitez faire aucune de ces actions, vous pouvez envoyer
+un message à <$rejectaddr$> ou simplement ignorer ce message.
+
+Les modérateurs suivants ont reçu ce mail :
+- %moderators%
+
+--=_$random0$$random1$_=
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="message.eml"
+
+%originalmail%
+--=_$random0$$random1$_=--

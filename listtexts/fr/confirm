@@ -1,0 +1,54 @@
+%ifaction sub%Subject: Confirmer votre abonnement à $list$@$domain$%endif%
+%ifaction unsub%Subject: Confirmer votre désabonnement de $list$@$domain$%endif%
+
+%text prologue%
+
+%ifaction sub%
+  %^%%wrap%
+  %ifreason admin%
+    Un administrateur
+  %endif%
+  %ifreason request%
+    Quelqu'un (et nous espérons que c'est vous)
+  %endif%
+  a demandé que votre adresse e-mail <$subaddr$> soit ajoutée
+  %iftype normal%
+    à la liste. Cela signifie que chaque fois qu'un message sera envoyé à la
+    liste, vous en recevrez une copie
+  %endif%
+  %iftype digest%
+    à la liste afin d'en recevoir un résumé. Cela signifie que vous recevrez
+    plusieurs messages dans un seul e-mail, à des intervalles réguliers, ou
+    lorsque beaucoup de messages ont été accumulés.
+  %endif%
+  %iftype nomail%
+    à la liste, sans envoi des e-mails. Cela signifie que vous ne recevrez
+    aucun e-mail envoyé à la liste. Par exemple, vous pouvez envoyer un
+    message à une liste à laquelle seuls les inscrits peuvent poster, alors
+    que vous suivez la liste en utilisant une archive web ou une autre
+    adresse e-mail inscrite.
+  %endif%
+%endif%
+
+%ifaction unsub%
+%wrap%
+  %ifreason admin%
+    Un administrateur
+  %endif%
+  %ifreason request%
+    Quelqu'un (et nous espérons que c'est vous)
+  %endif%
+  a demandé à ce que l'adresse e-mail <$subaddr$> soit supprimée de la
+  liste.
+%endif%
+
+%wrap%Pour confirmer que vous voulez faire cela, veuillez envoyer un message
+à <$confaddr$> ce qui peut, habituellement, être fait facilement en
+répondant à ce message. Le sujet et le corps du message peuvent contenir
+n'importe quoi.
+
+Après cela, vous devriez recevoir un réponse vous informant du succès de
+l'opération. 
+
+Si vous ne souhaitez pas faire cela, ignorez simplement ce message.
+
