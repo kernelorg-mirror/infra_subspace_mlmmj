@@ -95,7 +95,7 @@ log_set_namef(const char *fmt, ...)
 	_openlog(true);
 }
 
-void log_free_name()
+void log_free_name(void)
 {
 	free(log_name);
 }

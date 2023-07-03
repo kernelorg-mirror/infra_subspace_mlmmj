@@ -72,7 +72,7 @@ static void print_help(const char *prg)
 	exit(EXIT_SUCCESS);
 }
 
-static int mydaemon()
+static int mydaemon(void)
 {
 	if (daemon(1, 0) != 0) {
 		log_error(LOG_ARGS, "Unable to become a daemon");

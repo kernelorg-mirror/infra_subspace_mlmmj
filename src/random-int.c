@@ -31,7 +31,7 @@
 #include "wrappers.h"
 #include "config.h"
 
-int random_int()
+int random_int(void)
 {
 #ifndef HAVE_ARC4RANDOM_UNIFORM
 	static int init = 0;

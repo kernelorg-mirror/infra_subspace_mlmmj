@@ -153,7 +153,7 @@ char *genmsgid(const char *fqdn)
 	return (buf);
 }
 
-char *gendatestr()
+char *gendatestr(void)
 {
 	time_t t;
 	locale_t l = newlocale(LC_TIME_MASK, "C", NULL);
