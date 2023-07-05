@@ -83,6 +83,62 @@ static struct ctrl_command ctrl_commands[] = {
 	{ "list",               false, true , true , CTRL_LIST }
 };
 
+struct listcontrol {
+	const char *fromemail;
+	const char *mlmmjsub;
+	bool nosubconfirm;
+};
+
+struct sub {
+	const char *typereq;
+	const char *ctrlstr;
+	const char *type;
+	const char *typedeny;
+	const char *arg;
+};
+
+static bool
+is_valid_email(const char *email, const char *log)
+{
+	if (strchr(email, '@') == NULL) {
+		errno = 0;
+		log_error(LOG_ARGS, "%s request was "
+			    " sent with an invalid From: header."
+			    " Ignoring mail", log);
+		return (false);
+	}
+	return (true);
+}
+
+static void
+lc_sub(struct listcontrol *lc, struct ml *ml, struct sub *sub)
+{
+	if (!is_valid_email(lc->fromemail, sub->typereq))
+		exit(EXIT_FAILURE);
+
+	if (statctrl(ml->ctrlfd, sub->ctrlstr)) {
+		char *queuefilename;
+		text *txt;
+		errno = 0;
+		log_error(LOG_ARGS, "%s request was denied", sub->typereq);
+		txt = open_text(ml->fd, "deny", "sub", "disabled",
+		    sub->type, sub->typedeny);
+		MY_ASSERT(txt);
+		register_default_unformatted(txt, ml);
+		register_unformatted(txt, "subaddr", lc->fromemail);
+		queuefilename = prepstdreply(txt, ml, "$listowner$",
+		    lc->fromemail, NULL);
+		MY_ASSERT(queuefilename);
+		close_text(txt);
+		send_help(ml, queuefilename, lc->fromemail);
+	}
+	log_oper(ml->fd, OPLOGFNAME, "mlmmj-sub: request for %s"
+	    " subscription from %s", sub->type, lc->fromemail);
+	exec_or_die(lc->mlmmjsub, "-L", ml->dir, "-a",
+	    lc->fromemail, sub->arg, "-r", "-c",
+	    (lc->nosubconfirm ? NULL : "-C"), NULL);
+}
+
 struct ctrl_command *
 get_ctrl_command(const char *controlstr, char **param)
 {
@@ -130,19 +186,6 @@ get_ctrl_command(const char *controlstr, char **param)
 	return (NULL);
 }
 
-static bool
-is_valid_email(const char *email, const char *log)
-{
-	if (strchr(email, '@') == NULL) {
-		errno = 0;
-		log_error(LOG_ARGS, "%s request was "
-			    " sent with an invalid From: header."
-			    " Ignoring mail", log);
-		return (false);
-	}
-	return (true);
-}
-
 int listcontrol(strlist *fromemails, struct ml *ml,
 		const char *controlstr, const char *mlmmjsub,
 		const char *mlmmjsend, const char *mailname)
@@ -152,7 +195,6 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 	char *omitfilename;
 	char *omit = NULL;
 	char *c, *archivefilename, *sendfilename, *tosend;
-	bool nosubconfirm;
 	text *txt;
 	char *queuefilename;
 	enum subtype ts = SUB_NONE;
@@ -160,8 +202,10 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 	const char *subtypename = NULL;
 	bounce_t bret;
 	struct ctrl_command *cc;
+	struct listcontrol lc = { 0 };
+	struct sub sub = { 0 };
 
-	nosubconfirm = statctrl(ml->ctrlfd, "nosubconfirm");
+	lc.nosubconfirm = statctrl(ml->ctrlfd, "nosubconfirm");
 
 #if 0
 	log_error(LOG_ARGS, "controlstr = [%s]\n", controlstr);
@@ -178,6 +222,10 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 			"which was not a bounce: %d", tll_length(*fromemails));
 		return -1;
 	}
+	
+	if (tll_length(*fromemails) >= 1)
+		lc.fromemail = tll_front(*fromemails);
+	lc.mlmmjsub = mlmmjsub;
 
 	/* We only need the control mail when bouncing, to save bounced msg */
 	if (cc->type != CTRL_BOUNCES)
@@ -200,104 +248,43 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 
 	/* listname+subscribe-digest@domain.tld */
 	case CTRL_SUBSCRIBE_DIGEST:
-		if (!is_valid_email(tll_front(*fromemails),
-		    "A subscribe-digest"))
-			return -1;
-		if (statctrl(ml->ctrlfd, "nodigestsub")) {
-			errno = 0;
-			log_error(LOG_ARGS, "A subscribe-digest request was"
-				" denied");
-			txt = open_text(ml->fd, "deny", "sub", "disabled",
-					"digest", "sub-deny-digest");
-			MY_ASSERT(txt);
-			register_default_unformatted(txt, ml);
-			register_unformatted(txt, "subaddr",
-					tll_front(*fromemails));
-			queuefilename = prepstdreply(txt, ml,
-					"$listowner$",
-					tll_front(*fromemails), NULL);
-			MY_ASSERT(queuefilename);
-			close_text(txt);
-			send_help(ml, queuefilename, tll_front(*fromemails));
-			return -1;
-		}
-		log_oper(ml->fd, OPLOGFNAME, "mlmmj-sub: request for digest"
-			" subscription from %s", tll_front(*fromemails));
-		exec_or_die(mlmmjsub, "-L", ml->dir, "-a",
-		    tll_front(*fromemails), "-d", "-r", "-c",
-		    (nosubconfirm ? NULL : "-C"), NULL);
-		break;
-
+		sub.typereq = "A subscribe-digest";
+		sub.ctrlstr = "nodigestsub";
+		sub.type = "digest";
+		sub.typedeny = "sub-deny-digest";
+		sub.arg = "-d";
+		__attribute__ ((fallthrough));
 	/* listname+subscribe-nomail@domain.tld */
 	case CTRL_SUBSCRIBE_NOMAIL:
-		if (!is_valid_email(tll_front(*fromemails),
-		    "A subscribe-nomail"))
-			return -1;
-		if (statctrl(ml->ctrlfd, "nonomailsub")) {
-			errno = 0;
-			log_error(LOG_ARGS, "A subscribe-nomail request was"
-				" denied");
-			txt = open_text(ml->fd, "deny", "sub", "disabled",
-					"nomail", "sub-deny-nomail");
-			MY_ASSERT(txt);
-			register_default_unformatted(txt, ml);
-			register_unformatted(txt, "subaddr",
-					tll_front(*fromemails));
-			queuefilename = prepstdreply(txt, ml,
-					"$listowner$",
-					tll_front(*fromemails), NULL);
-			MY_ASSERT(queuefilename);
-			close_text(txt);
-			send_help(ml, queuefilename, tll_front(*fromemails));
-			return -1;
+		if (sub.typereq == NULL) {
+			sub.typereq = "A subscribe-nomail";
+			sub.ctrlstr = "nomailsub";
+			sub.type = "nomail";
+			sub.typedeny = "sub-deny-nomail";
+			sub.arg = "-n";
 		}
-		log_oper(ml->fd, OPLOGFNAME, "mlmmj-sub: request for nomail"
-			" subscription from %s", tll_front(*fromemails));
-		exec_or_die(mlmmjsub, "-L", ml->dir, "-a",
-		    tll_front(*fromemails), "-n", "-r", "-c",
-		    (nosubconfirm ? NULL : "-C"), NULL);
-		break;
-
+		__attribute__ ((fallthrough));
 	/* listname+subscribe-both@domain.tld */
 	case CTRL_SUBSCRIBE_BOTH:
-		if (!is_valid_email(tll_front(*fromemails),
-		    "A subscribe-both"))
-			return -1;
-		if (statctrl(ml->ctrlfd, "nodigestsub")) {
-			errno = 0;
-			log_error(LOG_ARGS, "A subscribe-both request was"
-				" denied");
-			txt = open_text(ml->fd, "deny", "sub", "disabled",
-				"both", "sub-deny-digest");
-			MY_ASSERT(txt);
-			register_default_unformatted(txt, ml);
-			register_unformatted(txt, "subaddr",
-					tll_front(*fromemails));
-			queuefilename = prepstdreply(txt, ml,
-					"$listowner$",
-					tll_front(*fromemails), NULL);
-			MY_ASSERT(queuefilename);
-			close_text(txt);
-			send_help(ml, queuefilename, tll_front(*fromemails));
-			return -1;
+		if (sub.typereq == NULL) {
+			sub.typereq = "A subscribe-both";
+			sub.ctrlstr = "nodigestsub";
+			sub.type = "both";
+			sub.typedeny = "sub-deny-digest";
+			sub.arg = "-b";
 		}
-		log_oper(ml->fd, OPLOGFNAME, "mlmmj-sub: request for both"
-			" subscription from %s", tll_front(*fromemails));
-		exec_or_die(mlmmjsub, "-L", ml->dir, "-a",
-		    tll_front(*fromemails), "-b", "-r", "-c",
-		    (nosubconfirm ? NULL : "-C"), NULL);
+		lc_sub(&lc, ml, &sub);
 		break;
 
 	/* listname+subscribe@domain.tld */
 	case CTRL_SUBSCRIBE:
-		if (!is_valid_email(tll_front(*fromemails),
-		    "A subscribe"))
+		if (!is_valid_email(lc.fromemail, "A subscribe"))
 			return -1;
 		log_oper(ml->fd, OPLOGFNAME, "mlmmj-sub: request for regular"
-			" subscription from %s", tll_front(*fromemails));
+			" subscription from %s", lc.fromemail);
 		exec_or_die(mlmmjsub, "-L", ml->dir, "-a",
-		    tll_front(*fromemails), "-r", "-c",
-		    (nosubconfirm ? NULL : "-C"), NULL);
+		    lc.fromemail, "-r", "-c",
+		    (lc.nosubconfirm ? NULL : "-C"), NULL);
 		break;
 
 	/* listname+subconf-digest-COOKIE@domain.tld */
@@ -356,13 +343,12 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 	case CTRL_UNSUBSCRIBE_NOMAIL:
 	/* listname+unsubscribe@domain.tld */
 	case CTRL_UNSUBSCRIBE:
-		if (!is_valid_email(tll_front(*fromemails),
-		   "An unsubscribe"))
+		if (!is_valid_email(lc.fromemail, "An unsubscribe"))
 			return -1;
 		log_oper(ml->fd, OPLOGFNAME, "mlmmj-unsub: %s requests"
-			" unsubscribe", tll_front(*fromemails));
-		do_unsubscribe(ml, tll_front(*fromemails), SUB_ALL, SUB_REQUEST,
-		    false, !nosubconfirm, false, nosubconfirm);
+			" unsubscribe", lc.fromemail);
+		do_unsubscribe(ml, lc.fromemail, SUB_ALL, SUB_REQUEST,
+		    false, !lc.nosubconfirm, false, lc.nosubconfirm);
 		exit(EXIT_SUCCESS);
 		break;
 
@@ -461,8 +447,7 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 		free(omitfilename);
 		free(moderatefilename);
 
-		log_oper(ml->fd, OPLOGFNAME, "%s released %s",
-				tll_front(*fromemails), param);
+		log_oper(ml->fd, OPLOGFNAME, "%s released %s", lc.fromemail, param);
 
 		xasprintf(&tosend, "%s/%s", ml->dir, sendfilename);
 		if (omit != NULL)
@@ -487,8 +472,7 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 			free(moderatefilename);
 			return -1;
 		}
-		log_oper(ml->fd, OPLOGFNAME, "%s rejected %s",
-			tll_front(*fromemails), param);
+		log_oper(ml->fd, OPLOGFNAME, "%s rejected %s", lc.fromemail, param);
 		free(moderatefilename);
 		xasprintf(&moderatefilename, "moderation/%s.omit", param);
 		unlinkat(ml->fd, moderatefilename, 0);
@@ -510,7 +494,7 @@ permit:
 			return -1;
 		}
 		log_oper(ml->fd, OPLOGFNAME, "%s permitted %s",
-			tll_front(*fromemails), param);
+			lc.fromemail, param);
 		exec_or_die(mlmmjsub, "-L", ml->dir, "-m", param, "-c", NULL);
 		break;
 
