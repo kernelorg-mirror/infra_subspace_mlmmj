@@ -552,7 +552,7 @@ int main(int argc, char **argv)
 		tll_free_and_free(*listaddrs, free);
 	free(listaddrs);
 
-	if(recipextra && (strlen(recipextra) == 0)) {
+	if (recipextra && *recipextra == '\0') {
 		free(recipextra);
 		recipextra = NULL;
 	}
