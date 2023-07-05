@@ -404,7 +404,7 @@ void
 mod_get_addr_and_type(struct ml *ml, const char *modstr, char **addrptr, enum subtype *subtypeptr)
 {
 	int fd;
-	char *readaddr, *readtype, *modfilename;
+	char *readtype, *modfilename;
 	char *buf, *walk;
 
 	if (strncmp(modstr, "subscribe", 9) == 0)
@@ -422,9 +422,8 @@ mod_get_addr_and_type(struct ml *ml, const char *modstr, char **addrptr, enum su
 		log_error(LOG_ARGS, "Could not open %s/%s", ml->dir, modfilename);
 		exit(EXIT_FAILURE);
 	}
-	readaddr = xstrdup(strsep(&walk, "\n"));
+	*addrptr = xstrdup(strsep(&walk, "\n"));
 	readtype = strsep(&walk, "\n");
-	*addrptr = readaddr;
 
 	for (size_t i = 0; i < NELEM(subtypes); i++) {
 		if (subtypes[i] == NULL)
