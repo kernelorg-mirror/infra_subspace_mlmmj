@@ -373,11 +373,11 @@ static void print_help(const char *prg)
 
 int main(int argc, char **argv)
 {
-	int i, opt, noprocess = 0, moderated = 0, send = 0;
+	int i, opt, moderated = 0, send = 0;
 	enum modreason modreason;
 	int hdrfd, footfd, rawmailfd, donemailfd, omitfd;
 	bool addr_in_to_or_cc, notmetoo;
-	bool findaddress = false, intocc = false;
+	bool findaddress = false, intocc = false, noprocess = false;
 	int maxmailsize = 0;
 	bool subonlypost, modonlypost, modnonsubposts, foundaddr = false;
 	char *mailfile = NULL, *donemailname = NULL;
@@ -436,7 +436,7 @@ int main(int argc, char **argv)
 			print_help(argv[0]);
 			break;
 		case 'P':
-			noprocess = 1;
+			noprocess = true;
 			break;
 		case 'V':
 			print_version(argv[0]);
