@@ -406,6 +406,7 @@ mod_get_addr_and_type(struct ml *ml, const char *modstr, char **addrptr, enum su
 	int fd;
 	char *readtype, *modfilename;
 	char *buf, *walk;
+	size_t i;
 
 	if (strncmp(modstr, "subscribe", 9) == 0)
 			modstr += 9;
@@ -425,20 +426,21 @@ mod_get_addr_and_type(struct ml *ml, const char *modstr, char **addrptr, enum su
 	*addrptr = xstrdup(strsep(&walk, "\n"));
 	readtype = strsep(&walk, "\n");
 
-	for (size_t i = 0; i < NELEM(subtypes); i++) {
+	for (i = 0; i < NELEM(subtypes); i++) {
 		if (subtypes[i] == NULL)
 			continue;
 		if (strcmp(subtypes[i], readtype) == 0) {
 			*subtypeptr = i;
-			goto freedone;
+			break;
 		}
 	}
 
-	log_error(LOG_ARGS, "Type %s not valid in %s/%s", readtype,
-	    ml->dir, modfilename);
-	exit(EXIT_FAILURE);
+	if (i == NELEM(subtypes)) {
+		log_error(LOG_ARGS, "Type %s not valid in %s/%s", readtype,
+				ml->dir, modfilename);
+		exit(EXIT_FAILURE);
+	}
 
-freedone:
 	free(buf);
 	unlinkat(ml->fd, modfilename, 0);
 	free(modfilename);
