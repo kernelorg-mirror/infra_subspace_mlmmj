@@ -50,15 +50,7 @@
 #include "send_help.h"
 #include "xstring.h"
 
-static char *subtypes[7] = {
-	"SUB_NORMAL",
-	"SUB_DIGEST",
-	"SUB_NOMAIL",
-	NULL,
-	NULL,
-	"SUB_BOTH",
-	NULL,
-};
+extern char *subtypes[];
 
 static void moderate_sub(struct ml *ml, const char *subaddr,
 		const char *mlmmjsend, enum subtype typesub,
@@ -203,60 +195,6 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 
 	finish_memory_lines(mls);
 	send_help(ml, queuefilename, subaddr);
-}
-
-void getaddrandtype(struct ml *ml, const char *modstr,
-		char **addrptr, enum subtype *subtypeptr)
-{
-	int fd;
-	char *readaddr, *readtype, *modfilename, *line = NULL;
-	FILE *f;
-	size_t linecap = 0;
-
-	if (strncmp(modstr, "subscribe", 9) == 0)
-			modstr += 9;
-
-	xasprintf(&modfilename, "moderation/subscribe%s", modstr);
-
-	fd = openat(ml->fd, modfilename, O_RDONLY);
-	if(fd < 0) {
-		log_error(LOG_ARGS, "Could not open %s/%s", ml->dir, modfilename);
-		exit(EXIT_FAILURE);
-	}
-	f = fdopen(fd, "r");
-
-	if (getline(&line, &linecap, f) <= 0) {
-		log_error(LOG_ARGS, "Could not parse %s/%s", ml->dir, modfilename);
-		exit(EXIT_FAILURE);
-	}
-	chomp(line);
-	readaddr = xstrdup(line);
-	if (getline(&line, &linecap, f) <= 0) {
-		log_error(LOG_ARGS, "Could not parse %s/%s", ml->dir, modfilename);
-		exit(EXIT_FAILURE);
-	}
-	chomp(line);
-	readtype = xstrdup(line);
-	fclose(f);
-
-	*addrptr = readaddr;
-
-	for (size_t i = 0; i < NELEM(subtypes); i++) {
-		if (subtypes[i] == NULL)
-			continue;
-		if (strcmp(subtypes[i], readtype) == 0) {
-			*subtypeptr = i;
-			goto freedone;
-		}
-	}
-
-	log_error(LOG_ARGS, "Type %s not valid in %s/%s", readtype,
-	    ml->dir, modfilename);
-
-freedone:
-	free(readtype);
-	unlinkat(ml->fd, modfilename, 0);
-	free(modfilename);
 }
 
 static void print_help(const char *prg)
@@ -427,7 +365,7 @@ int main(int argc, char **argv)
 	}
 
 	if(modstr) {
-		getaddrandtype(&ml, modstr, &address, &typesub);
+		mod_get_addr_and_type(&ml, modstr, &address, &typesub);
 		reasonsub = SUB_PERMIT;
 	}
 
