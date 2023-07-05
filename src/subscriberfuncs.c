@@ -403,24 +403,36 @@ do_unsubscribe(struct ml *ml, const char *addr, enum subtype typesub,
 void
 mod_get_addr_and_type(struct ml *ml, const char *modstr, char **addrptr, enum subtype *subtypeptr)
 {
-	int fd;
-	char *readtype, *modfilename;
+	int fd, dfd;
+	char *readtype, *modfilename = NULL;
 	char *buf, *walk;
 	size_t i;
 
 	if (strncmp(modstr, "subscribe", 9) == 0)
 			modstr += 9;
 
-	xasprintf(&modfilename, "moderation/subscribe%s", modstr);
-
-	fd = openat(ml->fd, modfilename, O_RDONLY);
+	dfd = openat(ml->fd, "moderation/subscribe", O_DIRECTORY);
+	if (dfd != -1) {
+		fd = openat(dfd, modstr, O_RDONLY);
+	}
+	if (dfd == -1 || fd == -1) {
+		xasprintf(&modfilename, "moderation/subscribe%s", modstr);
+		fd = openat(ml->fd, modfilename, O_RDONLY);
+	}
 	if(fd < 0) {
-		log_error(LOG_ARGS, "Could not open %s/%s", ml->dir, modfilename);
+		log_error(LOG_ARGS, "Could not open "
+		    "%s/moderation/subscribe/%s nor %s/%s", ml->dir, modstr,
+		    ml->dir, modfilename);
 		exit(EXIT_FAILURE);
 	}
 	walk = buf = readlf(fd, false);
 	if (buf == NULL) {
-		log_error(LOG_ARGS, "Could not open %s/%s", ml->dir, modfilename);
+		if (modfilename == NULL)
+			log_error(LOG_ARGS, "Invalid %s/moderation/subscribe/%s",
+			    ml->dir, modstr);
+		else
+			log_error(LOG_ARGS, "Invalid %s/%s", ml->dir,
+			    modfilename);
 		exit(EXIT_FAILURE);
 	}
 	*addrptr = xstrdup(strsep(&walk, "\n"));
@@ -442,6 +454,11 @@ mod_get_addr_and_type(struct ml *ml, const char *modstr, char **addrptr, enum su
 	}
 
 	free(buf);
-	unlinkat(ml->fd, modfilename, 0);
+	if (modfilename != NULL)
+		unlinkat(ml->fd, modfilename, 0);
+	else
+		unlinkat(dfd, modstr, 0);
+	if (dfd != -1)
+		close(dfd);
 	free(modfilename);
 }

@@ -2664,6 +2664,59 @@ ATF_TC_BODY(mod_get_addr_type, tc)
 		exit(EXIT_SUCCESS);
 	}
 	atf_utils_wait(p, 1, "", "");
+
+	mkdir("moderation/subscribe", 0755);
+	atf_utils_create_file("moderation/subscribe/valid2", "user1\nSUB_BOTH\n");
+	atf_utils_create_file("moderation/subscribevalid2", "user2\nSUB_BOTH\n");
+	p = atf_utils_fork();
+	if (p == 0) {
+		struct ml ml;
+		enum subtype subtype = 0;
+		char *addr;
+		ml.fd = open(".", O_DIRECTORY);
+		mod_get_addr_and_type(&ml, "valid2", &addr, &subtype);
+		ATF_REQUIRE_STREQ(addr, "user1");
+		ATF_REQUIRE_EQ(subtype, SUB_BOTH);
+		exit(EXIT_SUCCESS);
+	}
+	atf_utils_wait(p, 0, "", "");
+
+	atf_utils_create_file("moderation/subscribevalid3", "user2\nSUB_BOTH\n");
+	p = atf_utils_fork();
+	if (p == 0) {
+		struct ml ml;
+		enum subtype subtype = 0;
+		char *addr;
+		ml.fd = open(".", O_DIRECTORY);
+		mod_get_addr_and_type(&ml, "valid3", &addr, &subtype);
+		ATF_REQUIRE_STREQ(addr, "user2");
+		ATF_REQUIRE_EQ(subtype, SUB_BOTH);
+		exit(EXIT_SUCCESS);
+	}
+	atf_utils_wait(p, 0, "", "");
+
+	p = atf_utils_fork();
+	if (p == 0) {
+		struct ml ml;
+		enum subtype subtype = 0;
+		char *addr;
+		ml.fd = open(".", O_DIRECTORY);
+		mod_get_addr_and_type(&ml, "valid4", &addr, &subtype);
+		exit(EXIT_SUCCESS);
+	}
+	atf_utils_wait(p, 1, "", "");
+
+	atf_utils_create_file("moderation/subscribe/invalid5", "");
+	p = atf_utils_fork();
+	if (p == 0) {
+		struct ml ml;
+		enum subtype subtype = 0;
+		char *addr;
+		ml.fd = open(".", O_DIRECTORY);
+		mod_get_addr_and_type(&ml, "invalid5", &addr, &subtype);
+		exit(EXIT_SUCCESS);
+	}
+	atf_utils_wait(p, 1, "", "");
 }
 
 ATF_TP_ADD_TCS(tp)

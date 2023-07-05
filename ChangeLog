@@ -1,3 +1,6 @@
+1.4.0-b2
+ o moderation cookie for subscription is now under the sub directory
+   moderation/subscribe
 1.4.0-b1
  o manpage converted from man(7) to mdoc(7)
  o Fix a potential crash with mail without separator between headers and body
