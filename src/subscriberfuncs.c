@@ -155,9 +155,7 @@ char *
 get_subcookie_content(int listfd, bool unsub, const char *param)
 {
 	int dfd, fd;
-	FILE *f;
 	char *line = NULL;
-	size_t linecap = 0;
 
 	dfd = openat(listfd, unsub ? "unsubconf" : "subconf", O_DIRECTORY|O_CLOEXEC);
 	if (dfd == -1) {
@@ -169,18 +167,12 @@ get_subcookie_content(int listfd, bool unsub, const char *param)
 		close(dfd);
 		return (NULL);
 	}
-	f = fdopen(fd, "r");
-	if (getline(&line, &linecap, f) > 0) {
-		chomp(line);
-		fclose(f);
+	line = readlf(fd, true);
+	if (line != NULL)
 		unlinkat(dfd, param, 0);
-		close(dfd);
-		return (line);
-	}
 	close(dfd);
-	fclose(f);
 
-	return (NULL);
+	return (line);
 }
 
 void
