@@ -150,6 +150,7 @@ ATF_TC_WITHOUT_HEAD(send_help);
 ATF_TC_WITHOUT_HEAD(requeuemail);
 ATF_TC_WITHOUT_HEAD(gethdrline);
 ATF_TC_WITHOUT_HEAD(readlf);
+ATF_TC_WITHOUT_HEAD(mod_get_addr_type);
 
 ATF_TC_BODY(random_int, tc)
 {
@@ -2601,6 +2602,70 @@ ATF_TC_BODY(readlf, tc)
 	ATF_REQUIRE(readlf(-1, true) == NULL);
 }
 
+ATF_TC_BODY(mod_get_addr_type, tc)
+{
+	mkdir("moderation/", 0775);
+	atf_utils_create_file("moderation/subscribeinvalid", "");
+	atf_utils_create_file("moderation/subscribevalid", "user\nSUB_BOTH\n");
+	atf_utils_create_file("moderation/subscribeinvalid2", "user\n");
+	atf_utils_create_file("moderation/subscribeinvalid3", "user\ninvalid3\n");
+
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		struct ml ml;
+		enum subtype subtype;
+		char *addr;
+		ml.fd = open(".", O_DIRECTORY);
+		mod_get_addr_and_type(&ml, "modstr", &addr, &subtype);
+	}
+	atf_utils_wait(p, 1, "", "");
+
+	p = atf_utils_fork();
+	if (p == 0) {
+		struct ml ml;
+		enum subtype subtype;
+		char *addr;
+		ml.fd = open(".", O_DIRECTORY);
+		mod_get_addr_and_type(&ml, "invalid", &addr, &subtype);
+	}
+	atf_utils_wait(p, 1, "", "");
+
+	p = atf_utils_fork();
+	if (p == 0) {
+		struct ml ml;
+		enum subtype subtype = 0;
+		char *addr;
+		ml.fd = open(".", O_DIRECTORY);
+		mod_get_addr_and_type(&ml, "subscribevalid", &addr, &subtype);
+		ATF_REQUIRE_STREQ(addr, "user");
+		ATF_REQUIRE_EQ(subtype, SUB_BOTH);
+		exit(EXIT_SUCCESS);
+	}
+	atf_utils_wait(p, 0, "", "");
+
+	p = atf_utils_fork();
+	if (p == 0) {
+		struct ml ml;
+		enum subtype subtype = 0;
+		char *addr;
+		ml.fd = open(".", O_DIRECTORY);
+		mod_get_addr_and_type(&ml, "subscribeinvalid2", &addr, &subtype);
+		exit(EXIT_SUCCESS);
+	}
+	atf_utils_wait(p, 1, "", "");
+
+	p = atf_utils_fork();
+	if (p == 0) {
+		struct ml ml;
+		enum subtype subtype = 0;
+		char *addr;
+		ml.fd = open(".", O_DIRECTORY);
+		mod_get_addr_and_type(&ml, "subscribeinvalid3", &addr, &subtype);
+		exit(EXIT_SUCCESS);
+	}
+	atf_utils_wait(p, 1, "", "");
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -2685,6 +2750,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, requeuemail);
 	ATF_TP_ADD_TC(tp, gethdrline);
 	ATF_TP_ADD_TC(tp, readlf);
+	ATF_TP_ADD_TC(tp, mod_get_addr_type);
 
 	return (atf_no_error());
 }

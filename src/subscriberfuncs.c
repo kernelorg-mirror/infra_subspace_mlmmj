@@ -412,9 +412,8 @@ void
 mod_get_addr_and_type(struct ml *ml, const char *modstr, char **addrptr, enum subtype *subtypeptr)
 {
 	int fd;
-	char *readaddr, *readtype, *modfilename, *line = NULL;
-	FILE *f;
-	size_t linecap = 0;
+	char *readaddr, *readtype, *modfilename;
+	char *buf, *walk;
 
 	if (strncmp(modstr, "subscribe", 9) == 0)
 			modstr += 9;
@@ -426,22 +425,13 @@ mod_get_addr_and_type(struct ml *ml, const char *modstr, char **addrptr, enum su
 		log_error(LOG_ARGS, "Could not open %s/%s", ml->dir, modfilename);
 		exit(EXIT_FAILURE);
 	}
-	f = fdopen(fd, "r");
-
-	if (getline(&line, &linecap, f) <= 0) {
-		log_error(LOG_ARGS, "Could not parse %s/%s", ml->dir, modfilename);
+	walk = buf = readlf(fd, false);
+	if (buf == NULL) {
+		log_error(LOG_ARGS, "Could not open %s/%s", ml->dir, modfilename);
 		exit(EXIT_FAILURE);
 	}
-	chomp(line);
-	readaddr = xstrdup(line);
-	if (getline(&line, &linecap, f) <= 0) {
-		log_error(LOG_ARGS, "Could not parse %s/%s", ml->dir, modfilename);
-		exit(EXIT_FAILURE);
-	}
-	chomp(line);
-	readtype = xstrdup(line);
-	fclose(f);
-
+	readaddr = xstrdup(strsep(&walk, "\n"));
+	readtype = strsep(&walk, "\n");
 	*addrptr = readaddr;
 
 	for (size_t i = 0; i < NELEM(subtypes); i++) {
@@ -455,9 +445,10 @@ mod_get_addr_and_type(struct ml *ml, const char *modstr, char **addrptr, enum su
 
 	log_error(LOG_ARGS, "Type %s not valid in %s/%s", readtype,
 	    ml->dir, modfilename);
+	exit(EXIT_FAILURE);
 
 freedone:
-	free(readtype);
+	free(buf);
 	unlinkat(ml->fd, modfilename, 0);
 	free(modfilename);
 }
