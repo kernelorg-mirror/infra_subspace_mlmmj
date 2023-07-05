@@ -295,3 +295,16 @@ addrmatch(const char *listaddr, const char *addr,
 
 	return (true);
 }
+
+bool
+find_email(strlist *list, strlist *matches, const char *delim, char **recipextra)
+{
+	tll_foreach(*list, lit) {
+		tll_foreach(*matches, mit) {
+			if (addrmatch(mit->item, lit->item, delim, recipextra))
+				return true;
+		}
+	}
+	return false;
+}
+

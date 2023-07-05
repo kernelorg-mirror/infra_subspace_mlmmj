@@ -29,6 +29,8 @@
 #include <time.h>
 #include <fcntl.h>
 
+#include "mlmmj.h"
+
 char *lowercase(const char *);
 intmax_t strtoim(const char *np, intmax_t minval, intmax_t maxval,
     const char **errpp);
@@ -37,3 +39,4 @@ void exec_or_die(const char *arg, ...);
 int exec_and_wait(const char *arg, ...);
 time_t strtotimet(const char *np, const char **errpp);
 bool lock(int fd, bool write);
+bool find_email(strlist *list, strlist *matches, const char *delim, char **recipextra);

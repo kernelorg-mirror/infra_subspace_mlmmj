@@ -538,39 +538,15 @@ int main(int argc, char **argv)
 			log_error(LOG_ARGS, "list address is not defined");
 			err(EXIT_FAILURE, "list address is not defined");
 		}
-		tll_foreach(dtemails, it) {
-			tll_foreach(*listaddrs, la) {
-				if (addrmatch(la->item, it->item,
-				    ml.delim,
-				    recipextra != NULL ? NULL : &recipextra)) {
-					findaddress = 0;
-					break;
-				}
-			}
-		}
+		findaddress = !find_email(&dtemails, listaddrs, ml.delim,
+		    recipextra != NULL ? NULL : &recipextra);
 	}
 	if(addr_in_to_or_cc || findaddress) {
-		tll_foreach(toemails, it) {
-			tll_foreach(*listaddrs, la) {
-				if(addrmatch(la->item, it->item,
-				ml.delim,
-				recipextra != NULL ? NULL : &recipextra)) {
-					intocc = true;
-					break;
-				}
-			}
-		}
+		intocc = find_email(&toemails, listaddrs, ml.delim,
+		    recipextra != NULL ? NULL : &recipextra);
 		if (!intocc)
-			tll_foreach(ccemails, it) {
-				tll_foreach(*listaddrs, la) {
-					if(addrmatch(la->item, it->item,
-						ml.delim,
-					   recipextra != NULL ? NULL : &recipextra)) {
-						intocc = true;
-						break;
-					}
-				}
-			}
+			intocc = find_email(&ccemails, listaddrs, ml.delim,
+			    recipextra != NULL ? NULL : &recipextra);
 	}
 	if (listaddrs)
 		tll_free_and_free(*listaddrs, free);
