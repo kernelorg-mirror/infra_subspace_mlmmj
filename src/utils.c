@@ -35,6 +35,7 @@
 #include "xmalloc.h"
 #include "utils.h"
 #include "getlistdelim.h"
+#include "chomp.h"
 
 extern char **environ;
 
@@ -308,3 +309,31 @@ find_email(strlist *list, strlist *matches, const char *delim, char **recipextra
 	return false;
 }
 
+char *
+readlf(int fd, bool oneline)
+{
+	FILE *fp;
+	size_t bufcap = 0;
+	ssize_t buflen;
+	char *buf = NULL;
+
+	fp = fdopen(fd, "r");
+	if (fp == NULL) {
+		close(fd);
+		return (NULL);
+	}
+
+	if (oneline) {
+		buflen = getline(&buf, &bufcap, fp);
+		if (buflen > 0)
+			chomp(buf);
+	} else {
+		buflen = getdelim(&buf, &bufcap, EOF, fp);
+	}
+	fclose(fp);
+	if (buflen < 0) {
+		free(buf);
+		buf = NULL;
+	}
+	return (buf);
+}

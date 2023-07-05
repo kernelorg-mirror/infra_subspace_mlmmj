@@ -40,3 +40,4 @@ int exec_and_wait(const char *arg, ...);
 time_t strtotimet(const char *np, const char **errpp);
 bool lock(int fd, bool write);
 bool find_email(strlist *list, strlist *matches, const char *delim, char **recipextra);
+char *readlf(int fd, bool online);

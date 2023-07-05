@@ -149,6 +149,7 @@ ATF_TC_WITHOUT_HEAD(listcontrol);
 ATF_TC_WITHOUT_HEAD(send_help);
 ATF_TC_WITHOUT_HEAD(requeuemail);
 ATF_TC_WITHOUT_HEAD(gethdrline);
+ATF_TC_WITHOUT_HEAD(readlf);
 
 ATF_TC_BODY(random_int, tc)
 {
@@ -2595,6 +2596,11 @@ ATF_TC_BODY(gethdrline, tc)
 	fclose(f);
 }
 
+ATF_TC_BODY(readlf, tc)
+{
+	ATF_REQUIRE(readlf(-1, true) == NULL);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -2678,6 +2684,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, send_help);
 	ATF_TP_ADD_TC(tp, requeuemail);
 	ATF_TP_ADD_TC(tp, gethdrline);
+	ATF_TP_ADD_TC(tp, readlf);
 
 	return (atf_no_error());
 }

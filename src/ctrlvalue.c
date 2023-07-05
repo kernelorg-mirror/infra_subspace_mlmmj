@@ -36,10 +36,6 @@ static char *
 ctrlval(int ctrlfd, const char *ctrlstr, int oneline)
 {
 	int fd;
-	FILE *fp;
-	size_t bufcap = 0;
-	ssize_t buflen;
-	char *buf = NULL;
 
 	if(ctrlfd < 0)
 		return NULL;
@@ -48,26 +44,7 @@ ctrlval(int ctrlfd, const char *ctrlstr, int oneline)
 	if (fd == -1)
 		return (NULL);
 
-	fp = fdopen(fd, "r");
-	if (fp == NULL) {
-		close(ctrlfd);
-		return (NULL);
-	}
-
-	if (oneline) {
-		buflen = getline(&buf, &bufcap, fp);
-		if (buflen > 0)
-			chomp(buf);
-	} else {
-		buflen = getdelim(&buf, &bufcap, EOF, fp);
-	}
-	fclose(fp);
-	if (buflen < 0) {
-		free(buf);
-		buf = NULL;
-	}
-
-	return (buf);
+	return (readlf(fd, oneline));
 }
 
 char *
