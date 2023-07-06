@@ -26,7 +26,6 @@
 #include <unistd.h>
 
 #include "xmalloc.h"
-#include "mygetline.h"
 #include "gethdrline.h"
 #include "strgen.h"
 #include "wrappers.h"

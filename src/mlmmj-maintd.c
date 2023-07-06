@@ -503,8 +503,7 @@ unsub_bouncers(int dfd, int ctrlfd, int logfd)
 			ret = false;
 			continue;
 		}
-		firstbounce = mygetline(fd);
-		close(fd);
+		firstbounce = readlf(fd, true);
 		if(firstbounce == NULL)
 			continue;
 
@@ -591,8 +590,7 @@ run_digests(struct ml *ml, const char *mlmmjsend, int logfd)
 		close(fd);
 		return (false);
 	}
-	s2 = mygetline(indexfd);
-	close(indexfd);
+	s2 = readlf(indexfd, true);
 	if (!s2) {
 		/* If we don't have an index, no mails have been sent to the
 		 * list, and therefore we don't need to send a digest */
@@ -600,7 +598,6 @@ run_digests(struct ml *ml, const char *mlmmjsend, int logfd)
 		close(fd);
 		return (true);
 	}
-	chomp(s2);
 	index = strtoim(s2, 0, LONG_MAX, &errstr);
 	if (errstr != NULL) {
 		log(" - Invalid index content '%s': %s\n", s2, errstr);
