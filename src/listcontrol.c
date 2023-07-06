@@ -85,8 +85,8 @@ static struct ctrl_command ctrl_commands[] = {
 
 struct listcontrol {
 	const char *fromemail;
-	const char *mlmmjsub;
-	bool nosubconfirm;
+	const char *mlmmjsend;
+	bool subconfirm;
 };
 
 struct sub {
@@ -94,7 +94,7 @@ struct sub {
 	const char *ctrlstr;
 	const char *type;
 	const char *typedeny;
-	const char *arg;
+	enum subtype typesub;
 };
 
 static bool
@@ -116,7 +116,7 @@ lc_sub(struct listcontrol *lc, struct ml *ml, struct sub *sub)
 	if (!is_valid_email(lc->fromemail, sub->typereq))
 		exit(EXIT_FAILURE);
 
-	if (statctrl(ml->ctrlfd, sub->ctrlstr)) {
+	if (sub->ctrlstr != NULL && statctrl(ml->ctrlfd, sub->ctrlstr)) {
 		char *queuefilename;
 		text *txt;
 		errno = 0;
@@ -134,9 +134,13 @@ lc_sub(struct listcontrol *lc, struct ml *ml, struct sub *sub)
 	}
 	log_oper(ml->fd, OPLOGFNAME, "mlmmj-sub: request for %s"
 	    " subscription from %s", sub->type, lc->fromemail);
-	exec_or_die(lc->mlmmjsub, "-L", ml->dir, "-a",
-	    lc->fromemail, sub->arg, "-r", "-c",
-	    (lc->nosubconfirm ? NULL : "-C"), NULL);
+	struct subscription subc = { 0 };
+	subc.subconfirm = lc->subconfirm;
+	subc.send_welcome_email = true;
+	subc.reasonsub = SUB_REQUEST;
+	subc.typesub = sub->typesub;
+	subc.gensubscribed = true;
+	exit(do_subscribe(ml, &subc, lc->fromemail) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
 struct ctrl_command *
@@ -186,9 +190,8 @@ get_ctrl_command(const char *controlstr, char **param)
 	return (NULL);
 }
 
-int listcontrol(strlist *fromemails, struct ml *ml,
-		const char *controlstr, const char *mlmmjsub,
-		const char *mlmmjsend, const char *mailname)
+int listcontrol(strlist *fromemails, struct ml *ml, const char *controlstr,
+    const char *mlmmjsend, const char *mailname)
 {
 	char *bouncenr, *tmpstr;
 	char *param = NULL, *moderatefilename, *gatekeepfilename;
@@ -198,14 +201,14 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 	text *txt;
 	char *queuefilename;
 	enum subtype ts = SUB_NONE;
-	const char *subtype = NULL;
 	const char *subtypename = NULL;
 	bounce_t bret;
 	struct ctrl_command *cc;
 	struct listcontrol lc = { 0 };
 	struct sub sub = { 0 };
+	struct subscription subc = { 0 };
 
-	lc.nosubconfirm = statctrl(ml->ctrlfd, "nosubconfirm");
+	lc.subconfirm = !statctrl(ml->ctrlfd, "nosubconfirm");
 
 #if 0
 	log_error(LOG_ARGS, "controlstr = [%s]\n", controlstr);
@@ -225,7 +228,7 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 	
 	if (tll_length(*fromemails) >= 1)
 		lc.fromemail = tll_front(*fromemails);
-	lc.mlmmjsub = mlmmjsub;
+	lc.mlmmjsend = mlmmjsend;
 
 	/* We only need the control mail when bouncing, to save bounced msg */
 	if (cc->type != CTRL_BOUNCES)
@@ -251,17 +254,17 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 		sub.typereq = "A subscribe-digest";
 		sub.ctrlstr = "nodigestsub";
 		sub.type = "digest";
+		sub.typesub = SUB_DIGEST;
 		sub.typedeny = "sub-deny-digest";
-		sub.arg = "-d";
 		__attribute__ ((fallthrough));
 	/* listname+subscribe-nomail@domain.tld */
 	case CTRL_SUBSCRIBE_NOMAIL:
 		if (sub.typereq == NULL) {
 			sub.typereq = "A subscribe-nomail";
 			sub.ctrlstr = "nomailsub";
+			sub.typesub = SUB_NOMAIL;
 			sub.type = "nomail";
 			sub.typedeny = "sub-deny-nomail";
-			sub.arg = "-n";
 		}
 		__attribute__ ((fallthrough));
 	/* listname+subscribe-both@domain.tld */
@@ -269,59 +272,47 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 		if (sub.typereq == NULL) {
 			sub.typereq = "A subscribe-both";
 			sub.ctrlstr = "nodigestsub";
+			sub.typesub = SUB_BOTH;
 			sub.type = "both";
 			sub.typedeny = "sub-deny-digest";
-			sub.arg = "-b";
+		}
+		__attribute__ ((fallthrough));
+	/* listname+subscribe@domain.tld */
+	case CTRL_SUBSCRIBE:
+		if (sub.typereq == NULL) {
+			sub.typereq = "A subcribe";
+			sub.ctrlstr = NULL;
+			sub.type = "regular";
+			sub.typesub = SUB_NORMAL;
 		}
 		lc_sub(&lc, ml, &sub);
 		break;
 
-	/* listname+subscribe@domain.tld */
-	case CTRL_SUBSCRIBE:
-		if (!is_valid_email(lc.fromemail, "A subscribe"))
-			return -1;
-		log_oper(ml->fd, OPLOGFNAME, "mlmmj-sub: request for regular"
-			" subscription from %s", lc.fromemail);
-		exec_or_die(mlmmjsub, "-L", ml->dir, "-a",
-		    lc.fromemail, "-r", "-c",
-		    (lc.nosubconfirm ? NULL : "-C"), NULL);
-		break;
-
 	/* listname+subconf-digest-COOKIE@domain.tld */
 	case CTRL_CONFSUB_DIGEST:
-		subtype = "-d";
+		subc.typesub = SUB_DIGEST;
 		subtypename = "digest";
 		__attribute__ ((fallthrough));
 	/* listname+subconf-nomail-COOKIE@domain.tld */
 	case CTRL_CONFSUB_NOMAIL:
-		if (subtype == NULL) {
-			subtype = "-n";
+		if (subtypename == NULL) {
+			subc.typesub = SUB_NOMAIL;
 			subtypename = "nomail";
 		}
 		__attribute__ ((fallthrough));
 	/* listname+subconf-both-COOKIE@domain.tld */
 	case CTRL_CONFSUB_BOTH:
-		if (subtype == NULL) {
-			subtype = "-b";
+		if (subtypename == NULL) {
+			subc.typesub = SUB_BOTH;
 			subtypename = "both";
 		}
-		tmpstr = get_subcookie_content(ml->fd, false, param);
-		if (tmpstr == NULL) {
-			/* invalid COOKIE */
-			errno = 0;
-			log_error(LOG_ARGS, "A subconf request was"
-				" sent with a mismatching cookie."
-				" Ignoring mail");
-			return -1;
-		}
-		log_oper(ml->fd, OPLOGFNAME, "mlmmj-sub: %s confirmed"
-			" subscription to %s", tmpstr, subtypename);
-		exec_or_die(mlmmjsub, "-L", ml->dir, "-a", tmpstr, subtype,
-		    "-R", "-c", NULL);
-		break;
-
+		__attribute__ ((fallthrough));
 	/* listname+subconf-COOKIE@domain.tld */
 	case CTRL_CONFSUB:
+		if (subtypename == NULL) {
+			subc.typesub = SUB_NORMAL;
+			subtypename = "regular list";
+		}
 		tmpstr = get_subcookie_content(ml->fd, false, param);
 		if (tmpstr == NULL) {
 			/* invalid COOKIE */
@@ -331,11 +322,13 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 				" Ignoring mail");
 			return -1;
 		}
+		subc.send_welcome_email = true;
+		subc.reasonsub = SUB_CONFIRM;
+		subc.gensubscribed = true;
+		subc.mlmmjsend = lc.mlmmjsend;
 		log_oper(ml->fd, OPLOGFNAME, "mlmmj-sub: %s confirmed"
-			" subscription to regular list", tmpstr);
-		exec_or_die(mlmmjsub, "-L", ml->dir, "-a", tmpstr,
-		    "-R", "-c", NULL);
-		break;
+			" subscription to %s", tmpstr, subtypename);
+		exit(do_subscribe(ml, &subc, tmpstr) ? EXIT_SUCCESS : EXIT_FAILURE);
 
 	/* DEPRECATED: listname+unsubscribe-digest@domain.tld */
 	case CTRL_UNSUBSCRIBE_DIGEST:
@@ -348,7 +341,7 @@ int listcontrol(strlist *fromemails, struct ml *ml,
 		log_oper(ml->fd, OPLOGFNAME, "mlmmj-unsub: %s requests"
 			" unsubscribe", lc.fromemail);
 		do_unsubscribe(ml, lc.fromemail, SUB_ALL, SUB_REQUEST,
-		    false, !lc.nosubconfirm, false, lc.nosubconfirm);
+		    false, lc.subconfirm, false, lc.subconfirm);
 		exit(EXIT_SUCCESS);
 		break;
 
@@ -495,7 +488,12 @@ permit:
 		}
 		log_oper(ml->fd, OPLOGFNAME, "%s permitted %s",
 			lc.fromemail, param);
-		exec_or_die(mlmmjsub, "-L", ml->dir, "-m", param, "-c", NULL);
+		subc.modstr = param;
+		subc.send_welcome_email = true;
+		subc.gensubscribed = true;
+		subc.reasonsub = SUB_PERMIT;
+		subc.mlmmjsend = lc.mlmmjsend;
+		exit(do_subscribe(ml, &subc, tmpstr) ? EXIT_SUCCESS : EXIT_FAILURE);
 		break;
 
 	/* listname+obstruct-COOKIE@domain.tld */

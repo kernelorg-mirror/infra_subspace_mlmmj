@@ -22,12 +22,14 @@
  */
 
 #include <sys/stat.h>
+#include <sys/wait.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <err.h>
 
 #include "mlmmj.h"
 #include "subscriberfuncs.h"
@@ -40,6 +42,8 @@
 #include "strgen.h"
 #include "send_help.h"
 #include "statctrl.h"
+#include "xstring.h"
+#include "ctrlvalues.h"
 
 char *subtype_strs[] = {
 	"normal",
@@ -461,4 +465,260 @@ mod_get_addr_and_type(struct ml *ml, const char *modstr, char **addrptr, enum su
 	if (dfd != -1)
 		close(dfd);
 	free(modfilename);
+}
+
+static void moderate_sub(struct ml *ml, const char *subaddr,
+    struct subscription *sub)
+{
+	int fd, status;
+	text *txt;
+	memory_lines_state *mls;
+	char *a = NULL, *queuefilename, *from;
+	char *modfilename, *mods, *to, *replyto, *moderators = NULL;
+	char *cookie, *obstruct;
+	strlist *submods;
+	const char *type;
+	pid_t childpid, pid;
+	xstring *str = NULL;
+	int modfd = -1;
+
+	type = subtypes[sub->typesub];
+
+	for (;;) {
+		cookie = random_str();
+		xasprintf(&modfilename, "moderation/subscribe%s", cookie);
+		fd = openat(ml->fd, modfilename, O_RDWR|O_CREAT|O_EXCL,
+		    S_IRUSR|S_IWUSR);
+		if (fd < 0) {
+			if (errno == EEXIST) {
+				free(cookie);
+				free(modfilename);
+				continue;
+			}
+			log_error(LOG_ARGS, "could not create %s"
+					"ignoring request for: %s", subaddr);
+			exit(EXIT_FAILURE);
+		}
+		break;
+	}
+
+	if (dprintf(fd, "%s\n%s\n", subaddr, type) < 0) {
+		log_error(LOG_ARGS, "could not write to %s"
+				"ignoring request for: %s", subaddr);
+		exit(EXIT_FAILURE);
+	}
+	close(fd);
+
+	submods = ctrlvalues(ml->ctrlfd, "submod");
+	if (submods == NULL)
+		return;
+	/* check to see if there's adresses in the submod control file */
+	tll_foreach(*submods, it)
+		a = strchr(it->item, '@');
+
+	/* no addresses in submod control file, use owner */
+	if(a == NULL) {
+		/* free the submods struct from above */
+		tll_free_and_free(*submods, free);
+		free(submods);
+		submods = ctrlvalues(ml->ctrlfd, "owner");
+		modfd = openat(ml->ctrlfd, "owner", O_RDONLY);
+	}
+	if (modfd == -1)
+		modfd = openat(ml->ctrlfd, "submod", O_RDONLY);
+
+	gen_addr(from, ml, "owner");
+	xasprintf(&to, "%s-moderators@%s", ml->name, ml->fqdn);
+	gen_addr_cookie(replyto, ml, "permit-", cookie);
+	gen_addr_cookie(obstruct, ml, "obstruct-", cookie);
+	free(cookie);
+	tll_foreach(*submods, sm) {
+		if (str == NULL)
+			str = xstring_new();
+		fprintf(str->fp, "%s\n", sm->item);
+	}
+	moderators = xstring_get(str);
+	mls = init_memory_lines(moderators);
+	free(moderators);
+
+	txt = open_text(ml->fd,
+			"gatekeep", "sub",
+			subreason_strs[sub->reasonsub], subtype_strs[sub->typesub],
+			"submod-moderator");
+	MY_ASSERT(txt);
+	register_default_unformatted(txt, ml);
+	register_unformatted(txt, "subaddr", subaddr);
+	register_unformatted(txt, "moderateaddr", replyto); /* DEPRECATED */
+	register_unformatted(txt, "permitaddr", replyto);
+	register_unformatted(txt, "obstructaddr", obstruct);
+	register_unformatted(txt, "moderators", "%gatekeepers%"); /* DEPRECATED */
+	register_formatted(txt, "gatekeepers",
+			rewind_memory_lines, get_memory_line, mls);
+	queuefilename = prepstdreply(txt, ml, "$listowner$", to, replyto);
+	MY_ASSERT(queuefilename);
+	close_text(txt);
+	
+	/* we might need to exec more than one mlmmj-send */
+
+	if (statctrl(ml->ctrlfd, "nosubmodmails"))
+		childpid = -1;
+	else {
+		childpid = fork();
+		if(childpid < 0)
+			log_error(LOG_ARGS, "Could not fork; requester not notified");
+	}
+
+	if(childpid != 0) {
+		if(childpid > 0) {
+			do /* Parent waits for the child */
+				pid = waitpid(childpid, &status, 0);
+			while(pid == -1 && errno == EINTR);
+		}
+		finish_memory_lines(mls);
+		xasprintf(&mods, "%d", modfd);
+		execl(sub->mlmmjsend, sub->mlmmjsend,
+				"-a",
+				"-l", "4",
+				"-L", ml->dir,
+				"-s", mods,
+				"-F", from,
+				"-R", replyto,
+				"-m", queuefilename, (char *)NULL);
+		log_error(LOG_ARGS, "execl() of '%s' failed", sub->mlmmjsend);
+		exit(EXIT_FAILURE);
+	}
+
+	free(to);
+	free(replyto);
+	
+	/* send mail to requester that the list is submod'ed */
+
+	txt = open_text(ml->fd,
+			"wait", "sub",
+			subreason_strs[sub->reasonsub], subtype_strs[sub->typesub],
+			"submod-requester");
+	MY_ASSERT(txt);
+	register_default_unformatted(txt, ml);
+	register_unformatted(txt, "subaddr", subaddr);
+	register_unformatted(txt, "moderators", "%gatekeepers"); /* DEPRECATED */
+	register_formatted(txt, "gatekeepers",
+			rewind_memory_lines, get_memory_line, mls);
+	queuefilename = prepstdreply(txt, ml, "$listowner$", subaddr, NULL);
+	MY_ASSERT(queuefilename);
+	close_text(txt);
+
+	finish_memory_lines(mls);
+	send_help(ml, queuefilename, subaddr);
+}
+
+static void
+subscribe_type(int listfd, char *address, enum subtype typesub)
+{
+	int dirfd;;
+	char chstr[2];
+	const char *subdir;
+	int groupwritable = 0, subfilefd;
+	struct stat st;
+
+	dirfd = open_subscriber_directory(listfd, typesub, &subdir);
+	if (dirfd == -1)
+		err(EXIT_FAILURE, "cannot open(%s)", subdir);
+	if (fstat(dirfd, &st) == 0) {
+		if(st.st_mode & S_IWGRP) {
+			groupwritable = S_IRGRP|S_IWGRP;
+			umask(S_IWOTH);
+			setgid(st.st_gid);
+		}
+	}
+
+	chstr[0] = address[0];
+	chstr[1] = '\0';
+
+	subfilefd = openat(dirfd, chstr, O_RDWR|O_CREAT|O_APPEND,
+				S_IRUSR|S_IWUSR|groupwritable);
+	if(subfilefd == -1 && !lock(subfilefd, true)) {
+		log_error(LOG_ARGS, "Could not open '%s/%s'", subdir, chstr);
+		exit(EXIT_FAILURE);
+	}
+
+	dprintf(subfilefd, "%s\n", address);
+	close(dirfd);
+	close(subfilefd);
+}
+
+bool
+do_subscribe(struct ml *ml, struct subscription *sub, const char *addr)
+{
+	char *address = NULL;
+	enum subtype subbed;
+
+	if (addr != NULL)
+		address = lowercase(addr);
+
+	if (sub->modstr != NULL) {
+		mod_get_addr_and_type(ml, sub->modstr, &address, &sub->typesub);
+		sub->reasonsub = SUB_PERMIT;
+	}
+
+	if(strncasecmp(ml->addr, address, strlen(ml->addr)) == 0)
+		errx(EXIT_FAILURE, "Cannot subscribe the list address to the list");
+
+	subbed = is_subbed(ml->fd, address, 1);
+
+	if (subbed == sub->typesub) {
+		if (sub->gensubscribed)
+			generate_subscription(ml, address, sub->typesub, true);
+		free(address);
+		return (true);
+	}
+	if (subbed != SUB_NONE) {
+		sub->reasonsub = SUB_SWITCH;
+		/* If we want to subscribe to both, we can just subscribe the
+		 * missing version, so don't unsub-> */
+		if (!(sub->typesub == SUB_BOTH &&
+				subbed != SUB_NOMAIL)) {
+			enum subtype ts = SUB_ALL;
+			if (subbed == SUB_BOTH) {
+				if (sub->typesub == SUB_NORMAL) ts = SUB_DIGEST;
+				if (sub->typesub == SUB_DIGEST) ts = SUB_NORMAL;
+			}
+			if (!unsubscribe(ml->fd, address, ts))
+				log_error(LOG_ARGS, "not unsubscribed from "
+				    "current version");
+		}
+	}
+
+	if (subbed == SUB_NONE && sub->subconfirm)
+		generate_subconfirm(ml, address, sub->typesub, sub->reasonsub,
+		    true);
+
+	if(sub->modstr == NULL && subbed == SUB_NONE && !sub->force &&
+			statctrl(ml->ctrlfd, "submod")) {
+		moderate_sub(ml, address, sub);
+	}
+
+	if (sub->typesub == SUB_BOTH) {
+		if (subbed != SUB_NORMAL) {
+			subscribe_type(ml->fd, address, SUB_NORMAL);
+		}
+		if (subbed != SUB_DIGEST) {
+			subscribe_type(ml->fd, address, SUB_DIGEST);
+		}
+	} else if (!(subbed == SUB_BOTH && sub->typesub != SUB_NOMAIL)) {
+		subscribe_type(ml->fd, address, sub->typesub);
+	}
+
+	if (sub->send_welcome_email)
+		send_confirmation_mail(ml, address, sub->typesub,
+		    sub->reasonsub, true);
+
+	bool notifysub = !sub->quiet && sub->reasonsub != SUB_SWITCH &&
+			statctrl(ml->ctrlfd, "notifysub");
+
+	/* Notify list owner about subscription */
+	if (notifysub)
+		notify_sub(ml, address, sub->typesub, sub->reasonsub, true);
+
+	free(address);
+	return (true);
 }

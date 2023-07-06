@@ -382,7 +382,7 @@ int main(int argc, char **argv)
 	bool subonlypost, modonlypost, modnonsubposts, foundaddr = false;
 	char *mailfile = NULL, *donemailname = NULL;
 	char *randomstr = NULL, *mqueuename, *omitfilename;
-	char *mlmmjsend, *mlmmjsub;
+	char *mlmmjsend;
 	char *bindir, *subjectprefix, *discardname;
 	text *txt;
 	char *queuefilename, *recipextra = NULL, *owner = NULL;
@@ -421,7 +421,6 @@ int main(int argc, char **argv)
 
 	bindir = mydirname(argv[0]);
 	xasprintf(&mlmmjsend, "%s/mlmmj-send", bindir);
-	xasprintf(&mlmmjsub, "%s/mlmmj-sub", bindir);
 	free(bindir);
 
 	while ((opt = getopt(argc, argv, "hVPm:L:")) != -1) {
@@ -658,7 +657,7 @@ int main(int argc, char **argv)
 		else
 			testfrom = &fromemails;
 		listcontrol(testfrom, &ml, recipextra,
-			    mlmmjsub, mlmmjsend, donemailname);
+			    mlmmjsend, donemailname);
 
 		return EXIT_SUCCESS;
 	}

@@ -25,6 +25,18 @@
 
 #include <stdbool.h>
 
+struct subscription {
+	bool send_welcome_email;
+	const char *modstr;
+	enum subreason reasonsub;
+	enum subtype typesub;
+	bool gensubscribed;
+	bool subconfirm;
+	bool force;
+	bool quiet;
+	const char *mlmmjsend;
+};
+
 bool find_subscriber(int fd, const char *address);
 int is_subbed_in(int fd, const char *subddirname, const char *address);
 enum subtype is_subbed(int listfd, const char *address, bool both);
@@ -37,3 +49,4 @@ void generate_subconfirm(struct ml *ml, const char *subaddr, enum subtype typesu
 void send_confirmation_mail(struct ml *ml, const char *subaddr, enum subtype typesub, enum subreason reasonsub, bool sub);
 bool do_unsubscribe(struct ml *ml, const char *addr, enum subtype typesub, enum subreason reasonsub, bool inform_not_subscribed, bool confirm_unsubscription, bool quiet, bool send_goodbye_mail);
 void mod_get_addr_and_type(struct ml *ml, const char *modstr, char **addrptr, enum subtype *subtypeptr);
+bool do_subscribe(struct ml *ml, struct subscription *sub, const char *addr);
