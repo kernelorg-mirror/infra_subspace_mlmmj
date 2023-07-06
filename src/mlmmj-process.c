@@ -648,9 +648,6 @@ int main(int argc, char **argv)
 			exec_or_die(mlmmjsend, "-l", "4", "-L", ml.dir, "-F",
 			    efrom, "-s", owner, "-a", "-m", donemailname, NULL);
 		}
-#if 0
-		log_error(LOG_ARGS, "listcontrol(from, %s, %s, %s, %s, %s, %s, %s)\n", listdir, toemails.emaillist[0], mlmmjsub, mlmmjsend, mlmmjbounce, donemailname);
-#endif
 		unlink(mailfile);
 		if (tll_length(originalfromemails) > 0)
 			testfrom = &originalfromemails;
