@@ -62,7 +62,6 @@ int main(int argc, char **argv)
 	char *mlmmjprocess, *bindir;
 	int fd, opt, noprocess = 0, nofork = 0;
 	int incfd, listfd;
-	pid_t childpid;
 
 	CHECKFULLPATH(argv[0]);
 	
@@ -146,18 +145,8 @@ int main(int argc, char **argv)
 	 * returning, making it susceptible to getting a SIGKILL from the
 	 * mailserver invoking mlmmj-receive.
 	 */
-	if (!nofork) {
-		childpid = fork();
-		if(childpid < 0)
-			log_error(LOG_ARGS, "fork() failed! Proceeding anyway");
-	
-		if(childpid)
-			exit(EXIT_SUCCESS); /* Parent says: "bye bye kids!"*/
-
-		close(0);
-		close(1);
-		close(2);
-	}
+	if (!nofork)
+		daemon(1, 0);
 
 	exec_or_die(mlmmjprocess, "-L", listdir, "-m", infilename, NULL);
 }
