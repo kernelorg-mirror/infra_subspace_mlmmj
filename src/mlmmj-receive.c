@@ -58,7 +58,7 @@ static void print_help(const char *prg)
 int main(int argc, char **argv)
 {
 	char *infilename = NULL, *listdir = NULL;
-	char *randomstr = random_str();
+	char *randomstr = NULL;
 	char *mlmmjprocess, *bindir;
 	int fd, opt, noprocess = 0, nofork = 0;
 	int incfd, listfd;
@@ -108,12 +108,12 @@ int main(int argc, char **argv)
 	if (incfd == -1)
 		err(EXIT_FAILURE, "Cannot open(%s/incoming)", listdir);
 
-	fd = openat(incfd, randomstr, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
-	while(fd < 0 && errno == EEXIST) {
+	do {
 		free(randomstr);
 		randomstr = random_str();
 		fd = openat(incfd, randomstr, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
-	}
+	} while(fd < 0 && errno == EEXIST);
+
 	xasprintf(&infilename, "%s/incoming/%s", listdir, randomstr);
 	free(randomstr);
 
