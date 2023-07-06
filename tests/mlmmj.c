@@ -1388,6 +1388,9 @@ ATF_TC_BODY(incindexfile, tc)
 	unlink("list/index");
 	atf_utils_create_file("list/index", "");
 	ATF_REQUIRE_EQ(incindexfile(fd), 1);
+	unlink("list/index");
+	atf_utils_create_file("list/index", "1");
+	ATF_REQUIRE_EQ(incindexfile(fd), 2);
 	close(fd);
 }
 
