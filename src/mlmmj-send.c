@@ -359,11 +359,8 @@ int main(int argc, char **argv)
 			exit(EXIT_FAILURE);
 	}
 
-	/* get the list address */
-	if(listctrl == '1')
-		errx(EXIT_FAILURE, "-l 1 is not supported anymore");
-	if(listctrl == '5')
-		errx(EXIT_FAILURE, "-l 1 is not supported anymore");
+	if (listctrl == '1' || listctrl == '5' || listctrl == '6')
+		errx(EXIT_FAILURE, "-l %c is not supported anymore", listctrl);
 
 	if((listctrl == '2' && (ml.dir == NULL || bounceaddr == NULL))) {
 		errx(EXIT_FAILURE, "With -l 2 you need -L and -F");
@@ -431,9 +428,6 @@ int main(int argc, char **argv)
 			exit(EXIT_FAILURE);
 		}
 		break;
-	case '6':
-		errx(EXIT_FAILURE, "-l 6 option does not exist anymore");
-		break;
 	default: /* normal list mail -- now handled when forking */
 		mail.addtohdr = statctrl(ml.ctrlfd, "addtohdr");
 		break;
@@ -456,11 +450,6 @@ int main(int argc, char **argv)
 	}
 
 	switch(listctrl) {
-	case '1':
-	case '5': /* bounceprobe - handle relayhost local users bouncing*/
-		break;
-	case '6':
-		break;
 	case '2': /* Moderators */
 		initsmtp(&sockfd, relayhost, smtpport, smtphelo);
 		mail.from = bounceaddr;
