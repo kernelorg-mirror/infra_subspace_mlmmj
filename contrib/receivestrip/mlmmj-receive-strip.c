@@ -362,12 +362,10 @@ static void print_help(const char *prg)
 int main(int argc, char **argv)
 {
 	char *infilename = NULL, *listdir = NULL;
-	char *randomstr = random_str();
+	char *randomstr = NULL;
 	char *mlmmjprocess, *bindir;
 	int fd, opt, noprocess = 0, nofork = 0;
-	struct stat st;
-	uid_t uid;
-	pid_t childpid;
+	int incfd, listfd;
 
 	CHECKFULLPATH(argv[0]);
 
@@ -377,13 +375,19 @@ int main(int argc, char **argv)
 	xasprintf(&mlmmjprocess, "%s/mlmmj-process", bindir);
 	free(bindir);
 
-	while ((opt = getopt(argc, argv, "hPVL:F")) != -1) {
+	while ((opt = getopt(argc, argv, "hPVL:s:e:F")) != -1) {
 		switch(opt) {
 		case 'h':
 			print_help(argv[0]);
 			break;
 		case 'L':
 			listdir = optarg;
+			break;
+		case 's':
+			setenv("SENDER", optarg, 1);
+			break;
+		case 'e':
+			setenv("EXTENSION", optarg, 1);
 			break;
 		case 'P':
 			noprocess = 1;
@@ -399,37 +403,22 @@ int main(int argc, char **argv)
 
 	if(listdir == NULL) {
 		errx(EXIT_FAILURE, "You have to specify -L\n"
-		    "%s -h for help\n", argv[0]);
+		    "%s -h for help", argv[0]);
 	}
 
-	/* Lets make sure no random user tries to send mail to the list */
-	if(listdir) {
-		if(stat(listdir, &st) == 0) {
-			uid = getuid();
-			if(uid && uid != st.st_uid) {
-				log_error(LOG_ARGS,
-					"Have to invoke either as root "
-					"or as the user owning listdir "
-					"Invoked with uid = [%d]", (int)uid);
-				errx(EXIT_FAILURE, "Have to invoke either as root "
-					"or as the user owning listdir");
-			}
-		} else {
-			log_error(LOG_ARGS, "Could not stat %s", listdir);
-			exit(EXIT_FAILURE);
-		}
-	}
+	listfd = open_listdir(listdir, true);
+	incfd = openat(listfd, "incoming", O_DIRECTORY|O_CLOEXEC);
+	if (incfd == -1)
+		err(EXIT_FAILURE, "Cannot open(%s/incoming)", listdir);
+
+	do {
+		free(randomstr);
+		randomstr = random_str();
+		fd = openat(incfd, randomstr, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
+	} while(fd < 0 && errno == EEXIST);
 
 	xasprintf(&infilename, "%s/incoming/%s", listdir, randomstr);
 	free(randomstr);
-	fd = open(infilename, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
-	while(fd < 0 && errno == EEXIST) {
-		free(infilename);
-		randomstr = random_str();
-		xasprintf(&infilename, "%s/incoming/%s", listdir, randomstr);
-		free(randomstr);
-		fd = open(infilename, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
-	}
 
 	if(fd < 0) {
 		log_error(LOG_ARGS, "could not create mail file in "
@@ -460,19 +449,8 @@ int main(int argc, char **argv)
 	 * returning, making it susceptible to getting a SIGKILL from the
 	 * mailserver invoking mlmmj-receive.
 	 */
-	if (!nofork) {
-		childpid = fork();
-		if(childpid < 0)
-			log_error(LOG_ARGS, "fork() failed! Proceeding anyway");
-
-		if(childpid)
-			exit(EXIT_SUCCESS); /* Parent says: "bye bye kids!"*/
-
-		close(0);
-		close(1);
-		close(2);
-	}
+	if (!nofork)
+		daemon(1, 0);
 
 	exec_or_die(mlmmjprocess, "-L", listdir, "-m", infilename, NULL);
 }
-
