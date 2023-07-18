@@ -2004,7 +2004,7 @@ ATF_TC_BODY(newsmtp, tc)
 	ml.dir = "list";
 	ATF_REQUIRE_MSG(ml_open(&ml, false), "impossible to open the mailing list");
 	atf_utils_create_file("list/control/smtpport", "25678");
-	int fd = newsmtp(&ml);
+	int fd = newsmtp(&ml, NULL);
 	ATF_REQUIRE_MSG(fd == -1, "Socket should not have open");
 	int smtppipe[2];
 	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
@@ -2038,7 +2038,7 @@ ATF_TC_BODY(newsmtp, tc)
 	atf_utils_readline(smtppipe[0]);
 	atf_utils_create_file("list/control/smtphelo", "heloname");
 	atf_utils_create_file("list/control/relayhost", "127.0.0.1");
-	fd = newsmtp(&ml);
+	fd = newsmtp(&ml, NULL);
 	ATF_REQUIRE_MSG(fd != -1, "Invalid socket");
 	endsmtp(&fd);
 	atf_utils_wait(p, 0, "EHLO heloname\r\nQUIT\r\n", "");

@@ -352,13 +352,16 @@ send_mail(int sockfd, struct mail *mail, int listfd, int ctrlfd, bool bounce)
 }
 
 int
-newsmtp(struct ml *ml)
+newsmtp(struct ml *ml, const char *rhost)
 {
 	int sockfd;
-	char *relayhost, *smtphelo;
+	char *relayhost = NULL, *smtphelo;
 	unsigned short smtpport = ctrlushort(ml->ctrlfd, "smtpport", 25);
 
-	relayhost = ctrlvalue(ml->ctrlfd, "relayhost");
+	if (rhost != NULL)
+		relayhost = xstrdup(relayhost);
+	if (relayhost == NULL)
+		relayhost = ctrlvalue(ml->ctrlfd, "relayhost");
 	if (relayhost == NULL)
 		relayhost = xstrdup(RELAYHOST);
 	smtphelo = ctrlvalue(ml->ctrlfd, "smtphelo");
@@ -403,7 +406,7 @@ send_single_mail(struct mail *mail, struct ml *ml, bool bounce)
 {
 	int sockfd;
 
-	sockfd = newsmtp(ml);
+	sockfd = newsmtp(ml, NULL);
 	if (sockfd == -1)
 		return (false);
 	if (send_mail(sockfd, mail, ml->fd, ml->ctrlfd, bounce)) {

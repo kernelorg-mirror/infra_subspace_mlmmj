@@ -279,12 +279,11 @@ int main(int argc, char **argv)
 	char listctrl = 0;
 	char *verp = NULL;
 	char *verpfrom;
-	char *reply, *smtphelo, *requeuefilename;
+	char *reply, *requeuefilename;
 	DIR *subddir;
 	struct dirent *dp;
 	struct stat st;
 	strlist stl = tll_init();
-	unsigned short smtpport;
 	struct sigaction sigact;
 	struct mail mail = { 0 };
 	struct ml ml;
@@ -439,19 +438,9 @@ int main(int argc, char **argv)
 		xasprintf(&archivefilename, "%s/archive/%d", ml.dir, mindex);
 	}
 
-	if(!relayhost)
-		relayhost = ctrlvalue(ml.ctrlfd, "relayhost");
-	if(!relayhost)
-		relayhost = xstrdup(RELAYHOST);
-
-	smtpport = ctrlushort(ml.ctrlfd, "smtpport", 25);
-	if ((smtphelo = ctrlvalue(ml.ctrlfd, "smtphelo")) == NULL) {
-		smtphelo = hostnamestr();
-	}
-
 	switch(listctrl) {
 	case '2': /* Moderators */
-		initsmtp(&sockfd, relayhost, smtpport, smtphelo);
+		sockfd = newsmtp(&ml, relayhost);
 		mail.from = bounceaddr;
 		mail.replyto = NULL;
 		if(send_mail_many_fd(sockfd, &mail, &ml, subfd, NULL)) {
@@ -462,7 +451,7 @@ int main(int argc, char **argv)
 		}
 		break;
 	case '3': /* resending earlier failed mails */
-		initsmtp(&sockfd, relayhost, smtpport, smtphelo);
+		sockfd = newsmtp(&ml, relayhost);
 		mail.from = NULL;
 		mail.replyto = NULL;
 		if(send_mail_many_fd(sockfd, &mail, &ml, subfd, mailfilename)) {
@@ -474,7 +463,7 @@ int main(int argc, char **argv)
 		unlink(subfilename);
 		break;
 	case '4': /* send mails to owner */
-		initsmtp(&sockfd, relayhost, smtpport, smtphelo);
+		sockfd = newsmtp(&ml, relayhost);
 		mail.from = bounceaddr;
 		mail.replyto = NULL;
 		if(send_mail_many_fd(sockfd, &mail, &ml, subfd, mailfilename)) {
@@ -521,7 +510,7 @@ int main(int argc, char **argv)
 		}
 		
 		if(verp) {
-			initsmtp(&sockfd, relayhost, smtpport, smtphelo);
+			sockfd = newsmtp(&ml, relayhost);
 			if(sockfd > -1) {
 			    if(write_mail_from(sockfd, verpfrom, verp)) {
 				log_error(LOG_ARGS,
@@ -572,7 +561,7 @@ int main(int argc, char **argv)
 							tll_remove_and_free(stl, it, free);
 				}
 				if(tll_length(stl) == maxverprecips) {
-					initsmtp(&sockfd, relayhost, smtpport, smtphelo);
+					sockfd = newsmtp(&ml, relayhost);
 					if(verp) {
 						mail.from = verpfrom;
 						mail.replyto = NULL;
@@ -601,7 +590,7 @@ int main(int argc, char **argv)
 			fclose(f);
 		}
 		if(tll_length(stl)) {
-			initsmtp(&sockfd, relayhost, smtpport, smtphelo);
+			sockfd = newsmtp(&ml, relayhost);
 			if(verp) {
 				mail.from = verpfrom;
 				mail.replyto = NULL;
@@ -627,7 +616,6 @@ int main(int argc, char **argv)
 	}
 
 	free(verp);
-	free(smtphelo);
 
 	if(archive) {
 		if(!ctrlarchive) {
