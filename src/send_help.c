@@ -21,6 +21,7 @@
  * IN THE SOFTWARE.
  */
 
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "mlmmj.h"
