@@ -24,7 +24,6 @@
  o Fix parsing RFC1891
  o Fix a crash if no owner has been defined
  o Validate ranges of all integers conversion
- o New 'nobounceprobe' tunable for debugging purpose
  o New 'send' tunable to allow email passthrough
  o Add support for 'X-Original-From'
  o Reduce subscription confirmation address length to fit RFC 5321
