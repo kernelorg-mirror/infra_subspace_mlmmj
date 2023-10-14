@@ -137,6 +137,7 @@ int send_mail_verp(int sockfd, strlist *addrs, struct mail *mail,
 		return MLMMJ_DATA;
 	}
 
+	rewind(mail->fp);
 	write_mailbody(sockfd, mail->fp, NULL);
 
 	retval = write_dot(sockfd);
