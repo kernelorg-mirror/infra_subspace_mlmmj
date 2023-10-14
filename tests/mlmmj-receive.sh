@@ -23,7 +23,8 @@ tests_init \
 	maxmailsize0 \
 	normail_email \
 	delheaders \
-	customheaders
+	customheaders \
+	verp
 
 mlmmjreceive=$(command -v mlmmj-receive)
 
@@ -2608,4 +2609,84 @@ Let's go, first email
 QUIT
 EOF
 	atf_check -o file:expected-2.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-2.txt
+}
+
+verp_body()
+{
+	atf_check $srcdir/fakesmtpd
+	trap kill_fakesmtp EXIT TERM
+	init_ml list
+	rmdir list/text
+	ln -s ${srcdir}/../listtexts/en list/text
+	echo test@mlmmjtest > list/control/listaddress
+	echo "25678" > list/control/smtpport
+	echo "postfix" > list/control/verp
+	echo 2 > list/control/maxverprecips
+	echo "heloname" > list/control/smtphelo
+	printf "X-H1: test\nNope: really not\n" > list/control/customheaders
+
+	printf "user@test\nuser2@test\nuser3@test" > list/subscribers.d/u
+cat > first <<EOF
+From: bob@test
+To: test@mlmmjtest
+Return-path: bob@test
+Subject: yeah
+
+Let's go, first email
+EOF
+
+	atf_check -s exit:0 $mlmmjreceive -L list -F <first
+	cat >> expected-1.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-1@mlmmjtest> XVERP=-=
+QUIT
+EOF
+	atf_check -o file:expected-1.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-1.txt
+cat > second <<EOF
+From: bob@test
+To: test@mlmmjtest
+Return-path: bob@test
+Mime: really
+Subject: yeah
+
+Let's go, first email
+EOF
+
+	atf_check -s exit:0 $mlmmjreceive -L list -F <second
+	cat >> expected-2.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-1@mlmmjtest> XVERP=-=
+RCPT TO:<user@test>
+RCPT TO:<user2@test>
+DATA
+From: bob@test
+To: test@mlmmjtest
+Subject: yeah
+X-H1: test
+Nope: really not
+
+Let's go, first email
+
+.
+QUIT
+EOF
+	atf_check -o file:expected-2.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-2.txt
+	cat >> expected-3.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-1@mlmmjtest> XVERP=-=
+RCPT TO:<user3@test>
+DATA
+From: bob@test
+To: test@mlmmjtest
+Subject: yeah
+X-H1: test
+Nope: really not
+
+Let's go, first email
+
+.
+QUIT
+EOF
+	atf_check -o file:expected-3.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-3.txt
+	atf_check -s exit:1 test -f mail-4.txt
 }
