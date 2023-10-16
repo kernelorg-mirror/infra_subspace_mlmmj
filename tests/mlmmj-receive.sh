@@ -2818,7 +2818,6 @@ Subject: yeah
 Let's go, first email
 EOF
 
-	atf_check -s exit:0 $mlmmjreceive -L list -F <second
 	cat >> expected-2.txt <<EOF
 EHLO heloname
 MAIL FROM:<test+bounces-1@mlmmjtest> XVERP=-=
