@@ -185,7 +185,8 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 	notifymod = !efromismod && statctrl(ml->ctrlfd,"notifymod");
 
 	if (notifymod) {
-		free(queuefilename);
+		char *qfname;
+
 		/* send mail to poster that the list is moderated */
 		txt = open_text(ml->fd, "wait", "post",
 				modreason_strs[modreason], NULL, "moderation-poster");
@@ -197,8 +198,8 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 		register_formatted(txt, "moderators",
 				rewind_memory_lines, get_memory_line, mls);
 		register_originalmail(txt, mailfilename);
-		queuefilename = prepstdreply(txt, ml, "$listowner$", efromsender, NULL);
-		MY_ASSERT(queuefilename);
+		qfname = prepstdreply(txt, ml, "$listowner$", efromsender, NULL);
+		MY_ASSERT(qfname);
 		close_text(txt);
 
 		finish_memory_lines(mls);
@@ -206,11 +207,12 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 		memset(&mail, 0, sizeof(mail));
 		mail.from = from;
 		mail.to = efromsender;
-		mail.fp = fopen(queuefilename, "r");
+		mail.fp = fopen(qfname, "r");
 		if (send_single_mail(&mail, ml, false))
-			save_queue(queuefilename, &mail);
+			save_queue(qfname, &mail);
 		else
-			unlink(queuefilename);
+			unlink(qfname);
+		fclose(mail.fp);
 	}
 
 	if (efromismod) {
@@ -222,6 +224,7 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 			save_queue(queuefilename, &mail);
 		else
 			unlink(queuefilename);
+		fclose(mail.fp);
 		exit(EXIT_SUCCESS);
 	}
 	exec_or_die(mlmmjsend, "-l", "2", "-L", ml->dir, "-F", from,
