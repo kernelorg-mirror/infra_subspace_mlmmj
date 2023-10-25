@@ -493,7 +493,7 @@ permit:
 		subc.gensubscribed = true;
 		subc.reasonsub = SUB_PERMIT;
 		subc.mlmmjsend = lc.mlmmjsend;
-		exit(do_subscribe(ml, &subc, tmpstr) ? EXIT_SUCCESS : EXIT_FAILURE);
+		exit(do_subscribe(ml, &subc, NULL) ? EXIT_SUCCESS : EXIT_FAILURE);
 		break;
 
 	/* listname+obstruct-COOKIE@domain.tld */
