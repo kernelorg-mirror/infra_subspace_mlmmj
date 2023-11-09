@@ -90,6 +90,12 @@ write_mailbody(int sockfd, FILE *fp, const char *tohdr)
 		}
 		next = fgetc(fp);
 		dprintf(sockfd, "\r\n");
+		if (next == '.') {
+			c = fgetc(fp);
+			if (c == EOF || c == '\n')
+				dprintf(sockfd, ".");
+			ungetc(c, fp);
+		}
 		if (addhdr && tohdr != NULL && next == '\n') {
 			dprintf(sockfd, "To: %s\r\n", tohdr);
 			addhdr = false;
