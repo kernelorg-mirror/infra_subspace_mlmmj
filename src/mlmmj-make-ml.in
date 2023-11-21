@@ -74,7 +74,7 @@ if [ -r "$ANSWERFILEIN" ]; then
 	. "$ANSWERFILEIN"
 fi
 
-if [ ! -d "$SPOOLDIR" ]; then
+if [ -z "$SPOOLDIR" ]; then
 	SPOOLDIRDEF=/var/spool/mlmmj
 	printf 'mlmmj spool directory under which to create new mailing list [%s] : ' "$SPOOLDIRDEF"
 	read -r SPOOLDIR
