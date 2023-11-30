@@ -1,3 +1,7 @@
+1.4.0-rc3
+ o fix unattended usage of mlmmj-makeml
+ o fix regression regarding RFC 5321
+ o fix subscription validation
 1.4.0-rc2
  o fix notifymod regression
  o fix VERP regression
