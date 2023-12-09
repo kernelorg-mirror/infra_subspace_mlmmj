@@ -22,7 +22,7 @@ tests_init \
 	moderation_reject_invalid \
 	maxmailsize \
 	maxmailsize0 \
-	normail_email \
+	normal_email \
 	delheaders \
 	customheaders \
 	verp
@@ -2483,7 +2483,7 @@ EOF
 	return
 }
 
-normail_email_body()
+normal_email_body()
 {
 	atf_check $srcdir/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
@@ -2539,58 +2539,54 @@ EOF
 	atf_check -o file:expected-1.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-1.txt
 	touch list/control/footer
 	atf_check -s exit:0 $mlmmjreceive -L list -F <first
-	atf_check -o file:expected-1.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-2.txt
+	atf_check -o file:expected-1.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-1.txt
+	cat >> expected-2.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-2-user=test@mlmmjtest>
+RCPT TO:<user@test>
+DATA
+From: bob@test
+To: test@mlmmjtest
+Subject: yeah
+
+Let's go, first email
+
+.
+MAIL FROM:<test+bounces-2-user2=test@mlmmjtest>
+RCPT TO:<user2@test>
+DATA
+From: bob@test
+To: test@mlmmjtest
+Subject: yeah
+
+Let's go, first email
+
+.
+QUIT
+EOF
+	atf_check -o file:expected-2.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-2.txt
 	printf "myfooter\nreally" > list/control/footer
 	touch list/control/prefix
 	atf_check -s exit:0 $mlmmjreceive -L list -F <first
-	cat >> expected-2.txt <<EOF
-EHLO heloname
-MAIL FROM:<test+bounces-1-user=test@mlmmjtest>
-RCPT TO:<user@test>
-DATA
-From: bob@test
-To: test@mlmmjtest
-Subject: yeah
-
-Let's go, first email
-myfooter
-really
-.
-MAIL FROM:<test+bounces-1-user2=test@mlmmjtest>
-RCPT TO:<user2@test>
-DATA
-From: bob@test
-To: test@mlmmjtest
-Subject: yeah
-
-Let's go, first email
-myfooter
-really
-.
-QUIT
-EOF
-	atf_check -o file:expected-2.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-3.txt
-	echo "[plop]" > list/control/prefix
-	atf_check -s exit:0 $mlmmjreceive -L list -F <first
 	cat >> expected-3.txt <<EOF
 EHLO heloname
-MAIL FROM:<test+bounces-1-user=test@mlmmjtest>
+MAIL FROM:<test+bounces-3-user=test@mlmmjtest>
 RCPT TO:<user@test>
 DATA
 From: bob@test
 To: test@mlmmjtest
-Subject: [plop] yeah
+Subject: yeah
 
 Let's go, first email
 myfooter
 really
 .
-MAIL FROM:<test+bounces-1-user2=test@mlmmjtest>
+MAIL FROM:<test+bounces-3-user2=test@mlmmjtest>
 RCPT TO:<user2@test>
 DATA
 From: bob@test
 To: test@mlmmjtest
-Subject: [plop] yeah
+Subject: yeah
 
 Let's go, first email
 myfooter
@@ -2598,12 +2594,41 @@ really
 .
 QUIT
 EOF
-	atf_check -o file:expected-3.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-4.txt
-
-	atf_check -s exit:0 $mlmmjreceive -L list -F <nosubject
+	atf_check -o file:expected-3.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-3.txt
+	echo "[plop]" > list/control/prefix
+	atf_check -s exit:0 $mlmmjreceive -L list -F <first
 	cat >> expected-4.txt <<EOF
 EHLO heloname
-MAIL FROM:<test+bounces-1-user=test@mlmmjtest>
+MAIL FROM:<test+bounces-4-user=test@mlmmjtest>
+RCPT TO:<user@test>
+DATA
+From: bob@test
+To: test@mlmmjtest
+Subject: [plop] yeah
+
+Let's go, first email
+myfooter
+really
+.
+MAIL FROM:<test+bounces-4-user2=test@mlmmjtest>
+RCPT TO:<user2@test>
+DATA
+From: bob@test
+To: test@mlmmjtest
+Subject: [plop] yeah
+
+Let's go, first email
+myfooter
+really
+.
+QUIT
+EOF
+	atf_check -o file:expected-4.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-4.txt
+
+	atf_check -s exit:0 $mlmmjreceive -L list -F <nosubject
+	cat >> expected-5.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-5-user=test@mlmmjtest>
 RCPT TO:<user@test>
 DATA
 From: bob@test
@@ -2614,7 +2639,7 @@ Let's go, first email
 myfooter
 really
 .
-MAIL FROM:<test+bounces-1-user2=test@mlmmjtest>
+MAIL FROM:<test+bounces-5-user2=test@mlmmjtest>
 RCPT TO:<user2@test>
 DATA
 From: bob@test
@@ -2627,7 +2652,7 @@ really
 .
 QUIT
 EOF
-	atf_check -o file:expected-4.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-5.txt
+	atf_check -o file:expected-5.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-5.txt
 }
 
 delheaders_body()
@@ -2746,7 +2771,7 @@ EOF
 	atf_check -s exit:0 $mlmmjreceive -L list -F <second
 	cat >> expected-2.txt <<EOF
 EHLO heloname
-MAIL FROM:<test+bounces-1-user=test@mlmmjtest>
+MAIL FROM:<test+bounces-2-user=test@mlmmjtest>
 RCPT TO:<user@test>
 DATA
 From: bob@test
@@ -2759,7 +2784,7 @@ Subject: yeah
 Let's go, first email
 
 .
-MAIL FROM:<test+bounces-1-user2=test@mlmmjtest>
+MAIL FROM:<test+bounces-2-user2=test@mlmmjtest>
 RCPT TO:<user2@test>
 DATA
 From: bob@test

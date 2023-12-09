@@ -51,7 +51,7 @@ int incindexfile(int listfd)
 		return 0;
 	}
 
-	fp = fdopen(fd, "r");
+	fp = fdopen(fd, "r+");
 	if (fp == NULL) {
 		log_error(LOG_ARGS, "Error fdopening index file");
 		close(fd);
