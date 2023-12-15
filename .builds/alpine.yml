@@ -1,0 +1,24 @@
+image: alpine/latest
+packages:
+  - musl-dev
+  - gcc
+  - autoconf
+  - automake
+  - make
+  - pkgconf
+  - kyua
+  - m4
+  - atf-dev
+sources:
+  - https://codeberg.org/mlmmj/mlmmj
+tasks:
+  - configure: |
+      cd mlmmj
+      autoreconf -if
+      ./configure
+  - build: |
+      cd mlmmj
+      make
+  - test: |
+      cd mlmmj
+      make check || { kyua report --verbose; exit 1 ;}

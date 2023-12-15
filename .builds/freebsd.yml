@@ -1,0 +1,21 @@
+image: freebsd/latest
+packages:
+  - kyua
+  - autoconf-switch
+  - autoconf
+  - automake
+  - atf
+  - pkgconf
+sources:
+  - https://codeberg.org/mlmmj/mlmmj
+tasks:
+  - configure: |
+      cd mlmmj
+      autoreconf -fi
+      ./configure
+  - build: |
+      cd mlmmj
+      make
+  - test: |
+      cd mlmmj
+      make check || { kyua report --verbose; exit 1 ;}
