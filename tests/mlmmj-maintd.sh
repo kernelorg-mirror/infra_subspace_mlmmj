@@ -12,6 +12,7 @@ tests_init \
 	digests_2 \
 	digests_3 \
 	digests_4 \
+	digests_5 \
 	unsub_bouncers_0 \
 	unsub_bouncers_1 \
 	unsub_bouncers_2 \
@@ -481,6 +482,32 @@ unsub_bouncers
 probe_bouncers
 run_digests
  - Could not open or create 'lastdigest': Permission denied
+"
+	atf_check -o "inline:$output" sed -e "s/at .*/at/" lists/ml/mlmmj-maintd.lastrun.log
+}
+
+digests_5_body()
+{
+	test $(id -u) = 0 && atf_skip "Can only be run as non-root"
+	mkdir lists
+	init_ml lists/ml
+	echo test@mlmmjtest > lists/ml/control/listaddress
+
+	echo "0" > lists/ml/index
+	echo "3774:1702743593:141" > lists/ml/lastdigest
+	atf_check -s exit:0 $mlmmjmaintd -L lists/ml -F
+	output="Starting maintenance run at
+
+clean_moderation
+clean_discarded
+clean_subconf
+clean_unsubconf
+resend_queue
+resend_requeue
+clean_nolongerbouncing
+unsub_bouncers
+probe_bouncers
+run_digests
 "
 	atf_check -o "inline:$output" sed -e "s/at .*/at/" lists/ml/mlmmj-maintd.lastrun.log
 }
