@@ -763,6 +763,14 @@ ATF_TC_BODY(parse_lastdigest, tc)
 	    &errstr));
 	ATF_REQUIRE_STREQ(errstr, "Invalid value for lastissue");
 	free(line);
+
+	line = xstrdup("3774:1702743593:141");
+	ATF_REQUIRE(parse_lastdigest(line, &lastindex, &lasttime, &lastissue,
+	    &errstr));
+	ATF_REQUIRE_EQ(lastindex, 3774);
+	ATF_REQUIRE_EQ(lasttime, 1702743593);
+	ATF_REQUIRE_EQ(lastissue, 141);
+	free(line);
 }
 
 ATF_TC_BODY(extract_bouncetime, tc)
