@@ -1,5 +1,5 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT([mlmmj],[1.4.1],[bapt@freebsd.org])
+AC_INIT([mlmmj],[1.4.2],[bapt@nours.eu])
 
 VERSION=$PACKAGE_VERSION
 AC_SUBST(VERSION)
