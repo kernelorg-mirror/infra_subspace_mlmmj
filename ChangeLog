@@ -1,3 +1,5 @@
+1.4.3
+ o fix regression which results in loosing trackes of probes
 1.4.2
  o fix regression in lastdigest parser
 1.4.1
