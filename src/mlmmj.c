@@ -85,9 +85,7 @@ parse_lastdigest(char *line, long *lastindex, time_t *lasttime,
 		return true;
 	}
 	walk = walk + strlen(walk) + 1;
-	size_t l = strlen(walk) -1;
-	if (walk[l] == '\n')
-		walk[l] = '\0';
+	chomp(walk);
 	*lastissue = strtoim(walk, LONG_MIN, LONG_MAX, errstr);
 	if (*errstr != NULL) {
 		*errstr = "Invalid value for lastissue";
