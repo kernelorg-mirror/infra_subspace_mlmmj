@@ -49,78 +49,12 @@
 #include "utils.h"
 #include "send_mail.h"
 
-static void
-unlink_bounce(struct ml *ml, const char *to)
+void
+do_probe(struct ml *ml, const char *addr)
 {
-	char *tmpstr, *a, *probefile;
-
-	/* error, so remove the probefile */
-	tmpstr = xstrdup(to);
-	a = strchr(tmpstr, '@');
-	MY_ASSERT(a);
-	*a = '=';
-	xasprintf(&probefile, "bounce/%s-probe", tmpstr);
-	unlinkat(ml->fd, probefile, 0);
-	free(probefile);
-	free(tmpstr);
-}
-
-void do_probe(struct ml *ml, const char *addr)
-{
-	text *txt;
-	file_lines_state *fls;
-	char *myaddr, *from, *a, *queuefilename;
-	char *probefile;
-	int fd;
-	time_t t;
-	struct mail mail = { 0 };
-
-	myaddr = lowercase(addr);
-
-	gen_addr_cookie(from, ml, "bounces-probe-", myaddr)
-
-	a = strrchr(myaddr, '=');
-	if (!a) {
-		free(myaddr);
-		free(from);
-		log_error(LOG_ARGS, "do_probe(): malformed address");
-		exit(EXIT_FAILURE);
-
-	}
-	*a = '@';
-
-	txt = open_text(ml->fd, "probe", NULL, NULL, NULL, "bounce-probe");
-	MY_ASSERT(txt);
-	register_default_unformatted(txt, ml);
-	register_unformatted(txt, "bouncenumbers", "%bouncenumbers%"); /* DEPRECATED */
-	fls = init_file_lines(addr, ':');
-	register_formatted(txt, "bouncenumbers",
-			rewind_file_lines, get_file_line, fls);
-	queuefilename = prepstdreply(txt, ml, "$listowner$", myaddr, NULL);
-	MY_ASSERT(queuefilename);
-	close_text(txt);
-
-	finish_file_lines(fls);
-
-	xasprintf(&probefile, "bounce/%s-probe", addr);
-	t = time(NULL);
-	fd = openat(ml->fd, probefile, O_WRONLY|O_TRUNC|O_CREAT, S_IRUSR|S_IWUSR);
-	if(fd < 0)
-		log_error(LOG_ARGS, "Could not open %s", probefile);
-	else
-		if (dprintf(fd, "%ld", (long int)t) < 0)
-			log_error(LOG_ARGS, "Could not write time in probe");
-	free(probefile);
-
-	mail.to = myaddr;
-	mail.from = from;
-	mail.fp = fopen(queuefilename, "r");
-	if (!send_single_mail(&mail, ml, false)) {
-		unlink_bounce(ml, myaddr);
-		exit(EXIT_FAILURE);
-	}
-	fclose(mail.fp);
-	exit(EXIT_SUCCESS);
+	if (send_probe(ml, addr))
+		exit(EXIT_SUCCESS);
+	exit(EXIT_FAILURE);
 }
 
 static void print_help(const char *prg)

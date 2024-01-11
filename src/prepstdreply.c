@@ -189,12 +189,26 @@ finish_memory_lines(memory_lines_state *s)
 }
 
 
-file_lines_state *init_file_lines(const char *filename, char truncate)
+file_lines_state *
+init_file_lines(const char *filename, char truncate)
 {
 	file_lines_state *s = xcalloc(1, sizeof(file_lines_state));
 	s->filename = xstrdup(filename);
 	s->truncate = truncate;
 	return s;
+}
+
+file_lines_state
+*init_file_lines_fd(int fd, char truncate)
+{
+	file_lines_state *s;
+
+	if (fd == -1)
+		return (NULL);
+	s = xcalloc(1, sizeof(file_lines_state));
+	s->fp = fdopen(fd, "r");
+	s->truncate = truncate;
+	return (s);
 }
 
 

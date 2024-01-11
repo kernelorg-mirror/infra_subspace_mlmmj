@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Baptiste Daroussin <bapt@FreeBSD.org>
+ * Copyright (C) 2021-2024 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -35,6 +35,7 @@
 #include <err.h>
 
 #include "getlistdelim.h"
+#include "send_mail.h"
 #include "mlmmj.h"
 #include "utils.h"
 #include "log_error.h"
@@ -43,9 +44,76 @@
 #include "gethdrline.h"
 #include "mygetline.h"
 #include "subscriberfuncs.h"
+#include "prepstdreply.h"
 #include "find_email_adr.h"
 #include "strgen.h"
 #include "ctrlvalue.h"
+
+bool
+send_probe(struct ml *ml, const char *addr)
+{
+	text *txt;
+	file_lines_state *fls;
+	char *myaddr, *from, *a, *queuefilename;
+	char *probefile;
+	int fd, bfd;
+	time_t t;
+	struct mail mail = { 0 };
+
+	myaddr = lowercase(addr);
+
+	gen_addr_cookie(from, ml, "bounces-probe-", myaddr)
+
+	a = strrchr(myaddr, '=');
+	if (!a) {
+		free(myaddr);
+		free(from);
+		log_error(LOG_ARGS, "do_probe(): malformed address");
+		return (false);
+	}
+	*a = '@';
+	bfd = openat(ml->fd, "bounce", O_DIRECTORY);
+	if (bfd == -1) {
+		free(myaddr);
+		free(from);
+		log_error(LOG_ARGS, "impossible to open bounce directory");
+		return (false);
+	}
+
+	txt = open_text(ml->fd, "probe", NULL, NULL, NULL, "bounce-probe");
+	MY_ASSERT(txt);
+	register_default_unformatted(txt, ml);
+	register_unformatted(txt, "bouncenumbers", "%bouncenumbers%"); /* DEPRECATED */
+	fls = init_file_lines_fd(openat(bfd, addr, O_RDONLY), ':');
+	register_formatted(txt, "bouncenumbers",
+			rewind_file_lines, get_file_line, fls);
+	queuefilename = prepstdreply(txt, ml, "$listowner$", myaddr, NULL);
+	MY_ASSERT(queuefilename);
+	close_text(txt);
+	finish_file_lines(fls);
+
+	xasprintf(&probefile, "%s-probe", addr);
+	t = time(NULL);
+	fd = openat(bfd, probefile, O_WRONLY|O_TRUNC|O_CREAT, S_IRUSR|S_IWUSR);
+	if(fd < 0)
+		log_error(LOG_ARGS, "Could not open %s", probefile);
+	else
+		if (dprintf(fd, "%ld", (long int)t) < 0)
+			log_error(LOG_ARGS, "Could not write time in probe");
+
+	mail.to = myaddr;
+	mail.from = from;
+	mail.fp = fopen(queuefilename, "r");
+	if (!send_single_mail(&mail, ml, false)) {
+		unlinkat(bfd, probefile, 0);
+		free(probefile);
+		return (false);
+	}
+	free(probefile);
+	fclose(mail.fp);
+	return (true);
+}
+
 
 bool
 parse_lastdigest(char *line, long *lastindex, time_t *lasttime,

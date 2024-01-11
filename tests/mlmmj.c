@@ -152,6 +152,7 @@ ATF_TC_WITHOUT_HEAD(requeuemail);
 ATF_TC_WITHOUT_HEAD(gethdrline);
 ATF_TC_WITHOUT_HEAD(readlf);
 ATF_TC_WITHOUT_HEAD(mod_get_addr_type);
+ATF_TC_WITHOUT_HEAD(send_probe);
 
 ATF_TC_BODY(random_int, tc)
 {
@@ -2797,6 +2798,64 @@ ATF_TC_BODY(mod_get_addr_type, tc)
 	atf_utils_wait(p, 1, "", "");
 }
 
+ATF_TC_BODY(send_probe, tc)
+{
+	char *dir;
+	init_ml(true);
+	struct ml ml;
+	ml_init(&ml);
+	ml.dir = "list";
+	ml_open(&ml, false);
+	rmdir("list/text");
+	xasprintf(&dir, "%s/../listtexts/en",
+	    atf_tc_get_config_var(tc, "srcdir"));
+
+	symlink(dir, "list/text");
+	atf_utils_create_file("list/control/smtpport", "25678");
+	atf_utils_create_file("list/control/smtphelo", "heloname");
+	int smtppipe[2];
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
+	pid_t p2 = single_mail_reception(smtppipe[1]);
+	atf_utils_readline(smtppipe[0]);
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		if (send_probe(&ml, "bapt=freebsd.org"))
+			exit(0);
+		exit(1);
+	}
+	atf_utils_wait(p2, 0, "save:mailout.txt", "");
+	atf_utils_wait(p, 0, "", "");
+
+	if (!atf_utils_grep_file("Some messages to you could not be delivered", "mailout.txt")) {
+		atf_utils_cat_file("mailout.txt", "");
+		atf_tc_fail("invalid file");
+	}
+
+	p = atf_utils_fork();
+	if (p == 0) {
+		if (send_probe(&ml, "bapt@freebsd.org"))
+			exit(0);
+		exit(1);
+	}
+	atf_utils_wait(p, 1, "", "");
+
+	atf_utils_create_file("list/bounce/bapt=freebsd.org", "1234:blabla\n");
+	p2 = single_mail_reception(smtppipe[1]);
+	atf_utils_readline(smtppipe[0]);
+	p = atf_utils_fork();
+	if (p == 0) {
+		if (send_probe(&ml, "bapt=freebsd.org"))
+			exit(0);
+		exit(1);
+	}
+	atf_utils_wait(p2, 0, "save:mailout.txt", "");
+	atf_utils_wait(p, 0, "", "");
+	if (!atf_utils_grep_file("1234", "mailout.txt")) {
+		atf_utils_cat_file("mailout.txt", ">");
+		atf_tc_fail("invalid mail sent");
+	}
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -2883,6 +2942,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, gethdrline);
 	ATF_TP_ADD_TC(tp, readlf);
 	ATF_TP_ADD_TC(tp, mod_get_addr_type);
+	ATF_TP_ADD_TC(tp, send_probe);
 
 	return (atf_no_error());
 }
