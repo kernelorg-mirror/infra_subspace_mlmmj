@@ -1,5 +1,8 @@
+1.4.4
+ o fix regression which results in probe not containing the list
+   of bounced emails
 1.4.3
- o fix regression which results in loosing trackes of probes
+ o fix regression which results in loosing track of probes
 1.4.2
  o fix regression in lastdigest parser
 1.4.1

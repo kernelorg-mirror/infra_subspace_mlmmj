@@ -1,5 +1,5 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT([mlmmj],[1.4.3],[bapt@nours.eu])
+AC_INIT([mlmmj],[1.4.4],[bapt@nours.eu])
 
 VERSION=$PACKAGE_VERSION
 AC_SUBST(VERSION)
