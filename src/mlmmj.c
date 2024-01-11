@@ -366,20 +366,20 @@ bouncemail(int listfd, const char *theaddress, const char *identifier)
 			return (BOUNCE_FAIL);
 		}
 	}
+	*tmp = '@';
+	if (is_subbed(listfd, address, 0) == SUB_NONE) {
+		log_error(LOG_ARGS, "%s is bouncing but not subscribed?",
+		    address);
+		free(address);
+		return (BOUNCE_OK);
+	}
+	*tmp = '=';
 	bfd = openat(bdfd, address, O_WRONLY|O_APPEND|O_CREAT, S_IRUSR|S_IWUSR);
 	close(bdfd);
 	if (bfd == -1) {
 		log_error(LOG_ARGS, "Cound not open(bounce/%s)", address);
 		free(address);
 		return (BOUNCE_FAIL);
-	}
-	*tmp = '@';
-
-	if (is_subbed(listfd, address, 0) == SUB_NONE) {
-		log_error(LOG_ARGS, "%s is bouncing but not subscribed?",
-		    address);
-		free(address);
-		return (BOUNCE_OK);
 	}
 
 	t = time(NULL);

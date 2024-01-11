@@ -105,6 +105,7 @@ ATF_TC_WITHOUT_HEAD(smtp_bad_ehlo);
 ATF_TC_WITHOUT_HEAD(smtp_no_ehlo);
 ATF_TC_WITHOUT_HEAD(endsmtp);
 ATF_TC_WITHOUT_HEAD(do_bouncemail);
+ATF_TC_WITHOUT_HEAD(bouncemail);
 ATF_TC_WITHOUT_HEAD(send_mail_basics);
 ATF_TC_WITHOUT_HEAD(send_mail);
 ATF_TC_WITHOUT_HEAD(getlistdelim);
@@ -1145,6 +1146,50 @@ ATF_TC_BODY(do_bouncemail, tc)
 
 	close(lfd);
 	close(ctrlfd);
+}
+
+ATF_TC_BODY(bouncemail, tc)
+{
+	mkdir("list", 0755);
+	int fd = open("list", O_DIRECTORY);
+
+	ATF_REQUIRE_EQ(bouncemail(fd, "bapt=FreeBSD.org", "confsub"), BOUNCE_OK);
+	mkdir("list/subconf", 0755);
+	close(open("list/subconf/bapt=freebsd.org", O_CREAT, 0644));
+	ATF_REQUIRE_EQ(access("list/subconf/bapt=freebsd.org", F_OK), 0);
+	ATF_REQUIRE_EQ(bouncemail(fd, "bapt=FreeBSD.org", "confsub"), BOUNCE_OK);
+	ATF_REQUIRE_EQ(access("list/subconf/bapt=freebsd.org", F_OK), -1);
+
+	ATF_REQUIRE_EQ(bouncemail(fd, "bapt=FreeBSD.org", "confunsub"), BOUNCE_OK);
+	mkdir("list/unsubconf", 0755);
+	close(open("list/unsubconf/bapt=freebsd.org", O_CREAT, 0644));
+	ATF_REQUIRE_EQ(access("list/unsubconf/bapt=freebsd.org", F_OK), 0);
+	ATF_REQUIRE_EQ(bouncemail(fd, "bapt=FreeBSD.org", "confunsub"), BOUNCE_OK);
+	ATF_REQUIRE_EQ(access("list/unsubconf/bapt=freebsd.org", F_OK), -1);
+
+	ATF_REQUIRE_EQ(bouncemail(fd, "bapt=FreeBSD.org", "probe"), BOUNCE_FAIL);
+	mkdir("list/bounce", 0755);
+	ATF_REQUIRE_EQ(bouncemail(fd, "bapt=FreeBSD.org", "probe"), BOUNCE_OK);
+
+	close(open("list/bounce/bapt=freebsd.org-probe", O_CREAT, 0644));
+	ATF_REQUIRE_EQ(bouncemail(fd, "bapt=FreeBSD.org", "probe"), BOUNCE_OK);
+	ATF_REQUIRE_EQ(access("list/bounce/bapt=freebsd.org-probe", F_OK), -1);
+
+	ATF_REQUIRE_EQ(bouncemail(fd, "bapt@FreeBSD.org", "plop"), BOUNCE_OK);
+	ATF_REQUIRE_EQ(bouncemail(fd, "bapt=FreeBSD.org", "1234"), BOUNCE_OK);
+	ATF_REQUIRE_EQ(access("list/bounce/bapt=freebsd.org", F_OK), -1);
+
+	mkdir("list/subscribers.d", 0755);
+	atf_utils_create_file("list/subscribers.d/b", "bapt@FreeBSD.org");
+	ATF_REQUIRE_EQ(bouncemail(fd, "bapt=FreeBSD.org", "1234"), BOUNCE_DONE);
+	ATF_REQUIRE_EQ(access("list/bounce/bapt=freebsd.org", F_OK), 0);
+	ATF_REQUIRE(atf_utils_grep_file("1234:.*", "list/bounce/bapt=freebsd.org"));
+
+	ATF_REQUIRE_EQ(bouncemail(fd, "bapt=FreeBSD.org", "2323"), BOUNCE_DONE);
+	ATF_REQUIRE_EQ(access("list/bounce/bapt=freebsd.org", F_OK), 0);
+
+	ATF_REQUIRE(atf_utils_grep_file("1234:.*", "list/bounce/bapt=freebsd.org"));
+	ATF_REQUIRE(atf_utils_grep_file("2323:.*", "list/bounce/bapt=freebsd.org"));
 }
 
 ATF_TC_BODY(send_mail_basics, tc)
@@ -2791,6 +2836,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, smtp_no_ehlo);
 	ATF_TP_ADD_TC(tp, endsmtp);
 	ATF_TP_ADD_TC(tp, do_bouncemail);
+	ATF_TP_ADD_TC(tp, bouncemail);
 	ATF_TP_ADD_TC(tp, send_mail_basics);
 	ATF_TP_ADD_TC(tp, send_mail);
 	ATF_TP_ADD_TC(tp, getlistdelim);
