@@ -52,7 +52,9 @@ AM_CONDITIONAL(WANT_RECEIVESTRIP, test x"$enable_receive_strip" = xyes)
 AC_FUNC_MALLOC
 AC_CHECK_FUNCS([syslog])
 AC_CHECK_FUNCS([arc4random_uniform copy_file_range])
-PKG_CHECK_MODULES([ATF], [atf-c])
+PKG_CHECK_MODULES([ATF], [atf-c], [HAVE_ATF=1], [NO_ATF=1])
+AC_CHECK_PROG([KYUA], [kyua], [HAVE_KYUA=1])
+AM_CONDITIONAL([TESTS], [test "x$HAVE_ATF" = x1 -a "x$HAVE_KYUA" = x1 ])
 
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/Makefile])
