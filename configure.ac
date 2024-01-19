@@ -14,16 +14,10 @@ AC_PROG_RANLIB
 
 # Checks for libraries.
 AC_CHECK_LIB(socket,socket)
-AC_CHECK_LIB(nsl,gethostbyname)
 AC_CHECK_LIB(iconv,iconv_open)
 
-AC_CHECK_HEADERS([arpa/inet.h fcntl.h netinet/in.h stddef.h stdlib.h string.h])
-AC_CHECK_HEADERS([sys/socket.h syslog.h unistd.h time.h])
+AC_CHECK_HEADERS([syslog.h ])
 AC_CHECK_HEADER([iconv.h])
-
-# Checks for typedefs, structures, and compiler characteristics.
-AC_C_CONST
-AC_TYPE_SIZE_T
 
 savex=$exec_prefix
 test "x$prefix" = xNONE && prefix=$ac_default_prefix
