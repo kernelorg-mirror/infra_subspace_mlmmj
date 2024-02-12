@@ -178,7 +178,7 @@ basics_5_body()
 	echo test@mlmmjtest > lists/ml/control/listaddress
 
 	rmdir lists/ml/queue/discarded
-	atf_check -s exit:0 -e match:"An error occured while cleaning discarded mails, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L lists/ml -F
+	atf_check -s exit:0 -e match:"An error occurred while cleaning discarded mails, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L lists/ml -F
 	output="Starting maintenance run at
 
 clean_moderation
@@ -204,7 +204,7 @@ basics_6_body()
 	echo test@mlmmjtest > lists/ml/control/listaddress
 
 	rm -rf lists/ml/queue
-	atf_check -s exit:0 -e match:"An error occured while cleaning discarded mails, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L lists/ml -F
+	atf_check -s exit:0 -e match:"An error occurred while cleaning discarded mails, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L lists/ml -F
 	output="Starting maintenance run at
 
 clean_moderation
@@ -231,7 +231,7 @@ basics_7_body()
 	echo test@mlmmjtest > lists/ml/control/listaddress
 
 	rm -rf lists/ml/requeue
-	atf_check -s exit:0 -e match:"An error occured while resending requeued mails, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L lists/ml -F
+	atf_check -s exit:0 -e match:"An error occurred while resending requeued mails, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L lists/ml -F
 	output="Starting maintenance run at
 
 clean_moderation
@@ -257,9 +257,9 @@ basics_8_body()
 	echo test@mlmmjtest > lists/ml/control/listaddress
 
 	rm -rf lists/ml/bounce
-	atf_check -s exit:0 -e match:"An error occured while cleaning no longer bouncing traces, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L lists/ml -F
-	atf_check -s exit:0 -e match:"An error occured while unsubscribing bouncing emails, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L lists/ml -F
-	atf_check -s exit:0 -e match:"An error occured while sending probes for bouncers, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L lists/ml -F
+	atf_check -s exit:0 -e match:"An error occurred while cleaning no longer bouncing traces, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L lists/ml -F
+	atf_check -s exit:0 -e match:"An error occurred while unsubscribing bouncing emails, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L lists/ml -F
+	atf_check -s exit:0 -e match:"An error occurred while sending probes for bouncers, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L lists/ml -F
 	output="Starting maintenance run at
 
 clean_moderation
@@ -287,7 +287,7 @@ basics_9_body()
 	echo test@mlmmjtest > lists/ml/control/listaddress
 
 	rm -rf lists/ml/subconf
-	atf_check -s exit:0 -e match:"An error occured while cleaning subscribtion confirmations, mails, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L lists/ml -F
+	atf_check -s exit:0 -e match:"An error occurred while cleaning subscribtion confirmations, mails, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L lists/ml -F
 	output="Starting maintenance run at
 
 clean_moderation
@@ -313,7 +313,7 @@ basics_10_body()
 	echo test@mlmmjtest > lists/ml/control/listaddress
 
 	rm -rf lists/ml/unsubconf
-	atf_check -s exit:0 -e match:"An error occured while cleaning unsubscribtion confirmations, mails, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L lists/ml -F
+	atf_check -s exit:0 -e match:"An error occurred while cleaning unsubscribtion confirmations, mails, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L lists/ml -F
 	output="Starting maintenance run at
 
 clean_moderation
@@ -339,7 +339,7 @@ basics_11_body()
 	echo test@mlmmjtest > lists/ml/control/listaddress
 
 	rm -rf lists/ml/moderation
-	atf_check -s exit:0 -e match:"An error occured while cleaning moderation, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L lists/ml -F
+	atf_check -s exit:0 -e match:"An error occurred while cleaning moderation, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L lists/ml -F
 	output="Starting maintenance run at
 
 clean_moderation
@@ -440,7 +440,7 @@ digests_3_body()
 	echo test@mlmmjtest > lists/ml/control/listaddress
 
 	echo "-1" > lists/ml/index
-	atf_check -s exit:0 -e match:"An error occured while running digests, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L lists/ml -F
+	atf_check -s exit:0 -e match:"An error occurred while running digests, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L lists/ml -F
 	output="Starting maintenance run at
 
 clean_moderation
@@ -468,7 +468,7 @@ digests_4_body()
 	echo "0" > lists/ml/index
 	touch lists/ml/lastdigest
 	chmod -w lists/ml/lastdigest
-	atf_check -s exit:0 -e match:"An error occured while running digests, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L lists/ml -F
+	atf_check -s exit:0 -e match:"An error occurred while running digests, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L lists/ml -F
 	output="Starting maintenance run at
 
 clean_moderation
@@ -575,7 +575,7 @@ unsub_bouncers_5_body()
 
 	# Log if invalid format
 	echo "a:a #plop" > list/bounce/plop=meh
-	atf_check -s exit:0 -e match:"An error occured while unsubscribing bouncing emails, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L list -F
+	atf_check -s exit:0 -e match:"An error occurred while unsubscribing bouncing emails, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L list -F
 	atf_check -s exit:0 test -f list/bounce/plop=meh
 	output="Starting maintenance run at
 
@@ -605,7 +605,7 @@ unsub_bouncers_6_body()
 	# Log unreabable bouncefile
 	echo "a:1234 #plop" > list/bounce/plop=meh
 	chmod -r list/bounce/plop=meh
-	atf_check -s exit:0 -e match:"An error occured while unsubscribing bouncing emails, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L list -F
+	atf_check -s exit:0 -e match:"An error occurred while unsubscribing bouncing emails, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L list -F
 	atf_check -s exit:0 test -f list/bounce/plop=meh
 	output="Starting maintenance run at
 
@@ -679,7 +679,7 @@ unsub_bouncers_10_body()
 	echo "a:1234 # plop" > list/bounce/plop=meh
 	echo "plop@meh" > list/digesters.d/p
 	rm -rf list/nomailsubs.d
-	atf_check -s exit:0 -e match:"An error occured while unsubscribing bouncing emails, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L list -F
+	atf_check -s exit:0 -e match:"An error occurred while unsubscribing bouncing emails, see mlmmj-maintd.lastrun.log" $mlmmjmaintd -L list -F
 	atf_check -s exit:0 test -f list/bounce/plop=meh
 	atf_check -s exit:1 test -f list/digesters.d/p
 	output="Starting maintenance run at

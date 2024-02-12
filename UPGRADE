@@ -32,7 +32,7 @@ This applies to everyone using mlmmj < 1.1.0:
  completely rewritten and the subject is now translateable as well.
 
  Don't forget to create the new directories needed for digest and
- nomail version of the list. listdir/subcribers.d and listdir/nomailsubs.d
+ nomail version of the list. listdir/subscribers.d and listdir/nomailsubs.d
 
 This applies to everyone using mlmmj < 0.8.3:
 ---------------------------------------------

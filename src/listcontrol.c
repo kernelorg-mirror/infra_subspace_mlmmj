@@ -280,7 +280,7 @@ int listcontrol(strlist *fromemails, struct ml *ml, const char *controlstr,
 	/* listname+subscribe@domain.tld */
 	case CTRL_SUBSCRIBE:
 		if (sub.typereq == NULL) {
-			sub.typereq = "A subcribe";
+			sub.typereq = "A subscribe";
 			sub.ctrlstr = NULL;
 			sub.type = "regular";
 			sub.typesub = SUB_NORMAL;

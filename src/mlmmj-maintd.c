@@ -665,52 +665,52 @@ void do_maintenance(struct ml *ml, const char *mlmmjsend, const char *mlmmjbounc
 
 	log("clean_moderation\n");
 	if (!clean_moderation(ml->fd, ml->ctrlfd, logfd))
-		log_err("An error occured while cleaning moderation, see %s",
+		log_err("An error occurred while cleaning moderation, see %s",
 		    MAINTD_LOGFILE);
 
 	log("clean_discarded\n");
 	if (!clean_discarded(ml->fd, logfd))
-		log_err("An error occured while cleaning discarded mails, see "
+		log_err("An error occurred while cleaning discarded mails, see "
 		    "%s", MAINTD_LOGFILE);
 
 	log("clean_subconf\n");
 	if (!clean_subconf(ml->fd, logfd))
-		log_err("An error occured while cleaning subscribtion "
+		log_err("An error occurred while cleaning subscribtion "
 		    "confirmations, mails, see %s", MAINTD_LOGFILE);
 
 	log("clean_unsubconf\n");
 	if (!clean_unsubconf(ml->fd, logfd))
-		log_err("An error occured while cleaning unsubscribtion "
+		log_err("An error occurred while cleaning unsubscribtion "
 		    "confirmations, mails, see %s", MAINTD_LOGFILE);
 
 	log("resend_queue\n");
 	if (!resend_queue(ml, logfd))
-		log_err("An error occured while resending queued mails, see %s",
+		log_err("An error occurred while resending queued mails, see %s",
 		    MAINTD_LOGFILE);
 
 	log("resend_requeue\n");
 	if (!resend_requeue(ml, mlmmjsend, logfd))
-		log_err("An error occured while resending requeued mails, see "
+		log_err("An error occurred while resending requeued mails, see "
 		    "%s", MAINTD_LOGFILE);
 
 	log("clean_nolongerbouncing\n");
 	if (!clean_nolongerbouncing(ml->fd, logfd))
-		log_err("An error occured while cleaning no longer bouncing "
+		log_err("An error occurred while cleaning no longer bouncing "
 		   "traces, see %s", MAINTD_LOGFILE);
 
 	log("unsub_bouncers\n");
 	if (!unsub_bouncers(ml->fd, ml->ctrlfd, logfd))
-		log_err("An error occured while unsubscribing bouncing emails, "
+		log_err("An error occurred while unsubscribing bouncing emails, "
 		    "see %s", MAINTD_LOGFILE);
 
 	log("probe_bouncers\n");
 	if (!probe_bouncers(ml, mlmmjbounce, logfd))
-		log_err("An error occured while sending probes for bouncers, "
+		log_err("An error occurred while sending probes for bouncers, "
 		    "see %s", MAINTD_LOGFILE);
 
 	log("run_digests\n");
 	if (!run_digests(ml, mlmmjsend, logfd))
-		log_err("An error occured while running digests, see %s",
+		log_err("An error occurred while running digests, see %s",
 		   MAINTD_LOGFILE);
 
 	close(logfd);
