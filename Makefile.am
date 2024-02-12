@@ -1,6 +1,5 @@
 ## Process this file with automake to produce Makefile.in
 
-AUTOMAKE_OPTIONS = foreign dist-xz
 EXTRA_DIST = include LICENSE UPGRADE FAQ \
 	     TUNABLES README.access README.archives README.listtexts man \
 	     README.exim4 README.sendmail README.security README.qmail \

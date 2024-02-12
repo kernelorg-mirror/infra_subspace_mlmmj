@@ -4,7 +4,7 @@ AC_INIT([mlmmj],[1.4.4],[bapt@nours.eu])
 VERSION=$PACKAGE_VERSION
 AC_SUBST(VERSION)
 
-AM_INIT_AUTOMAKE([subdir-objects])
+AM_INIT_AUTOMAKE([dist-xz foreign subdir-objects])
 AC_CONFIG_SRCDIR([src/mlmmj-receive.c])
 AC_CONFIG_HEADERS([config.h])
 

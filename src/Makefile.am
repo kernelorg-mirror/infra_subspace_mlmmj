@@ -1,7 +1,5 @@
 #
 
-AUTOMAKE_OPTIONS = foreign
-
 bin_PROGRAMS = mlmmj-send mlmmj-receive mlmmj-process mlmmj-sub \
                mlmmj-unsub mlmmj-bounce mlmmj-maintd mlmmj-list
 

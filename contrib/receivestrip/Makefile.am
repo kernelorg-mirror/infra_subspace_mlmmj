@@ -1,7 +1,5 @@
 #
 
-AUTOMAKE_OPTIONS = foreign
-
 if WANT_RECEIVESTRIP
   bin_PROGRAMS = mlmmj-receive-strip
 endif

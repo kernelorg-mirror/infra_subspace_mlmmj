@@ -1,5 +1,3 @@
-AUTOMAKE_OPTIONS = foreign
-
 check_PROGRAMS = mlmmj fakesmtpd
 
 mlmmj_SOURCES = mlmmj.c \
