@@ -158,7 +158,7 @@ dsnparse_body()
 	init_ml ml
 	echo test@mlmmjtest > ml/control/listaddress
 
-	cp $(atf_get_srcdir)/dsnmail dsnmail
+	cp ${top_srcdir}/tests/dsnmail dsnmail
 	atf_check -s exit:0 $mlmmjbounce -L ./ml -d -n 2 -m dsnmail
 
 }

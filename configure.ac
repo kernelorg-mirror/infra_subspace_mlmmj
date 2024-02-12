@@ -93,12 +93,11 @@ AM_LDFLAGS="$COVERAGE_LDFLAGS $ASAN_LDFLAGS $UBSAN_LDFLAGS"
 AC_SUBST(AM_LDFLAGS)
 
 AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([kyua.conf])
 AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([src/mlmmj-make-ml])
 AC_CONFIG_FILES([listtexts/Makefile])
 AC_CONFIG_FILES([contrib/Makefile])
 AC_CONFIG_FILES([contrib/receivestrip/Makefile])
-AC_CONFIG_FILES([tests/Makefile])
-AC_CONFIG_FILES([tests/Kyuafile])
 AC_CONFIG_FILES([tests/test_env.sh])
 AC_OUTPUT

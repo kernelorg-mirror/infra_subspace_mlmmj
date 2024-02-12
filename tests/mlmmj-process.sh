@@ -78,7 +78,7 @@ Bcc: list@test
 EOF
 	echo "list@test" > list/control/listaddress
 	rmdir list/text
-	ln -s ${srcdir}/../listtexts/en list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
 	atf_check -s exit:0 $mlmmjprocess -L list -m mailfile
 	rm list/queue/*.reciptto
 	rm list/queue/*.mailfrom

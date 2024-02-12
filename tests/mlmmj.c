@@ -1887,8 +1887,8 @@ ATF_TC_BODY(notify_sub, tc)
 	ml.dir = "list";
 	ml_open(&ml, false);
 	rmdir("list/text");
-	xasprintf(&dir, "%s/../listtexts/en",
-	    atf_tc_get_config_var(tc, "srcdir"));
+	xasprintf(&dir, "%s/listtexts/en",
+	    atf_tc_get_config_var(tc, "top_srcdir"));
 
 	symlink(dir, "list/text");
 	atf_utils_create_file("list/control/smtpport", "25678");
@@ -2222,8 +2222,8 @@ ATF_TC_BODY(generate_subscription, tc)
 	ml.dir = "list";
 	ml_open(&ml, false);
 	rmdir("list/text");
-	xasprintf(&dir, "%s/../listtexts/en",
-	    atf_tc_get_config_var(tc, "srcdir"));
+	xasprintf(&dir, "%s/listtexts/en",
+	    atf_tc_get_config_var(tc, "top_srcdir"));
 
 	symlink(dir, "list/text");
 	atf_utils_create_file("list/control/smtpport", "25678");
@@ -2270,8 +2270,8 @@ ATF_TC_BODY(generate_subconfirm, tc)
 	ml.dir = "list";
 	ml_open(&ml, false);
 	rmdir("list/text");
-	xasprintf(&dir, "%s/../listtexts/en",
-	    atf_tc_get_config_var(tc, "srcdir"));
+	xasprintf(&dir, "%s/listtexts/en",
+	    atf_tc_get_config_var(tc, "top_srcdir"));
 
 	symlink(dir, "list/text");
 	atf_utils_create_file("list/control/smtpport", "25678");
@@ -2426,8 +2426,8 @@ ATF_TC_BODY(send_confirmation_mail, tc)
 	ml.dir = "list";
 	ml_open(&ml, false);
 	rmdir("list/text");
-	xasprintf(&dir, "%s/../listtexts/en",
-	    atf_tc_get_config_var(tc, "srcdir"));
+	xasprintf(&dir, "%s/listtexts/en",
+	    atf_tc_get_config_var(tc, "top_srcdir"));
 
 	symlink(dir, "list/text");
 	atf_utils_create_file("list/control/smtpport", "25678");
@@ -2558,8 +2558,8 @@ ATF_TC_BODY(send_help, tc)
 	ml.dir = "list";
 	ml_open(&ml, false);
 	rmdir("list/text");
-	xasprintf(&dir, "%s/../listtexts/en",
-	    atf_tc_get_config_var(tc, "srcdir"));
+	xasprintf(&dir, "%s/listtexts/en",
+	    atf_tc_get_config_var(tc, "top_srcdir"));
 
 	symlink(dir, "list/text");
 	atf_utils_create_file("list/control/smtpport", "25678");
@@ -2807,8 +2807,8 @@ ATF_TC_BODY(send_probe, tc)
 	ml.dir = "list";
 	ml_open(&ml, false);
 	rmdir("list/text");
-	xasprintf(&dir, "%s/../listtexts/en",
-	    atf_tc_get_config_var(tc, "srcdir"));
+	xasprintf(&dir, "%s/listtexts/en",
+	    atf_tc_get_config_var(tc, "top_srcdir"));
 
 	symlink(dir, "list/text");
 	atf_utils_create_file("list/control/smtpport", "25678");

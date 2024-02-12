@@ -42,13 +42,13 @@ add_normal_welcome_body()
 {
 	init_ml ml
 	mlmmjsub=$(command -v mlmmj-sub)
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	echo test@mlmmjtest > ml/control/listaddress
 	echo "25678" > ml/control/smtpport
 	echo "heloname" > ml/control/smtphelo
 	rmdir ml/text
-	ln -s ${srcdir}/../listtexts/en ml/text
+	ln -s ${top_srcdir}/listtexts/en ml/text
 	atf_check -s exit:0 $mlmmjsub -L ml -c -a john@doe.org
 	cat > expected.txt <<EOF
 EHLO heloname
@@ -90,13 +90,13 @@ add_normal_welcome_confirm_body()
 {
 	init_ml ml
 	mlmmjsub=$(command -v mlmmj-sub)
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	echo test@mlmmjtest > ml/control/listaddress
 	echo "25678" > ml/control/smtpport
 	echo "heloname" > ml/control/smtphelo
 	rmdir ml/text
-	ln -s ${srcdir}/../listtexts/en ml/text
+	ln -s ${top_srcdir}/listtexts/en ml/text
 	atf_check -s exit:0 $mlmmjsub -L ml -c -C -a john@doe.org
 	cat > expected.txt <<EOF
 EHLO heloname
@@ -142,14 +142,14 @@ add_normal_welcome_confirm_and_send_owner_body()
 {
 	init_ml ml
 	mlmmjsub=$(command -v mlmmj-sub)
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	echo test@mlmmjtest > ml/control/listaddress
 	echo "25678" > ml/control/smtpport
 	echo "heloname" > ml/control/smtphelo
 	touch ml/control/notifysub
 	rmdir ml/text
-	ln -s ${srcdir}/../listtexts/en ml/text
+	ln -s ${top_srcdir}/listtexts/en ml/text
 	atf_check -s exit:0 $mlmmjsub -L ml -c -a john@doe.org
 	cat > expected.txt <<EOF
 EHLO heloname
@@ -212,13 +212,13 @@ add_normal_welcome_moderate_body()
 {
 	init_ml ml
 	mlmmjsub=$(command -v mlmmj-sub)
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	echo test@mlmmjtest > ml/control/listaddress
 	echo "25678" > ml/control/smtpport
 	echo "heloname" > ml/control/smtphelo
 	rmdir ml/text
-	ln -s ${srcdir}/../listtexts/en ml/text
+	ln -s ${top_srcdir}/listtexts/en ml/text
 	cat > ml/control/submod <<EOF
 modo1@test
 modo2@test
@@ -454,7 +454,7 @@ remove_normal_confirm_body()
 {
 	init_ml ml
 	mlmmjsub=$(command -v mlmmj-unsub)
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	echo test@mlmmjtest > ml/control/listaddress
 	echo "john@doe.org" > ml/subscribers.d/j
@@ -463,7 +463,7 @@ remove_normal_confirm_body()
 	echo "25678" > ml/control/smtpport
 	echo "heloname" > ml/control/smtphelo
 	rmdir ml/text
-	ln -s ${srcdir}/../listtexts/en ml/text
+	ln -s ${top_srcdir}/listtexts/en ml/text
 	atf_check -s exit:0 $mlmmjsub -L ml -c -a john@doe.org
 	atf_check -o inline:"bob@doe.org\nrebecca@doe.org\n" cat ml/subscribers.d/j
 	cat > expected.txt << EOF
@@ -572,7 +572,7 @@ remove_normal_confirm_and_send_owner_body()
 {
 	init_ml ml
 	mlmmjsub=$(command -v mlmmj-unsub)
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	echo test@mlmmjtest > ml/control/listaddress
 	echo "john@doe.org" > ml/subscribers.d/j
@@ -582,7 +582,7 @@ remove_normal_confirm_and_send_owner_body()
 	echo "heloname" > ml/control/smtphelo
 	touch ml/control/notifysub
 	rmdir ml/text
-	ln -s ${srcdir}/../listtexts/en ml/text
+	ln -s ${top_srcdir}/listtexts/en ml/text
 	atf_check -s exit:0 $mlmmjsub -L ml -c -a john@doe.org
 	atf_check -o inline:"bob@doe.org\nrebecca@doe.org\n" cat ml/subscribers.d/j
 	cat > expected.txt << EOF

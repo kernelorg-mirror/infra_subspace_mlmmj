@@ -702,7 +702,7 @@ run_digests
 
 resend_requeue_body()
 {
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	init_ml list
 	echo "test@test" > list/control/listaddress
@@ -902,7 +902,7 @@ EOF
 
 resend_queue_body()
 {
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	init_ml list
 	echo "test@test" > list/control/listaddress

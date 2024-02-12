@@ -91,11 +91,11 @@ EOF
 
 simple_body()
 {
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	init_ml list
 	rmdir list/text
-	ln -s ${srcdir}/../listtexts/en list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
 	echo "25678" > list/control/smtpport
 	echo "heloname" > list/control/smtphelo
@@ -181,11 +181,11 @@ EOF
 
 subscribe_body()
 {
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	init_ml list
 	rmdir list/text
-	ln -s ${srcdir}/../listtexts/en list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
 	echo "25678" > list/control/smtpport
 	echo "heloname" > list/control/smtphelo
@@ -381,11 +381,11 @@ EOF
 
 subscribe_digest_body()
 {
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	init_ml list
 	rmdir list/text
-	ln -s ${srcdir}/../listtexts/en list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
 	echo "25678" > list/control/smtpport
 	echo "heloname" > list/control/smtphelo
@@ -582,11 +582,11 @@ EOF
 
 subscribe_nomail_body()
 {
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	init_ml list
 	rmdir list/text
-	ln -s ${srcdir}/../listtexts/en list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
 	echo "25678" > list/control/smtpport
 	echo "heloname" > list/control/smtphelo
@@ -785,11 +785,11 @@ EOF
 
 subscribe_both_body()
 {
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	init_ml list
 	rmdir list/text
-	ln -s ${srcdir}/../listtexts/en list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
 	echo "25678" > list/control/smtpport
 	echo "heloname" > list/control/smtphelo
@@ -986,11 +986,11 @@ EOF
 
 subscribe_nomail_confunsub_body()
 {
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	init_ml list
 	rmdir list/text
-	ln -s ${srcdir}/../listtexts/en list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
 	echo "25678" > list/control/smtpport
 	echo "heloname" > list/control/smtphelo
@@ -1189,11 +1189,11 @@ EOF
 
 subscribe_digest_confunsub_body()
 {
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	init_ml list
 	rmdir list/text
-	ln -s ${srcdir}/../listtexts/en list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
 	echo "25678" > list/control/smtpport
 	echo "heloname" > list/control/smtphelo
@@ -1388,11 +1388,11 @@ EOF
 }
 
 ctrl_list_body() {
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	init_ml list
 	rmdir list/text
-	ln -s ${srcdir}/../listtexts/en list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
 	echo "25678" > list/control/smtpport
 	echo "heloname" > list/control/smtphelo
@@ -1469,11 +1469,11 @@ EOF
 }
 
 ctrl_help_body() {
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	init_ml list
 	rmdir list/text
-	ln -s ${srcdir}/../listtexts/en list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
 	echo "25678" > list/control/smtpport
 	echo "heloname" > list/control/smtphelo
@@ -1537,11 +1537,11 @@ EOF
 }
 
 ctrl_faq_body() {
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	init_ml list
 	rmdir list/text
-	ln -s ${srcdir}/../listtexts/en list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
 	echo "25678" > list/control/smtpport
 	echo "heloname" > list/control/smtphelo
@@ -1575,11 +1575,11 @@ EOF
 }
 
 ctrl_get_body() {
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	init_ml list
 	rmdir list/text
-	ln -s ${srcdir}/../listtexts/en list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
 	echo "25678" > list/control/smtpport
 	echo "heloname" > list/control/smtphelo
@@ -1659,11 +1659,11 @@ EOF
 }
 
 subscription_moderation_body() {
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	init_ml list
 	rmdir list/text
-	ln -s ${srcdir}/../listtexts/en list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
 	echo "25678" > list/control/smtpport
 	echo "heloname" > list/control/smtphelo
@@ -1848,11 +1848,11 @@ EOF
 }
 
 moderation_body() {
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	init_ml list
 	rmdir list/text
-	ln -s ${srcdir}/../listtexts/en list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
 	echo "25678" > list/control/smtpport
 	echo "heloname" > list/control/smtphelo
@@ -1968,11 +1968,11 @@ EOF
 }
 
 moderation_notifymod_body() {
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	init_ml list
 	rmdir list/text
-	ln -s ${srcdir}/../listtexts/en list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
 	echo "25678" > list/control/smtpport
 	echo "heloname" > list/control/smtphelo
@@ -2133,11 +2133,11 @@ EOF
 }
 
 moderation_notmetoo_body() {
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	init_ml list
 	rmdir list/text
-	ln -s ${srcdir}/../listtexts/en list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
 	echo "25678" > list/control/smtpport
 	echo "heloname" > list/control/smtphelo
@@ -2260,11 +2260,11 @@ EOF
 }
 
 moderation_reject_invalid_body() {
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	init_ml list
 	rmdir list/text
-	ln -s ${srcdir}/../listtexts/en list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
 	echo "25678" > list/control/smtpport
 	echo "heloname" > list/control/smtphelo
@@ -2348,11 +2348,11 @@ EOF
 }
 
 maxmailsize_body() {
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	init_ml list
 	rmdir list/text
-	ln -s ${srcdir}/../listtexts/en list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
 	echo "25678" > list/control/smtpport
 	echo "heloname" > list/control/smtphelo
@@ -2416,11 +2416,11 @@ EOF
 }
 
 maxmailsize0_body() {
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	init_ml list
 	rmdir list/text
-	ln -s ${srcdir}/../listtexts/en list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
 	echo "25678" > list/control/smtpport
 	echo "heloname" > list/control/smtphelo
@@ -2485,11 +2485,11 @@ EOF
 
 normal_email_body()
 {
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	init_ml list
 	rmdir list/text
-	ln -s ${srcdir}/../listtexts/en list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
 	echo "25678" > list/control/smtpport
 	echo "heloname" > list/control/smtphelo
@@ -2657,11 +2657,11 @@ EOF
 
 delheaders_body()
 {
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	init_ml list
 	rmdir list/text
-	ln -s ${srcdir}/../listtexts/en list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
 	echo "25678" > list/control/smtpport
 	echo "heloname" > list/control/smtphelo
@@ -2708,11 +2708,11 @@ EOF
 
 customheaders_body()
 {
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	init_ml list
 	rmdir list/text
-	ln -s ${srcdir}/../listtexts/en list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
 	echo "25678" > list/control/smtpport
 	echo "heloname" > list/control/smtphelo
@@ -2804,11 +2804,11 @@ EOF
 
 verp_body()
 {
-	atf_check $srcdir/fakesmtpd
+	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	init_ml list
 	rmdir list/text
-	ln -s ${srcdir}/../listtexts/en list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
 	echo "25678" > list/control/smtpport
 	echo "postfix" > list/control/verp
