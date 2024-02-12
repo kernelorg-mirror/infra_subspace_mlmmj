@@ -1,9 +1,9 @@
 <?php
 //
-// Copyright © 2000-2001, Roland Roberts <roland@astrofoto.org>
+// Copyright Â© 2000-2001, Roland Roberts <roland@astrofoto.org>
 //             2001 Alister Bulman <alister@minotaur.nu> Re-Port multi template-roots + more
-// PHP3 Port: Copyright © 1999 CDI <cdi@thewebmasters.net>, All Rights Reserved.
-// Perl Version: Copyright © 1998 Jason Moore <jmoore@sober.com>, All Rights Reserved.
+// PHP3 Port: Copyright Â© 1999 CDI <cdi@thewebmasters.net>, All Rights Reserved.
+// Perl Version: Copyright Â© 1998 Jason Moore <jmoore@sober.com>, All Rights Reserved.
 //
 // RCS Revision
 //   @(#) $Id$
