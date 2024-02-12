@@ -66,13 +66,22 @@ AC_ARG_ENABLE([receive-strip],
                  [build mlmmj-receive-strip (default is no)]))
 AM_CONDITIONAL(WANT_RECEIVESTRIP, test x"$enable_receive_strip" = xyes)
 
+AC_ARG_ENABLE([tests],
+  AS_HELP_STRING([--disable-tests],
+		 [build tests (default is yes)]),
+  [:], [enable_tests=yes]
+)
+
 # Checks for library functions.
 AC_FUNC_MALLOC
 AC_CHECK_FUNCS([syslog])
 AC_CHECK_FUNCS([arc4random_uniform copy_file_range])
-PKG_CHECK_MODULES([ATF], [atf-c], [HAVE_ATF=1], [NO_ATF=1])
-AC_CHECK_PROG([KYUA], [kyua], [HAVE_KYUA=1])
-AM_CONDITIONAL([TESTS], [test "x$HAVE_ATF" = x1 -a "x$HAVE_KYUA" = x1 ])
+
+AS_IF([test x"$enable_tests" = xyes], [
+  PKG_CHECK_MODULES([ATF], [atf-c])
+  AC_PATH_PROG([KYUA], [kyua])
+])
+AM_CONDITIONAL([WANT_TESTS], [test x"$enable_tests" = xyes])
 
 AM_CPPFLAGS="-I\$(top_srcdir)/include -DDEFAULTTEXTDIR='\"\$(textlibdir)\"'"
 AC_SUBST(AM_CPPFLAGS)

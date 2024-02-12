@@ -12,7 +12,7 @@ man1_MANS = man/mlmmj-bounce.1 man/mlmmj-make-ml.1 man/mlmmj-receive.1 \
 
 SUBDIRS = src listtexts contrib
 
-if TESTS
+if WANT_TESTS
 SUBDIRS += tests
 
 check:	$(check_SCRIPTS) $(check_PROGRAMS)
