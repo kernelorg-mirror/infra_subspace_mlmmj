@@ -31,17 +31,29 @@ AC_SUBST(textlibdir)
 AC_ARG_ENABLE([coverage],
   AS_HELP_STRING([--enable-coverage],
 		 [build with coverage flags activated (default is no)]))
-AM_CONDITIONAL(WANT_COVERAGE, test x"$enable_coverage" = xyes)
+
+AS_IF([test x"$enable_coverage" = xyes], [
+  COVERAGE_CFLAGS="-O0 -ggdb -fprofile-arcs -ftest-coverage -fprofile-generate"
+  COVERAGE_LDFLAGS="-fprofile-generate"
+])
 
 AC_ARG_ENABLE([asan],
   AS_HELP_STRING([--enable-asan],
 		 [build with libasan (default is no)]))
-AM_CONDITIONAL(WANT_ASAN, test x"$enable_asan" = xyes)
+
+AS_IF([test x"$enable_asan" = xyes], [
+  ASAN_CFLAGS="-O0 -ggdb -fsanitize=address"
+  ASAN_LDFLAGS="-fsanitize=address"
+])
 
 AC_ARG_ENABLE([ubsan],
   AS_HELP_STRING([--enable-ubsan],
 		 [build with libubsan (default is no)]))
-AM_CONDITIONAL(WANT_UBSAN, test x"$enable_ubsan" = xyes)
+
+AS_IF([test x"$enable_ubsan" = xyes], [
+  UBSAN_CFLAGS="-O0 -ggdb -fsanitize=undefined"
+  UBSAN_LDFLAGS="-fsanitize=undefined"
+])
 
 AC_ARG_ENABLE([receive-strip],
   AS_HELP_STRING([--enable-receive-strip],
@@ -55,6 +67,15 @@ AC_CHECK_FUNCS([arc4random_uniform copy_file_range])
 PKG_CHECK_MODULES([ATF], [atf-c], [HAVE_ATF=1], [NO_ATF=1])
 AC_CHECK_PROG([KYUA], [kyua], [HAVE_KYUA=1])
 AM_CONDITIONAL([TESTS], [test "x$HAVE_ATF" = x1 -a "x$HAVE_KYUA" = x1 ])
+
+AM_CPPFLAGS="-I\$(top_srcdir)/include -DDEFAULTTEXTDIR='\"\$(textlibdir)\"'"
+AC_SUBST(AM_CPPFLAGS)
+
+AM_CFLAGS="-g -Wall -std=gnu99 -D_GNU_SOURCE=1 -Wextra -pedantic -Wsign-compare $COVERAGE_CFLAGS $ASAN_CFLAGS $UBSAN_CFLAGS"
+AC_SUBST(AM_CFLAGS)
+
+AM_LDFLAGS="$COVERAGE_LDFLAGS $ASAN_LDFLAGS $UBSAN_LDFLAGS"
+AC_SUBST(AM_LDFLAGS)
 
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/Makefile])
