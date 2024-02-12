@@ -1,12 +1,18 @@
 # Process this file with autoconf to produce a configure script.
+AC_PREREQ([2.69])
 AC_INIT([mlmmj],[1.4.4],[bapt@nours.eu])
 
 VERSION=$PACKAGE_VERSION
 AC_SUBST(VERSION)
 
-AM_INIT_AUTOMAKE([dist-xz foreign subdir-objects])
 AC_CONFIG_SRCDIR([src/mlmmj-receive.c])
 AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_AUX_DIR([build-aux])
+
+AM_INIT_AUTOMAKE([1.13 dist-xz foreign subdir-objects])
+
+# Enable silent rules by default
+AM_SILENT_RULES([yes])
 
 # Checks for programs.
 AC_PROG_CC
