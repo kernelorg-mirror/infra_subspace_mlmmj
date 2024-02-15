@@ -62,11 +62,11 @@ SUFFIXES = .sh
 # Run the Kyua test suite when the 'check' target is invoked
 check-local: $(check_SCRIPTS) $(check_PROGRAMS)
 	failed=no; \
-	kyua --config='$(top_builddir)/kyua.conf' test \
+	$(KYUA) --config='$(top_builddir)/kyua.conf' test \
 	    --kyuafile='$(top_srcdir)/Kyuafile' --build-root='$(top_builddir)' \
 	    || failed=yes; \
 	if [ "$${failed}" = yes ]; then \
-	    kyua report --results-file='$(abs_top_srcdir)' \
+	    $(KYUA) report --results-file='$(abs_top_srcdir)' \
 	        --verbose --results-filter=broken,failed; \
 	    exit 1; \
 	fi

@@ -80,6 +80,10 @@ AC_CHECK_FUNCS([arc4random_uniform copy_file_range])
 AS_IF([test x"$enable_tests" = xyes], [
   PKG_CHECK_MODULES([ATF], [atf-c])
   AC_PATH_PROG([KYUA], [kyua])
+
+  AS_IF([test "x$KYUA" == "x"], [
+    AC_MSG_ERROR([A 'kyua' binary is required when the tests are enabled. Set the PATH or use the KYUA environment variable to specify its location.])
+  ])
 ])
 AM_CONDITIONAL([WANT_TESTS], [test x"$enable_tests" = xyes])
 
