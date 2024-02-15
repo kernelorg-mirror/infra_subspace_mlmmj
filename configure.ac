@@ -79,10 +79,15 @@ AC_CHECK_FUNCS([arc4random_uniform copy_file_range])
 
 AS_IF([test x"$enable_tests" = xyes], [
   PKG_CHECK_MODULES([ATF], [atf-c])
+  AC_PATH_PROG([ATFSH], [atf-sh])
   AC_PATH_PROG([KYUA], [kyua])
 
   AS_IF([test "x$KYUA" == "x"], [
     AC_MSG_ERROR([A 'kyua' binary is required when the tests are enabled. Set the PATH or use the KYUA environment variable to specify its location.])
+  ])
+
+  AS_IF([test "x$ATFSH" == "x"], [
+    AC_MSG_ERROR([An 'atf-sh' binary is required when the tests are enabled. Set the PATH or use the ATFSH environment variable to specify its location.])
   ])
 ])
 AM_CONDITIONAL([WANT_TESTS], [test x"$enable_tests" = xyes])
@@ -104,4 +109,13 @@ AC_CONFIG_FILES([listtexts/Makefile])
 AC_CONFIG_FILES([contrib/Makefile])
 AC_CONFIG_FILES([contrib/receivestrip/Makefile])
 AC_CONFIG_FILES([tests/test_env.sh])
+AC_CONFIG_FILES([tests/functional-tests],[chmod +x tests/functional-tests])
+AC_CONFIG_FILES([tests/mlmmj-bounce],[chmod +x tests/mlmmj-bounce])
+AC_CONFIG_FILES([tests/mlmmj-list],[chmod +x tests/mlmmj-list])
+AC_CONFIG_FILES([tests/mlmmj-maintd],[chmod +x tests/mlmmj-maintd])
+AC_CONFIG_FILES([tests/mlmmj-process],[chmod +x tests/mlmmj-process])
+AC_CONFIG_FILES([tests/mlmmj-receive],[chmod +x tests/mlmmj-receive])
+AC_CONFIG_FILES([tests/mlmmj-send],[chmod +x tests/mlmmj-send])
+AC_CONFIG_FILES([tests/mlmmj-sub],[chmod +x tests/mlmmj-sub])
+
 AC_OUTPUT

@@ -35,32 +35,18 @@ tests_mlmmj_LDADD = \
 tests_fakesmtpd_SOURCES = \
 	tests/fakesmtpd.c
 
-EXTRA_DIST += \
-	tests/*.sh
-
-CLEANFILES += \
-	$(test_scripts:.sh=)
-
 test_scripts = \
-	tests/mlmmj-send.sh \
-	tests/functional-tests.sh \
-	tests/mlmmj-maintd.sh \
-	tests/mlmmj-sub.sh \
-	tests/mlmmj-bounce.sh \
-	tests/mlmmj-list.sh \
-	tests/mlmmj-process.sh \
-	tests/mlmmj-receive.sh
-
-check_SCRIPTS = \
-	$(test_scripts:.sh=)
-
-# Copy the test scripts striped of the '.sh' extension in the build directory
-SUFFIXES = .sh
-.sh:
-	install -m 755 $< $@
+	tests/mlmmj-send \
+	tests/functional-tests \
+	tests/mlmmj-maintd \
+	tests/mlmmj-sub \
+	tests/mlmmj-bounce \
+	tests/mlmmj-list \
+	tests/mlmmj-process \
+	tests/mlmmj-receive
 
 # Run the Kyua test suite when the 'check' target is invoked
-check-local: $(check_SCRIPTS) $(check_PROGRAMS)
+check-local: $(check_PROGRAMS) $(test_scripts)
 	failed=no; \
 	$(KYUA) --config='$(top_builddir)/kyua.conf' test \
 	    --kyuafile='$(top_srcdir)/Kyuafile' --build-root='$(top_builddir)' \
@@ -72,6 +58,6 @@ check-local: $(check_SCRIPTS) $(check_PROGRAMS)
 	fi
 
 # Build the test programs when the 'all' target is invoked
-all-local: $(check_PROGRAMS) $(check_SCRIPTS)
+all-local: $(check_PROGRAMS)
 endif
 

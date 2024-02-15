@@ -1,4 +1,4 @@
-#!/usr/bin/env atf-sh
+#!@ATFSH@
 
 . $(atf_get_srcdir)/test_env.sh
 
