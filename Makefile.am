@@ -4,7 +4,9 @@ EXTRA_DIST = include LICENSE UPGRADE FAQ \
 	     TUNABLES README.access README.archives README.listtexts man \
 	     README.exim4 README.sendmail README.security README.qmail \
 	     README.postfix README.footers \
-	     Kyuafile tests/Kyuafile
+	     Kyuafile tests/Kyuafile \
+	     tests/dsnmail
+
 CLEANFILES = *~ mlmmj-*.tar.*
 
 man1_MANS = man/mlmmj-bounce.1 man/mlmmj-make-ml.1 man/mlmmj-receive.1 \
