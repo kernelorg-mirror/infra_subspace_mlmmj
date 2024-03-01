@@ -359,7 +359,7 @@ newsmtp(struct ml *ml, const char *rhost)
 	unsigned short smtpport = ctrlushort(ml->ctrlfd, "smtpport", 25);
 
 	if (rhost != NULL)
-		relayhost = xstrdup(relayhost);
+		relayhost = xstrdup(rhost);
 	if (relayhost == NULL)
 		relayhost = ctrlvalue(ml->ctrlfd, "relayhost");
 	if (relayhost == NULL)
