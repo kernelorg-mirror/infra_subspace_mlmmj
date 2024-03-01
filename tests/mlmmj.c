@@ -21,7 +21,12 @@
  */
 
 #include "tllist.h"
+
+#if defined(__clang__)
 #pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+#elif defined(__GNUC__)
+#pragma GCC diagnostic ignored "-Wformat-zero-length"
+#endif
 
 #include <sys/socket.h>
 #include <arpa/inet.h>
