@@ -1,3 +1,7 @@
+1.4.5
+ o Improve error messages in case of smtp failure
+ o Regression: fix mlmmj-send -r
+ o Modernize autotools usage
 1.4.4
  o fix regression which results in probe not containing the list
    of bounced emails

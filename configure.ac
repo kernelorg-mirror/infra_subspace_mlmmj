@@ -1,6 +1,6 @@
 # Process this file with autoconf to produce a configure script.
 AC_PREREQ([2.69])
-AC_INIT([mlmmj],[1.4.4],[bapt@nours.eu])
+AC_INIT([mlmmj],[1.4.5],[bapt@nours.eu])
 
 VERSION=$PACKAGE_VERSION
 AC_SUBST(VERSION)
