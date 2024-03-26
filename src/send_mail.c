@@ -297,8 +297,8 @@ send_mail(int sockfd, struct mail *mail, int listfd, int ctrlfd, bool bounce)
 			free(reply);
 			return do_bouncemail(listfd, ctrlfd, mail->from);
 		} else {
-			log_error(LOG_ARGS, "Error in RCPT TO. Reply = [%s]",
-					reply);
+			log_error(LOG_ARGS, "Error in RCPT TO. RCPT = [%s],"
+			    " Reply = [%s]", mail->from, reply);
 			free(reply);
 			return MLMMJ_RCPTTO;
 		}
