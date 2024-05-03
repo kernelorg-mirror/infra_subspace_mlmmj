@@ -30,7 +30,7 @@ tests_mlmmj_SOURCES = \
 	tests/mlmmj_tests.c
 tests_mlmmj_LDADD = \
 	$(top_builddir)/src/libmlmmj.a \
-	@ATF_LIBS@ -lrt
+	@ATF_LIBS@
 
 tests_fakesmtpd_SOURCES = \
 	tests/fakesmtpd.c
