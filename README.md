@@ -63,6 +63,7 @@ To use mlmmj, do the following:
     In the case of a list called mlmmj-test below /var/spool/mlmmj it makes the
     following directories:
 
+    ```
     /var/spool/mlmmj/mlmmj-test/incoming
     /var/spool/mlmmj/mlmmj-test/queue
     /var/spool/mlmmj/mlmmj-test/queue/discarded
@@ -77,6 +78,7 @@ To use mlmmj, do the following:
     /var/spool/mlmmj/mlmmj-test/digesters.d
     /var/spool/mlmmj/mlmmj-test/nomailsubs.d
     /var/spool/mlmmj/mlmmj-test/requeue
+    ```
 
     NOTE: The mailinglist directory (/var/spool/mlmmj/mlmmj-test in our
     example) have to be owned by the user the mailserver writes as. On some
