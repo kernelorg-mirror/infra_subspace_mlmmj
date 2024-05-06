@@ -150,8 +150,3 @@ Tunables in include/mlmmj.h:
    The defaults should be good for most people though.
 
 Have fun!
-
-Mads Martin Joergensen <mmj at mmj dot dk>
-Morten K. Poulsen <morten at afdelingp dot dk>
-Ben Schmidt <mail_ben_schmidt at yahoo dot com dot au>
-Baptiste Daroussin <bapt at nours.eu>
