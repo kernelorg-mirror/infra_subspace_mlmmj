@@ -1,7 +1,6 @@
 README.footers
 
-Footers in Mlmmj
-================
+# Footers in Mlmmj
 
 Mlmmj's built-in footer support is very rudimentary. It will work for plain
 text emails, and that's about it. It doesn't understand HTML or MIME or
@@ -18,27 +17,24 @@ of people over the years quite satisfactorily, so this is not a high priority.
 
 Here are some pre-processors you can use.
 
-alterMIME
----------
+## alterMIME
 
 The mlmmj-amime-receive script is designed to work with a program called
 alterMIME. The script itself (in amime-receive in the contrib directory)
 contains links to that software, and instructions.
 
-Foot Filter
------------
+## Foot Filter
 
 alterMIME didn't allow me to reach my particular goals, so I wrote an
 alternative called Foot Filter. It is a single source-file C program; the code
-and a very simple Makefile can be found in foot_filter in the contrib
+and a very simple Makefile can be found in foot\_filter in the contrib
 directory, along with an altered version of mlmmj-amime-receive, called
 mlmmj-recieve-ff.
 
 Foot Filter will output documentation if you run it without arguments, and
 again, instructions for the script that handles the piping are found within it.
 
-Py-MIME
--------
+## Py-MIME
 
 A third option is Py-MIME. It was developed for use at The Document Foundation
 (LibreOffice) and is included in pymime in the contrib directory.

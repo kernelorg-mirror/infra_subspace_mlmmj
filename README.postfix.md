@@ -50,9 +50,9 @@ Postfix virtual domains (so you can host multiple domains on the same server).
         # A map to forward mail to a dummy domain
         virtual_alias_maps = hash:/var/spool/mlmmj/virtual
 
-	# Allow virtual alias maps to specify only the user part of the address
-	# and have the +extension part preserved when forwarding, so that
-	# list-name+subscribe, list-name+confsub012345678, etc. will all work
+        # Allow virtual alias maps to specify only the user part of the address
+        # and have the +extension part preserved when forwarding, so that
+        # list-name+subscribe, list-name+confsub012345678, etc. will all work
         propagate_unmatched_extensions = virtual
 
         # A map to forward mail for the dummy domain to the Mlmmj transport
@@ -78,14 +78,14 @@ Postfix virtual domains (so you can host multiple domains on the same server).
  6) (For each list) Add entries to the Postfix tables to accept mail for the
     list and forward it to the Mlmmj transport:
 
-    /var/spool/mlmmj/virtual:
-        list-name@domain.tld    domain.tld--list-name@localhost.mlmmj
+        /var/spool/mlmmj/virtual:
+            list-name@domain.tld    domain.tld--list-name@localhost.mlmmj
 
-    /var/spool/mlmmj/transport:
-        # for a flat structure
-        domain.tld--list-name@localhost.mlmmj   mlmmj:list-dir
-        # for a hierarchical structure
-        domain.tld--list-name@localhost.mlmmj   mlmmj:domain.tld/list-name
+        /var/spool/mlmmj/transport:
+            # for a flat structure
+            domain.tld--list-name@localhost.mlmmj   mlmmj:list-dir
+            # for a hierarchical structure
+            domain.tld--list-name@localhost.mlmmj   mlmmj:domain.tld/list-name
 
     Note that we have used a dummy domain 'localhost.mlmmj' to connect the
     virtual alias with the Mlmmj transport. This could be anything as long as
