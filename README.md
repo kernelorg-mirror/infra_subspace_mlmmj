@@ -4,36 +4,33 @@ independence.
 
 The functionality:
 
- · Archive
- · Custom headers / footer
- · Fully automated bounce handling (similar to ezmlm)
- · Complete requeueing functionality
- · Moderation functionality
- · Subject prefix
- · Subscribers only posting
- · Regular expression access control
- · Functionality to retrieve old posts
- · Web interface
- · Digests
- · No-mail subscription
- · VERP support
- · Delivery Status Notification (RFC1891) support
- · Rich, customisable texts for automated operations
+ * Archive
+ * Custom headers / footer
+ * Fully automated bounce handling (similar to ezmlm)
+ * Complete requeueing functionality
+ * Moderation functionality
+ * Subject prefix
+ * Subscribers only posting
+ * Regular expression access control
+ * Functionality to retrieve old posts
+ * Web interface
+ * Digests
+ * No-mail subscription
+ * VERP support
+ * Delivery Status Notification (RFC1891) support
+ * Rich, customisable texts for automated operations
 
 To use mlmmj, do the following:
-
- -1) If you're building from source you must make sure you've checked out
-    $ git clone https://codeberg.org/mlmmj/listtexts
 
  0) Compile it if you're not using a binary package such as dpkg, rpm or
     a ports collection from a BSD or Gentoo. To compile, untar the tar-ball
     and do:
 
-    $ autoreconf -i && ./configure && make && make install
+        $ autoreconf -i && ./configure && make && make install
 
-		If you want to filter multipart/mime messages, pass the option
-		--enable-receive-strip to configure, and take a look at
-		contrib/receivestrip/README.
+    If you want to filter multipart/mime messages, pass the option
+    --enable-receive-strip to configure, and take a look at
+    contrib/receivestrip/README.
 
  1) Configure a recipient delimiter. The default is to use '+', and in
     Postfix it's done by adding
@@ -43,7 +40,7 @@ To use mlmmj, do the following:
     to /etc/postfix/main.cf. In Exim it can be done by adding
 
         local_part_suffix = +*
-	local_part_suffix_optional
+        local_part_suffix_optional
 
     to the "userforward:" and the "localuser:" router in /etc/exim/exim.conf,
     and also add "local_part_suffix = +*" to the system_aliases function. Also
@@ -89,14 +86,14 @@ To use mlmmj, do the following:
  3) Make the changes to your mailserver aliases that came as output from
     mlmmj-make-ml. Following the example above they will look like this:
 
-    mlmmj-test:     "|/usr/bin/mlmmj-receive -L /var/spool/mlmmj/mlmmj-test"
+        mlmmj-test:     "|/usr/bin/mlmmj-receive -L /var/spool/mlmmj/mlmmj-test"
 
     NOTE: Don't forget newaliases.
 
  4) Start mlmmj-maintd (remember full path when starting it!) or add it to
     crontab with -F switch. The recommended way for now is to run it via cron:
 
-    "0 */2 * * *  /usr/bin/mlmmj-maintd -F -L /var/spool/mlmmj/mlmmj-test"
+        "0 */2 * * *  /usr/bin/mlmmj-maintd -F -L /var/spool/mlmmj/mlmmj-test"
 
     It should be started as root, as mlmmj-maintd will become the user owning
     the listdir (/var/spool/mlmmj/mlmmj-test), and log it's last maintenance
@@ -107,14 +104,17 @@ To use mlmmj, do the following:
 
     If you have lists more deeply nested below /var/spool/mlmmj, use
     something like:
+
+```
     find /var/spool/mlmmj -mindepth 1 -maxdepth 1 -type d \
         -exec /usr/bin/mlmmj-maintd -F -d {} \;
+```
 
 That's it! You probably want to go through the next steps too.
 
  5) Subscribe some people
 
-    /usr/bin/mlmmj-sub -L /var/spool/mlmmj/mlmmj-test/ -a joe@domain.tld
+        /usr/bin/mlmmj-sub -L /var/spool/mlmmj/mlmmj-test/ -a joe@domain.tld
 
     etc.
 
@@ -125,15 +125,16 @@ That's it! You probably want to go through the next steps too.
     Reply-To: mlmmj-test@domain.tld
 
  7) If you want every mail to have something like:
-    -- 
-    To unsubscribe send a mail to coollist+unsubscribe@lists.domain.net
+
+        To unsubscribe send a mail to coollist+unsubscribe@lists.domain.net
 
     Just add what you want to a file named "footer" in the same dir as
     "customheaders" (listdir/control/).
 
  8) If you want a prefix on the subject, to make it look like this:
-    Subject: [mlmmj-test] how are we doing?
-    Simply do 'echo "[mlmmj-test]" > control/prefix
+
+        Subject: [mlmmj-test] how are we doing?
+        Simply do 'echo "[mlmmj-test]" > control/prefix
 
  9) For having a moderated list, simply create a file called 'moderated' in the
     control/ directory. Moderators are added to a file called 'moderators' in
@@ -148,6 +149,7 @@ Tunables in include/mlmmj.h:
 
 Have fun!
 
-	Mads Martin Joergensen <mmj at mmj dot dk>
-	Morten K. Poulsen <morten at afdelingp dot dk>
-	Ben Schmidt <mail_ben_schmidt at yahoo dot com dot au>
+Mads Martin Joergensen <mmj at mmj dot dk>
+Morten K. Poulsen <morten at afdelingp dot dk>
+Ben Schmidt <mail_ben_schmidt at yahoo dot com dot au>
+Baptiste Daroussin <bapt at nours.eu>
