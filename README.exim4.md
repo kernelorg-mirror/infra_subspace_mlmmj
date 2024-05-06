@@ -23,24 +23,29 @@ Notes:
 
 1. In the main configuration section:
 
+```
 MLMMJ_HOME=/var/spool/mlmmj
 domainlist mlmmj_domains = list.example.net
+```
 
+2. Add +mlmmj\_domains to relay\_to\_domains:
 
-2. Add +mlmmj_domains to relay_to_domains:
-
+```
 domainlist relay_to_domains = other.domain : +mlmmj_domains
-
+```
 
 3. mlmmj is barely interested in delay warnings, so add this in the main
 configuration:
 
+```
 delay_warning_condition = ${if match_domain{$domain}{+mlmmj_domains}{no}{yes}}
+```
 
 
 4. In the routers section (before the dnslookup router, preferably at the
 beginning):
 
+```
 mlmmj_router:
   driver = accept
   domains = +mlmmj_domains
@@ -53,10 +58,12 @@ mlmmj_router:
   headers_remove = Delivered-To
   headers_add = Delivered-To: $local_part$local_part_suffix@$domain
   transport = mlmmj_transport
+```
 
 
 If you want VERP to be done by your MTA, also add this:
 
+```
 verp_router:
   driver = dnslookup
   domains = !+mlmmj_domains
@@ -66,19 +73,23 @@ verp_router:
   # only the un-VERPed bounce addresses are handled
   senders = \N^.+\+bounces-\d+@.+\N
   transport = verp_smtp
+```
 
 
-To prevent temporary errors for not-existing lists, add !+mlmmj_domains to the
+To prevent temporary errors for not-existing lists, add !+mlmmj\_domains to the
 domains condition of the dnslookup router:
 
+```
 dnslookup:
   driver = dnslookup
   domains = !+mlmmj_domains : !+local_domains
 [...]
+```
 
 5. Somewhere in the transports section. (Change the path of mlmmj-receive if you
 don't use the default location!):
 
+```
 mlmmj_transport:
   driver = pipe
   return_path_add
@@ -87,9 +98,11 @@ mlmmj_transport:
   home_directory = MLMMJ_HOME
   current_directory = MLMMJ_HOME
   command = /usr/local/bin/mlmmj-receive -F -L MLMMJ_HOME/${lc:$local_part}
+```
 
 If you want VERP to be done by your MTA, also add this:
 
+```
 verp_smtp:
   driver = smtp
   # put recipient address into return_path
@@ -101,18 +114,20 @@ verp_smtp:
   # Errors-To: may carry old return_path
   headers_remove = Errors-To
   headers_add = Errors-To: $return_path
+```
 
 
 6. Test your setup with
 
+```
 $ exim -bt mlmmj-test@your.list.domain
 mlmmj-test@your.list.domain
   router = mlmmj_router, transport = mlmmj_transport
+```
 
 If you get different output, run it with -d to see what's going wrong.
 If not, you're done!
 
 
-
-	Jakob Hirsch (jh at plonk dot de)
+Jakob Hirsch (jh at plonk dot de)
 
