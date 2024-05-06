@@ -44,6 +44,7 @@ IMPORTANT: if "moderate" is used then don't forget to add people who should
 
 The flow through the access system is something like this:
 
+````
                deny       +------+
        +----------------->| deny |
        |                  +------+
@@ -63,6 +64,7 @@ The flow through the access system is something like this:
        |                  +--------------+        |
        |       send                               |
        +------------------------------------------+
+````
 
 * modnonsubposts is also processed here, and subonlypost (the flow
   may be to deny or discard for subonlypost without modnonsubposts).
@@ -71,33 +73,41 @@ The flow through the access system is something like this:
 First a simple example. This rule set will reject any mail that is NOT plain
 text, or has a subject that contains "BayStar", and allow anything else:
 
+````
  deny !^Content-Type: text/plain
  deny ^Subject:.*BayStar
  allow
+````
 
 To allow only text mails, but have the moderators moderate every html mail one
 would use this:
 
+````
  allow ^Content-Type: text/plain
  moderate ^Content-Type: text/html
  deny
+````
 
 Now on to a more advanced example. Morten can post anything, Mads Martin can
 post if the subject does not contain "SCO". Everything else is denied:
 
+````
  allow ^From: Morten
  deny ^Subject:.*SCO
  allow ^From: Mads Martin
  deny
+````
 
 The last rule (deny) can be left out, as deny is the default action.
 
 A third example. Deny any mails with "discount", "weightloss", or "bonus" in
 the subject. Allow PGP signed and plain text mails. Anything else is denied:
 
+````
  deny ^Subject:.*discount
  deny ^Subject:.*weightloss
  deny ^Subject:.*bonus
  allow ^Content-Type: multipart/signed
  allow ^Content-Type: text/plain
+````
 
