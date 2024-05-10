@@ -152,7 +152,7 @@ if [ -z "$MLMMJMAINTD" ]; then
 fi
 
 ALIAS="$LISTNAME:  \"|$MLMMJRECEIVE -L $LISTDIR/\""
-CRONENTRY="0 */2 * * * \"$MLMMJMAINTD -F -L $LISTDIR/\""
+CRONENTRY="0 */2 * * * $MLMMJMAINTD -F -L $LISTDIR/"
 
 
 if [ -z "$ADDALIAS" ]; then
