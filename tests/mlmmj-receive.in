@@ -5,6 +5,7 @@
 tests_init \
 	basics \
 	simple \
+	simple \
 	subscribe \
 	subscribe_digest \
 	subscribe_nomail \
@@ -25,7 +26,8 @@ tests_init \
 	normal_email \
 	delheaders \
 	customheaders \
-	verp
+	verp \
+	normal_email_with_dot
 
 mlmmjreceive=$(command -v mlmmj-receive)
 
@@ -2879,4 +2881,67 @@ QUIT
 EOF
 	atf_check -o file:expected-3.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-3.txt
 	atf_check -s exit:1 test -f mail-4.txt
+}
+
+normal_email_with_dot_body()
+{
+	atf_check $top_builddir/tests/fakesmtpd
+	trap kill_fakesmtp EXIT TERM
+	init_ml list
+	rmdir list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
+	echo test@mlmmjtest > list/control/listaddress
+	echo "25678" > list/control/smtpport
+	echo "heloname" > list/control/smtphelo
+
+	printf "user@test\nuser2@test" > list/subscribers.d/u
+cat > first <<EOF
+From: bob@test
+To: test@mlmmjtest
+Return-path: bob@test
+Subject: yeah
+
+Hello
+.world
+EOF
+
+cat > nosubject <<EOF
+From: bob@test
+To: test@mlmmjtest
+Return-path: bob@test
+
+Hello
+.world
+EOF
+	atf_check -s exit:0 $mlmmjreceive -L list -F <first
+	cat >> expected-1.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-1-user=test@mlmmjtest>
+RCPT TO:<user@test>
+DATA
+From: bob@test
+To: test@mlmmjtest
+Subject: yeah
+
+Hello
+.world
+
+.
+MAIL FROM:<test+bounces-1-user2=test@mlmmjtest>
+RCPT TO:<user2@test>
+DATA
+From: bob@test
+To: test@mlmmjtest
+Subject: yeah
+
+Hello
+.world
+
+.
+QUIT
+EOF
+	atf_check -o file:expected-1.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-1.txt
+	touch list/control/footer
+	atf_check -s exit:0 $mlmmjreceive -L list -F <first
+	atf_check -o file:expected-1.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-1.txt
 }
