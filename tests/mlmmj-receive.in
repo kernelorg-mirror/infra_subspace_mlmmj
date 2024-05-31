@@ -2924,7 +2924,7 @@ To: test@mlmmjtest
 Subject: yeah
 
 Hello
-.world
+..world
 
 .
 MAIL FROM:<test+bounces-1-user2=test@mlmmjtest>
@@ -2935,7 +2935,7 @@ To: test@mlmmjtest
 Subject: yeah
 
 Hello
-.world
+..world
 
 .
 QUIT

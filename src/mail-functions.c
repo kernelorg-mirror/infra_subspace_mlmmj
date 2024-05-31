@@ -91,9 +91,19 @@ write_mailbody(int sockfd, FILE *fp, const char *tohdr)
 		next = fgetc(fp);
 		dprintf(sockfd, "\r\n");
 		if (next == '.') {
+			/*
+			 * o Before sending a line of mail text, the SMTP client checks the
+			 * first character of the line. If it is a period, one additional
+			 * period is inserted at the beginning of the line.
+			 * 
+			 * o When a line of mail text is received by the SMTP server, it checks
+			 * the line. If the line is composed of a single period, it is
+			 * treated as the end of mail indicator. If the first character is a
+			 * period and there are other characters on the line, the first
+			 * character is deleted.
+			 */
 			c = fgetc(fp);
-			if (c == EOF || c == '\n')
-				dprintf(sockfd, ".");
+			dprintf(sockfd, ".");
 			ungetc(c, fp);
 		}
 		if (addhdr && tohdr != NULL && next == '\n') {

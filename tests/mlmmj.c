@@ -611,7 +611,7 @@ ATF_TC_BODY(write_mailbody, tc)
 	}
 
 	/* New line starting with a dot */
-	atf_utils_create_file("myemailbody.txt", "line\n.no");
+	atf_utils_create_file("myemailbody.txt", "line\n..no");
 	fp = fopen("myemailbody.txt", "r");
 	ATF_REQUIRE(fp != NULL);
 	fd = open("out.txt", O_CREAT|O_TRUNC|O_WRONLY, 0644);
