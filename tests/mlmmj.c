@@ -611,14 +611,14 @@ ATF_TC_BODY(write_mailbody, tc)
 	}
 
 	/* New line starting with a dot */
-	atf_utils_create_file("myemailbody.txt", "line\n..no");
+	atf_utils_create_file("myemailbody.txt", "line\n.no");
 	fp = fopen("myemailbody.txt", "r");
 	ATF_REQUIRE(fp != NULL);
 	fd = open("out.txt", O_CREAT|O_TRUNC|O_WRONLY, 0644);
 	write_mailbody(fd, fp,  "test@plop.meh");
 	close(fd);
 	fclose(fp);
-	if (!atf_utils_compare_file("out.txt", "line\r\n.no")) {
+	if (!atf_utils_compare_file("out.txt", "line\r\n..no")) {
 		atf_utils_cat_file("out.txt", ">");
 		atf_tc_fail("Unexpected output (single new line with a .)");
 	}
