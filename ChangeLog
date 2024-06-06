@@ -1,3 +1,6 @@
+1.4.6
+ o mlmmj-make-ml: fix on OpenBSD
+ o Fix another regression regarding RFC 5321
 1.4.5
  o Improve error messages in case of smtp failure
  o Regression: fix mlmmj-send -r
