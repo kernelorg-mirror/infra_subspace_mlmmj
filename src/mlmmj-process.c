@@ -209,8 +209,6 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 		mail.to = efromsender;
 		mail.fp = fopen(qfname, "r");
 		if (send_single_mail(&mail, ml, false))
-			save_queue(qfname, &mail);
-		else
 			unlink(qfname);
 		fclose(mail.fp);
 	}
@@ -221,8 +219,6 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 		mail.to = efromsender;
 		mail.fp = fopen(queuefilename, "r");
 		if (send_single_mail(&mail, ml, false))
-			save_queue(queuefilename, &mail);
-		else
 			unlink(queuefilename);
 		fclose(mail.fp);
 		exit(EXIT_SUCCESS);
