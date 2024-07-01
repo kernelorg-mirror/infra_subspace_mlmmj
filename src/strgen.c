@@ -32,6 +32,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <locale.h>
+#include <xlocale.h>
 
 #include "xmalloc.h"
 #include "mlmmj.h"
