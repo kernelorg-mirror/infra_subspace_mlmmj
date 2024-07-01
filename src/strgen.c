@@ -32,7 +32,9 @@
 #include <ctype.h>
 #include <errno.h>
 #include <locale.h>
+#if defined(__APPLE__)
 #include <xlocale.h>
+#endif
 
 #include "xmalloc.h"
 #include "mlmmj.h"

@@ -1,10 +1,9 @@
 ## Process this file with automake to produce Makefile.in
 
 EXTRA_DIST = include LICENSE UPGRADE FAQ \
-	     TUNABLES README.access README.archives README.listtexts man \
-	     README.exim4 README.sendmail README.security README.qmail \
-	     README.postfix README.footers \
-	     Kyuafile tests/Kyuafile \
+	     TUNABLES.md README.access.md README.archives.md README.listtexts.md \
+	     man README.exim4.md README.sendmail.md README.qmail.md \
+	     README.postfix.md README.footers.md Kyuafile tests/Kyuafile \
 	     tests/dsnmail
 
 CLEANFILES = *~ mlmmj-*.tar.*
