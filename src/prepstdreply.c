@@ -310,9 +310,6 @@ do_substitute(xstring *str, const char *line, int listfd, int ctrlfd, text *txt)
 		token = xstrndup(key + 5, endpos - key + 5);
 		if (strchr(token, '/') == NULL) /* ensure stay in the directory */
 			value = textcontent(listfd, token);
-	} else if(strcmp(key, "originalmail") == 0) {
-		/* DEPRECATED: use %originalmail% instead */
-		fputs(" %originalmail 100%", str->fp);
 	} else {
 		found = false;
 		tll_foreach(txt->substs, it) {
@@ -361,9 +358,6 @@ static void substitute_one(char **line_p, char **pos_p, int *width_p,
 	} else if(strncmp(token, "text ", 5) == 0) {
 		token = filename_token(token + 5);
 		if (token != NULL) value = textcontent(listfd, token);
-	} else if(strcmp(token, "originalmail") == 0) {
-		/* DEPRECATED: use %originalmail% instead */
-		value = xstrdup(" %originalmail 100%");
 	} else {
 		tll_foreach(txt->substs, it) {
 			subst = it->item;

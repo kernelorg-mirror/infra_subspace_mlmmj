@@ -83,7 +83,6 @@ send_probe(struct ml *ml, const char *addr)
 	txt = open_text(ml->fd, "probe", NULL, NULL, NULL, "bounce-probe");
 	MY_ASSERT(txt);
 	register_default_unformatted(txt, ml);
-	register_unformatted(txt, "bouncenumbers", "%bouncenumbers%"); /* DEPRECATED */
 	fls = init_file_lines_fd(openat(bfd, addr, O_RDONLY), ':');
 	register_formatted(txt, "bouncenumbers",
 			rewind_file_lines, get_file_line, fls);

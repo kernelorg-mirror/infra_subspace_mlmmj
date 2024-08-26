@@ -213,7 +213,6 @@ notify_sub(struct ml *ml, const char *subaddr, enum subtype typesub,
 	MY_ASSERT(txt);
 	register_default_unformatted(txt, ml);
 	register_unformatted(txt, "subaddr", subaddr);
-	register_unformatted(txt, sub ? "newsub" : "oldsub", subaddr); /* DEPRECATED */
 	queuefilename = prepstdreply(txt, ml, "$listowner$", "$listowner$", NULL);
 	MY_ASSERT(queuefilename);
 	close_text(txt);
@@ -307,7 +306,6 @@ generate_subconfirm(struct ml *ml, const char *subaddr, enum subtype typesub,
 	MY_ASSERT(txt);
 	register_default_unformatted(txt, ml);
 	register_unformatted(txt, "subaddr", subaddr);
-	register_unformatted(txt, "confaddr", confirmaddr); /* DEPRECATED */
 	register_unformatted(txt, "confirmaddr", confirmaddr);
 	queuefilename = prepstdreply(txt, ml, "$helpaddr$", subaddr, confirmaddr);
 	MY_ASSERT(queuefilename);
@@ -548,10 +546,8 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 	MY_ASSERT(txt);
 	register_default_unformatted(txt, ml);
 	register_unformatted(txt, "subaddr", subaddr);
-	register_unformatted(txt, "moderateaddr", replyto); /* DEPRECATED */
 	register_unformatted(txt, "permitaddr", replyto);
 	register_unformatted(txt, "obstructaddr", obstruct);
-	register_unformatted(txt, "moderators", "%gatekeepers%"); /* DEPRECATED */
 	register_formatted(txt, "gatekeepers",
 			rewind_memory_lines, get_memory_line, mls);
 	queuefilename = prepstdreply(txt, ml, "$listowner$", to, replyto);
@@ -600,7 +596,6 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 	MY_ASSERT(txt);
 	register_default_unformatted(txt, ml);
 	register_unformatted(txt, "subaddr", subaddr);
-	register_unformatted(txt, "moderators", "%gatekeepers"); /* DEPRECATED */
 	register_formatted(txt, "gatekeepers",
 			rewind_memory_lines, get_memory_line, mls);
 	queuefilename = prepstdreply(txt, ml, "$listowner$", subaddr, NULL);

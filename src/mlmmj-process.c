@@ -169,10 +169,8 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 	register_default_unformatted(txt, ml);
 	register_unformatted(txt, "subject", subject);
 	register_unformatted(txt, "posteraddr", posteraddr);
-	register_unformatted(txt, "moderateaddr", replyto); /* DEPRECATED */
 	register_unformatted(txt, "releaseaddr", replyto);
 	register_unformatted(txt, "rejectaddr", reject);
-	register_unformatted(txt, "moderators", "%moderators%"); /* DEPRECATED */
 	register_formatted(txt, "moderators",
 			rewind_memory_lines, get_memory_line, mls);
 	register_originalmail(txt, mailfilename);
@@ -194,7 +192,6 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 		register_default_unformatted(txt, ml);
 		register_unformatted(txt, "subject", subject);
 		register_unformatted(txt, "posteraddr", posteraddr);
-		register_unformatted(txt, "moderators", "%moderators%"); /* DEPRECATED */
 		register_formatted(txt, "moderators",
 				rewind_memory_lines, get_memory_line, mls);
 		register_originalmail(txt, mailfilename);

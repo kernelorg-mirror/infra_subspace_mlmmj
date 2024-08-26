@@ -294,8 +294,6 @@ int send_digest(struct ml *ml, int firstindex, int lastindex,
 	snprintf(buf, sizeof(buf), "%d", issue);
 	register_unformatted(txt, "digestissue", buf);
 
-	register_unformatted(txt, "digestthreads", "%digestthreads%"); /* DEPRECATED */
-
 	tls = init_thread_list(ml->dir, firstindex, lastindex);
 	register_formatted(txt, "digestthreads", rewind_thread_list,
 			get_thread_list_line, tls);
