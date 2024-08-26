@@ -42,7 +42,7 @@
   diskusie.
 %endif%
 
-%wrap%Tento úmysel môžete potvrdiť poslaním správy na <$confaddr$>, čo
+%wrap%Tento úmysel môžete potvrdiť poslaním správy na <$confirmaddr$>, čo
 jednoducho spravíte odpoveďou na tento mail. Na predmete a obsahu správy
 nezáleží.
 

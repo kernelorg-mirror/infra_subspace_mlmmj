@@ -44,7 +44,7 @@
 %endif%
 
 %wrap%Um sicher zu stellen, dass Sie das wirklich wollen, senden Sie eine
-Nachricht an <$confaddr$>, was gewöhnlich durch einfaches Antworten auf
+Nachricht an <$confirmaddr$>, was gewöhnlich durch einfaches Antworten auf
 diese Mail erfolgen kann. Betreff und Text Ihrer Antwort können beliebig
 sein.
 

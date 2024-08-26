@@ -42,7 +42,7 @@
   correio.
 %endif%
 
-%wrap%Para confirmar a operação, envie uma mensagem para <$confaddr$>
+%wrap%Para confirmar a operação, envie uma mensagem para <$confirmaddr$>
 bastando, para o efeito, responder a esta mensagem. O assunto e o texto da
 mensagem pode estar vazio.
 

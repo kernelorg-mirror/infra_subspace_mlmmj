@@ -45,7 +45,7 @@
   postituslistan.
 %endif%
 
-%wrap%Vahvistaaksesi toimenpiteen lähetä viesti osoitteeseen <$confaddr$>
+%wrap%Vahvistaaksesi toimenpiteen lähetä viesti osoitteeseen <$confirmaddr$>
 esimerkiksi vastaamalla tähän sähköpostiviestiin. Viestin otsikolla ja
 sisällöllä ei ole merkitystä.
 

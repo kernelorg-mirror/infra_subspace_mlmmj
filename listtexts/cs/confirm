@@ -40,7 +40,7 @@
   požádal o vyřazení adresy <$subaddr$> z konference.
 %endif%
 
-%wrap%Pro potvrzení odhlášení zašlete prosím zprávu na <$confaddr$>,
+%wrap%Pro potvrzení odhlášení zašlete prosím zprávu na <$confirmaddr$>,
 což většinou znamená jen odpovědět na tento email. Předmět a obsah
 mailu nehrají roli, může to být cokoli.
 

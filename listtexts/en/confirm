@@ -41,7 +41,7 @@
   has requested that the email address <$subaddr$> be removed from the list.
 %endif%
 
-%wrap%To confirm you want to do this, please send a message to <$confaddr$>
+%wrap%To confirm you want to do this, please send a message to <$confirmaddr$>
 which can usually be done simply by replying to this message. The subject
 and the body of the message can be anything.
 

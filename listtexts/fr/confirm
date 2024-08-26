@@ -43,7 +43,7 @@
 %endif%
 
 %wrap%Pour confirmer que vous voulez faire cela, veuillez envoyer un message
-à <$confaddr$> ce qui peut, habituellement, être fait facilement en
+à <$confirmaddr$> ce qui peut, habituellement, être fait facilement en
 répondant à ce message. Le sujet et le corps du message peuvent contenir
 n'importe quoi.
 

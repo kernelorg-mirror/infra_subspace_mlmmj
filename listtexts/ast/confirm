@@ -41,7 +41,7 @@
   pidió que la direición de corréu <$subaddr$> se desanicie de la llista.
 %endif%
 
-%wrap%Pa confirmar que quies facelo, unvia un mensaxe a <$confaddr$> lo que
+%wrap%Pa confirmar que quies facelo, unvia un mensaxe a <$confirmaddr$> lo que
 de vezu pue facese simplemente respondiendo a esti mensaxe. L'asuntu y
 cuerpu del mensaxe puen ser cualesquier cosa.
 

@@ -42,7 +42,7 @@
   dalla lista.
 %endif%
 
-%wrap%Per confermare l'azione, invia un messaggio a <$confaddr$>, tale
+%wrap%Per confermare l'azione, invia un messaggio a <$confirmaddr$>, tale
 azione può essere eseguita semplicemente rispondendo al messaggio. L'oggetto
 e il corpo del messaggio possono essere vuoti.
 
