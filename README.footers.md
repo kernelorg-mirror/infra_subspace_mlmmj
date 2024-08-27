@@ -33,11 +33,3 @@ mlmmj-recieve-ff.
 
 Foot Filter will output documentation if you run it without arguments, and
 again, instructions for the script that handles the piping are found within it.
-
-## Py-MIME
-
-A third option is Py-MIME. It was developed for use at The Document Foundation
-(LibreOffice) and is included in pymime in the contrib directory.
-
-
-
