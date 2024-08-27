@@ -56,68 +56,6 @@
 
 #define UNWANTED_MIME_HDR "X-ThisMailContainsUnwantedMimeParts: N\n"
 
-/* extract mime_type and boundary from the Content-Type header
- * allocates a string for the mime_type if one is found
- * always allocates a boundarie (using "--" when none is found)
- * the caller needs to free the allocated strings
-*/
-static void extract_boundary(strlist *allhdrs, char** mime_type, char** boundary)
-{
-	*boundary = NULL;
-	*mime_type = NULL;
-	tll_foreach(*allhdrs, header) {
-		char* hdr = header->item;
-		if(hdr && !strncasecmp(hdr,"Content-Type:",13)){
-			char* pos = hdr + 13;
-			size_t len = 0;
-
-			/* find the start of the mimetype */
-			while(*pos && (*pos == ' ' || *pos == '\t'))
-				++pos;
-
-			if(*pos == '"'){                   /* handle quoted mime types */
-				++pos;
-				while(pos[len] && pos[len] != '"')
-					++len;
-			}else{
-				while(pos[len] && pos[len] != ' ' && pos[len] != '\t' && pos[len] != ';')
-					++len;
-			}
-
-			/* extract mime type if any */
-			if(len){
-				*mime_type = xmalloc(len+1);
-				strncpy(*mime_type,pos,len);
-				(*mime_type)[len] = '\0';
-			}
-
-			pos += len;
-			len = 0;
-			/* find start of the boundary info */
-			while(*pos && strncasecmp(pos,"boundary=",9))
-				++pos;
-			if(*pos == '\0')         /* no boundary */
-				break;
-
-			pos += 9;
-			if(*pos == '"'){         /* quoted boundary */
-				++pos;
-				while(pos[len] && pos[len] != '"')
-					++len;
-			}else{                  /* unquoted boundary */
-				while(pos[len] && pos[len] != ' ' && pos[len] != '\t' && pos[len] != ';')
-					++len;
-			}
-
-			/* extract boundary */
-			*boundary = xmalloc(len + 3);
-			strcpy(*boundary,"--");
-			strncat(*boundary,pos,len);
-			break;
-		}
-	}
-}
-
 /* read all mail headers and save them in a strlist
  * check what to do with parts that contain the given mime_type
  *return values
@@ -151,7 +89,7 @@ static int read_hdrs(int fd, strlist *allhdrs, strlist* delmime, strlist* denymi
 		}
 		free(line);
 	}
-	extract_boundary(allhdrs,&mime_type,boundary);
+	parse_content_type(allhdrs,&mime_type,boundary);
 	if(mime_type) {
 		/* check if this part should be stripped */
 		if(delmime && findit(mime_type, delmime))
