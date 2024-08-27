@@ -36,7 +36,7 @@ static char *action_strs[] = {
 };
 
 actions_t
-do_access(strlist *rules, strlist *headers, const char *from, char **msg)
+do_access(strlist *rules, strlist *headers, const char *from, char **msg, char **qualifier)
 {
 	unsigned int match;
 	char *rule_ptr;
@@ -49,6 +49,8 @@ do_access(strlist *rules, strlist *headers, const char *from, char **msg)
 	size_t i = 0;
 	if (msg != NULL)
 		*msg = NULL;
+	if (qualifier != NULL)
+		*qualifier = NULL;
 
 	if (rules == NULL)
 		return (ACT_ALLOW);
@@ -80,6 +82,14 @@ do_access(strlist *rules, strlist *headers, const char *from, char **msg)
 		}
 
 		if (*rule_ptr == ' ') {
+			rule_ptr++;
+		} else if (*rule_ptr == '-') {
+			rule_ptr++;
+			const char *qual = rule_ptr;
+			while (*rule_ptr != ' ' && *rule_ptr != '\0')
+				rule_ptr++;
+			if (rule_ptr - qual != 0 && qualifier != NULL)
+				*qualifier = xstrndup(qual, rule_ptr - qual);
 			rule_ptr++;
 		} else if (*rule_ptr == '\0') {
 			/* the rule is a keyword and no regexp */

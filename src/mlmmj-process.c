@@ -605,10 +605,11 @@ int main(int argc, char **argv)
 	if (access_rules != NULL) {
 		actions_t accret;
 		char *error = NULL;
+		char *qualifier = NULL;
 		/* Don't send a mail about denial to the list, but silently
 		 * discard and exit. Also do this in case it's turned off */
 		accret = do_access(access_rules, &allheaders,
-					posteraddr, &error);
+					posteraddr, &error, &qualifier);
 		if (error != NULL) {
 			log_oper(ml.fd, OPLOGFNAME, "%s", error);
 		}

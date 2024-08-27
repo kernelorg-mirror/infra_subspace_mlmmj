@@ -2930,25 +2930,43 @@ ATF_TC_BODY(do_access, tc)
 	strlist headers = tll_init();
 	tll_push_back(rules, "allow");
 	char *msg = NULL;
+	char *qualifier = NULL;
 
-	ATF_REQUIRE_EQ(do_access(NULL, NULL, "test@plop", &msg), ACT_ALLOW);
+	ATF_REQUIRE_EQ(do_access(NULL, NULL, "test@plop", &msg, &qualifier), ACT_ALLOW);
 	ATF_REQUIRE(msg == NULL);
+	ATF_REQUIRE(qualifier == NULL);
 
-	ATF_REQUIRE_EQ(do_access(&rules, NULL, "test@plop", &msg), ACT_ALLOW);
+	ATF_REQUIRE_EQ(do_access(&rules, NULL, "test@plop", &msg, &qualifier), ACT_ALLOW);
 	ATF_REQUIRE_STREQ(msg, "access - A mail from \"test@plop\" was allowed by rule #0 \"allow\"");
+	ATF_REQUIRE(qualifier == NULL);
 	tll_pop_back(rules);
 	tll_push_back(rules, "deny");
-	ATF_REQUIRE_EQ(do_access(&rules, NULL, "test@plop", &msg), ACT_DENY);
+	ATF_REQUIRE_EQ(do_access(&rules, NULL, "test@plop", &msg, &qualifier), ACT_DENY);
 	ATF_REQUIRE_STREQ(msg, "access - A mail from \"test@plop\" was denied by rule #0 \"deny\"");
+	ATF_REQUIRE(qualifier == NULL);
 	tll_pop_back(rules);
 	tll_push_back(rules, "crap");
-	ATF_REQUIRE_EQ(do_access(&rules, NULL, "test@plop", &msg), ACT_DENY);
+	ATF_REQUIRE_EQ(do_access(&rules, NULL, "test@plop", &msg, &qualifier), ACT_DENY);
 	ATF_REQUIRE_STREQ(msg, "Unable to parse rule #0 \"crap\": Missing action keyword. Denying post from \"test@plop\"");
+	ATF_REQUIRE(qualifier == NULL);
 	tll_pop_back(rules);
 	tll_push_back(headers, "from: toto@bla");
 	tll_push_back(rules, "moderate ^from: toto@");
-	ATF_REQUIRE_EQ(do_access(&rules, &headers, "test@plop", &msg), ACT_MODERATE);
+	ATF_REQUIRE_EQ(do_access(&rules, &headers, "test@plop", &msg, &qualifier), ACT_MODERATE);
 	ATF_REQUIRE_STREQ(msg, "access - A mail from \"test@plop\" with header \"from: toto@bla\" was moderated by rule #0 \"moderate ^from: toto@\"");
+	ATF_REQUIRE(qualifier == NULL);
+	tll_push_front(rules, "moderatemeh ^from: toto@");
+	ATF_REQUIRE_EQ(do_access(&rules, &headers, "test@plop", &msg, &qualifier), ACT_DENY);
+	ATF_REQUIRE_STREQ(msg, "Unable to parse rule #0 \"moderatemeh ^from: toto@\": Invalid character after action keyword. Denying post from \"test@plop\"");
+	ATF_REQUIRE(qualifier == NULL);
+	tll_push_front(rules, "moderate- ^from: toto@");
+	ATF_REQUIRE_EQ(do_access(&rules, &headers, "test@plop", &msg, &qualifier), ACT_MODERATE);
+	ATF_REQUIRE(qualifier == NULL);
+	ATF_REQUIRE_STREQ(msg, "access - A mail from \"test@plop\" with header \"from: toto@bla\" was moderated by rule #0 \"moderate- ^from: toto@\"");
+	tll_push_front(rules, "moderate-meh ^from: toto@");
+	ATF_REQUIRE_EQ(do_access(&rules, &headers, "test@plop", &msg, &qualifier), ACT_MODERATE);
+	ATF_REQUIRE_STREQ(qualifier, "meh");
+	ATF_REQUIRE_STREQ(msg, "access - A mail from \"test@plop\" with header \"from: toto@bla\" was moderated by rule #0 \"moderate-meh ^from: toto@\"");
 }
 
 ATF_TP_ADD_TCS(tp)
