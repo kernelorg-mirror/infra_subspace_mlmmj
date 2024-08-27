@@ -604,10 +604,14 @@ int main(int argc, char **argv)
 	access_rules = ctrlvalues(ml.ctrlfd, "access");
 	if (access_rules != NULL) {
 		actions_t accret;
+		char *error = NULL;
 		/* Don't send a mail about denial to the list, but silently
 		 * discard and exit. Also do this in case it's turned off */
 		accret = do_access(access_rules, &allheaders,
-					posteraddr, ml.fd);
+					posteraddr, &error);
+		if (error != NULL) {
+			log_oper(ml.fd, OPLOGFNAME, "%s", error);
+		}
 		if (accret == ACT_DENY) {
 			if ((strcasecmp(ml.addr, posteraddr) == 0) ||
 				    statctrl(ml.ctrlfd, "noaccessdenymails")) {

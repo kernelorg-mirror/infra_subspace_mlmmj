@@ -2926,23 +2926,29 @@ ATF_TC_BODY(parse_content_type, tc)
 
 ATF_TC_BODY(do_access, tc)
 {
-	int listfd = -1;
 	strlist rules = tll_init();
 	strlist headers = tll_init();
 	tll_push_back(rules, "allow");
+	char *msg = NULL;
 
-	ATF_REQUIRE_EQ(do_access(NULL, NULL, "test@plop", listfd), ACT_ALLOW);
-	ATF_REQUIRE_EQ(do_access(&rules, NULL, "test@plop", listfd), ACT_ALLOW);
+	ATF_REQUIRE_EQ(do_access(NULL, NULL, "test@plop", &msg), ACT_ALLOW);
+	ATF_REQUIRE(msg == NULL);
+
+	ATF_REQUIRE_EQ(do_access(&rules, NULL, "test@plop", &msg), ACT_ALLOW);
+	ATF_REQUIRE_STREQ(msg, "access - A mail from \"test@plop\" was allowed by rule #0 \"allow\"");
 	tll_pop_back(rules);
 	tll_push_back(rules, "deny");
-	ATF_REQUIRE_EQ(do_access(&rules, NULL, "test@plop", listfd), ACT_DENY);
+	ATF_REQUIRE_EQ(do_access(&rules, NULL, "test@plop", &msg), ACT_DENY);
+	ATF_REQUIRE_STREQ(msg, "access - A mail from \"test@plop\" was denied by rule #0 \"deny\"");
 	tll_pop_back(rules);
 	tll_push_back(rules, "crap");
-	ATF_REQUIRE_EQ(do_access(&rules, NULL, "test@plop", listfd), ACT_DENY);
+	ATF_REQUIRE_EQ(do_access(&rules, NULL, "test@plop", &msg), ACT_DENY);
+	ATF_REQUIRE_STREQ(msg, "Unable to parse rule #0 \"crap\": Missing action keyword. Denying post from \"test@plop\"");
 	tll_pop_back(rules);
 	tll_push_back(headers, "from: toto@bla");
 	tll_push_back(rules, "moderate ^from: toto@");
-	ATF_REQUIRE_EQ(do_access(&rules, &headers, "test@plop", listfd), ACT_MODERATE);
+	ATF_REQUIRE_EQ(do_access(&rules, &headers, "test@plop", &msg), ACT_MODERATE);
+	ATF_REQUIRE_STREQ(msg, "access - A mail from \"test@plop\" with header \"from: toto@bla\" was moderated by rule #0 \"moderate ^from: toto@\"");
 }
 
 ATF_TP_ADD_TCS(tp)

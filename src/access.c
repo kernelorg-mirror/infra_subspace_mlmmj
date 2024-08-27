@@ -22,10 +22,10 @@
 
 #include <string.h>
 #include <regex.h>
+#include <errno.h>
 
 #include "mlmmj.h" 
-#include "log_error.h"
-#include "log_oper.h"
+#include "xmalloc.h"
 
 static char *action_strs[] = {
 	"allowed",
@@ -36,7 +36,7 @@ static char *action_strs[] = {
 };
 
 actions_t
-do_access(strlist *rules, strlist *headers, const char *from, int listfd)
+do_access(strlist *rules, strlist *headers, const char *from, char **msg)
 {
 	unsigned int match;
 	char *rule_ptr;
@@ -47,6 +47,8 @@ do_access(strlist *rules, strlist *headers, const char *from, int listfd)
 	regex_t regexp;
 	char *hdr;
 	size_t i = 0;
+	if (msg != NULL)
+		*msg = NULL;
 
 	if (rules == NULL)
 		return (ACT_ALLOW);
@@ -70,10 +72,8 @@ do_access(strlist *rules, strlist *headers, const char *from, int listfd)
 			act = ACT_DISCARD;
 		} else {
 			errno = 0;
-			log_error(LOG_ARGS, "Unable to parse rule #%d \"%s\":"
-					" Missing action keyword. Denying post from \"%s\"",
-					i, it->item, from);
-			log_oper(listfd, OPLOGFNAME, "Unable to parse rule #%d \"%s\":"
+			if (msg != NULL)
+				xasprintf(msg, "Unable to parse rule #%d \"%s\":"
 					" Missing action keyword. Denying post from \"%s\"",
 					i, it->item, from);
 			return ACT_DENY;
@@ -83,17 +83,16 @@ do_access(strlist *rules, strlist *headers, const char *from, int listfd)
 			rule_ptr++;
 		} else if (*rule_ptr == '\0') {
 			/* the rule is a keyword and no regexp */
-			log_oper(listfd, OPLOGFNAME, "mlmmj-process: access -"
+			if (msg != NULL)
+				xasprintf(msg, "access -"
 					" A mail from \"%s\" was %s by rule #%d \"%s\"",
 					from, action_strs[act], i, it->item);
 			return act;
 		} else {
 			/* we must have space or end of string */
 			errno = 0;
-			log_error(LOG_ARGS, "Unable to parse rule #%d \"%s\":"
-					" Invalid character after action keyword."
-					" Denying post from \"%s\"", i, it->item, from);
-			log_oper(listfd, OPLOGFNAME, "Unable to parse rule #%d \"%s\":"
+			if (msg != NULL)
+				xasprintf(msg, "Unable to parse rule #%d \"%s\":"
 					" Invalid character after action keyword."
 					" Denying post from \"%s\"", i, it->item, from);
 			return ACT_DENY;
@@ -121,12 +120,9 @@ do_access(strlist *rules, strlist *headers, const char *from, int listfd)
 			regerror(err, &regexp, errbuf, sizeof(errbuf));
 			regfree(&regexp);
 			errno = 0;
-			log_error(LOG_ARGS, "regcomp() failed for rule #%d \"%s\""
+			if (msg != NULL)
+				xasprintf(msg, "regcomp() failed for rule #%d \"%s\""
 					" (message: '%s') (expression: '%s')"
-					" Denying post from \"%s\"",
-					i, it->item, errbuf, rule_ptr, from);
-			log_oper(listfd, OPLOGFNAME, "regcomp() failed for rule"
-					" #%d \"%s\" (message: '%s') (expression: '%s')"
 					" Denying post from \"%s\"",
 					i, it->item, errbuf, rule_ptr, from);
 			return ACT_DENY;
@@ -146,12 +142,14 @@ do_access(strlist *rules, strlist *headers, const char *from, int listfd)
 
 		if (match != not) {
 			if (match) {
-				log_oper(listfd, OPLOGFNAME, "mlmmj-process: access -"
+				if (msg != NULL)
+					xasprintf(msg, "access -"
 						" A mail from \"%s\" with header \"%s\" was %s by"
 						" rule #%d \"%s\"", from, hdr, action_strs[act],
 						i, it->item);
 			} else {
-				log_oper(listfd, OPLOGFNAME, "mlmmj-process: access -"
+				if (msg != NULL)
+					xasprintf(msg, "access -"
 						" A mail from \"%s\" was %s by rule #%d \"%s\""
 						" because no header matched.", from,
 						action_strs[act], i, it->item);
@@ -161,7 +159,7 @@ do_access(strlist *rules, strlist *headers, const char *from, int listfd)
 		i++;
 	}
 
-	log_oper(listfd, OPLOGFNAME, "mlmmj-process: access -"
+	xasprintf(msg, "access -"
 			" A mail from \"%s\" didn't match any rules, and"
 			" was denied by default.", from);
 	return ACT_DENY;

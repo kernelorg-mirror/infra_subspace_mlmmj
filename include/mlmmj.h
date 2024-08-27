@@ -146,7 +146,7 @@ typedef enum {
 	ACT_DISCARD,
 } actions_t;
 
-actions_t do_access(strlist *rules, strlist *headers, const char *from, int listfd);
+actions_t do_access(strlist *rules, strlist *headers, const char *from, char **msg);
 
 #define MY_ASSERT(expression) if (!(expression)) { \
 			errno = 0; \
