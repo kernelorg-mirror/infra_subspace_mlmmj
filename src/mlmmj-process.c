@@ -627,7 +627,7 @@ int main(int argc, char **argv)
 				exit(EXIT_SUCCESS);
 			}
 			txt = open_text(ml.fd, "deny", "post",
-					"access", NULL, "access");
+					"access", qualifier, "access");
 			MY_ASSERT(txt);
 			register_default_unformatted(txt, &ml);
 			register_unformatted(txt, "subject", subject);
