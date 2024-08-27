@@ -56,24 +56,6 @@
 #include "send_help.h"
 #include "send_mail.h"
 
-enum action {
-	ALLOW,
-	SEND,
-	DENY,
-	MODERATE,
-	DISCARD
-};
-
-
-static char *action_strs[] = {
-	"allowed",
-	"sent",
-	"denied",
-	"moderated",
-	"discarded"
-};
-
-
 enum modreason {
 	MODNONSUBPOSTS,
 	MODNONMODPOSTS,
@@ -224,135 +206,6 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 	    "-m", queuefilename, NULL);
 }
 
-
-static enum action do_access(strlist *rule_strs, strlist *hdrs,
-		const char *from, int listfd)
-{
-	unsigned int match;
-	char *rule_ptr;
-	char errbuf[128];
-	int err;
-	enum action act;
-	unsigned int not;
-	regex_t regexp;
-	char *hdr;
-	size_t i = 0;
-
-	tll_foreach(*rule_strs, it) {
-		rule_ptr = it->item;
-		if (strncmp(rule_ptr, "allow", 5) == 0) {
-			rule_ptr += 5;
-			act = ALLOW;
-		} else if (strncmp(rule_ptr, "send", 4) == 0) {
-			rule_ptr += 4;
-			act = SEND;
-		} else if (strncmp(rule_ptr, "deny", 4) == 0) {
-			rule_ptr += 4;
-			act = DENY;
-		} else if (strncmp(rule_ptr, "moderate", 8) == 0) {
-			rule_ptr += 8;
-			act = MODERATE;
-		} else if (strncmp(rule_ptr, "discard", 7) == 0) {
-			rule_ptr += 7;
-			act = DISCARD;
-		} else {
-			errno = 0;
-			log_error(LOG_ARGS, "Unable to parse rule #%d \"%s\":"
-					" Missing action keyword. Denying post from \"%s\"",
-					i, it->item, from);
-			log_oper(listfd, OPLOGFNAME, "Unable to parse rule #%d \"%s\":"
-					" Missing action keyword. Denying post from \"%s\"",
-					i, it->item, from);
-			return DENY;
-		}
-
-		if (*rule_ptr == ' ') {
-			rule_ptr++;
-		} else if (*rule_ptr == '\0') {
-			/* the rule is a keyword and no regexp */
-			log_oper(listfd, OPLOGFNAME, "mlmmj-process: access -"
-					" A mail from \"%s\" was %s by rule #%d \"%s\"",
-					from, action_strs[act], i, it->item);
-			return act;
-		} else {
-			/* we must have space or end of string */
-			errno = 0;
-			log_error(LOG_ARGS, "Unable to parse rule #%d \"%s\":"
-					" Invalid character after action keyword."
-					" Denying post from \"%s\"", i, it->item, from);
-			log_oper(listfd, OPLOGFNAME, "Unable to parse rule #%d \"%s\":"
-					" Invalid character after action keyword."
-					" Denying post from \"%s\"", i, it->item, from);
-			return DENY;
-		}
-
-		if (*rule_ptr == '!') {
-			rule_ptr++;
-			not = 1;
-		} else {
-			not = 0;
-		}
-
-		/* remove unanchored ".*" from beginning of regexp to stop the
-		 * regexp matching to loop so long time it seems like it's
-		 * hanging */
-		if (strncmp(rule_ptr, "^.*", 3) == 0) {
-			rule_ptr += 3;
-		}
-		while (strncmp(rule_ptr, ".*", 2) == 0) {
-			rule_ptr += 2;
-		}
-
-		if ((err = regcomp(&regexp, rule_ptr,
-				REG_EXTENDED | REG_NOSUB | REG_ICASE))) {
-			regerror(err, &regexp, errbuf, sizeof(errbuf));
-			regfree(&regexp);
-			errno = 0;
-			log_error(LOG_ARGS, "regcomp() failed for rule #%d \"%s\""
-					" (message: '%s') (expression: '%s')"
-					" Denying post from \"%s\"",
-					i, it->item, errbuf, rule_ptr, from);
-			log_oper(listfd, OPLOGFNAME, "regcomp() failed for rule"
-					" #%d \"%s\" (message: '%s') (expression: '%s')"
-					" Denying post from \"%s\"",
-					i, it->item, errbuf, rule_ptr, from);
-			return DENY;
-		}
-
-		match = 0;
-		tll_foreach(*hdrs, header) {
-			if (regexec(&regexp, header->item, 0, NULL, 0)
-					== 0) {
-				match = 1;
-				hdr = header->item;
-				break;
-			}
-		}
-
-		regfree(&regexp);
-
-		if (match != not) {
-			if (match) {
-				log_oper(listfd, OPLOGFNAME, "mlmmj-process: access -"
-						" A mail from \"%s\" with header \"%s\" was %s by"
-						" rule #%d \"%s\"", from, hdr, action_strs[act],
-						i, it->item);
-			} else {
-				log_oper(listfd, OPLOGFNAME, "mlmmj-process: access -"
-						" A mail from \"%s\" was %s by rule #%d \"%s\""
-						" because no header matched.", from,
-						action_strs[act], i, it->item);
-			}
-			return act;
-		}
-		i++;
-	}
-
-	log_oper(listfd, OPLOGFNAME, "mlmmj-process: access -"
-			" A mail from \"%s\" didn't match any rules, and"
-			" was denied by default.", from);
-	return DENY;
-}
 
 static void print_help(const char *prg)
 {
@@ -750,12 +603,12 @@ int main(int argc, char **argv)
 
 	access_rules = ctrlvalues(ml.ctrlfd, "access");
 	if (access_rules != NULL) {
-		enum action accret;
+		actions_t accret;
 		/* Don't send a mail about denial to the list, but silently
 		 * discard and exit. Also do this in case it's turned off */
 		accret = do_access(access_rules, &allheaders,
 					posteraddr, ml.fd);
-		if (accret == DENY) {
+		if (accret == ACT_DENY) {
 			if ((strcasecmp(ml.addr, posteraddr) == 0) ||
 				    statctrl(ml.ctrlfd, "noaccessdenymails")) {
 				log_error(LOG_ARGS, "Discarding %s because"
@@ -783,10 +636,10 @@ int main(int argc, char **argv)
 			free(donemailname);
 			free(randomstr);
 			send_help(&ml, queuefilename, posteraddr);
-		} else if (accret == MODERATE) {
+		} else if (accret == ACT_MODERATE) {
 			moderated = 1;
 			modreason = ACCESS;
-		} else if (accret == DISCARD) {
+		} else if (accret == ACT_DISCARD) {
 			xasprintf(&discardname, "%s/queue/discarded/%s", ml.dir,
 			    randomstr);
 			free(randomstr);
@@ -800,9 +653,9 @@ int main(int argc, char **argv)
 			free(donemailname);
 			free(discardname);
                 	exit(EXIT_SUCCESS);
-		} else if (accret == SEND) {
+		} else if (accret == ACT_SEND) {
 			send = 1;
-		} else if (accret == ALLOW) {
+		} else if (accret == ACT_ALLOW) {
 			/* continue processing as normal */
 		}
 	}

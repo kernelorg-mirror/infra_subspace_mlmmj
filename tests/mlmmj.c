@@ -160,6 +160,7 @@ ATF_TC_WITHOUT_HEAD(mod_get_addr_type);
 ATF_TC_WITHOUT_HEAD(send_probe);
 ATF_TC_WITHOUT_HEAD(parse_content_type);
 ATF_TC_WITHOUT_HEAD(find_in_list);
+ATF_TC_WITHOUT_HEAD(do_access);
 
 ATF_TC_BODY(random_int, tc)
 {
@@ -2923,6 +2924,27 @@ ATF_TC_BODY(parse_content_type, tc)
 	free(b);
 }
 
+ATF_TC_BODY(do_access, tc)
+{
+	int listfd = -1;
+	strlist rules = tll_init();
+	strlist headers = tll_init();
+	tll_push_back(rules, "allow");
+
+	ATF_REQUIRE_EQ(do_access(NULL, NULL, "test@plop", listfd), ACT_ALLOW);
+	ATF_REQUIRE_EQ(do_access(&rules, NULL, "test@plop", listfd), ACT_ALLOW);
+	tll_pop_back(rules);
+	tll_push_back(rules, "deny");
+	ATF_REQUIRE_EQ(do_access(&rules, NULL, "test@plop", listfd), ACT_DENY);
+	tll_pop_back(rules);
+	tll_push_back(rules, "crap");
+	ATF_REQUIRE_EQ(do_access(&rules, NULL, "test@plop", listfd), ACT_DENY);
+	tll_pop_back(rules);
+	tll_push_back(headers, "from: toto@bla");
+	tll_push_back(rules, "moderate ^from: toto@");
+	ATF_REQUIRE_EQ(do_access(&rules, &headers, "test@plop", listfd), ACT_MODERATE);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -3012,6 +3034,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, send_probe);
 	ATF_TP_ADD_TC(tp, parse_content_type);
 	ATF_TP_ADD_TC(tp, find_in_list);
+	ATF_TP_ADD_TC(tp, do_access);
 
 	return (atf_no_error());
 }

@@ -138,6 +138,16 @@ bool send_probe(struct ml *ml, const char *addr);
 void parse_content_type(strlist *, char **mime_type, char **boundary);
 char *find_in_list(strlist *, const char *pattern);
 
+typedef enum {
+	ACT_ALLOW = 0,
+	ACT_SEND,
+	ACT_DENY,
+	ACT_MODERATE,
+	ACT_DISCARD,
+} actions_t;
+
+actions_t do_access(strlist *rules, strlist *headers, const char *from, int listfd);
+
 #define MY_ASSERT(expression) if (!(expression)) { \
 			errno = 0; \
 			log_error(LOG_ARGS, "assertion failed"); \

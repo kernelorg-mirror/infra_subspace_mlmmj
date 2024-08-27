@@ -9,7 +9,7 @@ bin_SCRIPTS = mlmmj-make-ml
 
 EXTRA_DIST = mlmmj-make-ml
 
-libmlmmj_a_SOURCES=	mail-functions.c chomp.c incindexfile.c \
+libmlmmj_a_SOURCES=	access.c mail-functions.c chomp.c incindexfile.c \
 			checkwait_smtpreply.c init_sockfd.c strgen.c \
 			random-int.c print-version.c log_error.c mygetline.c \
 			getaddrsfromfile.c readn.c \
