@@ -217,10 +217,6 @@ static int parse_body(int infd,int outfd, strlist* delmime, strlist* denymime,
 	return 0;
 }
 
-
-
-
-
 /* read a mail stripping unwanted parts */
 static int dump_mail(int infd, int outfd,char* listdir) {
 	strlist hdrs = tll_init();
