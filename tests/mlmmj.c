@@ -158,6 +158,8 @@ ATF_TC_WITHOUT_HEAD(gethdrline);
 ATF_TC_WITHOUT_HEAD(readlf);
 ATF_TC_WITHOUT_HEAD(mod_get_addr_type);
 ATF_TC_WITHOUT_HEAD(send_probe);
+ATF_TC_WITHOUT_HEAD(parse_content_type);
+ATF_TC_WITHOUT_HEAD(find_in_list);
 
 ATF_TC_BODY(random_int, tc)
 {
@@ -2861,6 +2863,66 @@ ATF_TC_BODY(send_probe, tc)
 	}
 }
 
+ATF_TC_BODY(find_in_list, tc)
+{
+	strlist bla = tll_init();
+	ATF_REQUIRE(find_in_list(NULL, NULL) == NULL);
+	ATF_REQUIRE(find_in_list(&bla, NULL) == NULL);
+	ATF_REQUIRE(find_in_list(&bla, "test") == NULL);
+	tll_push_back(bla, NULL);
+	ATF_REQUIRE(find_in_list(&bla, "test") == NULL);
+	tll_push_back(bla, "plop");
+	ATF_REQUIRE(find_in_list(&bla, "test") == NULL);
+	tll_push_back(bla, "test");
+	ATF_REQUIRE_STREQ(find_in_list(&bla, "test"), "test");
+	tll_pop_back(bla);
+	tll_push_back(bla, "test longer");
+	ATF_REQUIRE_STREQ(find_in_list(&bla, "test"), "test longer");
+}
+
+ATF_TC_BODY(parse_content_type, tc)
+{
+	char *m, *b;
+	strlist hdrs = tll_init();
+	parse_content_type(NULL, &m, &b);
+	ATF_REQUIRE(m == NULL);
+	ATF_REQUIRE(b == NULL);
+	tll_push_back(hdrs, "From: plop");
+	parse_content_type(&hdrs, &m, &b);
+	ATF_REQUIRE(m == NULL);
+	ATF_REQUIRE(b == NULL);
+	tll_push_back(hdrs, "Content-Type:");
+	parse_content_type(&hdrs, &m, &b);
+	ATF_REQUIRE(m == NULL);
+	ATF_REQUIRE(b == NULL);
+	tll_pop_back(hdrs);
+	tll_push_back(hdrs, "Content-Type: multipart/mixed");
+	parse_content_type(&hdrs, &m, &b);
+	ATF_REQUIRE_STREQ(m, "multipart/mixed");
+	free(m);
+	ATF_REQUIRE(b == NULL);
+	tll_pop_back(hdrs);
+	tll_push_back(hdrs, "Content-Type: multipart/mixed;");
+	parse_content_type(&hdrs, &m, &b);
+	ATF_REQUIRE_STREQ(m, "multipart/mixed");
+	free(m);
+	ATF_REQUIRE(b == NULL);
+	tll_pop_back(hdrs);
+	tll_push_back(hdrs, "Content-Type: multipart/mixed;\tboundary=bla");
+	parse_content_type(&hdrs, &m, &b);
+	ATF_REQUIRE_STREQ(m, "multipart/mixed");
+	free(m);
+	ATF_REQUIRE_STREQ(b,"bla");
+	free(b);
+	tll_pop_back(hdrs);
+	tll_push_back(hdrs, "Content-Type: multipart/mixed;\tboundary=bla;");
+	parse_content_type(&hdrs, &m, &b);
+	ATF_REQUIRE_STREQ(m, "multipart/mixed");
+	free(m);
+	ATF_REQUIRE_STREQ(b,"bla");
+	free(b);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -2948,6 +3010,8 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, readlf);
 	ATF_TP_ADD_TC(tp, mod_get_addr_type);
 	ATF_TP_ADD_TC(tp, send_probe);
+	ATF_TP_ADD_TC(tp, parse_content_type);
+	ATF_TP_ADD_TC(tp, find_in_list);
 
 	return (atf_no_error());
 }

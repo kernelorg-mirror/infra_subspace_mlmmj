@@ -135,6 +135,8 @@ void ml_init(struct ml *ml);
 bool ml_open(struct ml *ml, bool checkuser);
 void ml_close(struct ml *ml);
 bool send_probe(struct ml *ml, const char *addr);
+void parse_content_type(strlist *, char **mime_type, char **boundary);
+char *find_in_list(strlist *, const char *pattern);
 
 #define MY_ASSERT(expression) if (!(expression)) { \
 			errno = 0; \

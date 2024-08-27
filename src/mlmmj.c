@@ -30,6 +30,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
+#include <strings.h>
 #include <time.h>
 #include <unistd.h>
 #include <err.h>
@@ -113,6 +114,68 @@ send_probe(struct ml *ml, const char *addr)
 	return (true);
 }
 
+char *
+find_in_list(strlist *l, const char *pattern)
+{
+	size_t len;
+
+	if (l == NULL)
+		return (NULL);
+	if (pattern == NULL)
+		return (NULL);
+	len = strlen(pattern);
+
+	tll_foreach(*l, el) {
+		char *str = el->item;
+		if (str == NULL)
+			continue;
+		if (strncasecmp(str, pattern, len) == 0)
+			return (str);
+	}
+	return (NULL);
+}
+
+void
+parse_content_type(strlist *allhdrs, char **mime_type, char **boundary)
+{
+	*boundary = NULL;
+	*mime_type = NULL;
+	char *pos;
+	size_t len = 0;
+
+	char *hdr = find_in_list(allhdrs, "Content-Type:");
+	if (hdr == NULL)
+		return; /* No Content-Type */
+	pos = hdr + 13;
+	while (*pos && (*pos == ' ' || *pos == '\t'))
+		++pos;
+	if (*pos == '"') {
+		++pos;
+		while (pos[len] && pos[len] != '"')
+			++len;
+	} else {
+		while (pos[len] && pos[len] != ' ' && pos[len] != '\t' && pos[len] != ';')
+			++len;
+	}
+	if (len > 0)
+		*mime_type = xstrndup(pos, len);
+	pos += len;
+	len = 0;
+	while (*pos && strncasecmp(pos, "boundary=", 9))
+		++pos;
+	if (*pos == '\0')
+		return; /* No boundaries */
+	pos += 9;
+	if (*pos == '"') {
+		++pos;
+		while (pos[len] && pos[len] != '"')
+			++len;
+	} else {
+		while(pos[len] && pos[len] != ' ' && pos[len] != '\t' && pos[len] != ';')
+			++len;
+	}
+	*boundary = xstrndup(pos, len);
+}
 
 bool
 parse_lastdigest(char *line, long *lastindex, time_t *lasttime,
