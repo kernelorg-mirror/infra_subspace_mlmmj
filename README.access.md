@@ -33,6 +33,11 @@ moderated, nor subject to subonlypost, nor modnonsubposts.
 The action "deny" will not send the mail to the mailing list, but will send a
 rejection mail to the sender.
 
+The action "deny" can be specialised with "dash-extension". The dash-extension
+is used to identify the listtext to use, if present.
+For example, if "deny-html" is triggered, the rejection message is loaded from
+listtexts/deny-post-access-html
+
 The action "discard" will not send the mail to the list, and will not send a
 rejection mail.
 
