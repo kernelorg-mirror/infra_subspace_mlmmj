@@ -612,6 +612,7 @@ int main(int argc, char **argv)
 					posteraddr, &error, &qualifier);
 		if (error != NULL) {
 			log_oper(ml.fd, OPLOGFNAME, "%s", error);
+			free(error);
 		}
 		if (accret == ACT_DENY) {
 			if ((strcasecmp(ml.addr, posteraddr) == 0) ||
@@ -663,6 +664,7 @@ int main(int argc, char **argv)
 		} else if (accret == ACT_ALLOW) {
 			/* continue processing as normal */
 		}
+		free(qualifier);
 	}
 
 	list_rules = ctrlvalues(ml.ctrlfd, "send");
