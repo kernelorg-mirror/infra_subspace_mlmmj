@@ -655,6 +655,9 @@ do_subscribe(struct ml *ml, struct subscription *sub, const char *addr)
 		sub->reasonsub = SUB_PERMIT;
 	}
 
+	if (address == NULL)
+		errx(EXIT_FAILURE, "No address to subscribe found");
+
 	if(strncasecmp(ml->addr, address, strlen(ml->addr)) == 0)
 		errx(EXIT_FAILURE, "Cannot subscribe the list address to the list");
 
