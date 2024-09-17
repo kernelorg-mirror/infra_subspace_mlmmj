@@ -22,14 +22,3 @@ Here are some pre-processors you can use.
 The mlmmj-amime-receive script is designed to work with a program called
 alterMIME. The script itself (in amime-receive in the contrib directory)
 contains links to that software, and instructions.
-
-## Foot Filter
-
-alterMIME didn't allow me to reach my particular goals, so I wrote an
-alternative called Foot Filter. It is a single source-file C program; the code
-and a very simple Makefile can be found in foot\_filter in the contrib
-directory, along with an altered version of mlmmj-amime-receive, called
-mlmmj-recieve-ff.
-
-Foot Filter will output documentation if you run it without arguments, and
-again, instructions for the script that handles the piping are found within it.
