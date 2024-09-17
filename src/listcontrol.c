@@ -110,7 +110,7 @@ is_valid_email(const char *email, const char *log)
 	return (true);
 }
 
-static void
+__dead2 static void
 lc_sub(struct listcontrol *lc, struct ml *ml, struct sub *sub)
 {
 	if (!is_valid_email(lc->fromemail, sub->typereq))

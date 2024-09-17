@@ -25,7 +25,7 @@
 
 #include "mlmmj.h"
 
-void send_list(struct ml *ml, const char *emailaddr);
+void send_list(struct ml *ml, const char *emailaddr) __dead2;
 struct subs_list_state;
 struct subs_list_state *init_subs_list(int fd, const char *dirname);
 void rewind_subs_list(void *state);

@@ -23,5 +23,5 @@
 
 #pragma once
 
-void send_help(struct ml *ml, const char *queuefilename, const char *emailaddr);
+void send_help(struct ml *ml, const char *queuefilename, const char *emailaddr) __dead2;
 void send_help_noexit(struct ml *ml, const char *queuefilename, const char *emailaddr);
