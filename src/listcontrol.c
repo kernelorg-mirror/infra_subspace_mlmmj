@@ -394,12 +394,10 @@ int listcontrol(strlist *fromemails, struct ml *ml, const char *controlstr,
 		bret = bouncemail(ml->fd, lowercase(c), bouncenr);
 		if (bret == BOUNCE_DONE)
 			save_lastbouncedmsg(ml->fd, c, mailname);
-		if (bouncemail(ml->fd, c, bouncenr) == BOUNCE_FAIL)
+		if (bret == BOUNCE_FAIL)
 			exit(EXIT_FAILURE);
-		if (bret == BOUNCE_OK)
-			unlink(mailname);
 		unlink(mailname);
-		exit(bret == BOUNCE_FAIL ? EXIT_FAILURE : EXIT_SUCCESS);
+		exit(EXIT_SUCCESS);
 		break;
 
 	/* listname+release-COOKIE@domain.tld */
