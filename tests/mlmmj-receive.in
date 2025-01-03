@@ -2655,6 +2655,38 @@ really
 QUIT
 EOF
 	atf_check -o file:expected-5.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-5.txt
+
+        touch list/control/replyto
+	atf_check -s exit:0 $mlmmjreceive -L list -F <nosubject
+	cat >> expected-6.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-6-user=test@mlmmjtest>
+RCPT TO:<user@test>
+DATA
+From: bob@test
+Reply-To: bob@test
+To: test@mlmmjtest
+Subject: [plop]
+
+Let's go, first email
+myfooter
+really
+.
+MAIL FROM:<test+bounces-6-user2=test@mlmmjtest>
+RCPT TO:<user2@test>
+DATA
+From: bob@test
+Reply-To: bob@test
+To: test@mlmmjtest
+Subject: [plop]
+
+Let's go, first email
+myfooter
+really
+.
+QUIT
+EOF
+	atf_check -o file:expected-6.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-6.txt
 }
 
 delheaders_body()

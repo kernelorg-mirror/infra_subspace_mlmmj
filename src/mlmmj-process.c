@@ -225,7 +225,7 @@ int main(int argc, char **argv)
 	int i, opt, moderated = 0, send = 0;
 	enum modreason modreason;
 	int hdrfd, footfd, rawmailfd, donemailfd, omitfd;
-	bool addr_in_to_or_cc, notmetoo;
+	bool addr_in_to_or_cc, notmetoo, replyto;
 	bool findaddress = false, intocc = false, noprocess = false;
 	int maxmailsize = 0;
 	bool subonlypost, modonlypost, modnonsubposts, foundaddr = false;
@@ -342,9 +342,11 @@ int main(int argc, char **argv)
 
 	subjectprefix = ctrlvalue(ml.ctrlfd, "prefix");
 
+	replyto = statctrl(ml.ctrlfd, "replyto");
+
 	if(do_all_the_voodoo_here(rawmailfd, donemailfd, hdrfd, footfd,
 				delheaders, readhdrs,
-				&allheaders, subjectprefix) < 0) {
+				&allheaders, subjectprefix, replyto) < 0) {
 		log_error(LOG_ARGS, "Error in do_all_the_voodoo_here");
 		exit(EXIT_FAILURE);
 	}
@@ -483,7 +485,7 @@ int main(int argc, char **argv)
 			}
 			if(do_all_the_voodoo_here(rawmailfd, donemailfd, -1,
 					-1, delheaders,
-					NULL, &allheaders, NULL) < 0) {
+					NULL, &allheaders, NULL, 0) < 0) {
 				log_error(LOG_ARGS, "do_all_the_voodoo_here");
 				exit(EXIT_FAILURE);
 			}

@@ -66,6 +66,12 @@ entire content is used as value, it's marked "text".
    The prefix for the Subject: line of mails to the list. This will alter the
    Subject: line, and add a prefix if it's not present elsewhere.
 
+ * replyto			(boolean)
+
+   When this file is present, the From: line of mails will be added as a
+   Reply-To: header. This allows the mail to be delivered safely when DMARC
+   protected emails are received from the list.
+
  * owner			(list)
 
    The emailaddresses in this file (1 pr. line) will get mails to

@@ -70,7 +70,7 @@ void getinfo(const char *line, struct mailhdr *readhdrs)
 
 int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 		 const strlist *delhdrs, struct mailhdr *readhdrs,
-		 strlist *allhdrs, const char *prefix)
+		 strlist *allhdrs, const char *prefix, int replyto)
 {
 	char *hdrline, *unfolded, *unqp;
 	bool hdrsadded = false;
@@ -143,6 +143,13 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 		/* Should it be stripped? */
 		if(!delhdrs || !findit(hdrline, delhdrs))
 			dprintf(outfd, "%s", unfolded);
+
+		/* Should Reply-To be added? */
+		if(replyto) {
+			if(strncasecmp(hdrline, "From:", 5) == 0) {
+				dprintf(outfd, "Reply-To:%s\n", hdrline + 5);
+			}
+		}
 
 		free(hdrline);
 		free(unfolded);
