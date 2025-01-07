@@ -34,7 +34,6 @@ typedef struct _unistr {
 
 unistr *unistr_new(void);
 void unistr_free(unistr *str);
-unistr *unistr_dup(const unistr *str);
 void unistr_append_char(unistr *str, unistr_char uc);
 void unistr_append_usascii(unistr *str, const char *binary, size_t bin_len);
 void unistr_append_utf8(unistr *str, const char *binary, size_t bin_len);

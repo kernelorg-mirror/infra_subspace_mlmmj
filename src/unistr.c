@@ -63,20 +63,6 @@ void unistr_free(unistr *str)
 }
 
 
-unistr *unistr_dup(const unistr *str)
-{
-	unistr *ret;
-	unsigned int i;
-
-	ret = unistr_new();
-	for (i=0; i<str->len; i++) {
-		unistr_append_char(ret, str->chars[i]);
-	}
-
-	return ret;
-}
-
-
 void unistr_append_char(unistr *str, unistr_char uc)
 {
 	if (str->len >= str->alloc_len) {
@@ -205,25 +191,6 @@ void unistr_append_iconv(unistr *str, char *binary, size_t bin_len,
 		unistr_append_utf8(str, bytes, ICONV_BUFFER_SIZE - bufferleft);
 	}
 	iconv_close(cd);
-}
-
-
-void unistr_dump(const unistr *str)
-{
-	unsigned int i;
-
-	printf("unistr_dump(%p)\n", (void *)str);
-	printf(" ->len = %lu\n", (unsigned long)str->len);
-	printf(" ->alloc_len = %lu\n", (unsigned long)str->alloc_len);
-	printf(" ->chars [ ");
-	for (i=0; i<str->len; i++) {
-		if ((str->chars[i] <= 0x7F) && (str->chars[i] != '\n')) {
-			printf("'%c' ", str->chars[i]);
-		} else {
-			printf("0x%02X ", str->chars[i]);
-		}
-	}
-	printf("]\n");
 }
 
 
