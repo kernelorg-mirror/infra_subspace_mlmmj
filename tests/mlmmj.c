@@ -72,6 +72,7 @@
 #include "mlmmj_tests.h"
 #include "send_help.h"
 #include "gethdrline.h"
+#include "unistr.h"
 
 ATF_TC_WITHOUT_HEAD(random_int);
 ATF_TC_WITHOUT_HEAD(chomp);
@@ -161,6 +162,7 @@ ATF_TC_WITHOUT_HEAD(send_probe);
 ATF_TC_WITHOUT_HEAD(parse_content_type);
 ATF_TC_WITHOUT_HEAD(find_in_list);
 ATF_TC_WITHOUT_HEAD(do_access);
+ATF_TC_WITHOUT_HEAD(unistr_header_to_utf8);
 
 ATF_TC_BODY(random_int, tc)
 {
@@ -2969,6 +2971,36 @@ ATF_TC_BODY(do_access, tc)
 	ATF_REQUIRE_STREQ(msg, "access - A mail from \"test@plop\" with header \"from: toto@bla\" was moderated by rule #0 \"moderate-meh ^from: toto@\"");
 }
 
+ATF_TC_BODY(unistr_header_to_utf8, tc)
+{
+    const char *input = "=?UTF-8?B?SGVsbG8gd29ybGQ=?=";
+
+    char *out = unistr_header_to_utf8(input);
+
+    ATF_REQUIRE(out != NULL);
+    ATF_REQUIRE_STREQ(out, "Hello world");
+
+    out = unistr_header_to_utf8("=?UTF-8?B?Sm9obiBEb2U=?= <john.doe@example.com>");
+
+    ATF_REQUIRE(out != NULL);
+    ATF_REQUIRE_STREQ(out, "John Doe <john.doe@example.com>");
+
+    out = unistr_header_to_utf8("=?utf-8?b?5aSq6YOO?= <taro@example.com>");
+
+    ATF_REQUIRE(out != NULL);
+    ATF_REQUIRE_STREQ(out, "太郎 <taro@example.com>");
+
+    out = unistr_header_to_utf8("=?ISO-8859-1?Q?Jean-Pierre_Dupont?= <jean.pierre@example.com>");
+
+    ATF_REQUIRE(out != NULL);
+    ATF_REQUIRE_STREQ(out, "Jean-Pierre Dupont <jean.pierre@example.com>");
+
+    out = unistr_header_to_utf8("=?koi8-r?b?8NLJ18XUIM3J0g==?=");
+    ATF_REQUIRE(out != NULL);
+    ATF_REQUIRE_STREQ(out, "Привет мир");
+
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -3059,6 +3091,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, parse_content_type);
 	ATF_TP_ADD_TC(tp, find_in_list);
 	ATF_TP_ADD_TC(tp, do_access);
+	ATF_TP_ADD_TC(tp, unistr_header_to_utf8);
 
 	return (atf_no_error());
 }
