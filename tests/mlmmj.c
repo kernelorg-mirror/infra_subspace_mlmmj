@@ -3000,6 +3000,9 @@ ATF_TC_BODY(unistr_header_to_utf8, tc)
     ATF_REQUIRE(out != NULL);
     ATF_REQUIRE_STREQ(out, "Привет мир");
 
+    out = unistr_header_to_utf8("=?us-ascii?Q?useless_but_why_not?=");
+    ATF_REQUIRE(out != NULL);
+    ATF_REQUIRE_STREQ(out, "useless but why not");
 }
 
 ATF_TP_ADD_TCS(tp)
