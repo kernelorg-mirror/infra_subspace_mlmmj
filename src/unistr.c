@@ -35,6 +35,7 @@
 #include "mlmmj.h"
 #include "xmalloc.h"
 #include "unistr.h"
+#include "strgen.h"
 #include "log_error.h"
 
 /* This is allocated on the stack, so it can't be too big. */
@@ -266,40 +267,11 @@ char *unistr_to_utf8(const unistr *str)
 }
 
 
-static int hexval(char ch)
+static void
+decode_quoted_print(char *str, char **binary, size_t *bin_len)
 {
-	ch = tolower(ch);
-
-	if ((ch >= 'a') && (ch <= 'f')) {
-		return 10 + ch - 'a';
-	}
-
-	if ((ch >= '0') && (ch <= '9')) {
-		return ch - '0';
-	}
-
-	return 0;
-}
-
-
-static void decode_qp(char *str, char **binary, size_t *bin_len)
-{
-	int i;
-
-	/* decoded string will never be longer, and we don't include a NUL */
-	*binary = xmalloc(strlen(str));
-	*bin_len = 0;
-
-	for (i=0; str[i]; i++) {
-		if ((str[i] == '=') && isxdigit(str[i+1]) && isxdigit(str[i+2])) {
-			(*binary)[(*bin_len)++] = (hexval(str[i+1]) << 4) + hexval(str[i+2]);
-			i += 2;
-		} else if (str[i] == '_') {
-			(*binary)[(*bin_len)++] = 0x20;
-		} else {
-			(*binary)[(*bin_len)++] = str[i];
-		}
-	}
+	*binary = decode_qp(str, true);
+	*bin_len = strlen(*binary);
 }
 
 
@@ -407,7 +379,7 @@ static int header_decode_word(char *wsp, char *word, unistr *ret)
 	}
 
 	if (tolower(encoding[0]) == 'q') {
-		decode_qp(string, &binary, &bin_len);
+		decode_quoted_print(string, &binary, &bin_len);
 	} else if (tolower(encoding[0]) == 'b') {
 		decode_base64(string, &binary, &bin_len);
 	} else {

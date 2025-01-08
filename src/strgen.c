@@ -190,7 +190,7 @@ decode_char(const char *s)
 }
 
 char *
-decode_qp(const char *qpstr)
+decode_qp(const char *qpstr, bool qformat)
 {
 	char *buffer = NULL;
 	size_t size = 0;
@@ -224,6 +224,12 @@ decode_qp(const char *qpstr)
 			fputc(decode_char(qpstr), bufp);
 			qpstr += 2;
 			break;
+		case '_':
+			if (qformat) {
+				fputc(0x20, bufp);
+				break;
+			}
+			/* FALLTHROUGH */
 		default:
 			fputc(*qpstr, bufp);
 			break;

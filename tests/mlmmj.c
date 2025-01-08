@@ -683,16 +683,17 @@ ATF_TC_BODY(strtotimet, tc)
 
 ATF_TC_BODY(decode_qp, tc)
 {
-	ATF_REQUIRE_STREQ(decode_qp("="), "=");
-	ATF_REQUIRE_STREQ(decode_qp("=\ra"), "=\ra");
-	ATF_REQUIRE_STREQ(decode_qp("=\r\na"), "a");
-	ATF_REQUIRE_STREQ(decode_qp("=\na"), "a");
-	ATF_REQUIRE_STREQ(decode_qp("This is a subject"), "This is a subject");
-	ATF_REQUIRE_STREQ(decode_qp("This= is a subject"), "This= is a subject");
-	ATF_REQUIRE_STREQ(decode_qp("This=2 is a subject"), "This=2 is a subject");
-	ATF_REQUIRE_STREQ(decode_qp("This=23 is a subject"), "This# is a subject");
-	ATF_REQUIRE_STREQ(decode_qp("This=3D is a subject"), "This= is a subject");
-	ATF_REQUIRE_STREQ(decode_qp("This_ is a subject"), "This_ is a subject");
+	ATF_REQUIRE_STREQ(decode_qp("=", false), "=");
+	ATF_REQUIRE_STREQ(decode_qp("=\ra", false), "=\ra");
+	ATF_REQUIRE_STREQ(decode_qp("=\r\na", false), "a");
+	ATF_REQUIRE_STREQ(decode_qp("=\na", false), "a");
+	ATF_REQUIRE_STREQ(decode_qp("This is a subject", false), "This is a subject");
+	ATF_REQUIRE_STREQ(decode_qp("This= is a subject", false), "This= is a subject");
+	ATF_REQUIRE_STREQ(decode_qp("This=2 is a subject", false), "This=2 is a subject");
+	ATF_REQUIRE_STREQ(decode_qp("This=23 is a subject", false), "This# is a subject");
+	ATF_REQUIRE_STREQ(decode_qp("This=3D is a subject", false), "This= is a subject");
+	ATF_REQUIRE_STREQ(decode_qp("This_ is a subject", false), "This_ is a subject");
+	ATF_REQUIRE_STREQ(decode_qp("This_ is a subject", true), "This  is a subject");
 }
 
 ATF_TC_BODY(parse_lastdigest, tc)

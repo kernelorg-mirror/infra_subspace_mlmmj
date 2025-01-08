@@ -35,7 +35,7 @@ char *mydirname(const char *path);
 const char *mybasename(const char *path);
 char *genmsgid(const char *fqdn);
 char *gendatestr(void);
-char *decode_qp(const char *qpstr);
+char *decode_qp(const char *qpstr, bool qformat);
 bool splitlistaddr(const char *listaddr, char **listname, const char **listfqdn);
 
 #endif /* STRGEN_H */
