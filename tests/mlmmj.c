@@ -2703,6 +2703,8 @@ ATF_TC_BODY(mod_get_addr_type, tc)
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
 		struct ml ml;
+		ml_init(&ml);
+		ml.dir = "list";
 		enum subtype subtype;
 		char *addr;
 		ml.fd = open(".", O_DIRECTORY);
@@ -2713,6 +2715,8 @@ ATF_TC_BODY(mod_get_addr_type, tc)
 	p = atf_utils_fork();
 	if (p == 0) {
 		struct ml ml;
+		ml_init(&ml);
+		ml.dir = "list";
 		enum subtype subtype;
 		char *addr;
 		ml.fd = open(".", O_DIRECTORY);
@@ -2723,6 +2727,8 @@ ATF_TC_BODY(mod_get_addr_type, tc)
 	p = atf_utils_fork();
 	if (p == 0) {
 		struct ml ml;
+		ml_init(&ml);
+		ml.dir = "list";
 		enum subtype subtype = 0;
 		char *addr;
 		ml.fd = open(".", O_DIRECTORY);
@@ -2736,6 +2742,8 @@ ATF_TC_BODY(mod_get_addr_type, tc)
 	p = atf_utils_fork();
 	if (p == 0) {
 		struct ml ml;
+		ml_init(&ml);
+		ml.dir = "list";
 		enum subtype subtype = 0;
 		char *addr;
 		ml.fd = open(".", O_DIRECTORY);
@@ -2747,6 +2755,8 @@ ATF_TC_BODY(mod_get_addr_type, tc)
 	p = atf_utils_fork();
 	if (p == 0) {
 		struct ml ml;
+		ml_init(&ml);
+		ml.dir = "list";
 		enum subtype subtype = 0;
 		char *addr;
 		ml.fd = open(".", O_DIRECTORY);
@@ -2761,6 +2771,8 @@ ATF_TC_BODY(mod_get_addr_type, tc)
 	p = atf_utils_fork();
 	if (p == 0) {
 		struct ml ml;
+		ml_init(&ml);
+		ml.dir = "list";
 		enum subtype subtype = 0;
 		char *addr;
 		ml.fd = open(".", O_DIRECTORY);
@@ -2775,6 +2787,8 @@ ATF_TC_BODY(mod_get_addr_type, tc)
 	p = atf_utils_fork();
 	if (p == 0) {
 		struct ml ml;
+		ml_init(&ml);
+		ml.dir = "list";
 		enum subtype subtype = 0;
 		char *addr;
 		ml.fd = open(".", O_DIRECTORY);
@@ -2788,6 +2802,8 @@ ATF_TC_BODY(mod_get_addr_type, tc)
 	p = atf_utils_fork();
 	if (p == 0) {
 		struct ml ml;
+		ml_init(&ml);
+		ml.dir = "list";
 		enum subtype subtype = 0;
 		char *addr;
 		ml.fd = open(".", O_DIRECTORY);
@@ -2800,6 +2816,8 @@ ATF_TC_BODY(mod_get_addr_type, tc)
 	p = atf_utils_fork();
 	if (p == 0) {
 		struct ml ml;
+		ml_init(&ml);
+		ml.dir = "list";
 		enum subtype subtype = 0;
 		char *addr;
 		ml.fd = open(".", O_DIRECTORY);
