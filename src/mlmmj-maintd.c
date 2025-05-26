@@ -203,7 +203,7 @@ resend_queue(struct ml *ml, int logfd)
 			   mail currently being sent */
 			t = time(NULL);
 			if(fstatat(qfd, dp->d_name, &st, 0) == 0) {
-				if(t - st.st_mtime > (time_t)36000) {
+				if(t -  (time_t)36000 > st.st_mtime) {
 					unlinkat(qfd, dp->d_name, 0);
 					/* avoid leaving orphans */
 					unlinkat(qfd, fromname, 0);
@@ -221,7 +221,7 @@ resend_queue(struct ml *ml, int logfd)
 		/* before we try again, check and see if it's old */
 		bouncelife = ctrltimet(ml->ctrlfd, "bouncelife", BOUNCELIFE);
 		t = time(NULL);
-		if(t - st.st_mtime > bouncelife) {
+		if(t - bouncelife > st.st_mtime ) {
 			if (unlinkat(qfd, dp->d_name, 0) == -1) {
 				log(" - Could not remove queue/%s: %s\n",
 				    dp->d_name, strerror(errno));
@@ -291,7 +291,7 @@ resend_requeue(struct ml *ml, const char *mlmmjsend, int logfd)
 
 		/* Remove old empty directories */
 		t = time(NULL);
-		if(t - st.st_mtime > (time_t)3600 &&
+		if(t - (time_t)3600 > st.st_mtime &&
 		    unlinkat(fd, dp->d_name, AT_REMOVEDIR) == 0)
 			continue;
 
