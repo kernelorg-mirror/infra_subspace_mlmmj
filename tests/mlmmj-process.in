@@ -77,6 +77,8 @@ From: sender@yeah
 Bcc: list@test
 EOF
 	echo "list@test" > list/control/listaddress
+# ensure we don't try to really send email to a real mailserver
+	echo "25678" > list/control/smtpport
 	rmdir list/text
 	ln -s ${top_srcdir}/listtexts/en list/text
 	atf_check -s exit:0 $mlmmjprocess -L list -m mailfile
