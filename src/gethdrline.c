@@ -36,7 +36,7 @@
 char *gethdrline(FILE *f, char **unfolded)
 {
 	char *line = NULL, *retstr = NULL, *oldretstr = NULL, *oldunfolded = NULL;
-	char ch;
+	int ch;
 	size_t linecap = 0;
 
 	if (getline(&line, &linecap, f) <= 0) {
