@@ -89,6 +89,7 @@ basics_5_body()
 
 basics_6_body()
 {
+	test $(id -u) = 0 && atf_skip "Can only be run as non-root"
 	mlmmjbounce=$(command -v mlmmj-bounce)
 	init_ml ml
 	echo test@mlmmjtest > ml/control/listaddress
