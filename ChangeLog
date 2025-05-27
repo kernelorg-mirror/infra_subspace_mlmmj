@@ -1,3 +1,9 @@
+1.5.2
+ o Plenty of portability fixes
+1.5.1
+ o Fix tests on system with a running smtp server on port 25
+ o Fix portability issue on arm64
+ o Fix tests where some struct were not initialised properly
 1.5.0
  o Add option to copy From: to Reply-To: (Graham Leggett)
  o remove contrib/pymime
