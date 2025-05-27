@@ -257,7 +257,7 @@ ATF_TC_BODY(init_sock, tc)
 		int s = fakesmtp(mypipe[1]);
 		int c;
 		struct sockaddr_in cl;
-		socklen_t clsize = 0;
+		socklen_t clsize = sizeof(struct sockaddr_in);
 		/*
 		 * Now we can accept incoming connections one
 		 * at a time using accept(2).
@@ -1005,7 +1005,7 @@ ATF_TC_BODY(init_smtp, tc)
 		int s = fakesmtp(smtppipe[1]);
 		int c;
 		struct sockaddr_in cl;
-		socklen_t clsize = 0;
+		socklen_t clsize = sizeof(struct sockaddr_in);
 		c = accept(s, (struct sockaddr *) &cl, &clsize);
 		if (c == -1)
 			err(5, "accept()");
@@ -1045,7 +1045,7 @@ ATF_TC_BODY(smtp_bad_greetings, tc)
 		int s = fakesmtp(smtppipe[1]);
 		int c;
 		struct sockaddr_in cl;
-		socklen_t clsize = 0;
+		socklen_t clsize = sizeof(struct sockaddr_in);
 		c = accept(s, (struct sockaddr *) &cl, &clsize);
 		if (c == -1)
 			err(5, "accept()");
@@ -1070,7 +1070,7 @@ ATF_TC_BODY(smtp_bad_ehlo, tc)
 		int s = fakesmtp(smtppipe[1]);
 		int c;
 		struct sockaddr_in cl;
-		socklen_t clsize = 0;
+		socklen_t clsize = sizeof(struct sockaddr_in);
 		c = accept(s, (struct sockaddr *) &cl, &clsize);
 		if (c == -1)
 			err(5, "accept()");
@@ -1097,7 +1097,7 @@ ATF_TC_BODY(smtp_no_ehlo, tc)
 		int s = fakesmtp(smtppipe[1]);
 		int c;
 		struct sockaddr_in cl;
-		socklen_t clsize = 0;
+		socklen_t clsize = sizeof(struct sockaddr_in);
 		c = accept(s, (struct sockaddr *) &cl, &clsize);
 		if (c == -1)
 			err(5, "accept()");
@@ -2100,7 +2100,7 @@ ATF_TC_BODY(newsmtp, tc)
 		int s = fakesmtp(smtppipe[1]);
 		int c;
 		struct sockaddr_in cl;
-		socklen_t clsize = 0;
+		socklen_t clsize = sizeof(struct sockaddr_in);
 		c = accept(s, (struct sockaddr *) &cl, &clsize);
 		if (c == -1)
 			err(5, "accept()");
