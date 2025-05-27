@@ -115,7 +115,7 @@ single_mail_reception(int fd)
 		int c;
 		char *r;
 		struct sockaddr_in cl;
-		socklen_t clsize = 0;
+		socklen_t clsize = sizeof(struct sockaddr_in);
 		c = accept(s, (struct sockaddr *) &cl, &clsize);
 		if (c == -1)
 			exit(5);
