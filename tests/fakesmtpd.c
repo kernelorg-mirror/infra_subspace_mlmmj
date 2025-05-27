@@ -52,7 +52,7 @@ main(void)
 {
 	int s, c;
 	FILE *f;
-	socklen_t clsize = 0;
+	socklen_t clsize = sizeof(struct sockaddr_in);
 	struct sockaddr_in me = { 0 }, cl;
 	char *line = NULL;
 	size_t linecap = 0;
@@ -60,21 +60,24 @@ main(void)
 
 	s = socket(AF_INET, SOCK_STREAM, 0);
 	if (s < 0)
-		exit(1);
-	if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &(int) { 1 }, sizeof(int)) != 0)
-		exit(2);
+		err(EXIT_FAILURE, "socket");
+	int opt = 1;
+	if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) != 0)
+		err(EXIT_FAILURE, "setsockopt");
 	me.sin_family = AF_INET;
 	me.sin_addr.s_addr = inet_addr("127.0.0.1");
 	/* specific interface */
 	me.sin_port = htons(25678);
 	if (bind(s, (struct sockaddr *) &me, sizeof(me)) == -1)
-		exit(EXIT_FAILURE);
+		err(EXIT_FAILURE, "bin");
 	if (listen(s, 1) == -1)
-		exit(EXIT_FAILURE);
+		err(EXIT_FAILURE, "listen");
 
 	if (daemon(1, 0) != 0)
 		err(EXIT_FAILURE, "daemon");
 	f = fopen("fakesmtp.pid", "w+");
+	if (f == NULL)
+		err(EXIT_FAILURE, "fopen");
 	fprintf(f, "%d\n", getpid());
 	fclose(f);
 	for (;;) {
@@ -82,7 +85,7 @@ main(void)
 		FILE *fp, *fp2;
 		c = accept(s, (struct sockaddr *) &cl, &clsize);
 		if (c == -1)
-			exit(EXIT_FAILURE);
+			err(EXIT_FAILURE, "accept");
 
 		mailnum++;
 		asprintf(&mail, "mail-%d.txt", mailnum);
