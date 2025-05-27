@@ -737,7 +737,7 @@ EOF
 	rm list/requeue/1
 	mkdir list/requeue/1
 	mkdir list/requeue/2
-	touch -t 000101010101 list/requeue/2
+	touch -t 197001010101 list/requeue/2
 	mkdir list/requeue/3
 	cat >> list/requeue/1/subscribers <<EOF
 user1@test1
@@ -917,13 +917,13 @@ resend_queue_body()
 	atf_check -s exit:0 test -f list/queue/file
 	atf_check -s exit:1 test -f list/queue/plop.hey
 
-	touch -t 000101010101 list/queue/file
+	touch -t 197001010101 list/queue/file
 	# no .mailfrom, no.reciptto no.reply-to but recent
 	atf_check $mlmmjmaintd -L list -F
 	atf_check -s exit:1 test -f mail-1.txt
 	atf_check -s exit:1 test -f list/queue/file
 
-	touch -t 000101010101 list/queue/file
+	touch -t 197001010101 list/queue/file
 	echo "bla" > list/queue/file.mailfrom
 	# no.reciptto no.reply-to old recent
 	atf_check $mlmmjmaintd -L list -F
@@ -931,7 +931,7 @@ resend_queue_body()
 	atf_check -s exit:1 test -f list/queue/file
 	atf_check -s exit:1 test -f list/queue/file.mailfrom
 
-	touch -t 000101010101 list/queue/file
+	touch -t 197001010101 list/queue/file
 	echo "bla" > list/queue/file.mailfrom
 	touch list/queue/file.reply-to
 	# no.reciptto no.reply-to old recent
@@ -940,7 +940,7 @@ resend_queue_body()
 	atf_check -s exit:1 test -f list/queue/file.mailfrom
 	atf_check -s exit:1 test -f list/queue/file.reply-to
 
-	touch -t 000101010101 list/queue/file
+	touch -t 197001010101 list/queue/file
 	echo "bla" > list/queue/file.mailfrom
 	echo "meh" > list/queue/file.reciptto
 	touch list/queue/file.reply-to
