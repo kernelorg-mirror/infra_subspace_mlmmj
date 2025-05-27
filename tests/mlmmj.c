@@ -1888,20 +1888,26 @@ ATF_TC_BODY(list_subs, tc)
 	finish_subs_list(s);
 }
 
+static void
+setup_listtext(const atf_tc_t *tc)
+{
+	char *dir = NULL;
+	rmdir("list/text");
+	xasprintf(&dir, "%s/../listtexts/en",
+	    atf_tc_get_config_var(tc, "srcdir"));
+
+	symlink(dir, "list/text");
+}
+
 ATF_TC_BODY(notify_sub, tc)
 {
-	char *dir;
 	const char *path;
 	init_ml(true);
 	struct ml ml;
 	ml_init(&ml);
 	ml.dir = "list";
 	ml_open(&ml, false);
-	rmdir("list/text");
-	xasprintf(&dir, "%s/listtexts/en",
-	    atf_tc_get_config_var(tc, "top_srcdir"));
-
-	symlink(dir, "list/text");
+	setup_listtext(tc);
 	atf_utils_create_file("list/control/smtpport", "25678");
 	atf_utils_create_file("list/control/smtphelo", "heloname");
 	int smtppipe[2];
@@ -2225,18 +2231,13 @@ ATF_TC_BODY(send_single_mail, tc)
 
 ATF_TC_BODY(generate_subscription, tc)
 {
-	char *dir;
 	const char *path;
 	init_ml(true);
 	struct ml ml;
 	ml_init(&ml);
 	ml.dir = "list";
 	ml_open(&ml, false);
-	rmdir("list/text");
-	xasprintf(&dir, "%s/listtexts/en",
-	    atf_tc_get_config_var(tc, "top_srcdir"));
-
-	symlink(dir, "list/text");
+	setup_listtext(tc);
 	atf_utils_create_file("list/control/smtpport", "25678");
 	atf_utils_create_file("list/control/smtphelo", "heloname");
 	int smtppipe[2];
@@ -2273,18 +2274,13 @@ ATF_TC_BODY(generate_subscription, tc)
 
 ATF_TC_BODY(generate_subconfirm, tc)
 {
-	char *dir;
 	const char *path;
 	init_ml(true);
 	struct ml ml;
 	ml_init(&ml);
 	ml.dir = "list";
 	ml_open(&ml, false);
-	rmdir("list/text");
-	xasprintf(&dir, "%s/listtexts/en",
-	    atf_tc_get_config_var(tc, "top_srcdir"));
-
-	symlink(dir, "list/text");
+	setup_listtext(tc);
 	atf_utils_create_file("list/control/smtpport", "25678");
 	atf_utils_create_file("list/control/smtphelo", "heloname");
 	int smtppipe[2];
@@ -2429,18 +2425,13 @@ ATF_TC_BODY(generate_subconfirm, tc)
 
 ATF_TC_BODY(send_confirmation_mail, tc)
 {
-	char *dir;
 	const char *path;
 	init_ml(true);
 	struct ml ml;
 	ml_init(&ml);
 	ml.dir = "list";
 	ml_open(&ml, false);
-	rmdir("list/text");
-	xasprintf(&dir, "%s/listtexts/en",
-	    atf_tc_get_config_var(tc, "top_srcdir"));
-
-	symlink(dir, "list/text");
+	setup_listtext(tc);
 	atf_utils_create_file("list/control/smtpport", "25678");
 	atf_utils_create_file("list/control/smtphelo", "heloname");
 	int smtppipe[2];
@@ -2562,17 +2553,12 @@ ATF_TC_BODY(listcontrol, tc)
 
 ATF_TC_BODY(send_help, tc)
 {
-	char *dir;
 	init_ml(true);
 	struct ml ml;
 	ml_init(&ml);
 	ml.dir = "list";
 	ml_open(&ml, false);
-	rmdir("list/text");
-	xasprintf(&dir, "%s/listtexts/en",
-	    atf_tc_get_config_var(tc, "top_srcdir"));
-
-	symlink(dir, "list/text");
+	setup_listtext(tc);
 	atf_utils_create_file("list/control/smtpport", "25678");
 	atf_utils_create_file("list/control/smtphelo", "heloname");
 	atf_utils_create_file("mail", "headers\n\nbody\n");
@@ -2829,17 +2815,12 @@ ATF_TC_BODY(mod_get_addr_type, tc)
 
 ATF_TC_BODY(send_probe, tc)
 {
-	char *dir;
 	init_ml(true);
 	struct ml ml;
 	ml_init(&ml);
 	ml.dir = "list";
 	ml_open(&ml, false);
-	rmdir("list/text");
-	xasprintf(&dir, "%s/listtexts/en",
-	    atf_tc_get_config_var(tc, "top_srcdir"));
-
-	symlink(dir, "list/text");
+	setup_listtext(tc);
 	atf_utils_create_file("list/control/smtpport", "25678");
 	atf_utils_create_file("list/control/smtphelo", "heloname");
 	int smtppipe[2];
