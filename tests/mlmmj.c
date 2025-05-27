@@ -1893,8 +1893,9 @@ setup_listtext(const atf_tc_t *tc)
 {
 	char *dir = NULL;
 	rmdir("list/text");
-	xasprintf(&dir, "%s/../listtexts/en",
-	    atf_tc_get_config_var(tc, "srcdir"));
+	ATF_REQUIRE_MSG(atf_tc_has_config_var(tc, "top_srcdir"), "missing configuration variable 'top_srcdir'");
+	xasprintf(&dir, "%s/listtexts/en",
+	    atf_tc_get_config_var(tc, "top_srcdir"));
 
 	symlink(dir, "list/text");
 }
