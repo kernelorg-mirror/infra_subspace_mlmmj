@@ -68,7 +68,7 @@ void rewind_subs_list(void *state)
 	struct subs_list_state *s = (struct subs_list_state *)state;
 	if (s == NULL) return;
 	if (s->dirp != NULL) closedir(s->dirp);
-	s->dfd = openat(s->listfd, s->dirname, O_DIRECTORY|O_CLOEXEC);
+	s->dfd = openat(s->listfd, s->dirname, O_DIRECTORY|O_CLOEXEC|O_RDONLY);
 	if (s->dfd == -1 || (s->dirp = fdopendir(s->dfd)) == NULL)
 		log_error(LOG_ARGS, "Could not opendir(%s);\n", s->dirname);
 	s->used = true;

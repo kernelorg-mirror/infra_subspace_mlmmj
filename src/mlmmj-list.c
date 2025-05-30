@@ -28,6 +28,7 @@
 #include <dirent.h>
 #include <string.h>
 #include <err.h>
+#include <sys/stat.h>
 
 #include "mlmmj.h"
 #include "chomp.h"
@@ -54,10 +55,17 @@ dumpcount(int fd, size_t *count)
 	FILE *f;
 	char *line = NULL;
 	size_t linecap = 0;
+	struct stat fst;
 
 	f = fdopen(fd, "r");
 	if (f == NULL)
 		return (-1);
+
+	if (fstat(fd, &fst) == 0) {
+		if (S_ISDIR(fst.st_mode)) {
+			return(-1);
+		}
+	}
 
 	while (getline(&line, &linecap, f) > 0) {
 		chomp(line);

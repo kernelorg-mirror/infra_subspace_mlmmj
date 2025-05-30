@@ -485,7 +485,7 @@ int main(int argc, char **argv)
 		} else {
 			subddirname = "digesters.d";
 		}
-		subdirfd = openat(ml.fd, subddirname, O_DIRECTORY|O_CLOEXEC);
+		subdirfd = openat(ml.fd, subddirname, O_DIRECTORY|O_CLOEXEC|O_RDONLY);
 		if (subdirfd == -1 || (subddir = fdopendir(subdirfd)) == NULL) {
 			log_error(LOG_ARGS, "Could not opendir(%s/%s)", ml.dir,
 					    subddirname);

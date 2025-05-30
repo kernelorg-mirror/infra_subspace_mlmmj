@@ -50,7 +50,7 @@
 #define log(...) dprintf(logfd, __VA_ARGS__);
 #define opendirat(_dirfd, _fd, _dirent, _path) \
 	do { \
-		_fd = openat(_dirfd, _path, O_DIRECTORY|O_CLOEXEC); \
+		_fd = openat(_dirfd, _path, O_DIRECTORY|O_CLOEXEC|O_RDONLY); \
 		if (_fd == -1 || (_dirent = fdopendir(_fd)) == NULL) { \
 			log(" - Could not open '%s': %s\n", _path, \
 			    strerror(errno)); \
@@ -792,7 +792,7 @@ int main(int argc, char **argv)
 			goto mainsleep;
 		}
 
-		int dfd = open(dirlists, O_DIRECTORY);
+		int dfd = open(dirlists, O_DIRECTORY|O_RDONLY);
 		if (dfd == -1 || (dirp = fdopendir(dfd)) == NULL) {
 			log_err("Could not open the directory containing "
 			    "mailing lists (%s): %s", dirlists,

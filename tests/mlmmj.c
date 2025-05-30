@@ -956,6 +956,7 @@ ATF_TC_BODY(smtp, tc)
 		    "250 2.1.0 Ok\n", /* MAIL FROM */
 		    "250 2.1.0 Ok\n", /* RCPT TO */
 		    "354 Send message content; end with <CRLF>.<CRLF>\n", /* DATA */
+		    NULL, /* BEFORE DOT */
 		    "250 2.1.0 Ok\n", /* DATA */
 		    "221 2.0.0 Bye\n", /* QUIT */
 		    "250 2.0.0 Ok\n", /* RSET */
@@ -963,7 +964,9 @@ ATF_TC_BODY(smtp, tc)
 		dprintf(smtppipe[0], "220 me fake smtp\n");
 		for (uint8_t i = 0; i < NELEM(replies); i++) {
 			atf_utils_readline(smtppipe[0]);
-			dprintf(smtppipe[0], "%s", replies[i]);
+			if ( replies[i] != NULL ) {
+				dprintf(smtppipe[0], "%s", replies[i]);
+			}
 		}
 		exit (0);
 	}

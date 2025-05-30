@@ -272,7 +272,7 @@ open_subscriber_directory(int listfd, enum subtype typesub, const char **subdir)
 		*subdir = dir;
 	if (dir == NULL)
 		return (-1);
-	return (openat(listfd, dir, O_DIRECTORY|O_CLOEXEC));
+	return (openat(listfd, dir, O_DIRECTORY|O_CLOEXEC|O_RDONLY));
 }
 
 bool

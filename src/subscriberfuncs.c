@@ -136,19 +136,19 @@ is_subbed(int listfd, const char *address, bool both)
 	enum subtype typesub = SUB_NONE;
 	int fd;
 
-	fd = openat(listfd, "subscribers.d", O_DIRECTORY);
+	fd = openat(listfd, "subscribers.d", O_DIRECTORY|O_RDONLY);
 	if (fd != -1 && is_subbed_in(fd, "subscribers.d", address)) {
 		if (!both) return SUB_NORMAL;
 		typesub = SUB_NORMAL;
 	}
 
-	fd = openat(listfd, "digesters.d", O_DIRECTORY);
+	fd = openat(listfd, "digesters.d", O_DIRECTORY|O_RDONLY);
 	if (fd != -1 && is_subbed_in(fd, "digesters.d", address)) {
 		if (typesub == SUB_NORMAL) return SUB_BOTH;
 		return SUB_DIGEST;
 	}
 
-	fd = openat(listfd, "nomailsubs.d", O_DIRECTORY);
+	fd = openat(listfd, "nomailsubs.d", O_DIRECTORY|O_RDONLY);
 	if (fd != -1 && is_subbed_in(fd, "nomailsubs.d", address))
 		return SUB_NOMAIL;
 
