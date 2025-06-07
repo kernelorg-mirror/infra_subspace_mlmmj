@@ -34,6 +34,7 @@
 #include "do_all_the_voodoo_here.h"
 #include "log_error.h"
 #include "wrappers.h"
+#include "find_email_adr.h"
 
 bool
 findit(const char *line, const strlist *headers)
@@ -49,6 +50,7 @@ findit(const char *line, const strlist *headers)
 	return false;
 }
 
+/* read line and populate a struct to save a list important header see mlmmj-process.c:254 and mlmmj.h:97 */
 void getinfo(const char *line, struct mailhdr *readhdrs)
 {
 	int i = 0;
@@ -73,47 +75,20 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 		 strlist *allhdrs, const char *prefix, int replyto)
 {
 	char *hdrline, *unfolded, *unqp;
+	strlist allunfoldeds = tll_init();
+	char *posteraddr = NULL;
 	bool hdrsadded = false;
 	bool subject_present = false;
 	FILE *f = fdopen(dup(infd), "r");
 
+	/* scan all headers and populate readhdrs , allhdrs , allunfoldeds */
+	
 	for(;;) {
+	        /* hdrline contains the header in one line and unfolded contains the original data */
 		hdrline = gethdrline(f, &unfolded);
-
-		/* add extra headers before MIME* headers,
-		   or after all headers */
-		if(!hdrsadded &&
-		    (hdrline == NULL || strncasecmp(hdrline, "mime", 4) == 0)) {
-			if(hdrfd >= 0) {
-				if(dumpfd2fd(hdrfd, outfd) < 0) {
-					log_error(LOG_ARGS, "Could not "
-						"add extra headers");
-					free(hdrline);
-					free(unfolded);
-					return -1;
-				}
-				fsync(outfd);
-			}
-			hdrsadded = true;
-		}
 
 		/* end of headers */ 
 		if(hdrline == NULL) {
-			/* add Subject if none is present
-			   and a prefix is defined */
-			if (prefix && !subject_present) {
-				dprintf(outfd, "Subject: %s\n", prefix);
-				subject_present = true;
-			}
-			/* write LF */
-			if(dprintf(outfd, "\n") < 0) {
-				free(hdrline);
-				free(unfolded);
-				log_error(LOG_ARGS, "Error writing hdrs.");
-				return -1;
-			}
-			free(hdrline);
-			free(unfolded);
 			break;
 		}
 
@@ -123,6 +98,43 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 
 		/* Snatch a copy of the header */
 		tll_push_back(*allhdrs, xstrdup(hdrline));
+		
+		/* Snatch a copy of unfolded */
+		tll_push_back(allunfoldeds, xstrdup(unfolded));
+		
+		free(hdrline);
+		free(unfolded);
+	}
+	/* if we have custom headers , extract posteraddr from current header */
+	if(hdrfd >= 0) {
+		strlist fromemails = tll_init();
+		if ( readhdrs[0].valuecount == 1 ) {
+		        find_email_adr(readhdrs[0].values[0], &fromemails);
+			posteraddr = tll_front(fromemails);
+		}
+	}
+	/* scan all headers from allhdrs , and do the real things */
+	tll_foreach(*allhdrs, a_header ) {
+
+	        /* hdrline contains the unfolded value of the header and unfolded contains the original data */
+	        hdrline=a_header->item ;
+		unfolded=tll_pop_front(allunfoldeds) ;
+
+		/* add extra headers before MIME* headers,
+		   or after all headers */
+		if(!hdrsadded &&
+		    ( strncasecmp(hdrline, "mime", 4) == 0)) {
+			if(hdrfd >= 0) {
+			        if(process_headers_fd(hdrfd,outfd,posteraddr) < 0) {
+					log_error(LOG_ARGS, "Could not "
+						"add extra headers");
+					tll_free_and_free(allunfoldeds, free);
+					return -1;
+				}
+				fsync(outfd);
+			}
+			hdrsadded = true;
+		}
 
 		/* Add Subject: prefix if wanted */
 		if(prefix) {
@@ -132,7 +144,6 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 				if(strstr(hdrline + 8, prefix) == NULL &&
 				   strstr(unqp, prefix) == NULL) {
 					dprintf(outfd, "Subject: %s%s\n", prefix, hdrline + 8);
-					free(hdrline);
 					free(unqp);
 					continue;
 				}
@@ -150,10 +161,32 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 				dprintf(outfd, "Reply-To:%s\n", hdrline + 5);
 			}
 		}
-
-		free(hdrline);
-		free(unfolded);
 	}
+
+	if(!hdrsadded ) {
+		if(hdrfd >= 0) {
+		  if(process_headers_fd(hdrfd,outfd,posteraddr) < 0) {
+				log_error(LOG_ARGS, "Could not "
+					"add extra headers");
+				tll_free_and_free(allunfoldeds, free);
+				return -1;
+			}
+			fsync(outfd);
+		}
+	}
+
+	if (prefix && !subject_present) {
+		dprintf(outfd, "Subject: %s\n", prefix);
+		subject_present = true;
+	}
+	/* write LF */
+	if(dprintf(outfd, "\n") < 0) {
+	        tll_free_and_free(allunfoldeds, free);
+		log_error(LOG_ARGS, "Error writing hdrs.");
+		return -1;
+	}
+	
+	tll_free_and_free(allunfoldeds, free);
 
 	lseek(infd, ftello(f), SEEK_SET);
 	/* Just print the rest of the mail */

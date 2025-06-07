@@ -30,5 +30,6 @@ ssize_t readn(int fd, void *vptr, size_t n);
 int random_int(void);
 int dumpfd2fd(int infd, int outfd);
 int copy_file(int infd, int outfd, size_t bufsiz);
+int process_headers_fd(int infd, int outfd,const char *from);
 
 #endif /* WRAPPERS_H */

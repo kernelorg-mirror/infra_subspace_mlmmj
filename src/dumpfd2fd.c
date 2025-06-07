@@ -29,6 +29,9 @@
 #include <limits.h>
 
 #include "config.h"
+#include "log_error.h"
+#include "xmalloc.h"
+#include "mygetline.h"
 
 #define DUMPBUF 4096
 
@@ -77,3 +80,28 @@ int dumpfd2fd(int from, int to)
 
 	return (r);
 }
+
+int process_headers_fd(int infd, int outfd,const char *from)
+{
+	char *line;
+	int r;
+
+	while((line = mygetline(infd))) {
+	        char *to_be_subst ; char *new_line ;
+		to_be_subst = strstr(line,"$posteraddr$") ;
+		if ( to_be_subst != NULL) {
+		        *to_be_subst = '\0' ;
+			to_be_subst = to_be_subst + 12 ;
+			xasprintf(&new_line, "%s%s%s", line, from , to_be_subst ) ;
+			free(line);
+			line=new_line ;
+		}
+	        if( (r=dprintf(outfd, "%s", line)) < 0) {
+		        log_error(LOG_ARGS, "Could not write headers");
+			return r ;
+		}
+		free(line);
+	}
+	return 0 ;
+}
+
