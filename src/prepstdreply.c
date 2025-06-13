@@ -2,7 +2,7 @@
  * Copyright (C) 2004 Mads Martin Joergensen <mmj at mmj.dk>
  * Copyright (C) 2007 Morten K. Poulsen <morten at afdelingp.dk>
  * Copyright (C) 2011 Ben Schmidt <mail_ben_schmidt at yahoo.com.au>
- * Copyright (C) 2023 Baptiste Daroussin <bapt@FreeBSD.org>
+ * Copyright (C) 2023-2025 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -43,6 +43,7 @@
 #include "mlmmj.h"
 #include "unistr.h"
 #include "xstring.h"
+#include "do_all_the_voodoo_here.h"
 
 struct substitution {
 	char *token;
@@ -136,6 +137,8 @@ struct file_lines_state {
 	char truncate;
 	char *line;
 	size_t linecap;
+	char *formatted_str;
+	void *data;
 };
 
 
@@ -211,6 +214,17 @@ file_lines_state
 	return (s);
 }
 
+file_lines_state *
+init_file_lines_data(int fd, char truncate, void *data)
+{
+	file_lines_state *s;
+
+	s = init_file_lines_fd(fd, truncate);
+	if (s == NULL)
+		return (NULL);
+	s->data = data;
+	return (s);
+}
 
 void rewind_file_lines(void *state)
 {
@@ -243,10 +257,44 @@ const char *get_file_line(void *state)
 	return s->line;
 }
 
+const char *
+get_msgid_line(void *state)
+{
+	file_lines_state *s = (file_lines_state *)state;
+	const char *id = get_file_line(state);
+	if (id == NULL)
+		return (NULL);
+	if (s->data == NULL) {
+		return (id);
+	}
+	struct ml *m = (struct ml *)s->data;
+	struct mailhdr readhdrs[] = {
+		{ "Message-ID", 0, NULL },
+		{ NULL, 0, NULL }
+	};
+	int archive_fd = openat(m->fd, "archive", O_DIRECTORY|O_RDONLY);
+	if (archive_fd == -1)
+		return (id);
+	int msgfd = openat(archive_fd, id, O_RDONLY);
+	close(archive_fd);
+	if (msgfd == -1)
+		return (id);
+	FILE *f = fdopen(msgfd, "r");
+	scan_headers(f, readhdrs, NULL, NULL);
+	fclose(f);
+	if (readhdrs[0].valuecount == 0)
+		return (id);
+	free(s->formatted_str);
+	xasprintf(&s->formatted_str, "%s, %s%s",
+	    id, readhdrs[0].token, readhdrs[0].values[0]);
+	return (s->formatted_str);
+}
+
 void finish_file_lines(file_lines_state *s)
 {
 	if (s == NULL) return;
-	if (s->line != NULL) free(s->line);
+	free(s->line);
+	free(s->formatted_str);
 	if (s->fp != NULL) fclose(s->fp);
 	if (s->filename != NULL) free(s->filename);
 	free(s);

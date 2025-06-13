@@ -42,6 +42,7 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <errno.h>
+#include <signal.h>
 
 #include "atf-c/macros.h"
 #include "atf-c/utils.h"
@@ -158,7 +159,10 @@ ATF_TC_WITHOUT_HEAD(requeuemail);
 ATF_TC_WITHOUT_HEAD(gethdrline);
 ATF_TC_WITHOUT_HEAD(readlf);
 ATF_TC_WITHOUT_HEAD(mod_get_addr_type);
+ATF_TC_WITHOUT_HEAD(send_probe_no_probefile);
+ATF_TC_WITHOUT_HEAD(send_probe_arobase);
 ATF_TC_WITHOUT_HEAD(send_probe);
+ATF_TC_WITHOUT_HEAD(send_probe_archive);
 ATF_TC_WITHOUT_HEAD(parse_content_type);
 ATF_TC_WITHOUT_HEAD(find_in_list);
 ATF_TC_WITHOUT_HEAD(do_access);
@@ -2817,7 +2821,7 @@ ATF_TC_BODY(mod_get_addr_type, tc)
 	atf_utils_wait(p, 1, "", "");
 }
 
-ATF_TC_BODY(send_probe, tc)
+ATF_TC_BODY(send_probe_no_probefile, tc)
 {
 	init_ml(true);
 	struct ml ml;
@@ -2844,19 +2848,46 @@ ATF_TC_BODY(send_probe, tc)
 		atf_utils_cat_file("mailout.txt", "");
 		atf_tc_fail("invalid file");
 	}
+}
 
-	p = atf_utils_fork();
+ATF_TC_BODY(send_probe_arobase, tc)
+{
+	init_ml(true);
+	struct ml ml;
+	ml_init(&ml);
+	ml.dir = "list";
+	ml_open(&ml, false);
+	setup_listtext(tc);
+	atf_utils_create_file("list/control/smtpport", "25678");
+	atf_utils_create_file("list/control/smtphelo", "heloname");
+	int smtppipe[2];
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
+	pid_t p = atf_utils_fork();
 	if (p == 0) {
 		if (send_probe(&ml, "bapt@freebsd.org"))
 			exit(0);
 		exit(1);
 	}
 	atf_utils_wait(p, 1, "", "");
+}
 
-	atf_utils_create_file("list/bounce/bapt=freebsd.org", "1234:blabla\n");
-	p2 = single_mail_reception(smtppipe[1]);
+ATF_TC_BODY(send_probe, tc)
+{
+	init_ml(true);
+	struct ml ml;
+	ml_init(&ml);
+	ml.dir = "list";
+	ml_open(&ml, false);
+	setup_listtext(tc);
+	atf_utils_create_file("list/control/smtpport", "25678");
+	atf_utils_create_file("list/control/smtphelo", "heloname");
+	int smtppipe[2];
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
+	pid_t p2 = single_mail_reception(smtppipe[1]);
 	atf_utils_readline(smtppipe[0]);
-	p = atf_utils_fork();
+
+	atf_utils_create_file("list/bounce/bapt=freebsd.org", "1234:blabla\n32:qftgd\n");
+	pid_t p = atf_utils_fork();
 	if (p == 0) {
 		if (send_probe(&ml, "bapt=freebsd.org"))
 			exit(0);
@@ -2864,7 +2895,49 @@ ATF_TC_BODY(send_probe, tc)
 	}
 	atf_utils_wait(p2, 0, "save:mailout.txt", "");
 	atf_utils_wait(p, 0, "", "");
-	if (!atf_utils_grep_file("1234", "mailout.txt")) {
+
+	if (!atf_utils_grep_file("1234\r", "mailout.txt")) {
+		atf_utils_cat_file("mailout.txt", ">");
+		atf_tc_fail("invalid mail sent");
+	}
+}
+
+ATF_TC_BODY(send_probe_archive, tc)
+{
+	init_ml(true);
+	struct ml ml;
+	ml_init(&ml);
+	ml.dir = "list";
+	ml_open(&ml, false);
+	setup_listtext(tc);
+	atf_utils_create_file("list/control/smtpport", "25678");
+	atf_utils_create_file("list/control/smtphelo", "heloname");
+	int smtppipe[2];
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
+	pid_t p2 = single_mail_reception(smtppipe[1]);
+	atf_utils_readline(smtppipe[0]);
+
+	atf_utils_create_file("list/bounce/bapt=freebsd.org", "1234:blabla\n21:hey\n32:ertt\n");
+	atf_utils_create_file("list/archive/1234", "From: bob@test\nMessage-ID: <msgid>\nX-None: bla\n\nContent\n");
+	atf_utils_create_file("list/archive/21", "From: bob@test\nMessage-ID: <msgid2>\nX-None: bla\n\nContent\n");
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		if (send_probe(&ml, "bapt=freebsd.org"))
+			exit(0);
+		exit(1);
+	}
+	atf_utils_wait(p2, 0, "save:mailout.txt", "");
+	atf_utils_wait(p, 0, "", "");
+
+	if (!atf_utils_grep_file("- 1234, Message-ID: <msgid>\r", "mailout.txt")) {
+		atf_utils_cat_file("mailout.txt", ">");
+		atf_tc_fail("invalid mail sent");
+	}
+	if (!atf_utils_grep_file("- 21, Message-ID: <msgid2>\r", "mailout.txt")) {
+		atf_utils_cat_file("mailout.txt", ">");
+		atf_tc_fail("invalid mail sent");
+	}
+	if (!atf_utils_grep_file("- 32\r", "mailout.txt")) {
 		atf_utils_cat_file("mailout.txt", ">");
 		atf_tc_fail("invalid mail sent");
 	}
@@ -3094,7 +3167,10 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, gethdrline);
 	ATF_TP_ADD_TC(tp, readlf);
 	ATF_TP_ADD_TC(tp, mod_get_addr_type);
+	ATF_TP_ADD_TC(tp, send_probe_no_probefile);
+	ATF_TP_ADD_TC(tp, send_probe_arobase);
 	ATF_TP_ADD_TC(tp, send_probe);
+	ATF_TP_ADD_TC(tp, send_probe_archive);
 	ATF_TP_ADD_TC(tp, parse_content_type);
 	ATF_TP_ADD_TC(tp, find_in_list);
 	ATF_TP_ADD_TC(tp, do_access);

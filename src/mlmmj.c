@@ -84,9 +84,9 @@ send_probe(struct ml *ml, const char *addr)
 	txt = open_text(ml->fd, "probe", NULL, NULL, NULL, "bounce-probe");
 	MY_ASSERT(txt);
 	register_default_unformatted(txt, ml);
-	fls = init_file_lines_fd(openat(bfd, addr, O_RDONLY), ':');
+	fls = init_file_lines_data(openat(bfd, addr, O_RDONLY), ':', ml);
 	register_formatted(txt, "bouncenumbers",
-			rewind_file_lines, get_file_line, fls);
+			rewind_file_lines, get_msgid_line, fls);
 	queuefilename = prepstdreply(txt, ml, "$listowner$", myaddr, NULL);
 	MY_ASSERT(queuefilename);
 	close_text(txt);

@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2004 Mads Martin Joergensen <mmj at mmj.dk>
  * Copyright (C) 2011 Ben Schmidt <mail_ben_schmidt at yahoo.com.au>
- * Copyright (C) 2023-2024 Baptiste Daroussin <bapt@FreeBSD.org>
+ * Copyright (C) 2023-2025 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -48,8 +48,10 @@ void finish_memory_lines(memory_lines_state *s);
 
 file_lines_state *init_file_lines(const char *filename, char truncate);
 file_lines_state *init_file_lines_fd(int fd, char truncate);
+file_lines_state *init_file_lines_data(int fd, char truncate, void *data);
 void rewind_file_lines(void *state);
 const char *get_file_line(void *state);
+const char *get_msgid_line(void *state);
 void finish_file_lines(file_lines_state *s);
 
 char *substitute(const char *line, int listfd, int ctrlfd, text *txt);
