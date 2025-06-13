@@ -1,4 +1,5 @@
 master
+ o Remove blanks in customheaders prefix and skip empty lines
  o $bouncenumbers$ in probe are now expended to number, messageid when
    possible
  o customheaeders allow now substitution of $posteraddr$ (Erwan Mas)

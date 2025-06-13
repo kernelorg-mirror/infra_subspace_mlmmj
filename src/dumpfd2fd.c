@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2004 Mads Martin Joergensen <mmj at mmj dot dk>
- * Copyright (C) 2023 Baptiste Daroussin <bapt@FreeBSD.org>
+ * Copyright (C) 2023-2025 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -27,6 +27,7 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <limits.h>
+#include <ctype.h>
 
 #include "config.h"
 #include "log_error.h"
@@ -87,6 +88,11 @@ int process_headers_fd(int infd, int outfd,const char *from)
 	int r;
 
 	while((line = mygetline(infd))) {
+		/* skip empty lines */
+		while (isspace(*line))
+			line++;
+		if (line[0] == '\0')
+			continue;
 	        char *to_be_subst ; char *new_line ;
 		to_be_subst = strstr(line,"$posteraddr$") ;
 		if ( to_be_subst != NULL) {
