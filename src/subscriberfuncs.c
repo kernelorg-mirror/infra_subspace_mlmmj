@@ -92,7 +92,7 @@ find_subscriber(int fd, const char *address)
 	}
 	free(line);
 	fclose(f);
-	return (ret);;
+	return (ret);
 }
 
 int
