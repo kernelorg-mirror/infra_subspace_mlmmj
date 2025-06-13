@@ -1,4 +1,4 @@
-master
+1.6.0
  o Remove blanks in customheaders prefix and skip empty lines
  o $bouncenumbers$ in probe are now expended to number, messageid when
    possible
