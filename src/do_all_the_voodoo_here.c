@@ -1,6 +1,5 @@
 /* Copyright (C) 2004 Mads Martin Joergensen <mmj at mmj.dk>
- *
- * $Id$
+ * Copyright (C) 2025 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -70,20 +69,13 @@ void getinfo(const char *line, struct mailhdr *readhdrs)
 	}
 }
 
-int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
-		 const strlist *delhdrs, struct mailhdr *readhdrs,
-		 strlist *allhdrs, const char *prefix, int replyto)
+void
+scan_headers(FILE *f, struct mailhdr *readhdrs, strlist *allhdrs, strlist *allunfoldeds)
 {
-	char *hdrline, *unfolded, *unqp;
-	strlist allunfoldeds = tll_init();
-	char *posteraddr = NULL;
-	bool hdrsadded = false;
-	bool subject_present = false;
-	FILE *f = fdopen(dup(infd), "r");
+	char *hdrline, *unfolded;
 
 	/* scan all headers and populate readhdrs , allhdrs , allunfoldeds */
-	
-	for(;;) {
+	for (;;) {
 	        /* hdrline contains the header in one line and unfolded contains the original data */
 		hdrline = gethdrline(f, &unfolded);
 
@@ -96,15 +88,34 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 		if(readhdrs)
 			getinfo(hdrline, readhdrs);
 
-		/* Snatch a copy of the header */
-		tll_push_back(*allhdrs, xstrdup(hdrline));
+		if (allhdrs != NULL) {
+			/* Snatch a copy of the header */
+			tll_push_back(*allhdrs, xstrdup(hdrline));
+		}
 		
-		/* Snatch a copy of unfolded */
-		tll_push_back(allunfoldeds, xstrdup(unfolded));
+		if (allunfoldeds != NULL) {
+			/* Snatch a copy of unfolded */
+			tll_push_back(*allunfoldeds, xstrdup(unfolded));
+		}
 		
 		free(hdrline);
 		free(unfolded);
 	}
+}
+
+int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
+		 const strlist *delhdrs, struct mailhdr *readhdrs,
+		 strlist *allhdrs, const char *prefix, int replyto)
+{
+	char *hdrline, *unfolded, *unqp;
+	strlist allunfoldeds = tll_init();
+	char *posteraddr = NULL;
+	bool hdrsadded = false;
+	bool subject_present = false;
+	FILE *f = fdopen(dup(infd), "r");
+
+	scan_headers(f, readhdrs, allhdrs, &allunfoldeds);
+
 	/* if we have custom headers , extract posteraddr from current header */
 	if(hdrfd >= 0) {
 		strlist fromemails = tll_init();
