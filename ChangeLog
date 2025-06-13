@@ -1,4 +1,6 @@
 master
+ o $bouncenumbers$ in probe are now expended to number, messageid when
+   possible
  o customheaeders allow now substitution of $posteraddr$ (Erwan Mas)
  o Fix portability issue on Hurd (Erwan Mas)
 1.5.2
