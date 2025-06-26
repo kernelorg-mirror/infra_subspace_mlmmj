@@ -2754,7 +2754,7 @@ delheaders_extras_body()
 	echo test@mlmmjtest > list/control/listaddress
 	echo "25678" > list/control/smtpport
 	echo "heloname" > list/control/smtphelo
-	printf "X-k3\nx-h1\nx-L\n\n\n \n\t\nplop\nNope\n" > list/control/delheaders
+	printf "X-k3\nx-h1\nx-L\n\n\n \n\t\nplop\nx-sym-colon:\nNope\n" > list/control/delheaders
 
 	printf "user@test\nuser2@test" > list/subscribers.d/u
 cat > first <<EOF
@@ -2764,6 +2764,7 @@ X-L4: plop
 X-K3: plop
 X-H2: plop
 X-H1: plop
+X-sym-COLON: plop
 Received: from test.com ( mail.test.com [192.168.168.1])
 	by 192.168.168.168 with ESMTP id 0A21C400643
 	for <test@mlmmjtest>; Sat, 10 May 2025 17:17:17 +0000 (UTC)
