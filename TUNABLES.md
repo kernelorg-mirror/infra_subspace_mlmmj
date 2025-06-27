@@ -84,12 +84,24 @@ entire content is used as value, it's marked "text".
 
  * delheaders			(list)
 
-   In this file is specified *ONE* headertoken to match pr. line. If the file
-   consists of:
-                   Received:
-                   Message-ID:
-   Then all occurences of these headers in incoming list mail will be deleted.
-   "From " and "Return-Path:" are deleted no matter what.
+   This file specifies one header token to match per line. If the file contains
+   entries such as Received: and Message-ID:, then all occurrences of these
+   headers in incoming mail will be deleted.
+
+   Additionally, the headers From  and Return-Path: will be deleted regardless
+   of their presence in the list.
+
+   **Important Note on Header Matching:**
+
+   The header matching is based on prefixes. This means that:
+
+   - A header token specified as X-: will match only headers that are exactly
+     X-.
+   - A header token specified as X- will match all headers that begin with the
+     prefix X-, including headers like X-Example, X-Header-Name, etc.
+
+   Make sure to specify the header tokens according to these rules to ensure
+   the desired headers are correctly matched and deleted.
 
  * access			(list)
 
