@@ -38,18 +38,18 @@ entire content is used as value, it's marked "text".
 
  * tocc				(boolean)
 
-   If this file is present, the list address does not have to be in the To:
-   or Cc: header of the email to the list.
+   If this file is present, the list address does not have to be in the `To:`
+   or `Cc:` header of the email to the list.
 
  * subonlypost			(boolean)
 
    When this file is present, only people who are subscribed to the list,
-   are allowed to post to it. The check is made against the "From:" header.
+   are allowed to post to it. The check is made against the `From:` header.
 
  * modonlypost			(boolean)
 
    When this file is present, only people listed in listdir/control/moderators
-   are allowed to post to it. The check is made against the "From:" header.
+   are allowed to post to it. The check is made against the `From:` header.
 
  * modnonsubposts		(boolean)
 
@@ -63,13 +63,13 @@ entire content is used as value, it's marked "text".
 
  * prefix			(normal)
 
-   The prefix for the Subject: line of mails to the list. This will alter the
-   Subject: line, and add a prefix if it's not present elsewhere.
+   The prefix for the `Subject:` line of mails to the list. This will alter the
+   `Subject:` line, and add a prefix if it's not present elsewhere.
 
  * replyto			(boolean)
 
-   When this file is present, the From: line of mails will be added as a
-   Reply-To: header. This allows the mail to be delivered safely when DMARC
+   When this file is present, the `From:` line of mails will be added as a
+   `Reply-To:` header. This allows the mail to be delivered safely when DMARC
    protected emails are received from the list.
 
  * owner			(list)
@@ -80,25 +80,25 @@ entire content is used as value, it's marked "text".
  * customheaders		(list)
 
    These headers are added to every mail coming through. This is the place you
-   want to add Reply-To: header in case you want such.
+   want to add `Reply-To:` header in case you want such.
 
  * delheaders			(list)
 
    This file specifies one header token to match per line. If the file contains
-   entries such as Received: and Message-ID:, then all occurrences of these
+   entries such as `Received:` and `Message-ID:`, then all occurrences of these
    headers in incoming mail will be deleted.
 
-   Additionally, the headers From  and Return-Path: will be deleted regardless
+   Additionally, the headers `From ` and `Return-Path:` will be deleted regardless
    of their presence in the list.
 
    **Important Note on Header Matching:**
 
    The header matching is based on prefixes. This means that:
 
-   - A header token specified as X-: will match only headers that are exactly
-     X-.
-   - A header token specified as X- will match all headers that begin with the
-     prefix X-, including headers like X-Example, X-Header-Name, etc.
+   - A header token specified as `X-:` will match only headers that are exactly
+     `X-`.
+   - A header token specified as `X-` will match all headers that begin with the
+     prefix `X-`, including headers like `X-Example`, `X-Header-Name`, etc.
 
    Make sure to specify the header tokens according to these rules to ensure
    the desired headers are correctly matched and deleted.
@@ -111,9 +111,9 @@ entire content is used as value, it's marked "text".
 
  * addtohdr			(boolean)
 
-   When this file is present, a To: header including the recipients
+   When this file is present, a `To:` header including the recipients
    emailaddress will be added to outgoing mail. Recommended usage is to remove
-   existing To: headers with delheaders (see above) first.
+   existing `To:` headers with delheaders (see above) first.
 
  * relayhost			(normal)
 
@@ -176,8 +176,8 @@ entire content is used as value, it's marked "text".
    controlled by the maxverprecips tunable) and send one message to the SMTP
    server per group. The content of this tunable allows VERP to be handled by
    the SMTP server. If the tunable contains "postfix", Mlmmj will make Postfix
-   use VERP by adding XVERP=-= to the MAIL FROM: line. If it contains something
-   else, that text will be appended to the MAIL FROM: line. If it contains
+   use VERP by adding XVERP=-= to the `MAIL FROM:` line. If it contains something
+   else, that text will be appended to the `MAIL FROM:` line. If it contains
    nothing, VERP will effectively be disabled, as neither Mlmmj nor the SMTP
    server will do it.
 
@@ -191,7 +191,7 @@ entire content is used as value, it's marked "text".
  * nomodonlydenymails		(boolean)
 
    These switches turns off whether mlmmj sends out notification about postings
-   being denied due to the listaddress not being in To: or Cc: (see 'tocc'),
+   being denied due to the listaddress not being in `To:` or `Cc:` (see 'tocc'),
    when it was rejected due to an access rule (see 'access') or whether it's a
    subscribers/moderators only posting list (see 'subonlypost/modonlypost').
 
@@ -244,7 +244,7 @@ entire content is used as value, it's marked "text".
 
  * staticbounceaddr		(normal)
 
-   If this is set to something@example.org, the bounce address (Return-Path:)
+   If this is set to something@example.org, the bounce address (`Return-Path:`)
    will be fixed to something+listname-bounces-and-so-on@example.org
    in case you need to disable automatic bounce handling.
 
