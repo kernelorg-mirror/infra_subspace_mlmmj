@@ -122,6 +122,7 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 	const char *efromismod = NULL;
 	const char *mailbasename = mybasename(mailfilename);
 	int notifymod = 0;
+	int modemailsender = 0;
 	struct mail mail;
 #if 0
 	printf("mailfilename = [%s], mailbasename = [%s]\n", mailfilename,
@@ -143,7 +144,11 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 	gen_addr_cookie(reject, ml, "reject-", mailbasename);
 
 	gen_addr(from, ml, "owner");
-	xasprintf(&to, "%s-moderators@%s", ml->name, ml->fqdn);
+
+	modemailsender = statctrl(ml->ctrlfd, "modemailsender");
+
+	if(modemailsender) to = xstrdup(posteraddr);
+	else xasprintf(&to, "%s-moderators@%s", ml->name, ml->fqdn);
 
 	txt = open_text(ml->fd, "moderate", "post",
 			modreason_strs[modreason], NULL, "moderation");
@@ -202,6 +207,18 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 		fclose(mail.fp);
 		exit(EXIT_SUCCESS);
 	}
+
+	if(modemailsender) {
+		memset(&mail, 0, sizeof(mail));
+		mail.from = from;
+		mail.to = to;
+		mail.fp = fopen(queuefilename, "r");
+		if (send_single_mail(&mail, ml, false))
+			unlink(queuefilename);
+		fclose(mail.fp);
+		exit(EXIT_SUCCESS);
+	}
+
 	exec_or_die(mlmmjsend, "-l", "2", "-L", ml->dir, "-F", from,
 	    "-m", queuefilename, NULL);
 }
