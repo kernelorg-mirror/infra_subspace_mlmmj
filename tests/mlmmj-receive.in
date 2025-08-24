@@ -1853,7 +1853,8 @@ EOF
 	atf_check -o file:expected-7.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-7.txt
 }
 
-moderation_body() {
+moderation_create_body() {
+	moderator=$1
 	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	init_ml list
@@ -1930,21 +1931,21 @@ EOF
 	atf_check -s exit:1 test -f mail-2.txt
 	var=$(ls list/moderation/)
 	cat > reject << EOF
-From: test@modos
+From: ${moderator}
 To: test+reject-${var}@mlmmjtest
-Return-path: test@modos
+Return-path: ${moderator}
 EOF
 	atf_check -s exit:0 $mlmmjreceive -L list -F <reject
-	atf_check -o match:"test@modos rejected ${var#*/}" cat list/mlmmj.operation.log
+	atf_check -o match:"${moderator} rejected ${var#*/}" cat list/mlmmj.operation.log
 	atf_check -s exit:0 $mlmmjreceive -L list -F <first
 	var=$(ls list/moderation/)
 	cat > release << EOF
-From: test@modos
+From: ${moderator}
 To: test+release-${var}@mlmmjtest
-Return-path: test@modos
+Return-path: ${moderator}
 EOF
 	atf_check -s exit:0 $mlmmjreceive -L list -F <release
-	atf_check -o match:"test@modos released ${var#*/}" cat list/mlmmj.operation.log
+	atf_check -o match:"${moderator} released ${var#*/}" cat list/mlmmj.operation.log
 	atf_check -s exit:0 test -f list/archive/1
 	cat >> expected-3.txt <<EOF
 EHLO heloname
@@ -1971,6 +1972,10 @@ Let's go, first email
 QUIT
 EOF
 	atf_check -o file:expected-3.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-3.txt
+}
+
+moderation_body() {
+	moderation_create_body test@modos
 }
 
 moderation_notifymod_body() {
