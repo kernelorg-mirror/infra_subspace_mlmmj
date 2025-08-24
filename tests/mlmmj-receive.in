@@ -18,6 +18,7 @@ tests_init \
 	ctrl_get \
 	subscription_moderation \
 	moderation \
+	moderation_modemailsender \
 	moderation_notifymod \
 	moderation_notmetoo \
 	moderation_reject_invalid \
@@ -1976,6 +1977,11 @@ EOF
 
 moderation_body() {
 	moderation_create_body test@modos
+}
+
+moderation_modemailsender_body() {
+	touch list/control/modemailsender
+	moderation_create_body bob@test
 }
 
 moderation_notifymod_body() {
