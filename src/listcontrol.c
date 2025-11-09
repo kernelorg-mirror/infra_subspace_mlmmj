@@ -261,7 +261,7 @@ int listcontrol(strlist *fromemails, struct ml *ml, const char *controlstr,
 	case CTRL_SUBSCRIBE_NOMAIL:
 		if (sub.typereq == NULL) {
 			sub.typereq = "A subscribe-nomail";
-			sub.ctrlstr = "nomailsub";
+			sub.ctrlstr = "nonomailsub";
 			sub.typesub = SUB_NOMAIL;
 			sub.type = "nomail";
 			sub.typedeny = "sub-deny-nomail";
