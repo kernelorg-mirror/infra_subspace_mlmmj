@@ -80,7 +80,7 @@ static bool is_moderator(int listfd, const char *address,
 	xstring *str = NULL;
 	FILE *fp;
 
-	if((moderatorsfd = openat(listfd, "control/moderators", O_RDONLY)) < 0) {
+	if ((moderatorsfd = openat(listfd, "control/moderators", O_RDONLY)) < 0) {
 		log_error(LOG_ARGS, "Could not open 'control/moderators'");
 		exit(EXIT_FAILURE);
 	}
@@ -88,7 +88,7 @@ static bool is_moderator(int listfd, const char *address,
 
 	while (getline(&line, &linecap, fp) > 0) {
 		chomp(line);
-		if(address && strcasecmp(line, address) == 0) {
+		if (address && strcasecmp(line, address) == 0) {
 			foundaddr = true;
 			if (moderators == NULL)
 				goto out;
@@ -129,13 +129,13 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 			                                     mailbasename);
 #endif
 
-	if(statctrl(ml->ctrlfd, "ifmodsendonlymodmoderate"))
+	if (statctrl(ml->ctrlfd, "ifmodsendonlymodmoderate"))
 		efromismod = efromsender;
 
-	if(!is_moderator(ml->fd, efromismod, &moderators))
+	if (!is_moderator(ml->fd, efromismod, &moderators))
 		efromismod = NULL;
 
-	if(efromismod) mls = init_memory_lines(efromismod);
+	if (efromismod) mls = init_memory_lines(efromismod);
 	else mls = init_memory_lines(moderators);
 
 	free(moderators);
@@ -311,7 +311,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if(ml.dir == NULL || mailfile == NULL) {
+	if (ml.dir == NULL || mailfile == NULL) {
 		errx(EXIT_FAILURE, "You have to specify -L and -m\n"
 		    "%s -h for help", argv[0]);
 	}
@@ -330,7 +330,7 @@ int main(int argc, char **argv)
 
         } while ((donemailfd < 0) && (errno == EEXIST));
 
-	if(donemailfd < 0) {
+	if (donemailfd < 0) {
 		log_error(LOG_ARGS, "could not create %s", donemailname);
 		free(donemailname);
 		exit(EXIT_FAILURE);
@@ -338,7 +338,7 @@ int main(int argc, char **argv)
 #if 0
 	log_error(LOG_ARGS, "donemailname = [%s]\n", donemailname);
 #endif
-	if((rawmailfd = open(mailfile, O_RDONLY)) < 0) {
+	if ((rawmailfd = open(mailfile, O_RDONLY)) < 0) {
 		unlink(donemailname);
 		free(donemailname);
 		log_error(LOG_ARGS, "could not open() input mail file");
@@ -353,7 +353,7 @@ int main(int argc, char **argv)
 	footfd = openat(ml.ctrlfd, "footer", O_RDONLY);
 
 	delheaders = ctrlvalues(ml.ctrlfd, "delheaders");
-	if(delheaders == NULL)
+	if (delheaders == NULL)
 		delheaders = xcalloc(1, sizeof(*delheaders));
 
 	tll_push_back(*delheaders, xstrdup("From "));
@@ -363,7 +363,7 @@ int main(int argc, char **argv)
 
 	replyto = statctrl(ml.ctrlfd, "replyto");
 
-	if(do_all_the_voodoo_here(rawmailfd, donemailfd, hdrfd, footfd,
+	if (do_all_the_voodoo_here(rawmailfd, donemailfd, hdrfd, footfd,
 				delheaders, readhdrs,
 				&allheaders, subjectprefix, replyto) < 0) {
 		log_error(LOG_ARGS, "Error in do_all_the_voodoo_here");
@@ -375,9 +375,9 @@ int main(int argc, char **argv)
 	close(rawmailfd);
 	close(donemailfd);
 
-	if(hdrfd >= 0)
+	if (hdrfd >= 0)
 		close(hdrfd);
-	if(footfd >= 0)
+	if (footfd >= 0)
 		close(footfd);
 
 	/* To: addresses */
@@ -401,7 +401,7 @@ int main(int argc, char **argv)
 	}
 	addr_in_to_or_cc = !statctrl(ml.ctrlfd, "tocc");
 
-	if(addr_in_to_or_cc || findaddress) {
+	if (addr_in_to_or_cc || findaddress) {
 		listaddrs = ctrlvalues(ml.ctrlfd, "listaddress");
 		if (listaddrs == NULL) {
 			log_error(LOG_ARGS, "list address is not defined");
@@ -410,7 +410,7 @@ int main(int argc, char **argv)
 		findaddress = !find_email(&dtemails, listaddrs, ml.delim,
 		    recipextra != NULL ? NULL : &recipextra);
 	}
-	if(addr_in_to_or_cc || findaddress) {
+	if (addr_in_to_or_cc || findaddress) {
 		intocc = find_email(&toemails, listaddrs, ml.delim,
 		    recipextra != NULL ? NULL : &recipextra);
 		if (!intocc)
@@ -436,7 +436,7 @@ int main(int argc, char **argv)
 	}
 
 	/* discard malformed mail with invalid From: unless it's a bounce */
-	if(tll_length(fromemails) != 1 &&
+	if (tll_length(fromemails) != 1 &&
 			(recipextra == NULL ||
 			strncmp(recipextra, "bounces", 7) != 0)) {
 		tll_foreach(fromemails, it)
@@ -468,10 +468,10 @@ int main(int argc, char **argv)
 	}
 
 	/* envelope from */
-	if((envstr = getenv("SENDER")) != NULL) {
+	if ((envstr = getenv("SENDER")) != NULL) {
 		/* qmail, postfix, exim */
 		efrom = envstr;
-	} else if(tll_length(rpemails) >= 1) {
+	} else if (tll_length(rpemails) >= 1) {
 		/* the (first) Return-Path: header */
 		efrom = tll_front(rpemails);
 	}
@@ -481,28 +481,28 @@ int main(int argc, char **argv)
 			subject = unistr_header_to_utf8(readhdrs[5].values[0]);
 	if (!subject) subject = xstrdup("");
 
-	if(recipextra) {
+	if (recipextra) {
 		int ownfd = openat(ml.ctrlfd, "owner", O_RDONLY);
 		xasprintf(&owner, "%d", ownfd);
-		if(strcmp(recipextra, "owner") == 0) {
+		if (strcmp(recipextra, "owner") == 0) {
 			/* Why is this here, and not in listcontrol() ?
 			 * -- mortenp 20060409 */
 			/* strip envelope from before resending */
 			tll_push_back(*delheaders, xstrdup("From "));
 			tll_push_back(*delheaders, xstrdup("Return-Path:"));
 
-			if((rawmailfd = open(mailfile, O_RDONLY)) < 0) {
+			if ((rawmailfd = open(mailfile, O_RDONLY)) < 0) {
 				log_error(LOG_ARGS, "could not open() "
 						    "input mail file");
 				exit(EXIT_FAILURE);
 			}
-			if((donemailfd = open(donemailname,
+			if ((donemailfd = open(donemailname,
 						O_WRONLY|O_TRUNC)) < 0) {
 				log_error(LOG_ARGS, "could not open() "
 						    "output mail file");
 				exit(EXIT_FAILURE);
 			}
-			if(do_all_the_voodoo_here(rawmailfd, donemailfd, -1,
+			if (do_all_the_voodoo_here(rawmailfd, donemailfd, -1,
 					-1, delheaders,
 					NULL, &allheaders, NULL, 0) < 0) {
 				log_error(LOG_ARGS, "do_all_the_voodoo_here");
@@ -532,13 +532,13 @@ int main(int argc, char **argv)
 	/* checking incoming mail's size */
 	errno = 0;
 	maxmailsize = ctrlsizet(ml.ctrlfd, "maxmailsize", 0);
-	if(errno != ENOENT) {
-		if(stat(donemailname, &st) < 0) {
+	if (errno != ENOENT) {
+		if (stat(donemailname, &st) < 0) {
 			log_error(LOG_ARGS, "stat(%s,..) failed", donemailname);
 			exit(EXIT_FAILURE);
 		}
 
-		if(st.st_size > maxmailsize) {
+		if (st.st_size > maxmailsize) {
 			char *maxmailsizestr;
 			if (statctrl(ml.ctrlfd, "nomaxmailsizedenymails")) {
 				errno = 0;
@@ -574,7 +574,7 @@ int main(int argc, char **argv)
 
 	free(delheaders);
 
-	if(*efrom == '\0') { /* don't send mails with <> in From
+	if (*efrom == '\0') { /* don't send mails with <> in From
 					     to the list */
 		xasprintf(&discardname, "%s/queue/discarded/%s", ml.dir, randomstr);
 		errno = 0;
@@ -591,7 +591,7 @@ int main(int argc, char **argv)
 
 	unlink(mailfile);
 
-	if(addr_in_to_or_cc && !intocc) {
+	if (addr_in_to_or_cc && !intocc) {
 		/* Don't send a mail about denial to the list, but silently
 		 * discard and exit. Also don't in case of it being turned off
 		 */
@@ -670,7 +670,7 @@ int main(int argc, char **argv)
 			xasprintf(&discardname, "%s/queue/discarded/%s", ml.dir,
 			    randomstr);
 			free(randomstr);
-                	if(rename(donemailname, discardname) < 0) {
+                	if (rename(donemailname, discardname) < 0) {
 				log_error(LOG_ARGS, "could not rename(%s,%s)",
 					    donemailname, discardname);
 				free(donemailname);
@@ -704,7 +704,7 @@ int main(int argc, char **argv)
 	/* modnonsubposts implies subonlypost if modonlypost is not set */
 	if (modnonsubposts && !modonlypost) subonlypost = 1;
 
-	if(!send && (subonlypost || modonlypost || modnonsubposts)) {
+	if (!send && (subonlypost || modonlypost || modnonsubposts)) {
 		/* Don't send a mail about denial to the list, but silently
 		 * discard and exit. */
 		char *testaddr = posteraddr;
@@ -719,21 +719,21 @@ int main(int argc, char **argv)
 			free(donemailname);
 			exit(EXIT_SUCCESS);
 		}
-		if(subonlypost) {
+		if (subonlypost) {
 			foundaddr = (is_subbed(ml.fd, testaddr, 0) !=
 					SUB_NONE);
 		} else if (modonlypost) {
 			foundaddr = is_moderator(ml.fd, testaddr, NULL);
 		}
-		if(!foundaddr) {
-			if(modnonsubposts) {
+		if (!foundaddr) {
+			if (modnonsubposts) {
 			    moderated = 1;
 			    if (subonlypost)
 				modreason = MODNONSUBPOSTS;
 			    else if (modonlypost)
 				modreason = MODNONMODPOSTS;
 			} else {
-			    if((subonlypost &&
+			    if ((subonlypost &&
 				    statctrl(ml.ctrlfd, "nosubonlydenymails")) ||
 				    (modonlypost &&
 				    statctrl(ml.ctrlfd, "nomodonlydenymails"))) {
@@ -767,8 +767,8 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if(!send && !moderated) {
-		if(statctrl(ml.ctrlfd, "moderated")) {
+	if (!send && !moderated) {
+		if (statctrl(ml.ctrlfd, "moderated")) {
 			moderated = 1;
 			modreason = MODERATED;
 		}
@@ -776,10 +776,10 @@ int main(int argc, char **argv)
 
 	notmetoo = statctrl(ml.ctrlfd, "notmetoo");
 
-	if(moderated) {
+	if (moderated) {
 		xasprintf(&mqueuename, "%s/moderation/%s", ml.dir, randomstr);
 		free(randomstr);
-		if(rename(donemailname, mqueuename) < 0) {
+		if (rename(donemailname, mqueuename) < 0) {
 			log_error(LOG_ARGS, "could not rename(%s,%s)",
 					    donemailname, mqueuename);
 			free(donemailname);
@@ -798,7 +798,7 @@ int main(int argc, char **argv)
 				exit(EXIT_FAILURE);
 			}
 			free(omitfilename);
-			if(dprintf(omitfd, "%s", posteraddr) < 0) {
+			if (dprintf(omitfd, "%s", posteraddr) < 0) {
 				log_error(LOG_ARGS,
 						"could not write omit file");
 				free(mqueuename);
@@ -814,7 +814,7 @@ int main(int argc, char **argv)
 
 	free(randomstr);
 
-	if(noprocess) {
+	if (noprocess) {
 		free(donemailname);
 		/* XXX: toemails and ccemails etc. have to be free() */
 		exit(EXIT_SUCCESS);
