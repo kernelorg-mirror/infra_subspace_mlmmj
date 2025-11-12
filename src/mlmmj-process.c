@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2003, 2003, 2004 Mads Martin Joergensen <mmj at mmj.dk>
- * Copyright (C) 2023 Baptiste Daroussin <bapt@FreeBSD.org>
+ * Copyright (C) 2023-2025 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -147,8 +147,10 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 
 	modemailsender = statctrl(ml->ctrlfd, "modemailsender");
 
-	if(modemailsender) to = xstrdup(posteraddr);
-	else xasprintf(&to, "%s-moderators@%s", ml->name, ml->fqdn);
+	if (modemailsender)
+		to = xstrdup(posteraddr);
+	else
+		xasprintf(&to, "%s-moderators@%s", ml->name, ml->fqdn);
 
 	txt = open_text(ml->fd, "moderate", "post",
 			modreason_strs[modreason], NULL, "moderation");
@@ -208,7 +210,7 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 		exit(EXIT_SUCCESS);
 	}
 
-	if(modemailsender) {
+	if (modemailsender) {
 		memset(&mail, 0, sizeof(mail));
 		mail.from = from;
 		mail.to = to;
