@@ -579,12 +579,12 @@ int main(int argc, char **argv)
 						mail.replyto = NULL;
 						sendres = send_mail_many_list( sockfd, &mail, &ml, &stl, archivefilename);
 					}
-				    	if (sendres) {
-					    	close(sockfd);
-					    	sockfd = -1;
-				    	} else {
-					    	endsmtp(&sockfd);
-				    	}
+					if (sendres) {
+						close(sockfd);
+						sockfd = -1;
+					} else {
+						endsmtp(&sockfd);
+					}
 					tll_free_and_free(stl, free);
 				}
 			} while(res > 0);
