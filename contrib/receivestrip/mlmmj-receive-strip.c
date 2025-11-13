@@ -47,7 +47,6 @@
 #include "ctrlvalue.h"
 #include "ctrlvalues.h"
 #include "utils.h"
-#include "do_all_the_voodoo_here.h"
 
 #include "log_error.h"
 #include "wrappers.h"
@@ -92,10 +91,10 @@ static int read_hdrs(int fd, strlist *allhdrs, strlist* delmime, strlist* denymi
 	parse_content_type(allhdrs,&mime_type,boundary);
 	if(mime_type) {
 		/* check if this part should be stripped */
-		if(delmime && findit(mime_type, delmime))
+		if(delmime && line_startwithany(mime_type, delmime, true))
 			result = MIME_STRIP;
 		/* check if the mail should be denied */
-		if(denymime && findit(mime_type, denymime))
+		if(denymime && line_startwithany(mime_type, denymime, true))
 			*deny = 1;
 		free(mime_type);
 	}

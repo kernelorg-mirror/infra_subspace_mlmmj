@@ -167,6 +167,7 @@ ATF_TC_WITHOUT_HEAD(parse_content_type);
 ATF_TC_WITHOUT_HEAD(find_in_list);
 ATF_TC_WITHOUT_HEAD(do_access);
 ATF_TC_WITHOUT_HEAD(unistr_header_to_utf8);
+ATF_TC_WITHOUT_HEAD(line_startwithany);
 
 ATF_TC_BODY(random_int, tc)
 {
@@ -3081,6 +3082,19 @@ ATF_TC_BODY(unistr_header_to_utf8, tc)
     ATF_REQUIRE_STREQ(out, "useless but why not");
 }
 
+ATF_TC_BODY(line_startwithany, tc)
+{
+	strlist l  = tll_init();
+	tll_push_back(l, "bla");
+	ATF_REQUIRE(!line_startwithany("BLA", &l, false));
+	ATF_REQUIRE(line_startwithany("BLA", &l, true));
+	ATF_REQUIRE(!line_startwithany("BLOP", &l, false));
+	ATF_REQUIRE(!line_startwithany("BLOP", &l, true));
+	tll_push_back(l, "BLOP");
+	ATF_REQUIRE(line_startwithany("BLOP", &l, false));
+	ATF_REQUIRE(line_startwithany("BLOP", &l, true));
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -3175,6 +3189,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, find_in_list);
 	ATF_TP_ADD_TC(tp, do_access);
 	ATF_TP_ADD_TC(tp, unistr_header_to_utf8);
+	ATF_TP_ADD_TC(tp, line_startwithany);
 
 	return (atf_no_error());
 }

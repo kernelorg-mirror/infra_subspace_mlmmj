@@ -34,20 +34,8 @@
 #include "log_error.h"
 #include "wrappers.h"
 #include "find_email_adr.h"
+#include "utils.h"
 
-bool
-findit(const char *line, const strlist *headers)
-{
-	size_t len;
-
-	tll_foreach(*headers, it) {
-		len = strlen(it->item);
-		if(strncasecmp(line, it->item, len) == 0)
-			return true;
-	}
-
-	return false;
-}
 
 /* read line and populate a struct to save a list important header see mlmmj-process.c:254 and mlmmj.h:97 */
 void getinfo(const char *line, struct mailhdr *readhdrs)
@@ -163,7 +151,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 		}
 
 		/* Should it be stripped? */
-		if(!delhdrs || !findit(hdrline, delhdrs))
+		if(!delhdrs || !line_startwithany(hdrline, delhdrs, true))
 			dprintf(outfd, "%s", unfolded);
 
 		/* Should Reply-To be added? */

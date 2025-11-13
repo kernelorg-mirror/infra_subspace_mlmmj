@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Baptiste Daroussin <bapt@FreeBSD.org>
+ * Copyright (C) 2021-2025 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -336,4 +336,21 @@ readlf(int fd, bool oneline)
 		buf = NULL;
 	}
 	return (buf);
+}
+
+typedef int (*cmp_fn_t)(const char *, const char *, size_t);
+
+bool
+line_startwithany(const char *el, const strlist *list,  bool ignore_case)
+{
+	size_t len;
+	cmp_fn_t cmp = ignore_case ? strncasecmp : strncmp;
+
+	tll_foreach(*list, it) {
+		len = strlen(it->item);
+		if (cmp(el, it->item, len) == 0)
+			return (true);
+	}
+
+	return (false);
 }

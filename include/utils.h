@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Baptiste Daroussin <bapt@FreeBSD.org>
+ * Copyright (C) 2025 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -41,3 +41,4 @@ time_t strtotimet(const char *np, const char **errpp);
 bool lock(int fd, bool write);
 bool find_email(strlist *list, strlist *matches, const char *delim, char **recipextra);
 char *readlf(int fd, bool oneline);
+bool line_startwithany(const char *el, const strlist *list, bool ignore_case);
