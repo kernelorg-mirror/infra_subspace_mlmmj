@@ -135,7 +135,7 @@ entire content is used as value, it's marked "text".
    If this file is present, the poster (based on the envelope from) will
    get a mail when their post is being moderated.
 
- * modemailsender		(boolean)
+ * selfmoderate		(boolean)
 
    If this file is present, moderation emails for posts are sent to the
    original sender instead of the moderators. Only affects moderated lists.

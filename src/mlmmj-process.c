@@ -122,7 +122,7 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 	const char *efromismod = NULL;
 	const char *mailbasename = mybasename(mailfilename);
 	int notifymod = 0;
-	int modemailsender = 0;
+	bool selfmoderate = 0;
 	struct mail mail;
 #if 0
 	printf("mailfilename = [%s], mailbasename = [%s]\n", mailfilename,
@@ -145,9 +145,9 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 
 	gen_addr(from, ml, "owner");
 
-	modemailsender = statctrl(ml->ctrlfd, "modemailsender");
+	selfmoderate = statctrl(ml->ctrlfd, "selfmoderate");
 
-	if (modemailsender)
+	if (selfmoderate)
 		to = xstrdup(posteraddr);
 	else
 		xasprintf(&to, "%s-moderators@%s", ml->name, ml->fqdn);
@@ -210,7 +210,7 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 		exit(EXIT_SUCCESS);
 	}
 
-	if (modemailsender) {
+	if (selfmoderate) {
 		memset(&mail, 0, sizeof(mail));
 		mail.from = from;
 		mail.to = to;

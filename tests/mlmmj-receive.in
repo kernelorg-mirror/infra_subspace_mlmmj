@@ -19,8 +19,8 @@ tests_init \
 	subscription_moderation \
 	moderation \
 	moderation_autosubscribe \
-	moderation_modemailsender \
-	moderation_modemailsender_autosubscribe \
+	moderation_selfmoderate \
+	moderation_selfmoderate_autosubscribe \
 	moderation_notifymod \
 	moderation_notmetoo \
 	moderation_reject_invalid \
@@ -2009,15 +2009,15 @@ moderation_autosubscribe_body() {
 }
 
 
-moderation_modemailsender_body() {
+moderation_selfmoderate_body() {
 	moderation_init_body bob@test
-	atf_check touch list/control/modemailsender
+	atf_check touch list/control/selfmoderate
 	moderation_test_body bob@test
 }
 
-moderation_modemailsender_autosubscribe_body() {
+moderation_selfmoderate_autosubscribe_body() {
 	moderation_init_body bob@test
-	touch list/control/modemailsender
+	touch list/control/selfmoderate
 	touch list/control/autosubscribe
 	moderation_test_body bob@test
 	atf_check -o inline:"bob@test\n" cat list/nomailsubs.d/b
