@@ -219,7 +219,7 @@ int listcontrol(strlist *fromemails, struct ml *ml, const char *controlstr,
 	if (cc == NULL)
 		return (-1);
 
-	if(tll_length(*fromemails) != 1 && cc->type != CTRL_BOUNCES) {
+	if (tll_length(*fromemails) != 1 && cc->type != CTRL_BOUNCES) {
 		errno = 0;
 		log_error(LOG_ARGS, "Ignoring mail with invalid From: "
 			"which was not a bounce: %d", tll_length(*fromemails));
@@ -406,7 +406,7 @@ int listcontrol(strlist *fromemails, struct ml *ml, const char *controlstr,
 	/* DEPRECATED: listname+moderate-subscribeCOOKIE@domain.tld */
 	case CTRL_MODERATE:
 		/* Subscriber moderation; DEPRECATED */
-		if(strncmp(param, "subscribe", 9) == 0) {
+		if (strncmp(param, "subscribe", 9) == 0) {
 			tmpstr = xstrdup(param + 9);
 			free(param);
 			param = tmpstr;
@@ -416,7 +416,7 @@ int listcontrol(strlist *fromemails, struct ml *ml, const char *controlstr,
 		xasprintf(&moderatefilename, "moderation/%s", param);
 		xasprintf(&sendfilename, "%s.sending", moderatefilename);
 		/* Rename it to avoid mail being sent twice */
-		if(renameat(ml->fd, moderatefilename, ml->fd, sendfilename) != 0) {
+		if (renameat(ml->fd, moderatefilename, ml->fd, sendfilename) != 0) {
 			if (errno == ENOENT) {
 				errno = 0;
 				log_error(LOG_ARGS, "A release request was"
@@ -558,7 +558,7 @@ permit:
 			return -1;
 		}
 		if (statctrl(ml->ctrlfd, "subonlyget")) {
-			if(is_subbed(ml->fd, tll_front(*fromemails), 0) ==
+			if (is_subbed(ml->fd, tll_front(*fromemails), 0) ==
 					SUB_NONE) {
 				errno = 0;
 				log_error(LOG_ARGS, "A get request was sent"
@@ -597,7 +597,7 @@ permit:
 
 	/* listname+list@domain.tld */
 	case CTRL_LIST:
-		if(statctrl(ml->ctrlfd, "nolistsubsemail"))
+		if (statctrl(ml->ctrlfd, "nolistsubsemail"))
 			return -1;
 		const char *owner = tll_front(*fromemails);
 		if (!ctrlvalues_contains(ml->ctrlfd, "owner", owner, false)) {
