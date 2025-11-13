@@ -18,7 +18,9 @@ tests_init \
 	ctrl_get \
 	subscription_moderation \
 	moderation \
+	moderation_autosubscribe \
 	moderation_modemailsender \
+	moderation_modemailsender_autosubscribe \
 	moderation_notifymod \
 	moderation_notmetoo \
 	moderation_reject_invalid \
@@ -1854,8 +1856,13 @@ EOF
 	atf_check -o file:expected-7.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-7.txt
 }
 
-moderation_create_body() {
-	moderator=$1
+moderation_init_body() {
+	if [ $# -eq 1 ]; then
+		moderator="$1"
+	else
+		moderator="test-moderators@mlmmjtest"
+	fi
+
 	atf_check $top_builddir/tests/fakesmtpd
 	trap kill_fakesmtp EXIT TERM
 	init_ml list
@@ -1868,6 +1875,16 @@ moderation_create_body() {
 	echo "me@modos" > list/control/moderators
 	touch list/control/moderated
 	printf "user@test\nuser2@test" > list/subscribers.d/u
+}
+
+moderation_test_body() {
+	if [ $# -eq 1 ]; then
+		moderator="$1"
+		rcpto="$1"
+	else
+		moderator="test-moderators@mlmmjtest"
+		rcpto="me@modos"
+	fi
 
 cat > first <<EOF
 From: bob@test
@@ -1882,7 +1899,7 @@ EOF
 cat > expected-1.txt <<EOF
 EHLO heloname
 MAIL FROM:<test+owner@mlmmjtest>
-RCPT TO:<me@modos>
+RCPT TO:<${rcpto}>
 DATA
 Subject: =?utf-8?q?Please_moderate_test=40mlmmjtest:_yeah?=
 MIME-Version: 1.0
@@ -1890,7 +1907,7 @@ Content-Type: multipart/mixed;
  boundary="boundary"
 Content-Transfer-Encoding: 8bit
 From: test+owner@mlmmjtest
-To: test-moderators@mlmmjtest
+To: ${moderator}
 Reply-To: test+release-@mlmmjtest
 
 --=boundary=
@@ -1975,13 +1992,35 @@ EOF
 	atf_check -o file:expected-3.txt sed -e "/^Message-ID:/d; /^Date:/d;" mail-3.txt
 }
 
+moderation_create_body() {
+	moderation_init_body
+	moderation_test_body
+}
+
 moderation_body() {
 	moderation_create_body test@modos
 }
 
+moderation_autosubscribe_body() {
+	moderation_init_body
+	atf_check touch list/control/autosubscribe
+	moderation_test_body
+	atf_check -o inline:"bob@test\n" cat list/nomailsubs.d/b
+}
+
+
 moderation_modemailsender_body() {
+	moderation_init_body bob@test
+	atf_check touch list/control/modemailsender
+	moderation_test_body bob@test
+}
+
+moderation_modemailsender_autosubscribe_body() {
+	moderation_init_body bob@test
 	touch list/control/modemailsender
-	moderation_create_body bob@test
+	touch list/control/autosubscribe
+	moderation_test_body bob@test
+	atf_check -o inline:"bob@test\n" cat list/nomailsubs.d/b
 }
 
 moderation_notifymod_body() {

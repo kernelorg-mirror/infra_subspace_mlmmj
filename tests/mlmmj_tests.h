@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Baptiste Daroussin <bapt@FreeBSD.org>
+ * Copyright (C) 2023-2025 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -33,3 +33,4 @@ void init_ml(bool complete);
 int fakesmtp(int pipe);
 void read_print_reply(int fd, const char **replies, size_t nreplies);
 pid_t single_mail_reception(int fd);
+int count_dir_entries_from_mldir(int fd, const char *dirname);

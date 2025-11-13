@@ -10,6 +10,11 @@ value, leaving line 2 and forward ready for commentary etc. If it's possible
 to specify several entries (one pr. line), it's marked "list". If the file's
 entire content is used as value, it's marked "text".
 
+ * autosubscribe        (boolean)
+
+   In case of a moderated mailing list, if the incoming email is accepted by
+   the moderator, then the sender it automatically subscribed as `nomail`.
+
  * listaddress			(list)
 
    This file contains all addresses which mlmmj sees as listaddresses (see

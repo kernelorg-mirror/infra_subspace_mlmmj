@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2003 Mads Martin Joergensen <mmj at mmj.dk>
- * Copyright (C) 2023 Baptiste Daroussin <bapt@FreeBSD.org>
+ * Copyright (C) 2023-2025 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -50,3 +50,4 @@ void send_confirmation_mail(struct ml *ml, const char *subaddr, enum subtype typ
 bool do_unsubscribe(struct ml *ml, const char *addr, enum subtype typesub, enum subreason reasonsub, bool inform_not_subscribed, bool confirm_unsubscription, bool quiet, bool send_goodbye_mail);
 void mod_get_addr_and_type(struct ml *ml, const char *modstr, char **addrptr, enum subtype *subtypeptr);
 bool do_subscribe(struct ml *ml, struct subscription *sub, const char *addr);
+void autosubscribe_sender(struct ml *ml, int mailfd, enum subtype typesub);

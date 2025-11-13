@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2003 Mads Martin Joergensen <mmj at mmj.dk>
- * Copyright (C) 2023 Baptiste Daroussin <bapt@FreeBSD.org>
+ * Copyright (C) 2023-2025 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -437,6 +437,16 @@ int listcontrol(strlist *fromemails, struct ml *ml, const char *controlstr,
 			unlinkat(ml->fd, omitfilename, 0);
 		free(omitfilename);
 		free(moderatefilename);
+		bool autosubscribe = statctrl(ml->ctrlfd, "autosubscribe");
+		if (autosubscribe) {
+			int mfd = openat(ml->fd, sendfilename, O_RDONLY);
+			if (mfd == -1) {
+				free(sendfilename);
+				free(moderatefilename);
+				return (-1);
+			}
+			autosubscribe_sender(ml, mfd, SUB_NOMAIL);
+		}
 
 		log_oper(ml->fd, OPLOGFNAME, "%s released %s", lc.fromemail, param);
 

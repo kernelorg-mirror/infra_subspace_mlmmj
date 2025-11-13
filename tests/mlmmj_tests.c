@@ -33,6 +33,7 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <dirent.h>
 
 const char *listdir[] = {
 	"incoming",
@@ -149,4 +150,26 @@ single_mail_reception(int fd)
 		exit(0);
 	}
 	return (p);
+}
+
+int
+count_dir_entries_from_mldir(int fd, const char *dirname) {
+	int dfd = openat(fd, dirname, O_DIRECTORY);
+	if (dfd == -1)
+		return (-1);
+	DIR *dir = fdopendir(dfd);
+	if (dir == NULL)
+		return (-1);
+
+	struct dirent *entry;
+	int count = 0;
+	while ((entry = readdir(dir)) != NULL) {
+		if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+			continue;
+		count++;
+	}
+
+	if (closedir(dir) == -1)
+		return -1;
+	return (count);
 }

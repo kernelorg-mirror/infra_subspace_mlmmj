@@ -45,6 +45,9 @@
 #include "xstring.h"
 #include "ctrlvalues.h"
 
+#include "find_email_adr.h"
+#include "do_all_the_voodoo_here.h"
+
 char *subtype_strs[] = {
 	"normal",
 	"digest",
@@ -720,3 +723,31 @@ do_subscribe(struct ml *ml, struct subscription *sub, const char *addr)
 	free(address);
 	return (true);
 }
+
+void
+autosubscribe_sender(struct ml *ml, int mailfd, enum subtype typesub)
+{
+	struct mailhdr readhdrs[] = {
+		{ "From:", 0, NULL },
+		{ NULL, 0, NULL }
+	};
+	strlist from = tll_init();
+
+	FILE *f = fdopen(mailfd, "r");
+	scan_headers(f, readhdrs, NULL, NULL);
+	fclose(f);
+	if (readhdrs[0].valuecount == 0)
+		return;
+	find_email_adr(readhdrs[0].values[0], &from);
+	if (tll_length(from) == 0) {
+		tll_free(from);
+		return;
+	}
+	if (strchr(tll_front(from), '@') == NULL) {
+		tll_free_and_free(from, free);
+		return;
+	}
+	subscribe_type(ml->fd, tll_front(from), typesub);
+	tll_free_and_free(from, free);
+}
+

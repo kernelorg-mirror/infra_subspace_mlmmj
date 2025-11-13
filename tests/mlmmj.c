@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Baptiste Daroussin <bapt@FreeBSD.org>
+ * Copyright (C) 2022-2025 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -169,6 +169,7 @@ ATF_TC_WITHOUT_HEAD(do_access);
 ATF_TC_WITHOUT_HEAD(unistr_header_to_utf8);
 ATF_TC_WITHOUT_HEAD(line_startwithany);
 ATF_TC_WITHOUT_HEAD(save_hdr_if_needed);
+ATF_TC_WITHOUT_HEAD(autosubscribe_sender);
 
 ATF_TC_BODY(random_int, tc)
 {
@@ -3112,6 +3113,51 @@ ATF_TC_BODY(save_hdr_if_needed, tc)
 	ATF_REQUIRE_STREQ(readhdrs[0].values[1], ": bla");
 }
 
+ATF_TC_BODY(autosubscribe_sender, tc)
+{
+	struct ml list;
+
+	init_ml(true);
+	ml_init(&list);
+	list.dir = "list";
+	ml_open(&list, false);
+	int cnt = 0;
+
+	atf_utils_create_file("myemailbody.txt", "line");
+	int mfd = open("myemailbody.txt", O_RDONLY);
+	autosubscribe_sender(&list, mfd, SUB_NOMAIL);
+	cnt = count_dir_entries_from_mldir(list.fd, "nomailsubs.d");
+	close(mfd);
+
+	atf_utils_create_file("myemailbody.txt", "From: bapt");
+	mfd = open("myemailbody.txt", O_RDONLY);
+	autosubscribe_sender(&list, mfd, SUB_NOMAIL);
+	cnt = count_dir_entries_from_mldir(list.fd, "nomailsubs.d");
+	ATF_REQUIRE_EQ_MSG(cnt, 0, "Invalid number of entries %d, expectiing 0", cnt);
+	close(mfd);
+
+	atf_utils_create_file("myemailbody.txt", "From: bapt@plop");
+	mfd = open("myemailbody.txt", O_RDONLY);
+	autosubscribe_sender(&list, mfd, SUB_NOMAIL);
+	cnt = count_dir_entries_from_mldir(list.fd, "nomailsubs.d");
+	ATF_REQUIRE_EQ_MSG(cnt, 1, "Invalid number of entries %d, expectiing 0", cnt);
+	close(mfd);
+	if (!atf_utils_compare_file("list/nomailsubs.d/b", "bapt@plop\n")) {
+		atf_utils_cat_file("list/nomailsubs.d/b", "");
+		atf_tc_fail("Unexpected subscribtion");
+	}
+
+	atf_utils_create_file("myemailbody.txt", "From: bapt <bapt@meh>");
+	mfd = open("myemailbody.txt", O_RDONLY);
+	autosubscribe_sender(&list, mfd, SUB_NOMAIL);
+	cnt = count_dir_entries_from_mldir(list.fd, "nomailsubs.d");
+	ATF_REQUIRE_EQ_MSG(cnt, 1, "Invalid number of entries %d, expectiing 0", cnt);
+	close(mfd);
+	if (!atf_utils_compare_file("list/nomailsubs.d/b", "bapt@plop\nbapt@meh\n")) {
+		atf_utils_cat_file("list/nomailsubs.d/b", "");
+		atf_tc_fail("Unexpected subscribtion");
+	}
+}
 
 ATF_TP_ADD_TCS(tp)
 {
@@ -3209,6 +3255,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, unistr_header_to_utf8);
 	ATF_TP_ADD_TC(tp, line_startwithany);
 	ATF_TP_ADD_TC(tp, save_hdr_if_needed);
+	ATF_TP_ADD_TC(tp, autosubscribe_sender);
 
 	return (atf_no_error());
 }
