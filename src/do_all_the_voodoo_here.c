@@ -38,24 +38,6 @@
 
 
 /* read line and populate a struct to save a list important header see mlmmj-process.c:254 and mlmmj.h:97 */
-void getinfo(const char *line, struct mailhdr *readhdrs)
-{
-	int i = 0;
-	size_t tokenlen;
-
-	while(readhdrs[i].token) {
-		tokenlen = strlen(readhdrs[i].token);
-		if(strncasecmp(line, readhdrs[i].token, tokenlen) == 0) {
-			readhdrs[i].valuecount++;
-			readhdrs[i].values =
-				(char **)xrealloc(readhdrs[i].values,
-				  readhdrs[i].valuecount * sizeof(char *));
-			readhdrs[i].values[readhdrs[i].valuecount - 1] =
-				xstrdup(line + tokenlen);
-		}
-		i++;
-	}
-}
 
 void
 scan_headers(FILE *f, struct mailhdr *readhdrs, strlist *allhdrs, strlist *allunfoldeds)
@@ -74,7 +56,7 @@ scan_headers(FILE *f, struct mailhdr *readhdrs, strlist *allhdrs, strlist *allun
 
 		/* Do we want info from hdrs? Get it before it's gone */
 		if(readhdrs)
-			getinfo(hdrline, readhdrs);
+			save_hdr_if_needed(hdrline, readhdrs);
 
 		if (allhdrs != NULL) {
 			/* Snatch a copy of the header */

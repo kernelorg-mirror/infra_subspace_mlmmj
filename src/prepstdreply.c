@@ -57,7 +57,6 @@ struct formatted {
 	void *state;
 };
 
-
 struct source;
 typedef struct source source;
 struct source {

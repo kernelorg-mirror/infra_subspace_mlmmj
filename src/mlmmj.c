@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Baptiste Daroussin <bapt@FreeBSD.org>
+ * Copyright (C) 2021-2025 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -708,6 +708,22 @@ ml_open(struct ml *ml, bool checkuser)
 	}
 
 	return (true);
+}
+
+void
+save_hdr_if_needed(const char *line, struct mailhdr *readhdrs)
+{
+	for (size_t i = 0; readhdrs[i].token != NULL; i++) {
+		size_t tokenlen = strlen(readhdrs[i].token);
+		if (strncasecmp(line, readhdrs[i].token, tokenlen) == 0) {
+			readhdrs[i].valuecount++;
+			readhdrs[i].values =
+				(char **)xrealloc(readhdrs[i].values,
+				  readhdrs[i].valuecount * sizeof(char *));
+			readhdrs[i].values[readhdrs[i].valuecount - 1] =
+				xstrdup(line + tokenlen);
+		}
+	}
 }
 
 void

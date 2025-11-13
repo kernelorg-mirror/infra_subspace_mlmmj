@@ -168,6 +168,7 @@ ATF_TC_WITHOUT_HEAD(find_in_list);
 ATF_TC_WITHOUT_HEAD(do_access);
 ATF_TC_WITHOUT_HEAD(unistr_header_to_utf8);
 ATF_TC_WITHOUT_HEAD(line_startwithany);
+ATF_TC_WITHOUT_HEAD(save_hdr_if_needed);
 
 ATF_TC_BODY(random_int, tc)
 {
@@ -3095,6 +3096,23 @@ ATF_TC_BODY(line_startwithany, tc)
 	ATF_REQUIRE(line_startwithany("BLOP", &l, true));
 }
 
+ATF_TC_BODY(save_hdr_if_needed, tc)
+{
+	struct mailhdr readhdrs[] = {
+		{ "Plop", 0, NULL },
+		{ NULL, 0, NULL },
+	};
+	save_hdr_if_needed("bla", readhdrs);
+	ATF_REQUIRE(readhdrs[0].valuecount == 0);
+	save_hdr_if_needed("Plop: meh", readhdrs);
+	ATF_REQUIRE(readhdrs[0].valuecount == 1);
+	ATF_REQUIRE_STREQ(readhdrs[0].values[0], ": meh");
+	save_hdr_if_needed("Plop: bla", readhdrs);
+	ATF_REQUIRE(readhdrs[0].valuecount == 2);
+	ATF_REQUIRE_STREQ(readhdrs[0].values[1], ": bla");
+}
+
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -3190,6 +3208,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, do_access);
 	ATF_TP_ADD_TC(tp, unistr_header_to_utf8);
 	ATF_TP_ADD_TC(tp, line_startwithany);
+	ATF_TP_ADD_TC(tp, save_hdr_if_needed);
 
 	return (atf_no_error());
 }

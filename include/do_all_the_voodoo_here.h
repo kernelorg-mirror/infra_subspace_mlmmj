@@ -25,8 +25,6 @@
 
 #include "mlmmj.h" /* For struct mailhdr and struct strlist */
 
-bool findit(const char *line, const strlist *headers);
-void getinfo(const char *line, struct mailhdr *readhdrs);
 int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 	      const strlist *delhdrs, struct mailhdr *readhdrs,
 	      strlist *allhdrs, const char *subjectprefix, int replyto);
