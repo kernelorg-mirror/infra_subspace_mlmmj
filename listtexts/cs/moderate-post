@@ -28,14 +28,6 @@ Zpráva je uvedena níže.
 %wrap%K potvrzení a odeslání do konference zašlete zprávu na <$releaseaddr$>,
 což lze většinou udělat jen odpovědí na tento emailový požadavek.
 
-%ifcontrol subonrelease%
-  %^%%wrap%Pokud si přejete, je možné zároveň potvrdit zaslání zprávy
-  a přihlásit odesílatele zasláním na jednu z následujících adres:%nowrap%
-  %^%- %wrap%Normální verze: <$listsubreleaseaddr$>%nowrap%
-  %^%- %wrap%Digest verze: <$digestsubreleaseaddr$>%nowrap%
-  %^%- %wrap%No-mail verze: <$nomailsubreleaseaddr$>%nowrap%
-%endif%
-
 %wrap%Pokud nechcete zprávu odeslat, zašlete zprávu na <$rejectaddr$>, 
 nebo prostě jednoduše tento email ignorujte.
 

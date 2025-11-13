@@ -29,14 +29,6 @@ El mensaxe ta más abaxo.
 %wrap%Pa lliberalu a la llista, unvia un mensaxe a <$releaseaddr$> pa lo que
 de vezu val con simplemente responder a esti mensaxe.
 
-%ifcontrol subonrelease%
-  %^%%wrap%Si quies, pues simultaneamante lliberar el mensaxe y suscribir al
-  remitente unviando un mensaxe a una de les siguientes direiciones:%nowrap%
-  %^%- %wrap%Versión normal: <$listsubreleaseaddr$>%nowrap%
-  %^%- %wrap%Versión resumida: <$digestsubreleaseaddr$>%nowrap%
-  %^%- %wrap%Versión ensin corréu: <$nomailsubreleaseaddr$>%nowrap%
-%endif%
-
 %wrap%Si nun quies facer denguna d'estes coses, o manda un mensaxe a
 <$rejectaddr$> o simplemente salta esti mensaxe.
 

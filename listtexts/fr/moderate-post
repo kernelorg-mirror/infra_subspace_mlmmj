@@ -30,15 +30,6 @@ Le message est ci-dessous.
 <$releaseaddr$> ce qui peut habituellement être fait simplement en répondant
 à ce message.
 
-%ifcontrol subonrelease%
-  %^%%wrap%Si vous le souhaitez, vous pouvez simultanément délivrer le
-  message et inscrire le demandeur à la liste en envoyant un message à l'une
-  des adresses suivantes\ :%nowrap%
-  %^%- %wrap%Version normale\ : <$listsubreleaseaddr$>%nowrap%
-  %^%- %wrap%Version digest\ : <$digestsubreleaseaddr$>%nowrap%
-  %^%- %wrap%Version no-mail\ : <$nomailsubreleaseaddr$>%nowrap%
-%endif%
-
 %wrap%Si vous ne souhaitez faire aucune de ces actions, vous pouvez envoyer
 un message à <$rejectaddr$> ou simplement ignorer ce message.
 

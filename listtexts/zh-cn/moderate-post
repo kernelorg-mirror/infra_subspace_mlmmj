@@ -28,14 +28,6 @@ Content-Transfer-Encoding: 8bit
 %wrap%要通过该邮件的发布\=，请发邮件到 <$releaseaddr$> （\=通常可直接回复本
 邮件完成\=）\=。
 
-%ifcontrol subonrelease%
-  %^%%wrap%如果您愿意\=，可以通过发送邮件到下述地址来同时通过帖子并订阅发布
-  者\=：
-  %^%- %wrap%常规版本\=：<$listsubreleaseaddr$>%nowrap%
-  %^%- %wrap%汇总版本\=：<$digestsubreleaseaddr$>%nowrap%
-  %^%- %wrap%无邮件版本\=：<$nomailsubreleaseaddr$>%nowrap%
-%endif%
-
 %wrap%如果您不打算通过\=，请发邮件到 <$rejectaddr$> 或直接忽略本邮件\=。
 
 %ifnreason selfmoderated%

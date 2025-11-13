@@ -30,15 +30,6 @@ Die Nachricht befindet sich unten.
 <$releaseaddr$>. In der Regel genügt hierzu ein einfaches Antworten auf
 diese Nachricht.
 
-%ifcontrol subonrelease%
-  %^%%wrap%Sie können die Nachricht durchlassen und gleichzeitig den
-  Absender bei der Liste anmelden, indem Sie eine Mail an folgende Adressen
-  senden:%nowrap%
-  %^%- %wrap%Normalversion: <$listsubreleaseaddr$>%nowrap%
-  %^%- %wrap%Digest-Version: <$digestsubreleaseaddr$>%nowrap%
-  %^%- %wrap%No-Mail-Version: <$nomailsubreleaseaddr$>%nowrap%
-%endif%
-
 %wrap%Wenn Sie nichts davon ausführen möchten, Senden Sie eine Mail an
 <$rejectaddr$> oder ignorieren Sie einfach diese Mail.
 

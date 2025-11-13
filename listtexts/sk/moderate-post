@@ -29,15 +29,6 @@ Správa je pripojená nižšie.
 %wrap%Ak chcete povoliť zverejnenie správy, pošlite mail na adresu
 <$releaseaddr$>, čo možno spraviť odpovedaním na tento mail.
 
-%ifcontrol subonrelease%
-  %^%%wrap%Ak chcete, môžete súčasne so zverejnením správy jej odosielateľa
-  prihlásiť do diskusie. Spravíte to tak, že pošlete mail na jednu z
-  nasledujúcich adries:%nowrap%
-  %^%- %wrap%Normálna verzia: <$listsubreleaseaddr$>%nowrap%
-  %^%- %wrap%Súhrnné správy (digest): <$digestsubreleaseaddr$>%nowrap%
-  %^%- %wrap%Verzia bez zasielania mailov: <$nomailsubreleaseaddr$>%nowrap%
-%endif%
-
 %wrap%Ak nechcete vykonať žiadnu z týchto akcií, pošlite mail na
 <$rejectaddr$> alebo jednoducho túto správu ignorujte.
 

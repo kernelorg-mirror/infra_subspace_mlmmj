@@ -29,15 +29,6 @@ Mensagem segue em baixo.
 %wrap%Para a publicar na lista, envie uma mensagem para <$releaseaddr$>
 bastando, para o efeito, responder a esta mensagem.
 
-%ifcontrol subonrelease%
-  %^%%wrap%Se quiser, pode publicar a mensagem e simultaneamente adicionar o
-  remetente à lista, enviando uma mensagem para um dos seguintes endereços
-  eletrónicos:%nowrap%
-  %^%- %wrap%Normal version: <$listsubreleaseaddr$>%nowrap%
-  %^%- %wrap%Digest version: <$digestsubreleaseaddr$>%nowrap%
-  %^%- %wrap%No-mail version: <$nomailsubreleaseaddr$>%nowrap%
-%endif%
-
 %wrap%Se não o quiser fazer, envie uma mensagem para <$rejectaddr$> ou
 ignore esta mensagem.
 

@@ -29,15 +29,6 @@ The message is below.
 %wrap%To release it to the list, please send a message to <$releaseaddr$>
 which can usually be done simply by replying to this message.
 
-%ifcontrol subonrelease%
-  %^%%wrap%If you wish, you can simultaneously release the post and
-  subscribe the poster by sending a message to one of the following
-  addresses:%nowrap%
-  %^%- %wrap%Normal version: <$listsubreleaseaddr$>%nowrap%
-  %^%- %wrap%Digest version: <$digestsubreleaseaddr$>%nowrap%
-  %^%- %wrap%No-mail version: <$nomailsubreleaseaddr$>%nowrap%
-%endif%
-
 %wrap%If you do not want to do any of this, either send a message to
 <$rejectaddr$> or simply ignore this message.
 

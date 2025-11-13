@@ -29,15 +29,6 @@ Il messaggio è riportato sotto.
 %wrap%Per rilasciarlo alla lista, invia un messaggio a <$releaseaddr$>, che
 in genere si esegue semplicemente rispondendo al questo messaggio.
 
-%ifcontrol subonrelease%
-  %^%%wrap%Se lo desideri, puoi contemporaneamente rilasciare il messaggio e
-  iscrivere il mittente inviando un messaggio a uno dei seguenti
-  indirizzi:%nowrap%
-  %^%- %wrap%Versione normale: <$listsubreleaseaddr$>%nowrap%
-  %^%- %wrap%Versione digest: <$digestsubreleaseaddr$>%nowrap%
-  %^%- %wrap%Versione no-mail: <$nomailsubreleaseaddr$>%nowrap%
-%endif%
-
 %wrap%Se non vuoi eseguire nulla di tutto ciò, invia un messaggio a
 <$rejectaddr$> oppure ignora questo messaggio.
 

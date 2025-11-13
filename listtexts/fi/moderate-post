@@ -29,15 +29,6 @@ Viesti on luettavissa alla.
 %wrap%Salliaksesi viestin välittämisen listalle lähetä viesti osoitteeseen
 <$releaseaddr$>. Tämän voi tavallisesti tehdä vastaamalla tähän viestiin.
 
-%ifcontrol subonrelease%
-  %^%%wrap%Halutessasi voit viestin hyväksymisen lisäksi liittää lähettäjän
-  postituslistalle. Tämä onnistuu lähettämällä viesti yhteen seuraavista
-  osoitteista:%nowrap%
-  %^%- %wrap%Tavallinen tilaus: <$listsubreleaseaddr$>%nowrap%
-  %^%- %wrap%Viestikoosteiden tilaus: <$digestsubreleaseaddr$>%nowrap%
-  %^%- %wrap%Tilaus ilman viestien välitystä: <$nomailsubreleaseaddr$>%nowrap%
-%endif%
-
 %wrap%Jos et halua viestiä hyväksyttävän, lähetä viesti osoitteeseen
 <$rejectaddr$> tai jätä tämä viesti kokonaan huomioimatta.
 
