@@ -60,7 +60,8 @@ enum modreason {
 	MODNONSUBPOSTS,
 	MODNONMODPOSTS,
 	ACCESS,
-	MODERATED
+	MODERATED,
+	SELFMODERATED
 };
 
 
@@ -68,7 +69,8 @@ static char *modreason_strs[] = {
 	"modnonsubposts",
 	"modnonmodposts",
 	"access",
-	"moderated"
+	"moderated",
+	"selfmoderated"
 };
 
 
@@ -147,10 +149,12 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 
 	selfmoderate = statctrl(ml->ctrlfd, "selfmoderate");
 
-	if (selfmoderate)
+	if (selfmoderate) {
 		to = xstrdup(posteraddr);
-	else
+		modreason = SELFMODERATED;
+	} else {
 		xasprintf(&to, "%s-moderators@%s", ml->name, ml->fqdn);
+	}
 
 	txt = open_text(ml->fd, "moderate", "post",
 			modreason_strs[modreason], NULL, "moderation");

@@ -12,6 +12,9 @@ Content-Transfer-Encoding: 8bit
 
 %wrap%A mensagem de <$posteraddr$> com o assunto "$subject$" foi enviada
 para publicação. Esta mensagem requer moderação
+%ifreason selfmoderated%
+  porque és o remetente e não estás subscriptor.
+%endif%
 %ifreason modnonsubposts%
   porque o remetente não é um subscritor.
 %endif%
@@ -38,8 +41,10 @@ bastando, para o efeito, responder a esta mensagem.
 %wrap%Se não o quiser fazer, envie uma mensagem para <$rejectaddr$> ou
 ignore esta mensagem.
 
+%ifnreason selfmoderated%
 Os seguintes moderadores receberam esta mensagem:
 - %moderators%
+%endif%
 
 --=_$random0$$random1$_=
 Content-Type: message/rfc822

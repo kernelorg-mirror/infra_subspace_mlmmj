@@ -11,6 +11,9 @@ Content-Transfer-Encoding: 8bit
 %text prologue%
 
 %wrap%Zpráva od <$posteraddr$> s předmětem "$subject$" byla zaslána a nastal požadavek na moderování,
+%ifreason selfmoderated%
+  protože jsi odesílatel a nejsi konference.
+%endif%
 %ifreason modnonsubposts%
   protože odesílatel není členem konference.
 %endif%
@@ -36,8 +39,10 @@ což lze většinou udělat jen odpovědí na tento emailový požadavek.
 %wrap%Pokud nechcete zprávu odeslat, zašlete zprávu na <$rejectaddr$>, 
 nebo prostě jednoduše tento email ignorujte.
 
+%ifnreason selfmoderated%
 Následující moderátoři obrželi tento požadavek:
 - %moderators%
+%endif%
 
 --=_$random0$$random1$_=
 Content-Type: message/rfc822

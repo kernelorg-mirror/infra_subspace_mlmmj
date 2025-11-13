@@ -12,6 +12,9 @@ Content-Transfer-Encoding: 8bit
 
 %wrap%Eine Nachricht von <$posteraddr$> mit dem Betreff "$subject$" wurde an
 die Liste geschickt. Sie sollten die Nachricht moderieren,
+%ifreason selfmoderated%
+  weil du der Absender bist und nicht Abonnent bist.
+%endif%
 %ifreason modnonsubposts%
   da der Absender kein Abonnent ist.
 %endif%
@@ -39,8 +42,10 @@ diese Nachricht.
 %wrap%Wenn Sie nichts davon ausführen möchten, Senden Sie eine Mail an
 <$rejectaddr$> oder ignorieren Sie einfach diese Mail.
 
+%ifnreason selfmoderated%
 Folgende Moderatoren haben diese Mail erhalten:
 - %moderators%
+%endif%
 
 --=_$random0$$random1$_=
 Content-Type: message/rfc822

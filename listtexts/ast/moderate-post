@@ -12,6 +12,9 @@ Content-Transfer-Encoding: 8bit
 
 %wrap%Se recibió un mensaxe de <$posteraddr$> col asuntu "$subject$" unviáu
 pa espublizar. Te pedimos que lu moderes
+%ifreason selfmoderated%
+  porque yes el remitente y nun tas subscriptor.
+%endif%
 %ifreason modnonsubposts%
   porque'l remitente nun ye suscriptor.
 %endif%
@@ -37,8 +40,10 @@ de vezu val con simplemente responder a esti mensaxe.
 %wrap%Si nun quies facer denguna d'estes coses, o manda un mensaxe a
 <$rejectaddr$> o simplemente salta esti mensaxe.
 
+%ifnreason selfmoderated%
 Recibieron esti corréu los siguientes moderadores:
 - %moderators%
+%%endif
 
 --=_$random0$$random1$_=
 Content-Type: message/rfc822

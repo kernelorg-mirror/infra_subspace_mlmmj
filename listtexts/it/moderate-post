@@ -12,6 +12,9 @@ Content-Transfer-Encoding: 8bit
 
 %wrap%È stato inviato un messaggio da <$posteraddr$> con oggetto
 "$subject$". Ti è stato richiesto di moderarlo
+%ifreason selfmoderated%
+  perché siete il richiedente e non siete inscritto/a.
+%endif%
 %ifreason modnonsubposts%
   perché il/la richiedente non è un/a iscritto/a.
 %endif%

@@ -11,6 +11,9 @@ Content-Transfer-Encoding: 8bit
 %text prologue%
 
 %wrap%来自 <$posteraddr$> 题为《\=$subject$\=》的邮件已提交发布\=。
+%ifreason selfmoderated%
+  因为你是发件人，并且你没有订阅。，
+%endif%
 %ifreason modnonsubposts%
   由于请求者不是订户\=，
 %endif%
@@ -35,8 +38,10 @@ Content-Transfer-Encoding: 8bit
 
 %wrap%如果您不打算通过\=，请发邮件到 <$rejectaddr$> 或直接忽略本邮件\=。
 
+%ifnreason selfmoderated%
 本邮件已发给下述版主\=：
 - %moderators%
+%endif%
 
 --=_$random0$$random1$_=
 Content-Type: message/rfc822
