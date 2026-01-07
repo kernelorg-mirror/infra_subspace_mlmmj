@@ -281,11 +281,14 @@ get_msgid_line(void *state)
 	FILE *f = fdopen(msgfd, "r");
 	scan_headers(f, readhdrs, NULL, NULL);
 	fclose(f);
-	if (readhdrs[0].valuecount == 0)
+	if (readhdrs[0].valuecount == 0) {
+		free_mailhdrs(readhdrs);
 		return (id);
+	}
 	free(s->formatted_str);
 	xasprintf(&s->formatted_str, "%s, %s%s",
 	    id, readhdrs[0].token, readhdrs[0].values[0]);
+	free_mailhdrs(readhdrs);
 	return (s->formatted_str);
 }
 

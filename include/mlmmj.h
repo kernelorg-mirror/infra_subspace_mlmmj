@@ -142,6 +142,7 @@ bool send_probe(struct ml *ml, const char *addr);
 void parse_content_type(strlist *, char **mime_type, char **boundary);
 char *find_in_list(strlist *, const char *pattern);
 void save_hdr_if_needed(const char *line, struct mailhdr *readhdrs);
+void free_mailhdrs(struct mailhdr *hdrs);
 
 typedef enum {
 	ACT_ALLOW = 0,
