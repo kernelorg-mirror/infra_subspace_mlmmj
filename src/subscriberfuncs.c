@@ -736,18 +736,23 @@ autosubscribe_sender(struct ml *ml, int mailfd, enum subtype typesub)
 	FILE *f = fdopen(mailfd, "r");
 	scan_headers(f, readhdrs, NULL, NULL);
 	fclose(f);
-	if (readhdrs[0].valuecount == 0)
+	if (readhdrs[0].valuecount == 0) {
+		free_mailhdrs(readhdrs);
 		return;
+	}
 	find_email_adr(readhdrs[0].values[0], &from);
 	if (tll_length(from) == 0) {
 		tll_free(from);
+		free_mailhdrs(readhdrs);
 		return;
 	}
 	if (strchr(tll_front(from), '@') == NULL) {
 		tll_free_and_free(from, free);
+		free_mailhdrs(readhdrs);
 		return;
 	}
 	subscribe_type(ml->fd, tll_front(from), typesub);
 	tll_free_and_free(from, free);
+	free_mailhdrs(readhdrs);
 }
 
