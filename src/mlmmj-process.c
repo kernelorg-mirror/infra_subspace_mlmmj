@@ -73,6 +73,20 @@ static char *modreason_strs[] = {
 	"selfmoderated"
 };
 
+static void
+free_parsed_hdrs(struct mailhdr *readhdrs, strlist fromemails,
+    strlist originalfromemails, strlist toemails, strlist ccemails,
+    strlist rpemails, strlist dtemails, strlist allheaders)
+{
+	free_mailhdrs(readhdrs);
+	tll_free_and_free(fromemails, free);
+	tll_free_and_free(originalfromemails, free);
+	tll_free_and_free(toemails, free);
+	tll_free_and_free(ccemails, free);
+	tll_free_and_free(rpemails, free);
+	tll_free_and_free(dtemails, free);
+	tll_free_and_free(allheaders, free);
+}
 
 static bool is_moderator(int listfd, const char *address,
 		char **moderators) {
@@ -371,6 +385,8 @@ int main(int argc, char **argv)
 				delheaders, readhdrs,
 				&allheaders, subjectprefix, replyto) < 0) {
 		log_error(LOG_ARGS, "Error in do_all_the_voodoo_here");
+		free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
+			    toemails, ccemails, rpemails, dtemails, allheaders);
 		exit(EXIT_FAILURE);
 	}
 
@@ -457,7 +473,8 @@ int main(int argc, char **argv)
 		free(donemailname);
 		free(discardname);
 		free(randomstr);
-		/* TODO: free emailstructs */
+		free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
+			    toemails, ccemails, rpemails, dtemails, allheaders);
 		exit(EXIT_SUCCESS);
 	}
 	/* The only time posteraddr will remain unset is when the mail is a
@@ -498,18 +515,24 @@ int main(int argc, char **argv)
 			if ((rawmailfd = open(mailfile, O_RDONLY)) < 0) {
 				log_error(LOG_ARGS, "could not open() "
 						    "input mail file");
+				free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
+					    toemails, ccemails, rpemails, dtemails, allheaders);
 				exit(EXIT_FAILURE);
 			}
 			if ((donemailfd = open(donemailname,
 						O_WRONLY|O_TRUNC)) < 0) {
 				log_error(LOG_ARGS, "could not open() "
 						    "output mail file");
+				free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
+					    toemails, ccemails, rpemails, dtemails, allheaders);
 				exit(EXIT_FAILURE);
 			}
 			if (do_all_the_voodoo_here(rawmailfd, donemailfd, -1,
 					-1, delheaders,
 					NULL, &allheaders, NULL, 0) < 0) {
 				log_error(LOG_ARGS, "do_all_the_voodoo_here");
+				free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
+					    toemails, ccemails, rpemails, dtemails, allheaders);
 				exit(EXIT_FAILURE);
 			}
 			tll_free_and_free(*delheaders, free);
@@ -530,6 +553,8 @@ int main(int argc, char **argv)
 		listcontrol(testfrom, &ml, recipextra,
 			    mlmmjsend, donemailname);
 
+		free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
+			    toemails, ccemails, rpemails, dtemails, allheaders);
 		return EXIT_SUCCESS;
 	}
 
@@ -539,6 +564,8 @@ int main(int argc, char **argv)
 	if (errno != ENOENT) {
 		if (stat(donemailname, &st) < 0) {
 			log_error(LOG_ARGS, "stat(%s,..) failed", donemailname);
+			free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
+				    toemails, ccemails, rpemails, dtemails, allheaders);
 			exit(EXIT_FAILURE);
 		}
 
@@ -552,6 +579,8 @@ int main(int argc, char **argv)
 				unlink(donemailname);
 				unlink(mailfile);
 				free(donemailname);
+				free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
+					    toemails, ccemails, rpemails, dtemails, allheaders);
 				exit(EXIT_SUCCESS);
 			}
 
@@ -589,7 +618,8 @@ int main(int argc, char **argv)
 		free(donemailname);
 		free(discardname);
 		free(randomstr);
-		/* TODO: free emailstructs */
+		free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
+			    toemails, ccemails, rpemails, dtemails, allheaders);
 		exit(EXIT_FAILURE);
 	}
 
@@ -608,6 +638,8 @@ int main(int argc, char **argv)
 					mailfile);
 			unlink(donemailname);
 			free(donemailname);
+			free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
+				    toemails, ccemails, rpemails, dtemails, allheaders);
 			exit(EXIT_SUCCESS);
 		}
 		txt = open_text(ml.fd, "deny", "post",
@@ -650,6 +682,8 @@ int main(int argc, char **argv)
 					mailfile);
 				unlink(donemailname);
 				free(donemailname);
+				free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
+					    toemails, ccemails, rpemails, dtemails, allheaders);
 				exit(EXIT_SUCCESS);
 			}
 			txt = open_text(ml.fd, "deny", "post",
@@ -679,10 +713,14 @@ int main(int argc, char **argv)
 					    donemailname, discardname);
 				free(donemailname);
 				free(discardname);
+				free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
+					    toemails, ccemails, rpemails, dtemails, allheaders);
 				exit(EXIT_FAILURE);
 			}
 			free(donemailname);
 			free(discardname);
+			free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
+				    toemails, ccemails, rpemails, dtemails, allheaders);
                 	exit(EXIT_SUCCESS);
 		} else if (accret == ACT_SEND) {
 			send = 1;
@@ -721,6 +759,8 @@ int main(int argc, char **argv)
 					mailfile);
 			unlink(donemailname);
 			free(donemailname);
+			free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
+				    toemails, ccemails, rpemails, dtemails, allheaders);
 			exit(EXIT_SUCCESS);
 		}
 		if (subonlypost) {
@@ -746,6 +786,8 @@ int main(int argc, char **argv)
 					mailfile);
 				unlink(donemailname);
 				free(donemailname);
+				free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
+					    toemails, ccemails, rpemails, dtemails, allheaders);
 				exit(EXIT_SUCCESS);
 			    }
 			    if (subonlypost) {
@@ -788,6 +830,8 @@ int main(int argc, char **argv)
 					    donemailname, mqueuename);
 			free(donemailname);
 			free(mqueuename);
+			free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
+				    toemails, ccemails, rpemails, dtemails, allheaders);
 			exit(EXIT_FAILURE);
 		}
 		free(donemailname);
@@ -799,6 +843,8 @@ int main(int argc, char **argv)
 					    	    omitfilename);
 				free(mqueuename);
 				free(omitfilename);
+				free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
+					    toemails, ccemails, rpemails, dtemails, allheaders);
 				exit(EXIT_FAILURE);
 			}
 			free(omitfilename);
@@ -806,6 +852,8 @@ int main(int argc, char **argv)
 				log_error(LOG_ARGS,
 						"could not write omit file");
 				free(mqueuename);
+				free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
+					    toemails, ccemails, rpemails, dtemails, allheaders);
 				exit(EXIT_FAILURE);
 			}
 			fsync(omitfd);
@@ -813,6 +861,8 @@ int main(int argc, char **argv)
 		}
 		newmoderated(&ml, mqueuename, mlmmjsend, efrom, subject,
 		    posteraddr, modreason);
+		free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
+			    toemails, ccemails, rpemails, dtemails, allheaders);
 		return EXIT_SUCCESS;
 	}
 
@@ -820,7 +870,8 @@ int main(int argc, char **argv)
 
 	if (noprocess) {
 		free(donemailname);
-		/* XXX: toemails and ccemails etc. have to be free() */
+		free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
+			    toemails, ccemails, rpemails, dtemails, allheaders);
 		exit(EXIT_SUCCESS);
 	}
 
