@@ -2459,7 +2459,7 @@ From: test+owner@mlmmjtest
 To: bob@test
 
 --=RANDOM=
-Content-Type: text/plain; charset=utf8
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
 
 Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
@@ -2527,7 +2527,7 @@ From: test+owner@mlmmjtest
 To: bob@test
 
 --=RANDOM=
-Content-Type: text/plain; charset=utf8
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
 
 Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
