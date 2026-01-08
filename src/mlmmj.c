@@ -601,8 +601,10 @@ char *dsnparseaddr(const char *mailname)
 		break;
 	}
 	/* this is not a miltipart/report mail see RFC1839 */
-	if (boundary == NULL)
+	if (boundary == NULL) {
+		fclose(f);
 		return NULL;
+	}
 	while ((getline(&buf, &bufcap, f) > 0)) {
 		chomp(buf);
 		if (indsn) {
@@ -646,6 +648,9 @@ char *dsnparseaddr(const char *mailname)
 		}
 	}
 	free(buf);
+	free(boundary);
+	fclose(f);
+	tll_free_and_free(emails, free);
 	return addr;
 }
 
