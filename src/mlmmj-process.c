@@ -506,12 +506,12 @@ int main(int argc, char **argv)
 	if (!subject) subject = xstrdup("");
 
 	if (recipextra) {
-		int ownfd = openat(ml.ctrlfd, "owner", O_RDONLY);
-		xasprintf(&owner, "%d", ownfd);
 		if (strcmp(recipextra, "owner") == 0) {
 			/* Why is this here, and not in listcontrol() ?
 			 * -- mortenp 20060409 */
 			/* strip envelope from before resending */
+			int ownfd = openat(ml.ctrlfd, "owner", O_RDONLY);
+			xasprintf(&owner, "%d", ownfd);
 			tll_push_back(*delheaders, xstrdup("From "));
 			tll_push_back(*delheaders, xstrdup("Return-Path:"));
 
