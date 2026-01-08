@@ -367,8 +367,13 @@ newsmtp(struct ml *ml, const char *rhost)
 	smtphelo = ctrlvalue(ml->ctrlfd, "smtphelo");
 	if (smtphelo == NULL)
 		smtphelo = hostnamestr();
-	if (initsmtp(&sockfd, relayhost, smtpport, smtphelo) != 0)
+	if (initsmtp(&sockfd, relayhost, smtpport, smtphelo) != 0) {
+		free(relayhost);
+		free(smtphelo);
 		return (-1);
+	}
+	free(relayhost);
+	free(smtphelo);
 	return (sockfd);
 }
 
