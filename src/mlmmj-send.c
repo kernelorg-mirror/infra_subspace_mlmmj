@@ -503,8 +503,10 @@ int main(int argc, char **argv)
 		xasprintf(&verpfrom, "%s%sbounces-%d@%s", ml.name, ml.delim,
 		    mindex, ml.fqdn);
 
-		if(digest)
+		if(digest) {
+			free(verp);
 			verp = NULL;
+		}
 
 		if(verp && (strcmp(verp, "postfix") == 0)) {
 			free(verp);
@@ -515,6 +517,7 @@ int main(int argc, char **argv)
 			log_error(LOG_ARGS, "Cannot use VERP and add "
 					"To: header. Not sending with "
 					"VERP.");
+			free(verp);
 			verp = NULL;
 		}
 		
@@ -525,6 +528,7 @@ int main(int argc, char **argv)
 				log_error(LOG_ARGS,
 					    "Could not write VERP MAIL FROM. "
 					    "Not sending with VERP.");
+				free(verp);
 				verp = NULL;
 			    } else {
 				reply = checkwait_smtpreply(sockfd, MLMMJ_FROM);
@@ -534,6 +538,7 @@ int main(int argc, char **argv)
 						"accept VERP MAIL FROM. "
 						"Not sending with VERP.");
 					free(reply);
+					free(verp);
 					verp = NULL;
 				}
 			    }
@@ -545,6 +550,7 @@ int main(int argc, char **argv)
 				    "Could not connect to "
 				    "write VERP MAIL FROM. "
 				    "Not sending with VERP.");
+			    free(verp);
 			    verp = NULL;
 			}
 		}
