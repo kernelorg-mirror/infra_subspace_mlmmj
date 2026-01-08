@@ -91,8 +91,10 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 		strlist fromemails = tll_init();
 		if ( readhdrs[0].valuecount == 1 ) {
 		        find_email_adr(readhdrs[0].values[0], &fromemails);
-			posteraddr = tll_front(fromemails);
+			if (tll_length(fromemails) > 0)
+				posteraddr = xstrdup(tll_front(fromemails));
 		}
+		tll_free_and_free(fromemails, free);
 	}
 	/* scan all headers from allhdrs , and do the real things */
 	tll_foreach(*allhdrs, a_header ) {
@@ -110,6 +112,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 					log_error(LOG_ARGS, "Could not "
 						"add extra headers");
 					tll_free_and_free(allunfoldeds, free);
+					free(posteraddr);
 					return -1;
 				}
 				fsync(outfd);
@@ -150,6 +153,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 				log_error(LOG_ARGS, "Could not "
 					"add extra headers");
 				tll_free_and_free(allunfoldeds, free);
+				free(posteraddr);
 				return -1;
 			}
 			fsync(outfd);
@@ -164,6 +168,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 	if(dprintf(outfd, "\n") < 0) {
 	        tll_free_and_free(allunfoldeds, free);
 		log_error(LOG_ARGS, "Error writing hdrs.");
+		free(posteraddr);
 		return -1;
 	}
 	
@@ -173,6 +178,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 	/* Just print the rest of the mail */
 	if(dumpfd2fd(infd, outfd) < 0) {
 		log_error(LOG_ARGS, "Error when dumping rest of mail");
+		free(posteraddr);
 		return -1;
 	}
 	fclose(f);
@@ -181,10 +187,12 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 	if(footfd >= 0)
 		if(dumpfd2fd(footfd, outfd) < 0) {
 			log_error(LOG_ARGS, "Error when adding footer");
+			free(posteraddr);
 			return -1;
 		}
 
 	fsync(outfd);
 
+	free(posteraddr);
 	return 0;
 }
