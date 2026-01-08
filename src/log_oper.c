@@ -63,7 +63,7 @@ int log_oper(int listfd, const char *basename, const char *fmt, ...)
 	}
 
 	fd = openat(listfd, basename, O_RDWR|O_CREAT|O_APPEND, S_IRUSR|S_IWUSR);
-	if(fd < 0 && !lock(fd, true)) {
+	if (fd < 0 || !lock(fd, true)) {
 		log_error(LOG_ARGS, "Could not open %s", basename);
 		return -1;
 	}

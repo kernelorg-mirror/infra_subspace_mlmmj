@@ -569,7 +569,7 @@ run_digests(struct ml *ml, const char *mlmmjsend, int logfd)
 	digestmaxmails = ctrllong(ml->ctrlfd, "digestmaxmail", DIGESTMAXMAILS);
 
 	fd = openat(ml->fd, "lastdigest", O_RDWR|O_CREAT, S_IRUSR | S_IWUSR);
-	if (fd < 0 && !lock(fd, true)) {
+	if (fd < 0 || !lock(fd, true)) {
 		log(" - Could not open or create 'lastdigest': %s\n",
 		    strerror(errno));
 		return (false);
