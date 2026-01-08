@@ -1766,7 +1766,11 @@ char *prepstdreply(text *txt, struct ml *ml, const char *from, const char *to, c
 		free(txt);
 		return NULL;
 	}
-	if (!prepstdreply_to(txt, ml, from, to, replyto, outfd, NULL))
+	if (!prepstdreply_to(txt, ml, from, to, replyto, outfd, NULL)) {
+		close(outfd);
+		unlink(retstr);
+		free(retstr);
 		return (NULL);
+	}
 	return (retstr);
 }
