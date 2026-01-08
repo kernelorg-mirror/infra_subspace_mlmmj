@@ -101,6 +101,11 @@ static bool is_moderator(int listfd, const char *address,
 		exit(EXIT_FAILURE);
 	}
 	fp = fdopen(moderatorsfd, "r");
+	if (fp == NULL) {
+		log_error(LOG_ARGS, "Could not fdopen 'control/moderators'");
+		close(moderatorsfd);
+		exit(EXIT_FAILURE);
+	}
 
 	while (getline(&line, &linecap, fp) > 0) {
 		chomp(line);

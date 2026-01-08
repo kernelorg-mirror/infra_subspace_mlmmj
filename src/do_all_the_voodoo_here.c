@@ -82,7 +82,14 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 	char *posteraddr = NULL;
 	bool hdrsadded = false;
 	bool subject_present = false;
-	FILE *f = fdopen(dup(infd), "r");
+	int dupfd = dup(infd);
+	FILE *f = dupfd != -1 ? fdopen(dupfd, "r") : NULL;
+
+	if (f == NULL) {
+		if (dupfd != -1)
+			close(dupfd);
+		return -1;
+	}
 
 	scan_headers(f, readhdrs, allhdrs, &allunfoldeds);
 

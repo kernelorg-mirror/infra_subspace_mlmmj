@@ -86,6 +86,11 @@ find_subscriber(int fd, const char *address)
 	bool ret = false;
 
 	f = fdopen(fd, "r");
+	if (f == NULL) {
+		log_error(LOG_ARGS, "Could not fdopen subscriber fd");
+		close(fd);
+		return (false);
+	}
 	while (getline(&line, &linecap, f) > 0) {
 		chomp(line);
 		if (strcasecmp(address, line) == 0) {
@@ -734,6 +739,11 @@ autosubscribe_sender(struct ml *ml, int mailfd, enum subtype typesub)
 	strlist from = tll_init();
 
 	FILE *f = fdopen(mailfd, "r");
+	if (f == NULL) {
+		log_error(LOG_ARGS, "Could not fdopen mail fd");
+		close(mailfd);
+		return;
+	}
 	scan_headers(f, readhdrs, NULL, NULL);
 	fclose(f);
 	if (readhdrs[0].valuecount == 0) {

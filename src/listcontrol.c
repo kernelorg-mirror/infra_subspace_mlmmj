@@ -593,9 +593,17 @@ permit:
 			return -1;
 		}
 		struct mail mail = { 0 };
+		char *bounceaddr;
 		mail.to = tll_front(*fromemails);
-		mail.from = get_bounce_from_adr(mail.to, ml, index);
+		bounceaddr = get_bounce_from_adr(mail.to, ml, index);
+		mail.from = bounceaddr;
 		mail.fp = fdopen(fd, "r");
+		if (mail.fp == NULL) {
+			close(fd);
+			free(bounceaddr);
+			free(archivefilename);
+			return (-1);
+		}
 		log_oper(ml->fd, OPLOGFNAME, "%s got archive/%s",
 				tll_front(*fromemails), param);
 		if (!send_single_mail(&mail, ml, true)) {

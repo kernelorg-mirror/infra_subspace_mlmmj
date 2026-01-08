@@ -209,6 +209,11 @@ file_lines_state
 		return (NULL);
 	s = xcalloc(1, sizeof(file_lines_state));
 	s->fp = fdopen(fd, "r");
+	if (s->fp == NULL) {
+		close(fd);
+		free(s);
+		return (NULL);
+	}
 	s->truncate = truncate;
 	return (s);
 }
@@ -279,6 +284,10 @@ get_msgid_line(void *state)
 	if (msgfd == -1)
 		return (id);
 	FILE *f = fdopen(msgfd, "r");
+	if (f == NULL) {
+		close(msgfd);
+		return (id);
+	}
 	scan_headers(f, readhdrs, NULL, NULL);
 	fclose(f);
 	if (readhdrs[0].valuecount == 0) {
@@ -486,6 +495,12 @@ text *open_text_fd(int fd)
 	txt->wrapmode = WRAP_WORD;
 	txt->widthreckoning = WIDTH_THIN;
 	txt->src->fp = fdopen(fd, "r");
+	if (txt->src->fp == NULL) {
+		close(fd);
+		free(txt->src);
+		free(txt);
+		return (NULL);
+	}
 
 	return (txt);
 }

@@ -168,6 +168,12 @@ int send_mail_many_fd(int sockfd, struct mail *mail, struct ml *ml, int subfd,
 	strlist stl = tll_init();
 	FILE *f = fdopen(subfd, "r");
 
+	if (f == NULL) {
+		log_error(LOG_ARGS, "Could not fdopen subscriber fd");
+		close(subfd);
+		return -1;
+	}
+
 	do {
 		res = getaddrsfromfile(&stl, f, maxverprecips);
 		if(tll_length(stl) == maxverprecips) {
@@ -402,6 +408,11 @@ int main(int argc, char **argv)
 		}
 	}
 	mail.fp = fdopen(mailfd, "r");
+	if (mail.fp == NULL) {
+		log_error(LOG_ARGS, "Could not fdopen '%s'", mailfilename);
+		close(mailfd);
+		exit(EXIT_FAILURE);
+	}
 
 	if (ml.dir)
 		ctrlarchive = statctrl(ml.ctrlfd, "noarchive");
