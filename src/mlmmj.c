@@ -399,7 +399,7 @@ unsubscribe(int listfd, const char *address, enum subtype typesub)
 		xasprintf(&wrname, "%s.new", dp->d_name);
 		wfd = openat(fd, wrname, O_RDWR|O_CREAT|O_TRUNC,
 		    S_IRUSR|S_IWUSR|groupwritable);
-		if (wfd == -1 && !lock(wfd, true)) {
+		if (wfd == -1 || !lock(wfd, true)) {
 			log_err("Could not open '%s/%s': %s", subdir, wrname,
 			    strerror(errno));
 			munmap(start, st.st_size);

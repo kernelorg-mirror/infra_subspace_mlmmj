@@ -46,7 +46,7 @@ int incindexfile(int listfd)
 	const char *errstr;
 
 	fd = openat(listfd, "index", O_RDWR|O_CREAT, S_IRUSR|S_IWUSR);
-	if(fd == -1 && !lock(fd, true)) {
+	if(fd == -1 || !lock(fd, true)) {
 		log_error(LOG_ARGS, "Error opening index file");
 		return 0;
 	}

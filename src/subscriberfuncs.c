@@ -634,7 +634,7 @@ subscribe_type(int listfd, char *address, enum subtype typesub)
 
 	subfilefd = openat(dirfd, chstr, O_RDWR|O_CREAT|O_APPEND,
 				S_IRUSR|S_IWUSR|groupwritable);
-	if(subfilefd == -1 && !lock(subfilefd, true)) {
+	if(subfilefd == -1 || !lock(subfilefd, true)) {
 		log_error(LOG_ARGS, "Could not open '%s/%s'", subdir, chstr);
 		exit(EXIT_FAILURE);
 	}
