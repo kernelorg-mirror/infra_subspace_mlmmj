@@ -442,7 +442,6 @@ int listcontrol(strlist *fromemails, struct ml *ml, const char *controlstr,
 			int mfd = openat(ml->fd, sendfilename, O_RDONLY);
 			if (mfd == -1) {
 				free(sendfilename);
-				free(moderatefilename);
 				return (-1);
 			}
 			autosubscribe_sender(ml, mfd, SUB_NOMAIL);
