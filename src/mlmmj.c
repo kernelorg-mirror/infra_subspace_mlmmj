@@ -97,20 +97,32 @@ send_probe(struct ml *ml, const char *addr)
 	fd = openat(bfd, probefile, O_WRONLY|O_TRUNC|O_CREAT, S_IRUSR|S_IWUSR);
 	if(fd < 0)
 		log_error(LOG_ARGS, "Could not open %s", probefile);
-	else
+	else {
 		if (dprintf(fd, "%ld", (long int)t) < 0)
 			log_error(LOG_ARGS, "Could not write time in probe");
+		close(fd);
+	}
 
 	mail.to = myaddr;
 	mail.from = from;
 	mail.fp = fopen(queuefilename, "r");
+	free(queuefilename);
 	if (!send_single_mail(&mail, ml, false)) {
 		unlinkat(bfd, probefile, 0);
+		if (mail.fp)
+			fclose(mail.fp);
+		close(bfd);
 		free(probefile);
+		free(myaddr);
+		free(from);
 		return (false);
 	}
 	free(probefile);
-	fclose(mail.fp);
+	if (mail.fp)
+		fclose(mail.fp);
+	close(bfd);
+	free(myaddr);
+	free(from);
 	return (true);
 }
 
