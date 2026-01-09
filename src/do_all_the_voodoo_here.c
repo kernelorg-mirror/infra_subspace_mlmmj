@@ -120,6 +120,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 						"add extra headers");
 					tll_free_and_free(allunfoldeds, free);
 					free(posteraddr);
+					fclose(f);
 					return -1;
 				}
 				fsync(outfd);
@@ -161,6 +162,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 					"add extra headers");
 				tll_free_and_free(allunfoldeds, free);
 				free(posteraddr);
+				fclose(f);
 				return -1;
 			}
 			fsync(outfd);
@@ -176,6 +178,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 	        tll_free_and_free(allunfoldeds, free);
 		log_error(LOG_ARGS, "Error writing hdrs.");
 		free(posteraddr);
+		fclose(f);
 		return -1;
 	}
 	
@@ -186,6 +189,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 	if(dumpfd2fd(infd, outfd) < 0) {
 		log_error(LOG_ARGS, "Error when dumping rest of mail");
 		free(posteraddr);
+		fclose(f);
 		return -1;
 	}
 	fclose(f);
