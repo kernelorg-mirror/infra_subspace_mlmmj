@@ -564,6 +564,7 @@ permit:
 			errno = 0;
 			log_error(LOG_ARGS, "A get request was sent to a list"
 				" with the noget option set. Ignoring mail");
+			free(param);
 			return -1;
 		}
 		if (statctrl(ml->ctrlfd, "subonlyget")) {
@@ -574,6 +575,7 @@ permit:
 					" from a non-subscribed address to a"
 					" list with the subonlyget option set."
 					" Ignoring mail");
+				free(param);
 				return -1;
 			}
 		}
@@ -582,6 +584,7 @@ permit:
 			errno = 0;
 			log_error(LOG_ARGS, "The get request contained"
 			    " non-digits in index. Ignoring mail");
+			free(param);
 			return -1;
 		}
 		int index = strtoim(param, 0, INT_MAX, NULL);
@@ -590,6 +593,7 @@ permit:
 		if (fd == -1) {
 			log_error(LOG_ARGS, "Unable to open archive file");
 			free(archivefilename);
+			free(param);
 			return -1;
 		}
 		struct mail mail = { 0 };
@@ -602,14 +606,23 @@ permit:
 			close(fd);
 			free(bounceaddr);
 			free(archivefilename);
-			return (-1);
+			free(param);
+			return -1;
 		}
 		log_oper(ml->fd, OPLOGFNAME, "%s got archive/%s",
 				tll_front(*fromemails), param);
 		if (!send_single_mail(&mail, ml, true)) {
 			/* TODO: save to queue */
-			return (-1);
+			fclose(mail.fp);
+			free(bounceaddr);
+			free(archivefilename);
+			free(param);
+			return -1;
 		}
+		fclose(mail.fp);
+		free(bounceaddr);
+		free(archivefilename);
+		free(param);
 		break;
 
 	/* listname+list@domain.tld */
