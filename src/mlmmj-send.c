@@ -455,13 +455,19 @@ int main(int argc, char **argv)
 		sockfd = newsmtp(&ml, relayhost);
 		mail.from = NULL;
 		mail.replyto = NULL;
-		if(send_mail_many_fd(sockfd, &mail, &ml, subfd, mailfilename)) {
+		sendres = send_mail_many_fd(sockfd, &mail, &ml, subfd, mailfilename);
+		if (sendres) {
+			/* NB: On partial failure, keeping the original
+			 * subscribers file risks duplicate deliveries for
+			 * recipients that already succeeded. This is a
+			 * deliberate trade-off to avoid losing addresses
+			 * on total connection failure. */
 			close(sockfd);
 			sockfd = -1;
 		} else {
 			endsmtp(&sockfd);
+			unlink(subfilename);
 		}
-		unlink(subfilename);
 		break;
 	case '4': /* send mails to owner */
 		sockfd = newsmtp(&ml, relayhost);
