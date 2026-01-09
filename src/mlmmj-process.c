@@ -385,6 +385,9 @@ int main(int argc, char **argv)
 				delheaders, readhdrs,
 				&allheaders, subjectprefix, replyto) < 0) {
 		log_error(LOG_ARGS, "Error in do_all_the_voodoo_here");
+		close(donemailfd);
+		unlink(donemailname);
+		free(donemailname);
 		free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
 			    toemails, ccemails, rpemails, dtemails, allheaders);
 		exit(EXIT_FAILURE);
