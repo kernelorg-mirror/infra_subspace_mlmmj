@@ -3,6 +3,9 @@ top_builddir="@abs_top_builddir@"
 
 export PATH="${top_builddir}/src:${PATH}"
 
+# Detect memory corruption (double-free, buffer overflow) in glibc malloc
+export MALLOC_CHECK_=3
+
 prefix="@prefix@"
 exec_prefix="@exec_prefix@"
 datarootdir="@datarootdir@"
