@@ -45,6 +45,8 @@ send_help_noexit(struct ml *ml, const char *queuefilename, const char *emailaddr
 		save_queue(queuefilename, &mail);
 	else
 		unlink(queuefilename);
+	if (mail.fp)
+		fclose(mail.fp);
 }
 
 void
