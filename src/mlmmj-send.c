@@ -466,7 +466,9 @@ int main(int argc, char **argv)
 			sockfd = -1;
 		} else {
 			endsmtp(&sockfd);
-			unlink(subfilename);
+			/* Only unlink if subfilename was a path, not a fd number */
+			if (errp != NULL)
+				unlink(subfilename);
 		}
 		break;
 	case '4': /* send mails to owner */
