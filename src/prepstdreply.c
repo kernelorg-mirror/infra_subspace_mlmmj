@@ -1778,13 +1778,14 @@ char *prepstdreply(text *txt, struct ml *ml, const char *from, const char *to, c
 	if(outfd < 0) {
 		log_error(LOG_ARGS, "Could not open std mail %s", retstr);
 		free(retstr);
-		free(txt);
+		close_text(txt);
 		return NULL;
 	}
 	if (!prepstdreply_to(txt, ml, from, to, replyto, outfd, NULL)) {
 		close(outfd);
 		unlink(retstr);
 		free(retstr);
+		close_text(txt);
 		return (NULL);
 	}
 	return (retstr);
