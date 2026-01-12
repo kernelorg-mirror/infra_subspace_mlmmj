@@ -115,9 +115,10 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 		if(!hdrsadded &&
 		    ( strncasecmp(hdrline, "mime", 4) == 0)) {
 			if(hdrfd >= 0) {
-			        if(process_headers_fd(hdrfd,outfd,posteraddr) < 0) {
+			        if(process_headers_fd(hdrfd,outfd,posteraddr ? posteraddr : "") < 0) {
 					log_error(LOG_ARGS, "Could not "
 						"add extra headers");
+					free(unfolded);
 					tll_free_and_free(allunfoldeds, free);
 					free(posteraddr);
 					fclose(f);
@@ -137,6 +138,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 				   strstr(unqp, prefix) == NULL) {
 					dprintf(outfd, "Subject: %s%s\n", prefix, hdrline + 8);
 					free(unqp);
+					free(unfolded);
 					continue;
 				}
 				free(unqp);
@@ -153,11 +155,12 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 				dprintf(outfd, "Reply-To:%s\n", hdrline + 5);
 			}
 		}
+		free(unfolded);
 	}
 
 	if(!hdrsadded ) {
 		if(hdrfd >= 0) {
-		  if(process_headers_fd(hdrfd,outfd,posteraddr) < 0) {
+		  if(process_headers_fd(hdrfd,outfd,posteraddr ? posteraddr : "") < 0) {
 				log_error(LOG_ARGS, "Could not "
 					"add extra headers");
 				tll_free_and_free(allunfoldeds, free);
