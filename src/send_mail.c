@@ -423,7 +423,7 @@ requeuemail(int listfd, int index, strlist *addrs, const char *addr)
 	int addrfd, dfd;
 	char *dirname;
 
-	if (addrs == NULL || tll_length(*addrs) == 0)
+	if ((addrs == NULL || tll_length(*addrs) == 0) && addr == NULL)
 		return (false);
 	xasprintf(&dirname, "requeue/%d", index);
 	if(mkdirat(listfd, dirname, 0750) < 0 && errno != EEXIST) {
@@ -449,8 +449,10 @@ requeuemail(int listfd, int index, strlist *addrs, const char *addr)
 	 * we write the failing address to ensure the potential good
 	 * ones will be tried first when mlmmj-maintd sends out mails
 	 * that have been requeued. addrcount was so far we were */
-	tll_foreach(*addrs, it) {
-		dprintf(addrfd, "%s\n", it->item);
+	if (addrs != NULL) {
+		tll_foreach(*addrs, it) {
+			dprintf(addrfd, "%s\n", it->item);
+		}
 	}
 	if (addr != NULL)
 		dprintf(addrfd, "%s\n", addr);
