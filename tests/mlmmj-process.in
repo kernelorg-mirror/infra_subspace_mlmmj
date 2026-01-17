@@ -11,7 +11,8 @@ tests_init \
 	basic_4 \
 	basic_5 \
 	addr_in_to_cc \
-	owner_recipextra
+	owner_recipextra \
+	cleanup_queue_on_owner_write_failure
 
 mlmmjprocess=$(command -v mlmmj-process)
 usage_body()
@@ -116,4 +117,43 @@ EOF
 	EXTENSION=owner atf_check -s exit:0 $mlmmjprocess -L list -m mailfile
 	# fakesmtpd recorded the SMTP session; verify the owner got the mail
 	atf_check -o match:"RCPT TO:<theowner@test>" cat mail-1.txt
+}
+
+cleanup_queue_on_owner_write_failure_body()
+{
+	# Test that queue file is cleaned up when the second do_all_the_voodoo_here
+	# (in the owner-forwarding path) fails.
+	#
+	# We use ulimit -n to limit file descriptors. With a tight limit, the
+	# first voodoo succeeds but the second fails on dup().
+	init_ml list
+	echo "list@test" > list/control/listaddress
+	echo "25678" > list/control/smtpport
+	echo "theowner@test" > list/control/owner
+	rmdir list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
+
+	# Test with decreasing fd limits starting from 30
+	# Create mailfile each iteration because successful runs delete it
+	limit=30
+	while [ $limit -ge 3 ]; do
+		rm -f list/queue/[!d]* 2>/dev/null || true
+		cat > mailfile <<EOF
+Return-Path: sender@example.com
+From: sender@example.com
+To: list+owner@test
+Subject: Test
+
+Hello
+EOF
+		(exec 2>/dev/null; ulimit -n $limit; EXTENSION=owner $mlmmjprocess -L list -m mailfile -P)
+		rc=$?
+		qcount=$(find list/queue -maxdepth 1 -type f 2>/dev/null | wc -l)
+		if [ "$rc" -ne 0 ] && [ "$qcount" -gt 0 ]; then
+			# Found failure with leftover file - this is the bug
+			ls -la list/queue/
+			atf_fail "queue file left behind after failure (ulimit -n $limit)"
+		fi
+		limit=$((limit - 1))
+	done
 }
