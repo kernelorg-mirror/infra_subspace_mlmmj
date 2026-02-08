@@ -545,6 +545,11 @@ int main(int argc, char **argv)
 					NULL, &ownerhdrs, NULL, 0) < 0) {
 				log_error(LOG_ARGS, "do_all_the_voodoo_here");
 				tll_free_and_free(ownerhdrs, free);
+				close(ownfd);
+				close(rawmailfd);
+				close(donemailfd);
+				unlink(donemailname);
+				free(donemailname);
 				free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
 					    toemails, ccemails, rpemails, dtemails, allheaders);
 				exit(EXIT_FAILURE);
