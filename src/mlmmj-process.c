@@ -219,7 +219,8 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 		mail.fp = fopen(qfname, "r");
 		if (send_single_mail(&mail, ml, false))
 			unlink(qfname);
-		fclose(mail.fp);
+		if (mail.fp)
+			fclose(mail.fp);
 	}
 
 	if (efromismod) {
@@ -229,7 +230,8 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 		mail.fp = fopen(queuefilename, "r");
 		if (send_single_mail(&mail, ml, false))
 			unlink(queuefilename);
-		fclose(mail.fp);
+		if (mail.fp)
+			fclose(mail.fp);
 		exit(EXIT_SUCCESS);
 	}
 
@@ -240,7 +242,8 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 		mail.fp = fopen(queuefilename, "r");
 		if (send_single_mail(&mail, ml, false))
 			unlink(queuefilename);
-		fclose(mail.fp);
+		if (mail.fp)
+			fclose(mail.fp);
 		exit(EXIT_SUCCESS);
 	}
 
