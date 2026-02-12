@@ -29,8 +29,8 @@
 #include <time.h>
 #include <tllist.h>
 
-#ifndef __unused
-#define __unused __attribute__((__unused__))
+#ifndef MLMMJ_UNUSED
+#define MLMMJ_UNUSED __attribute__((__unused__))
 #endif
 
 #ifndef NELEM
