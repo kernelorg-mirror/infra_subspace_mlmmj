@@ -527,13 +527,18 @@ int main(int argc, char **argv)
 					    toemails, ccemails, rpemails, dtemails, allheaders);
 				exit(EXIT_FAILURE);
 			}
+			{
+			strlist ownerhdrs = tll_init();
 			if (do_all_the_voodoo_here(rawmailfd, donemailfd, -1,
 					-1, delheaders,
-					NULL, &allheaders, NULL, 0) < 0) {
+					NULL, &ownerhdrs, NULL, 0) < 0) {
 				log_error(LOG_ARGS, "do_all_the_voodoo_here");
+				tll_free_and_free(ownerhdrs, free);
 				free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
 					    toemails, ccemails, rpemails, dtemails, allheaders);
 				exit(EXIT_FAILURE);
+			}
+			tll_free_and_free(ownerhdrs, free);
 			}
 			tll_free_and_free(*delheaders, free);
 			close(rawmailfd);
