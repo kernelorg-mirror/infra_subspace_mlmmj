@@ -256,7 +256,7 @@ int listcontrol(strlist *fromemails, struct ml *ml, const char *controlstr,
 		sub.type = "digest";
 		sub.typesub = SUB_DIGEST;
 		sub.typedeny = "sub-deny-digest";
-		__attribute__ ((fallthrough));
+		/* fallthrough */
 	/* listname+subscribe-nomail@domain.tld */
 	case CTRL_SUBSCRIBE_NOMAIL:
 		if (sub.typereq == NULL) {
@@ -266,7 +266,7 @@ int listcontrol(strlist *fromemails, struct ml *ml, const char *controlstr,
 			sub.type = "nomail";
 			sub.typedeny = "sub-deny-nomail";
 		}
-		__attribute__ ((fallthrough));
+		/* fallthrough */
 	/* listname+subscribe-both@domain.tld */
 	case CTRL_SUBSCRIBE_BOTH:
 		if (sub.typereq == NULL) {
@@ -276,7 +276,7 @@ int listcontrol(strlist *fromemails, struct ml *ml, const char *controlstr,
 			sub.type = "both";
 			sub.typedeny = "sub-deny-digest";
 		}
-		__attribute__ ((fallthrough));
+		/* fallthrough */
 	/* listname+subscribe@domain.tld */
 	case CTRL_SUBSCRIBE:
 		if (sub.typereq == NULL) {
@@ -292,21 +292,21 @@ int listcontrol(strlist *fromemails, struct ml *ml, const char *controlstr,
 	case CTRL_CONFSUB_DIGEST:
 		subc.typesub = SUB_DIGEST;
 		subtypename = "digest";
-		__attribute__ ((fallthrough));
+		/* fallthrough */
 	/* listname+subconf-nomail-COOKIE@domain.tld */
 	case CTRL_CONFSUB_NOMAIL:
 		if (subtypename == NULL) {
 			subc.typesub = SUB_NOMAIL;
 			subtypename = "nomail";
 		}
-		__attribute__ ((fallthrough));
+		/* fallthrough */
 	/* listname+subconf-both-COOKIE@domain.tld */
 	case CTRL_CONFSUB_BOTH:
 		if (subtypename == NULL) {
 			subc.typesub = SUB_BOTH;
 			subtypename = "both";
 		}
-		__attribute__ ((fallthrough));
+		/* fallthrough */
 	/* listname+subconf-COOKIE@domain.tld */
 	case CTRL_CONFSUB:
 		if (subtypename == NULL) {
@@ -349,14 +349,14 @@ int listcontrol(strlist *fromemails, struct ml *ml, const char *controlstr,
 	case CTRL_CONFUNSUB_DIGEST:
 		ts = SUB_DIGEST;
 		subtypename = "-digest";
-		__attribute__ ((fallthrough));
+		/* fallthrough */
 	/* listname+unsubconf-nomail-COOKIE@domain.tld */
 	case CTRL_CONFUNSUB_NOMAIL:
 		if (ts == SUB_NONE) {
 			ts = SUB_NOMAIL;
 			subtypename = "-nomail";
 		}
-		__attribute__ ((fallthrough));
+		/* fallthrough */
 	/* listname+unsubconf-COOKIE@domain.tld */
 	case CTRL_CONFUNSUB:
 		if (ts == SUB_NONE) {
