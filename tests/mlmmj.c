@@ -74,6 +74,7 @@
 #include "send_help.h"
 #include "gethdrline.h"
 #include "unistr.h"
+#include "do_all_the_voodoo_here.h"
 
 ATF_TC_WITHOUT_HEAD(random_int);
 ATF_TC_WITHOUT_HEAD(chomp);
@@ -170,6 +171,7 @@ ATF_TC_WITHOUT_HEAD(unistr_header_to_utf8);
 ATF_TC_WITHOUT_HEAD(line_startwithany);
 ATF_TC_WITHOUT_HEAD(save_hdr_if_needed);
 ATF_TC_WITHOUT_HEAD(autosubscribe_sender);
+ATF_TC_WITHOUT_HEAD(voodoo_double_call);
 
 ATF_TC_BODY(random_int, tc)
 {
@@ -3159,6 +3161,72 @@ ATF_TC_BODY(autosubscribe_sender, tc)
 	}
 }
 
+/*
+ * Regression test: calling do_all_the_voodoo_here() twice with the same
+ * allhdrs list (without clearing it) used to trigger an assertion in
+ * tll_pop_front(allunfoldeds) because allhdrs had stale entries from the
+ * first call while allunfoldeds was freshly initialized.
+ * This is the code path hit when mlmmj-process handles a mail addressed
+ * to list+owner (recipextra == "owner").
+ */
+ATF_TC_BODY(voodoo_double_call, tc)
+{
+	strlist allheaders = tll_init();
+	strlist delhdrs = tll_init();
+	struct mailhdr readhdrs[] = {
+		{ "From:", 0, NULL },
+		{ "To:", 0, NULL },
+		{ "Cc:", 0, NULL },
+		{ "Return-Path:", 0, NULL },
+		{ "Delivered-To:", 0, NULL },
+		{ "Subject:", 0, NULL },
+		{ "X-Original-From:", 0, NULL },
+		{ NULL, 0, NULL }
+	};
+	int infd, outfd, ret;
+
+	atf_utils_create_file("testmail.txt",
+	    "From: sender@example.org\n"
+	    "To: list+owner@example.org\n"
+	    "Subject: New subscription\n"
+	    "\n"
+	    "A new user has subscribed.\n");
+
+	tll_push_back(delhdrs, strdup("From "));
+	tll_push_back(delhdrs, strdup("Return-Path:"));
+
+	/* First call: populates allheaders (normal processing path) */
+	infd = open("testmail.txt", O_RDONLY);
+	ATF_REQUIRE(infd >= 0);
+	outfd = open("out1.txt", O_RDWR|O_CREAT|O_TRUNC, 0600);
+	ATF_REQUIRE(outfd >= 0);
+	ret = do_all_the_voodoo_here(infd, outfd, -1, -1,
+	    &delhdrs, readhdrs, &allheaders, NULL, 0);
+	ATF_REQUIRE_EQ(ret, 0);
+	close(infd);
+	close(outfd);
+
+	ATF_REQUIRE_MSG(tll_length(allheaders) > 0,
+	    "allheaders should be populated after first call");
+
+	/* Second call with the same allheaders, simulating the
+	 * recipextra == "owner" path. Before the fix this would abort
+	 * with: Assertion failed: allunfoldeds.length > 0 */
+	tll_free_and_free(allheaders, free);
+	infd = open("testmail.txt", O_RDONLY);
+	ATF_REQUIRE(infd >= 0);
+	outfd = open("out2.txt", O_RDWR|O_CREAT|O_TRUNC, 0600);
+	ATF_REQUIRE(outfd >= 0);
+	ret = do_all_the_voodoo_here(infd, outfd, -1, -1,
+	    &delhdrs, NULL, &allheaders, NULL, 0);
+	ATF_REQUIRE_EQ(ret, 0);
+	close(infd);
+	close(outfd);
+
+	tll_free_and_free(allheaders, free);
+	tll_free_and_free(delhdrs, free);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -3256,6 +3324,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, line_startwithany);
 	ATF_TP_ADD_TC(tp, save_hdr_if_needed);
 	ATF_TP_ADD_TC(tp, autosubscribe_sender);
+	ATF_TP_ADD_TC(tp, voodoo_double_call);
 
 	return (atf_no_error());
 }
