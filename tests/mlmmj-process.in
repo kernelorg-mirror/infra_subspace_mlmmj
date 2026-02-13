@@ -10,7 +10,8 @@ tests_init \
 	basic_3 \
 	basic_4 \
 	basic_5 \
-	addr_in_to_cc
+	addr_in_to_cc \
+	owner_recipextra
 
 mlmmjprocess=$(command -v mlmmj-process)
 usage_body()
@@ -86,4 +87,33 @@ EOF
 	rm list/queue/*.mailfrom
 	rmdir list/queue/discarded
 	atf_check -o match:".*The message from <sender@yeah> with subject \"\" was unable to be delivered.*" cat list/queue/*
+}
+
+# Regression: the openat() for the "owner" control file used to be
+# outside the "owner" conditional, meaning it was called for all
+# recipextra values (wasting an fd). After the fix it's inside the
+# conditional. Verify the owner path still works: mlmmj-process with
+# EXTENSION=owner must read the owner file and deliver to its address.
+owner_recipextra_body()
+{
+	atf_check $top_builddir/tests/fakesmtpd
+	trap kill_fakesmtp EXIT TERM
+	init_ml list
+	rmdir list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
+	echo "list@test" > list/control/listaddress
+	echo "25678" > list/control/smtpport
+	echo "heloname" > list/control/smtphelo
+	echo "theowner@test" > list/control/owner
+	cat > mailfile <<EOF
+Return-Path: sender@test
+From: sender@test
+To: list+owner@test
+Subject: please forward to owner
+
+hello owner
+EOF
+	EXTENSION=owner atf_check -s exit:0 $mlmmjprocess -L list -m mailfile
+	# fakesmtpd recorded the SMTP session; verify the owner got the mail
+	atf_check -o match:"RCPT TO:<theowner@test>" cat mail-1.txt
 }
