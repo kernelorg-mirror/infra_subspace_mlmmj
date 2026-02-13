@@ -5,7 +5,8 @@
 tests_init \
 	basics \
 	resend_keeps_subfile_on_failure \
-	resend_removes_subfile_on_success
+	resend_removes_subfile_on_success \
+	resend_fd_no_unlink
 
 basics_body()
 {
@@ -96,4 +97,39 @@ EOF
 	atf_check -s exit:0 $mlmmjsend -L ml -l 3 -m mailfile -s subsfile
 	# On success the subscribers file must be removed
 	atf_check -s exit:1 test -f subsfile
+}
+
+# Regression: when -s is a numeric fd (inherited file descriptor), the
+# old code did unlink("5") which would delete an unrelated file literally
+# named "5" in the cwd. The fix skips unlink when subfilename is numeric.
+resend_fd_no_unlink_body()
+{
+	mlmmjsend=$(command -v mlmmj-send)
+	atf_check $top_builddir/tests/fakesmtpd
+	trap kill_fakesmtp EXIT TERM
+	init_ml ml
+	echo "ml@test" > ml/control/listaddress
+	echo "25678" > ml/control/smtpport
+	echo "heloname" > ml/control/smtphelo
+	cat > mailfile <<EOF
+From: sender@test
+To: ml@test
+Subject: test
+
+body
+.
+EOF
+	cat > subsfile <<EOF
+recip@test
+EOF
+	# Create a file named "9" that must not be deleted
+	echo "unrelated data" > 9
+	atf_check -s exit:0 test -f 9
+	# Open subsfile on fd 9, then pass "9" as the -s argument.
+	# Run mlmmj-send directly (not via atf_check) to preserve fd 9.
+	exec 9<subsfile
+	$mlmmjsend -L ml -l 3 -m mailfile -s 9
+	exec 9<&-
+	# The file literally named "9" must still exist
+	atf_check -s exit:0 test -f 9
 }
