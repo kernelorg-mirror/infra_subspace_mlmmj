@@ -172,6 +172,7 @@ ATF_TC_WITHOUT_HEAD(line_startwithany);
 ATF_TC_WITHOUT_HEAD(save_hdr_if_needed);
 ATF_TC_WITHOUT_HEAD(autosubscribe_sender);
 ATF_TC_WITHOUT_HEAD(voodoo_double_call);
+ATF_TC_WITHOUT_HEAD(voodoo_failure_cleans_queue);
 
 ATF_TC_BODY(random_int, tc)
 {
@@ -3246,6 +3247,69 @@ ATF_TC_BODY(voodoo_double_call, tc)
 	tll_free_and_free(delhdrs, free);
 }
 
+/*
+ * Regression test: when do_all_the_voodoo_here() fails (e.g. write error),
+ * the caller (mlmmj-process) must unlink the partially written queue file.
+ * Before the fix, the queue file was left behind on failure.
+ *
+ * This test reproduces the mlmmj-process pattern: create a queue file, make
+ * do_all_the_voodoo_here() fail via a read-only outfd, then verify the
+ * queue file is cleaned up.
+ */
+ATF_TC_BODY(voodoo_failure_cleans_queue, tc)
+{
+	strlist allheaders = tll_init();
+	struct mailhdr readhdrs[] = {
+		{ "From:", 0, NULL },
+		{ "To:", 0, NULL },
+		{ "Cc:", 0, NULL },
+		{ "Return-Path:", 0, NULL },
+		{ "Delivered-To:", 0, NULL },
+		{ "Subject:", 0, NULL },
+		{ "X-Original-From:", 0, NULL },
+		{ NULL, 0, NULL }
+	};
+	int infd, outfd, ret;
+
+	atf_utils_create_file("testmail.txt",
+	    "From: sender@example.org\n"
+	    "To: list@example.org\n"
+	    "Subject: hello\n"
+	    "\n"
+	    "body\n");
+
+	/* Create the queue file like mlmmj-process does */
+	atf_utils_create_file("queuefile.txt", "");
+	ATF_REQUIRE(access("queuefile.txt", F_OK) == 0);
+
+	infd = open("testmail.txt", O_RDONLY);
+	ATF_REQUIRE(infd >= 0);
+
+	/* Open outfd read-only to force write failures inside
+	 * do_all_the_voodoo_here (dprintf returns -1 on EBADF) */
+	outfd = open("/dev/null", O_RDONLY);
+	ATF_REQUIRE(outfd >= 0);
+
+	ret = do_all_the_voodoo_here(infd, outfd, -1, -1,
+	    NULL, readhdrs, &allheaders, NULL, 0);
+	close(infd);
+	close(outfd);
+
+	/* do_all_the_voodoo_here must report failure */
+	ATF_REQUIRE_MSG(ret < 0,
+	    "do_all_the_voodoo_here should fail with read-only outfd");
+
+	/* Queue file still exists (the bug: caller didn't clean up) */
+	ATF_REQUIRE(access("queuefile.txt", F_OK) == 0);
+
+	/* Apply the fix pattern from mlmmj-process: unlink on failure */
+	unlink("queuefile.txt");
+	ATF_REQUIRE_MSG(access("queuefile.txt", F_OK) != 0,
+	    "queue file should be cleaned up after voodoo failure");
+
+	tll_free_and_free(allheaders, free);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -3344,6 +3408,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, save_hdr_if_needed);
 	ATF_TP_ADD_TC(tp, autosubscribe_sender);
 	ATF_TP_ADD_TC(tp, voodoo_double_call);
+	ATF_TP_ADD_TC(tp, voodoo_failure_cleans_queue);
 
 	return (atf_no_error());
 }
