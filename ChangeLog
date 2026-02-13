@@ -1,3 +1,9 @@
+1.7.1
+ o Fix build with older GCC.
+ o Fix a crash when processing email from list+owner.
+ o Fix some potentials mails loss in case a failure of delivery.
+ o Many small leak (memory and fd) fixes which are mainly cosmetic considering
+   the process would have release at exit time anyway.
 1.7.0
  o New 'autosubscribe' feature: on moderated mailing list autosubscribe as
    "nomail" when if a moderator approves a mail
