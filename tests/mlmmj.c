@@ -2640,6 +2640,25 @@ ATF_TC_BODY(requeuemail, tc)
 		atf_utils_cat_file("list/requeue/1/subscribers", ">");
 		atf_tc_fail("Invalid queue content (fail)");
 	}
+
+	/* Regression: single-recipient send failure (addrs NULL, addr set)
+	 * must still requeue the address, not silently discard it. */
+	unlink("list/requeue/1/subscribers");
+	ATF_REQUIRE(requeuemail(dfd, 1, NULL, "solo@lost"));
+	if (!atf_utils_compare_file("list/requeue/1/subscribers", "solo@lost\n")) {
+		atf_utils_cat_file("list/requeue/1/subscribers", ">");
+		atf_tc_fail("addr-only requeue failed");
+	}
+
+	/* Same with an empty addrs list instead of NULL */
+	unlink("list/requeue/1/subscribers");
+	strlist empty = tll_init();
+	ATF_REQUIRE(requeuemail(dfd, 1, &empty, "solo@lost"));
+	if (!atf_utils_compare_file("list/requeue/1/subscribers", "solo@lost\n")) {
+		atf_utils_cat_file("list/requeue/1/subscribers", ">");
+		atf_tc_fail("addr-only requeue with empty addrs failed");
+	}
+
 	close(dfd);
 }
 
