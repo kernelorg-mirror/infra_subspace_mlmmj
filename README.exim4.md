@@ -15,6 +15,8 @@ Notes:
   lists there are.
   Note that the owner of the mlmmj spool must still be the mlmmj user (and
   this user must have at least x rights to the directories below).
+  *alternative you can run mlmmj with the exim4 user (on Debian/Devuan it is
+  "Debian-exim")
 - Existence of mailing lists is automatically checked ($listdir) and you
   don't need to put anything into your aliases file
 - If you want VERP to be done by your MTA, follow the instructions below and
@@ -47,9 +49,11 @@ beginning):
 
 ```
 mlmmj_router:
+  debug_print = "R: mlmmj_router for $local_part@$domain"
   driver = accept
   domains = +mlmmj_domains
   require_files = MLMMJ_HOME/${lc::$local_part}
+  condition = ${lookup{$local_part@$domain} lsearch*,ret=key{${lookup {$local_part} dsearch,ret=full {MLMMJ_HOME}}/control/listaddress}}
   # Use this instead, if you don't want to give Exim rx rights to mlmmj spool.
   # Exim will then spawn a new process running under the UID of "mlmmj".
   #require_files = mlmmj:MLMMJ_HOME/${lc::$local_part}
@@ -59,7 +63,6 @@ mlmmj_router:
   headers_add = Delivered-To: $local_part$local_part_suffix@$domain
   transport = mlmmj_transport
 ```
-
 
 If you want VERP to be done by your MTA, also add this:
 
@@ -91,14 +94,19 @@ don't use the default location!):
 
 ```
 mlmmj_transport:
+  debug_print = "T: mlmmj_transport for $local_part $local_part_data@$domain"
   driver = pipe
   return_path_add
   user = mlmmj
   group = mlmmj
+  # if you use the exim4 user (Debian)
+  #user = Debian-exim
+  #group = Debian-exim
   home_directory = MLMMJ_HOME
   current_directory = MLMMJ_HOME
-  command = /usr/local/bin/mlmmj-receive -F -L MLMMJ_HOME/${lc:$local_part}
+  command = /usr/bin/mlmmj-receive -F -L "${lookup {$local_part} dsearch,ret=full {MLMMJ_HOME}}"
 ```
+
 
 If you want VERP to be done by your MTA, also add this:
 
