@@ -93,8 +93,6 @@ static void rewind_thread_list(void * state)
 	char *archivename;
 	int num_threads = 0;
 	struct thread *threads = NULL;
-	char buf[45];
-
 	if (s->cur_thread != -1) {
 		/* We have gathered the data already; just rewind */
 		s->cur_thread = 0;
@@ -177,7 +175,7 @@ static void rewind_thread_list(void * state)
 		threads[thread_idx].mails = xrealloc(threads[thread_idx].mails,
 				threads[thread_idx].num_mails*sizeof(struct mail));
 		threads[thread_idx].mails[threads[thread_idx].num_mails-1].idx = i;
-		xasprintf(&tmpfrom, "      %s - %s\n", buf, tmp);
+		xasprintf(&tmpfrom, "      %d - %s\n", i, tmp);
 		threads[thread_idx].mails[threads[thread_idx].num_mails-1].from = tmpfrom;
 
 		free(subj);

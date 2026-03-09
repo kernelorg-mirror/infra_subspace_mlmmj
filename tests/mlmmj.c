@@ -41,6 +41,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <dirent.h>
 #include <errno.h>
 #include <signal.h>
 
@@ -75,6 +76,7 @@
 #include "gethdrline.h"
 #include "unistr.h"
 #include "do_all_the_voodoo_here.h"
+#include "send_digest.h"
 
 ATF_TC_WITHOUT_HEAD(random_int);
 ATF_TC_WITHOUT_HEAD(chomp);
@@ -173,6 +175,7 @@ ATF_TC_WITHOUT_HEAD(save_hdr_if_needed);
 ATF_TC_WITHOUT_HEAD(autosubscribe_sender);
 ATF_TC_WITHOUT_HEAD(voodoo_double_call);
 ATF_TC_WITHOUT_HEAD(voodoo_failure_cleans_queue);
+ATF_TC_WITHOUT_HEAD(digest_thread_list_format);
 
 ATF_TC_BODY(random_int, tc)
 {
@@ -3310,6 +3313,98 @@ ATF_TC_BODY(voodoo_failure_cleans_queue, tc)
 	tll_free_and_free(allheaders, free);
 }
 
+ATF_TC_BODY(digest_thread_list_format, tc)
+{
+	struct ml ml;
+	int ret;
+	DIR *qdir;
+	struct dirent *entry;
+	char *queuepath = NULL;
+	char *line = NULL;
+	size_t linecap = 0;
+	FILE *fp;
+	bool found_thread_line = false;
+
+	init_ml(true);
+	ml_init(&ml);
+	ml.dir = "list";
+	ml_open(&ml, false);
+	setup_listtext(tc);
+
+	/* Create archive files with known From/Subject headers */
+	atf_utils_create_file("list/archive/1",
+	    "From: alice@example.org\n"
+	    "Subject: Test topic\n"
+	    "\n"
+	    "Body of mail 1\n");
+
+	atf_utils_create_file("list/archive/2",
+	    "From: bob@example.org\n"
+	    "Subject: Another topic\n"
+	    "\n"
+	    "Body of mail 2\n");
+
+	/*
+	 * send_digest calls exec_and_wait(mlmmjsend, ...) at the end.
+	 * Pass /usr/bin/true so it succeeds without actually sending.
+	 */
+	ret = send_digest(&ml, 1, 2, 1, NULL, "/usr/bin/true");
+	ATF_REQUIRE_MSG(ret == 0, "send_digest failed: %d", ret);
+
+	/* Find the queue file that send_digest created */
+	qdir = opendir("list/queue");
+	ATF_REQUIRE(qdir != NULL);
+	while ((entry = readdir(qdir)) != NULL) {
+		if (entry->d_name[0] == '.')
+			continue;
+		/* Skip the discarded subdirectory */
+		if (entry->d_type == DT_DIR)
+			continue;
+		xasprintf(&queuepath, "list/queue/%s", entry->d_name);
+		break;
+	}
+	closedir(qdir);
+	ATF_REQUIRE_MSG(queuepath != NULL, "No queue file found");
+
+	/* Read the queue file and verify thread list lines contain
+	 * the archive index (integer), not uninitialized garbage.
+	 * Thread list lines have the format: "      <index> - <from>"
+	 */
+	fp = fopen(queuepath, "r");
+	ATF_REQUIRE_MSG(fp != NULL, "Cannot open %s", queuepath);
+	while (getline(&line, &linecap, fp) > 0) {
+		/*
+		 * Thread list lines in the queue file have the format:
+		 * "-       <index> - <from>"
+		 * (the "- " prefix comes from the digest listtext template)
+		 * Look for a digit followed by " - " after whitespace.
+		 */
+		char *p = line;
+		/* Skip "- " prefix from template and whitespace */
+		while (*p == '-' || *p == ' ')
+			p++;
+		/* Look for "<digit> - <text>" pattern */
+		if (*p >= '1' && *p <= '9') {
+			char *dash = strstr(p, " - ");
+			if (dash != NULL) {
+				int idx = atoi(p);
+				found_thread_line = true;
+				ATF_CHECK_MSG(idx == 1 || idx == 2,
+				    "Unexpected archive index %d in: %s",
+				    idx, line);
+			}
+		}
+	}
+	fclose(fp);
+	free(line);
+
+	ATF_REQUIRE_MSG(found_thread_line,
+	    "No thread list lines found in digest queue file");
+
+	unlink(queuepath);
+	free(queuepath);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -3409,6 +3504,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, autosubscribe_sender);
 	ATF_TP_ADD_TC(tp, voodoo_double_call);
 	ATF_TP_ADD_TC(tp, voodoo_failure_cleans_queue);
+	ATF_TP_ADD_TC(tp, digest_thread_list_format);
 
 	return (atf_no_error());
 }
