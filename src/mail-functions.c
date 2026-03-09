@@ -83,35 +83,42 @@ write_mailbody(int sockfd, FILE *fp, const char *tohdr)
 {
 	int c, next;
 	bool addhdr = true;
+	int dupfd = dup(sockfd);
+	FILE *out = dupfd != -1 ? fdopen(dupfd, "w") : NULL;
+
+	if (out == NULL) {
+		if (dupfd != -1)
+			close(dupfd);
+		return;
+	}
+
 	while ((c = fgetc(fp)) != EOF) {
 		if (c != '\n') {
-			dprintf(sockfd, "%c", c);
+			fputc(c, out);
 			continue;
 		}
+		/* LF -> CRLF */
+		fputs("\r\n", out);
 		next = fgetc(fp);
-		dprintf(sockfd, "\r\n");
 		if (next == '.') {
 			/*
-			 * o Before sending a line of mail text, the SMTP client checks the
-			 * first character of the line. If it is a period, one additional
-			 * period is inserted at the beginning of the line.
-			 * 
-			 * o When a line of mail text is received by the SMTP server, it checks
-			 * the line. If the line is composed of a single period, it is
-			 * treated as the end of mail indicator. If the first character is a
-			 * period and there are other characters on the line, the first
-			 * character is deleted.
+			 * Dot-stuffing per RFC 5321 section 4.5.2:
+			 * If a line starts with '.', insert an extra '.'.
 			 */
-			c = fgetc(fp);
-			dprintf(sockfd, ".");
-			ungetc(c, fp);
+			fputc('.', out);
+			next = fgetc(fp);
+			ungetc(next, fp);
+			next = '.';
 		}
 		if (addhdr && tohdr != NULL && next == '\n') {
-			dprintf(sockfd, "To: %s\r\n", tohdr);
+			fprintf(out, "To: %s\r\n", tohdr);
 			addhdr = false;
 		}
-		ungetc(next, fp);
+		if (next != EOF)
+			ungetc(next, fp);
 	}
+	fflush(out);
+	fclose(out);
 }
 
 int write_dot(int sockfd)
