@@ -439,6 +439,12 @@ requeuemail(int listfd, int index, strlist *addrs, const char *addr)
 		return (false);
 	}
 	dfd = openat(listfd, dirname, O_DIRECTORY);
+	if(dfd < 0) {
+		log_error(LOG_ARGS, "Could not open directory %s",
+		    dirname);
+		free(dirname);
+		return (false);
+	}
 	addrfd = openat(dfd, "subscribers", O_WRONLY|O_CREAT|O_APPEND,
 			S_IRUSR|S_IWUSR);
 	if(addrfd < 0) {
