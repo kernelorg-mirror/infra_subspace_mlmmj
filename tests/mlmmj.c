@@ -176,6 +176,7 @@ ATF_TC_WITHOUT_HEAD(autosubscribe_sender);
 ATF_TC_WITHOUT_HEAD(voodoo_double_call);
 ATF_TC_WITHOUT_HEAD(voodoo_failure_cleans_queue);
 ATF_TC_WITHOUT_HEAD(digest_thread_list_format);
+ATF_TC_WITHOUT_HEAD(digest_thread_grouping);
 
 ATF_TC_BODY(random_int, tc)
 {
@@ -3405,6 +3406,90 @@ ATF_TC_BODY(digest_thread_list_format, tc)
 	free(queuepath);
 }
 
+ATF_TC_BODY(digest_thread_grouping, tc)
+{
+	struct ml ml;
+	int ret;
+	DIR *qdir;
+	struct dirent *entry;
+	char *queuepath = NULL;
+	char *line = NULL;
+	size_t linecap = 0;
+	FILE *fp;
+	int thread_count = 0;
+
+	init_ml(true);
+	ml_init(&ml);
+	ml.dir = "list";
+	ml_open(&ml, false);
+	setup_listtext(tc);
+
+	/* Create archive files: mail 2 is a reply to mail 1 (same topic) */
+	atf_utils_create_file("list/archive/1",
+	    "From: alice@example.org\n"
+	    "Subject: Test topic\n"
+	    "\n"
+	    "Body of mail 1\n");
+
+	atf_utils_create_file("list/archive/2",
+	    "From: bob@example.org\n"
+	    "Subject: Re: Test topic\n"
+	    "\n"
+	    "Body of reply\n");
+
+	atf_utils_create_file("list/archive/3",
+	    "From: charlie@example.org\n"
+	    "Subject: Different topic\n"
+	    "\n"
+	    "Body of mail 3\n");
+
+	ret = send_digest(&ml, 1, 3, 1, NULL, "/usr/bin/true");
+	ATF_REQUIRE_MSG(ret == 0, "send_digest failed: %d", ret);
+
+	/* Find the queue file */
+	qdir = opendir("list/queue");
+	ATF_REQUIRE(qdir != NULL);
+	while ((entry = readdir(qdir)) != NULL) {
+		if (entry->d_name[0] == '.')
+			continue;
+		if (entry->d_type == DT_DIR)
+			continue;
+		xasprintf(&queuepath, "list/queue/%s", entry->d_name);
+		break;
+	}
+	closedir(qdir);
+	ATF_REQUIRE_MSG(queuepath != NULL, "No queue file found");
+
+	/*
+	 * Count thread subjects in the digest.
+	 * Thread subjects appear as "- <subject>\n" lines where the
+	 * subject is NOT indented (unlike "from" lines which have
+	 * leading spaces). "Test topic" and "Re: Test topic" should
+	 * be grouped into one thread, so we expect 2 threads total:
+	 * "Test topic" and "Different topic".
+	 */
+	fp = fopen(queuepath, "r");
+	ATF_REQUIRE(fp != NULL);
+	while (getline(&line, &linecap, fp) > 0) {
+		/* Thread subject lines: "- <subject>\n" (from template) */
+		if (strncmp(line, "- ", 2) == 0) {
+			char *p = line + 2;
+			/* Skip lines with leading spaces (those are
+			 * "from" lines like "-       1 - alice@...") */
+			if (*p != ' ' && *p != '\n' && *p != '\0')
+				thread_count++;
+		}
+	}
+	fclose(fp);
+	free(line);
+
+	ATF_CHECK_MSG(thread_count == 2,
+	    "Expected 2 threads (Re: grouped), got %d", thread_count);
+
+	unlink(queuepath);
+	free(queuepath);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -3505,6 +3590,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, voodoo_double_call);
 	ATF_TP_ADD_TC(tp, voodoo_failure_cleans_queue);
 	ATF_TP_ADD_TC(tp, digest_thread_list_format);
+	ATF_TP_ADD_TC(tp, digest_thread_grouping);
 
 	return (atf_no_error());
 }

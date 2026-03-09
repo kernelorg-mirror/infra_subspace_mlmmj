@@ -146,7 +146,11 @@ static void rewind_thread_list(void * state)
 
 		thread_idx = -1;
 		for (j=0; j<num_threads; j++) {
-			if (strcmp(subj, threads[j].subject) == 0) {
+			/* subject is stored with trailing \n for display,
+			 * compare only the meaningful part */
+			if (strncmp(tmp, threads[j].subject,
+			    strlen(tmp)) == 0 &&
+			    threads[j].subject[strlen(tmp)] == '\n') {
 				thread_idx = j;
 				break;
 			}
