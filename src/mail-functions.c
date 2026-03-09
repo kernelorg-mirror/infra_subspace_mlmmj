@@ -78,7 +78,7 @@ int write_rcpt_to(int sockfd, const char *rcpt_addr)
 	return (write_sock(sockfd, "TO", "RCPT TO:<%s>\r\n", rcpt_addr));
 }
 
-void
+int
 write_mailbody(int sockfd, FILE *fp, const char *tohdr)
 {
 	int c, next;
@@ -89,7 +89,7 @@ write_mailbody(int sockfd, FILE *fp, const char *tohdr)
 	if (out == NULL) {
 		if (dupfd != -1)
 			close(dupfd);
-		return;
+		return -1;
 	}
 
 	while ((c = fgetc(fp)) != EOF) {
@@ -118,7 +118,12 @@ write_mailbody(int sockfd, FILE *fp, const char *tohdr)
 			ungetc(next, fp);
 	}
 	fflush(out);
+	if (ferror(out)) {
+		fclose(out);
+		return -1;
+	}
 	fclose(out);
+	return 0;
 }
 
 int write_dot(int sockfd)

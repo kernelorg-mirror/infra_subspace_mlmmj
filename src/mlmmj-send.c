@@ -138,7 +138,11 @@ int send_mail_verp(int sockfd, strlist *addrs, struct mail *mail,
 	}
 
 	rewind(mail->fp);
-	write_mailbody(sockfd, mail->fp, NULL);
+	retval = write_mailbody(sockfd, mail->fp, NULL);
+	if(retval) {
+		log_error(LOG_ARGS, "Could not write mail body\n");
+		return retval;
+	}
 
 	retval = write_dot(sockfd);
 	if(retval) {

@@ -328,7 +328,12 @@ send_mail(int sockfd, struct mail *mail, int listfd, int ctrlfd, bool bounce)
 		}
 	}
 
-	write_mailbody(sockfd, mail->fp, mail->addtohdr ? mail->to : NULL);
+	retval = write_mailbody(sockfd, mail->fp,
+	    mail->addtohdr ? mail->to : NULL);
+	if(retval) {
+		log_error(LOG_ARGS, "Could not write mail body\n");
+		return retval;
+	}
 
 	retval = write_dot(sockfd);
 	if(retval) {
