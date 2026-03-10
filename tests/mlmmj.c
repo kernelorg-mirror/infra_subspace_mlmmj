@@ -183,6 +183,8 @@ ATF_TC_WITHOUT_HEAD(save_hdr_if_needed);
 ATF_TC_WITHOUT_HEAD(autosubscribe_sender);
 ATF_TC_WITHOUT_HEAD(scan_headers_test);
 ATF_TC_WITHOUT_HEAD(substitute_test);
+ATF_TC_WITHOUT_HEAD(voodoo_replyto);
+ATF_TC_WITHOUT_HEAD(voodoo_prefix_dedup);
 ATF_TC_WITHOUT_HEAD(voodoo_header_manipulation);
 ATF_TC_WITHOUT_HEAD(voodoo_double_call);
 ATF_TC_WITHOUT_HEAD(voodoo_failure_cleans_queue);
@@ -3779,6 +3781,130 @@ ATF_TC_BODY(voodoo_header_manipulation, tc)
 	tll_free_and_free(delhdrs, free);
 }
 
+ATF_TC_BODY(voodoo_replyto, tc)
+{
+	strlist allheaders = tll_init();
+	strlist delhdrs = tll_init();
+	struct mailhdr readhdrs[] = {
+		{ "From:", 0, NULL },
+		{ "To:", 0, NULL },
+		{ "Subject:", 0, NULL },
+		{ NULL, 0, NULL }
+	};
+	int infd, outfd;
+
+	atf_utils_create_file("replyto_in.txt",
+	    "From: alice@example.org\n"
+	    "To: list@example.org\n"
+	    "Subject: Hello\n"
+	    "\n"
+	    "Body.\n");
+
+	infd = open("replyto_in.txt", O_RDONLY);
+	ATF_REQUIRE(infd >= 0);
+	outfd = open("replyto_out.txt", O_RDWR|O_CREAT|O_TRUNC, 0600);
+	ATF_REQUIRE(outfd >= 0);
+
+	/* replyto=1 should add Reply-To from From header */
+	ATF_REQUIRE_EQ(do_all_the_voodoo_here(infd, outfd, -1, -1,
+	    &delhdrs, readhdrs, &allheaders, NULL, 1), 0);
+	close(infd);
+	close(outfd);
+
+	if (!atf_utils_grep_file("Reply-To:.*alice@example.org", "replyto_out.txt")) {
+		atf_utils_cat_file("replyto_out.txt", ">");
+		atf_tc_fail("Reply-To header not added");
+	}
+	/* From should still be present */
+	if (!atf_utils_grep_file("From:.*alice@example.org", "replyto_out.txt")) {
+		atf_utils_cat_file("replyto_out.txt", ">");
+		atf_tc_fail("From header missing");
+	}
+
+	tll_free_and_free(allheaders, free);
+	tll_free_and_free(delhdrs, free);
+}
+
+ATF_TC_BODY(voodoo_prefix_dedup, tc)
+{
+	strlist allheaders = tll_init();
+	strlist delhdrs = tll_init();
+	struct mailhdr readhdrs[] = {
+		{ "From:", 0, NULL },
+		{ "To:", 0, NULL },
+		{ "Subject:", 0, NULL },
+		{ NULL, 0, NULL }
+	};
+	int infd, outfd;
+
+	/* Subject already contains the prefix: should not be duplicated */
+	atf_utils_create_file("dedup_in.txt",
+	    "From: bob@example.org\n"
+	    "To: list@example.org\n"
+	    "Subject: [LIST] Already prefixed\n"
+	    "\n"
+	    "Body.\n");
+
+	infd = open("dedup_in.txt", O_RDONLY);
+	ATF_REQUIRE(infd >= 0);
+	outfd = open("dedup_out.txt", O_RDWR|O_CREAT|O_TRUNC, 0600);
+	ATF_REQUIRE(outfd >= 0);
+
+	ATF_REQUIRE_EQ(do_all_the_voodoo_here(infd, outfd, -1, -1,
+	    &delhdrs, readhdrs, &allheaders, "[LIST]", 0), 0);
+	close(infd);
+	close(outfd);
+
+	/* Should have exactly one Subject line, not duplicated prefix */
+	if (!atf_utils_grep_file("Subject:.*\\[LIST\\].*Already prefixed", "dedup_out.txt")) {
+		atf_utils_cat_file("dedup_out.txt", ">");
+		atf_tc_fail("Subject not found");
+	}
+	/* Verify no double prefix */
+	if (atf_utils_grep_file("\\[LIST\\].*\\[LIST\\]", "dedup_out.txt")) {
+		atf_utils_cat_file("dedup_out.txt", ">");
+		atf_tc_fail("Subject prefix duplicated");
+	}
+
+	tll_free_and_free(allheaders, free);
+	tll_free_and_free(delhdrs, free);
+
+	/* Mail without Subject: prefix should be added as new Subject */
+	{
+	strlist allheaders2 = tll_init();
+	struct mailhdr readhdrs2[] = {
+		{ "From:", 0, NULL },
+		{ "To:", 0, NULL },
+		{ "Subject:", 0, NULL },
+		{ NULL, 0, NULL }
+	};
+
+	atf_utils_create_file("nosubj_in.txt",
+	    "From: bob@example.org\n"
+	    "To: list@example.org\n"
+	    "\n"
+	    "No subject mail.\n");
+
+	infd = open("nosubj_in.txt", O_RDONLY);
+	ATF_REQUIRE(infd >= 0);
+	outfd = open("nosubj_out.txt", O_RDWR|O_CREAT|O_TRUNC, 0600);
+	ATF_REQUIRE(outfd >= 0);
+
+	ATF_REQUIRE_EQ(do_all_the_voodoo_here(infd, outfd, -1, -1,
+	    &delhdrs, readhdrs2, &allheaders2, "[LIST]", 0), 0);
+	close(infd);
+	close(outfd);
+
+	/* A Subject: header should be added with the prefix */
+	if (!atf_utils_grep_file("Subject: \\[LIST\\]", "nosubj_out.txt")) {
+		atf_utils_cat_file("nosubj_out.txt", ">");
+		atf_tc_fail("Subject not added for mail without subject");
+	}
+
+	tll_free_and_free(allheaders2, free);
+	}
+}
+
 /*
  * Regression test: calling do_all_the_voodoo_here() twice with the same
  * allhdrs list (without clearing it) used to trigger an assertion in
@@ -4350,6 +4476,8 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, autosubscribe_sender);
 	ATF_TP_ADD_TC(tp, scan_headers_test);
 	ATF_TP_ADD_TC(tp, substitute_test);
+	ATF_TP_ADD_TC(tp, voodoo_replyto);
+	ATF_TP_ADD_TC(tp, voodoo_prefix_dedup);
 	ATF_TP_ADD_TC(tp, voodoo_header_manipulation);
 	ATF_TP_ADD_TC(tp, voodoo_double_call);
 	ATF_TP_ADD_TC(tp, voodoo_failure_cleans_queue);
