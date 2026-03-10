@@ -181,6 +181,7 @@ ATF_TC_WITHOUT_HEAD(unistr_roundtrip);
 ATF_TC_WITHOUT_HEAD(line_startwithany);
 ATF_TC_WITHOUT_HEAD(save_hdr_if_needed);
 ATF_TC_WITHOUT_HEAD(autosubscribe_sender);
+ATF_TC_WITHOUT_HEAD(voodoo_header_manipulation);
 ATF_TC_WITHOUT_HEAD(voodoo_double_call);
 ATF_TC_WITHOUT_HEAD(voodoo_failure_cleans_queue);
 ATF_TC_WITHOUT_HEAD(checkwait_smtpreply_connect);
@@ -3539,6 +3540,93 @@ ATF_TC_BODY(autosubscribe_sender, tc)
 	}
 }
 
+ATF_TC_BODY(voodoo_header_manipulation, tc)
+{
+	strlist allheaders = tll_init();
+	strlist delhdrs = tll_init();
+	struct mailhdr readhdrs[] = {
+		{ "From:", 0, NULL },
+		{ "To:", 0, NULL },
+		{ "Subject:", 0, NULL },
+		{ NULL, 0, NULL }
+	};
+	int infd, outfd, hdrfd, footfd, ret;
+
+	/* Create a test email */
+	atf_utils_create_file("voodoo_in.txt",
+	    "From: sender@example.org\n"
+	    "To: list@example.org\n"
+	    "Return-Path: <sender@example.org>\n"
+	    "Subject: Hello\n"
+	    "\n"
+	    "Body text here.\n");
+
+	/* Delete Return-Path header */
+	tll_push_back(delhdrs, strdup("Return-Path:"));
+
+	/* Custom header to inject */
+	atf_utils_create_file("customhdr.txt", "X-List-ID: mylist\n");
+	hdrfd = open("customhdr.txt", O_RDONLY);
+	ATF_REQUIRE(hdrfd >= 0);
+
+	/* Footer to inject */
+	atf_utils_create_file("footer.txt", "-- \nMailing list footer\n");
+	footfd = open("footer.txt", O_RDONLY);
+	ATF_REQUIRE(footfd >= 0);
+
+	infd = open("voodoo_in.txt", O_RDONLY);
+	ATF_REQUIRE(infd >= 0);
+	outfd = open("voodoo_out.txt", O_RDWR|O_CREAT|O_TRUNC, 0600);
+	ATF_REQUIRE(outfd >= 0);
+
+	ret = do_all_the_voodoo_here(infd, outfd, hdrfd, footfd,
+	    &delhdrs, readhdrs, &allheaders, "[LIST]", 0);
+	ATF_REQUIRE_EQ(ret, 0);
+	close(infd);
+	close(outfd);
+
+	/* Verify readhdrs captured the values */
+	ATF_REQUIRE_EQ(readhdrs[0].valuecount, 1);
+	ATF_REQUIRE(strstr(readhdrs[0].values[0], "sender@example.org") != NULL);
+	ATF_REQUIRE_EQ(readhdrs[2].valuecount, 1);
+
+	/* Verify output */
+	const char *path = "voodoo_out.txt";
+
+	/* Return-Path should be deleted */
+	if (atf_utils_grep_file("Return-Path:", path)) {
+		atf_utils_cat_file(path, ">");
+		atf_tc_fail("Return-Path should have been deleted");
+	}
+
+	/* Custom header should be present */
+	if (!atf_utils_grep_file("X-List-ID: mylist", path)) {
+		atf_utils_cat_file(path, ">");
+		atf_tc_fail("Custom header X-List-ID missing");
+	}
+
+	/* Subject should have prefix */
+	if (!atf_utils_grep_file("Subject:.*\\[LIST\\].*Hello", path)) {
+		atf_utils_cat_file(path, ">");
+		atf_tc_fail("Subject prefix [LIST] missing");
+	}
+
+	/* Footer should be present */
+	if (!atf_utils_grep_file("Mailing list footer", path)) {
+		atf_utils_cat_file(path, ">");
+		atf_tc_fail("Footer missing");
+	}
+
+	/* Body should be present */
+	if (!atf_utils_grep_file("Body text here", path)) {
+		atf_utils_cat_file(path, ">");
+		atf_tc_fail("Body missing");
+	}
+
+	tll_free_and_free(allheaders, free);
+	tll_free_and_free(delhdrs, free);
+}
+
 /*
  * Regression test: calling do_all_the_voodoo_here() twice with the same
  * allhdrs list (without clearing it) used to trigger an assertion in
@@ -4108,6 +4196,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, line_startwithany);
 	ATF_TP_ADD_TC(tp, save_hdr_if_needed);
 	ATF_TP_ADD_TC(tp, autosubscribe_sender);
+	ATF_TP_ADD_TC(tp, voodoo_header_manipulation);
 	ATF_TP_ADD_TC(tp, voodoo_double_call);
 	ATF_TP_ADD_TC(tp, voodoo_failure_cleans_queue);
 	ATF_TP_ADD_TC(tp, checkwait_smtpreply_connect);
