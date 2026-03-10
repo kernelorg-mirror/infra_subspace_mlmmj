@@ -181,6 +181,7 @@ ATF_TC_WITHOUT_HEAD(unistr_roundtrip);
 ATF_TC_WITHOUT_HEAD(line_startwithany);
 ATF_TC_WITHOUT_HEAD(save_hdr_if_needed);
 ATF_TC_WITHOUT_HEAD(autosubscribe_sender);
+ATF_TC_WITHOUT_HEAD(substitute_test);
 ATF_TC_WITHOUT_HEAD(voodoo_header_manipulation);
 ATF_TC_WITHOUT_HEAD(voodoo_double_call);
 ATF_TC_WITHOUT_HEAD(voodoo_failure_cleans_queue);
@@ -3540,6 +3541,66 @@ ATF_TC_BODY(autosubscribe_sender, tc)
 	}
 }
 
+ATF_TC_BODY(substitute_test, tc)
+{
+	struct ml ml;
+	char *result;
+
+	init_ml(true);
+	ml_init(&ml);
+	ml.dir = "list";
+	ATF_REQUIRE(ml_open(&ml, false));
+
+	/* Create a simple text template */
+	atf_utils_create_file("subst_in", "Hello $mytoken$\n");
+	int fd = open("subst_in", O_RDONLY);
+	text *txt = open_text_fd(fd);
+	ATF_REQUIRE(txt != NULL);
+	register_unformatted(txt, "mytoken", "world");
+
+	/* Plain text without tokens */
+	result = substitute("no tokens here", ml.fd, ml.ctrlfd, txt);
+	ATF_REQUIRE_STREQ(result, "no tokens here");
+	free(result);
+
+	/* Simple token substitution */
+	result = substitute("Hello $mytoken$!", ml.fd, ml.ctrlfd, txt);
+	ATF_REQUIRE_STREQ(result, "Hello world!");
+	free(result);
+
+	/* Multiple tokens on same line */
+	result = substitute("$mytoken$ and $mytoken$", ml.fd, ml.ctrlfd, txt);
+	ATF_REQUIRE_STREQ(result, "world and world");
+	free(result);
+
+	/* Unknown token: preserved as-is */
+	result = substitute("$unknown$", ml.fd, ml.ctrlfd, txt);
+	ATF_REQUIRE_STREQ(result, "$unknown$");
+	free(result);
+
+	/* Lone $ without closing: passed through */
+	result = substitute("price is $5", ml.fd, ml.ctrlfd, txt);
+	ATF_REQUIRE_STREQ(result, "price is $5");
+	free(result);
+
+	/* Empty string */
+	result = substitute("", ml.fd, ml.ctrlfd, txt);
+	ATF_REQUIRE_STREQ(result, "");
+	free(result);
+
+	/* Token at start and end */
+	result = substitute("$mytoken$", ml.fd, ml.ctrlfd, txt);
+	ATF_REQUIRE_STREQ(result, "world");
+	free(result);
+
+	/* Adjacent tokens */
+	result = substitute("$mytoken$$mytoken$", ml.fd, ml.ctrlfd, txt);
+	ATF_REQUIRE_STREQ(result, "worldworld");
+	free(result);
+
+	close_text(txt);
+}
+
 ATF_TC_BODY(voodoo_header_manipulation, tc)
 {
 	strlist allheaders = tll_init();
@@ -4196,6 +4257,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, line_startwithany);
 	ATF_TP_ADD_TC(tp, save_hdr_if_needed);
 	ATF_TP_ADD_TC(tp, autosubscribe_sender);
+	ATF_TP_ADD_TC(tp, substitute_test);
 	ATF_TP_ADD_TC(tp, voodoo_header_manipulation);
 	ATF_TP_ADD_TC(tp, voodoo_double_call);
 	ATF_TP_ADD_TC(tp, voodoo_failure_cleans_queue);
