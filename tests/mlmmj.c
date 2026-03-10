@@ -175,6 +175,10 @@ ATF_TC_WITHOUT_HEAD(save_hdr_if_needed);
 ATF_TC_WITHOUT_HEAD(autosubscribe_sender);
 ATF_TC_WITHOUT_HEAD(voodoo_double_call);
 ATF_TC_WITHOUT_HEAD(voodoo_failure_cleans_queue);
+ATF_TC_WITHOUT_HEAD(checkwait_smtpreply_connect);
+ATF_TC_WITHOUT_HEAD(checkwait_smtpreply_ehlo_multiline);
+ATF_TC_WITHOUT_HEAD(checkwait_smtpreply_errors);
+ATF_TC_WITHOUT_HEAD(checkwait_smtpreply_closed);
 ATF_TC_WITHOUT_HEAD(digest_thread_list_format);
 ATF_TC_WITHOUT_HEAD(digest_thread_grouping);
 
@@ -3314,6 +3318,165 @@ ATF_TC_BODY(voodoo_failure_cleans_queue, tc)
 	tll_free_and_free(allheaders, free);
 }
 
+ATF_TC_BODY(checkwait_smtpreply_connect, tc)
+{
+	int sp[2];
+	char *reply;
+
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, sp) >= 0);
+
+	/* Valid 220 greeting: checkwait returns NULL (success) */
+	dprintf(sp[1], "220 mail.example.org ESMTP\r\n");
+	reply = checkwait_smtpreply(sp[0], MLMMJ_CONNECT);
+	ATF_CHECK_MSG(reply == NULL, "Expected NULL for valid 220, got [%s]", reply);
+	free(reply);
+
+	/* Valid 250 for HELO */
+	dprintf(sp[1], "250 mail.example.org\r\n");
+	reply = checkwait_smtpreply(sp[0], MLMMJ_HELO);
+	ATF_CHECK_MSG(reply == NULL, "Expected NULL for valid 250 HELO, got [%s]", reply);
+	free(reply);
+
+	/* Valid 250 for FROM */
+	dprintf(sp[1], "250 2.1.0 Ok\r\n");
+	reply = checkwait_smtpreply(sp[0], MLMMJ_FROM);
+	ATF_CHECK_MSG(reply == NULL, "Expected NULL for valid 250 FROM, got [%s]", reply);
+	free(reply);
+
+	/* Valid 250 for RCPT TO */
+	dprintf(sp[1], "250 2.1.5 Ok\r\n");
+	reply = checkwait_smtpreply(sp[0], MLMMJ_RCPTTO);
+	ATF_CHECK_MSG(reply == NULL, "Expected NULL for valid 250 RCPT, got [%s]", reply);
+	free(reply);
+
+	/* Valid 354 for DATA */
+	dprintf(sp[1], "354 End data with <CR><LF>.<CR><LF>\r\n");
+	reply = checkwait_smtpreply(sp[0], MLMMJ_DATA);
+	ATF_CHECK_MSG(reply == NULL, "Expected NULL for valid 354, got [%s]", reply);
+	free(reply);
+
+	/* Valid 250 for DOT */
+	dprintf(sp[1], "250 2.0.0 Ok: queued\r\n");
+	reply = checkwait_smtpreply(sp[0], MLMMJ_DOT);
+	ATF_CHECK_MSG(reply == NULL, "Expected NULL for valid 250 DOT, got [%s]", reply);
+	free(reply);
+
+	/* Valid 221 for QUIT */
+	dprintf(sp[1], "221 2.0.0 Bye\r\n");
+	reply = checkwait_smtpreply(sp[0], MLMMJ_QUIT);
+	ATF_CHECK_MSG(reply == NULL, "Expected NULL for valid 221 QUIT, got [%s]", reply);
+	free(reply);
+
+	/* Valid 250 for RSET */
+	dprintf(sp[1], "250 2.0.0 Ok\r\n");
+	reply = checkwait_smtpreply(sp[0], MLMMJ_RSET);
+	ATF_CHECK_MSG(reply == NULL, "Expected NULL for valid 250 RSET, got [%s]", reply);
+	free(reply);
+
+	close(sp[0]);
+	close(sp[1]);
+}
+
+ATF_TC_BODY(checkwait_smtpreply_ehlo_multiline, tc)
+{
+	int sp[2];
+	char *reply;
+
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, sp) >= 0);
+
+	/* EHLO multi-line response: 250- continuation lines consumed,
+	 * final 250 line checked */
+	dprintf(sp[1],
+	    "250-mail.example.org\r\n"
+	    "250-PIPELINING\r\n"
+	    "250-SIZE 20480000\r\n"
+	    "250-8BITMIME\r\n"
+	    "250-DSN\r\n"
+	    "250 SMTPUTF8\r\n");
+	reply = checkwait_smtpreply(sp[0], MLMMJ_EHLO);
+	ATF_CHECK_MSG(reply == NULL,
+	    "Expected NULL for valid EHLO multi-line, got [%s]", reply);
+	free(reply);
+
+	/* EHLO with error on final line */
+	dprintf(sp[1],
+	    "250-mail.example.org\r\n"
+	    "250-PIPELINING\r\n"
+	    "501 Syntax error\r\n");
+	reply = checkwait_smtpreply(sp[0], MLMMJ_EHLO);
+	ATF_CHECK_MSG(reply != NULL,
+	    "Expected error reply for failed EHLO");
+	ATF_CHECK(strncmp(reply, "501", 3) == 0);
+	free(reply);
+
+	close(sp[0]);
+	close(sp[1]);
+}
+
+ATF_TC_BODY(checkwait_smtpreply_errors, tc)
+{
+	int sp[2];
+	char *reply;
+
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, sp) >= 0);
+
+	/* 421 Service not available on CONNECT */
+	dprintf(sp[1], "421 Service not available\r\n");
+	reply = checkwait_smtpreply(sp[0], MLMMJ_CONNECT);
+	ATF_CHECK_MSG(reply != NULL, "Expected error for 421");
+	ATF_CHECK(strncmp(reply, "421", 3) == 0);
+	free(reply);
+
+	/* 550 on RCPT TO */
+	dprintf(sp[1], "550 5.1.1 User unknown\r\n");
+	reply = checkwait_smtpreply(sp[0], MLMMJ_RCPTTO);
+	ATF_CHECK_MSG(reply != NULL, "Expected error for 550 RCPT");
+	ATF_CHECK(reply[0] == '5' && reply[1] == '5');
+	free(reply);
+
+	/* 452 on FROM (temporary failure) */
+	dprintf(sp[1], "452 Too many recipients\r\n");
+	reply = checkwait_smtpreply(sp[0], MLMMJ_FROM);
+	ATF_CHECK_MSG(reply != NULL, "Expected error for 452 FROM");
+	free(reply);
+
+	/* 503 on DATA (bad sequence) */
+	dprintf(sp[1], "503 Bad sequence of commands\r\n");
+	reply = checkwait_smtpreply(sp[0], MLMMJ_DATA);
+	ATF_CHECK_MSG(reply != NULL, "Expected error for 503 DATA");
+	free(reply);
+
+	/* 500 on EHLO (unknown command) */
+	dprintf(sp[1], "500 Unrecognized command\r\n");
+	reply = checkwait_smtpreply(sp[0], MLMMJ_EHLO);
+	ATF_CHECK_MSG(reply != NULL, "Expected error for 500 EHLO");
+	free(reply);
+
+	close(sp[0]);
+	close(sp[1]);
+}
+
+ATF_TC_BODY(checkwait_smtpreply_closed, tc)
+{
+	int sp[2];
+	char *reply;
+
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, sp) >= 0);
+
+	/* Connection closed: mygetline returns NULL,
+	 * checkwait returns a descriptive error string */
+	close(sp[1]);
+	reply = checkwait_smtpreply(sp[0], MLMMJ_CONNECT);
+	ATF_CHECK_MSG(reply != NULL,
+	    "Expected error string for closed connection");
+	ATF_CHECK(strstr(reply, "none") != NULL ||
+	    strstr(reply, "error") != NULL ||
+	    strstr(reply, "closed") != NULL);
+	free(reply);
+
+	close(sp[0]);
+}
+
 ATF_TC_BODY(digest_thread_list_format, tc)
 {
 	struct ml ml;
@@ -3589,6 +3752,10 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, autosubscribe_sender);
 	ATF_TP_ADD_TC(tp, voodoo_double_call);
 	ATF_TP_ADD_TC(tp, voodoo_failure_cleans_queue);
+	ATF_TP_ADD_TC(tp, checkwait_smtpreply_connect);
+	ATF_TP_ADD_TC(tp, checkwait_smtpreply_ehlo_multiline);
+	ATF_TP_ADD_TC(tp, checkwait_smtpreply_errors);
+	ATF_TP_ADD_TC(tp, checkwait_smtpreply_closed);
 	ATF_TP_ADD_TC(tp, digest_thread_list_format);
 	ATF_TP_ADD_TC(tp, digest_thread_grouping);
 
