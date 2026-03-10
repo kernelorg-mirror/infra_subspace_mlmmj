@@ -131,6 +131,9 @@ ATF_TC_WITHOUT_HEAD(is_subbed_types);
 ATF_TC_WITHOUT_HEAD(unsubscribe_test);
 ATF_TC_WITHOUT_HEAD(getaddrsfromfile);
 ATF_TC_WITHOUT_HEAD(dumpfd2fd);
+ATF_TC_WITHOUT_HEAD(dumpfd2fd_large);
+ATF_TC_WITHOUT_HEAD(dumpfd2fd_empty);
+ATF_TC_WITHOUT_HEAD(process_headers_fd_test);
 ATF_TC_WITHOUT_HEAD(copy_file);
 ATF_TC_WITHOUT_HEAD(copy_file_1);
 ATF_TC_WITHOUT_HEAD(copy_file_2);
@@ -1515,6 +1518,108 @@ ATF_TC_BODY(dumpfd2fd, tc)
 		atf_utils_cat_file("to.txt", "");
 		atf_tc_fail("Unexpected output");
 	}
+}
+
+ATF_TC_BODY(dumpfd2fd_large, tc)
+{
+	/* Test with data larger than DUMPBUF (4096) */
+	int from, to;
+	FILE *fp;
+	int i;
+	char buf[16];
+
+	fp = fopen("large_from", "w");
+	ATF_REQUIRE(fp != NULL);
+	for (i = 0; i < 1000; i++)
+		fprintf(fp, "line %04d: abcdefghijklmnopqrstuvwxyz\n", i);
+	fclose(fp);
+
+	from = open("large_from", O_RDONLY);
+	to = open("large_to", O_WRONLY|O_CREAT|O_TRUNC, 0644);
+	ATF_REQUIRE_EQ(dumpfd2fd(from, to), 0);
+	close(from);
+	close(to);
+
+	/* Verify first and last lines */
+	fp = fopen("large_to", "r");
+	ATF_REQUIRE(fp != NULL);
+	ATF_REQUIRE(fgets(buf, sizeof(buf), fp) != NULL);
+	ATF_REQUIRE(strncmp(buf, "line 0000:", 10) == 0);
+	fclose(fp);
+
+	/* Verify file sizes match */
+	struct stat st1, st2;
+	ATF_REQUIRE_EQ(stat("large_from", &st1), 0);
+	ATF_REQUIRE_EQ(stat("large_to", &st2), 0);
+	ATF_REQUIRE_EQ(st1.st_size, st2.st_size);
+}
+
+ATF_TC_BODY(dumpfd2fd_empty, tc)
+{
+	atf_utils_create_file("empty_from", "");
+	int from = open("empty_from", O_RDONLY);
+	int to = open("empty_to", O_WRONLY|O_CREAT|O_TRUNC, 0644);
+	ATF_REQUIRE_EQ(dumpfd2fd(from, to), 0);
+	close(from);
+	close(to);
+
+	struct stat st;
+	ATF_REQUIRE_EQ(stat("empty_to", &st), 0);
+	ATF_REQUIRE_EQ(st.st_size, 0);
+}
+
+ATF_TC_BODY(process_headers_fd_test, tc)
+{
+	int infd, outfd;
+
+	/* Simple header passthrough */
+	atf_utils_create_file("hdr_in", "X-Custom: value\n\n");
+	infd = open("hdr_in", O_RDONLY);
+	outfd = open("hdr_out", O_WRONLY|O_CREAT|O_TRUNC, 0644);
+	ATF_REQUIRE_EQ(process_headers_fd(infd, outfd, "sender@test"), 0);
+	close(infd);
+	close(outfd);
+	if (!atf_utils_compare_file("hdr_out", "X-Custom: value\n")) {
+		atf_utils_cat_file("hdr_out", ">");
+		atf_tc_fail("Simple header passthrough failed");
+	}
+
+	/* $posteraddr$ substitution */
+	atf_utils_create_file("hdr_in2", "Reply-To: $posteraddr$\n\n");
+	infd = open("hdr_in2", O_RDONLY);
+	outfd = open("hdr_out2", O_WRONLY|O_CREAT|O_TRUNC, 0644);
+	ATF_REQUIRE_EQ(process_headers_fd(infd, outfd, "bob@example.com"), 0);
+	close(infd);
+	close(outfd);
+	if (!atf_utils_compare_file("hdr_out2", "Reply-To: bob@example.com\n")) {
+		atf_utils_cat_file("hdr_out2", ">");
+		atf_tc_fail("$posteraddr$ substitution failed");
+	}
+
+	/* Multiple headers with substitution */
+	atf_utils_create_file("hdr_in3",
+	    "X-Original-From: $posteraddr$\nX-List: mylist\n\n");
+	infd = open("hdr_in3", O_RDONLY);
+	outfd = open("hdr_out3", O_WRONLY|O_CREAT|O_TRUNC, 0644);
+	ATF_REQUIRE_EQ(process_headers_fd(infd, outfd, "alice@test.org"), 0);
+	close(infd);
+	close(outfd);
+	if (!atf_utils_compare_file("hdr_out3",
+	    "X-Original-From: alice@test.org\nX-List: mylist\n")) {
+		atf_utils_cat_file("hdr_out3", ">");
+		atf_tc_fail("Multiple headers substitution failed");
+	}
+
+	/* Empty input */
+	atf_utils_create_file("hdr_in4", "");
+	infd = open("hdr_in4", O_RDONLY);
+	outfd = open("hdr_out4", O_WRONLY|O_CREAT|O_TRUNC, 0644);
+	ATF_REQUIRE_EQ(process_headers_fd(infd, outfd, "test@test"), 0);
+	close(infd);
+	close(outfd);
+	struct stat st;
+	ATF_REQUIRE_EQ(stat("hdr_out4", &st), 0);
+	ATF_REQUIRE_EQ(st.st_size, 0);
 }
 
 ATF_TC_BODY(copy_file, tc)
@@ -3953,6 +4058,9 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, unsubscribe_test);
 	ATF_TP_ADD_TC(tp, getaddrsfromfile);
 	ATF_TP_ADD_TC(tp, dumpfd2fd);
+	ATF_TP_ADD_TC(tp, dumpfd2fd_large);
+	ATF_TP_ADD_TC(tp, dumpfd2fd_empty);
+	ATF_TP_ADD_TC(tp, process_headers_fd_test);
 	ATF_TP_ADD_TC(tp, copy_file);
 	ATF_TP_ADD_TC(tp, copy_file_1);
 	ATF_TP_ADD_TC(tp, copy_file_2);
