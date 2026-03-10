@@ -173,6 +173,8 @@ ATF_TC_WITHOUT_HEAD(parse_content_type);
 ATF_TC_WITHOUT_HEAD(find_in_list);
 ATF_TC_WITHOUT_HEAD(do_access);
 ATF_TC_WITHOUT_HEAD(unistr_header_to_utf8);
+ATF_TC_WITHOUT_HEAD(unistr_utf8_to_header);
+ATF_TC_WITHOUT_HEAD(unistr_roundtrip);
 ATF_TC_WITHOUT_HEAD(line_startwithany);
 ATF_TC_WITHOUT_HEAD(save_hdr_if_needed);
 ATF_TC_WITHOUT_HEAD(autosubscribe_sender);
@@ -3205,6 +3207,75 @@ ATF_TC_BODY(unistr_header_to_utf8, tc)
     ATF_REQUIRE_STREQ(out, "useless but why not");
 }
 
+ATF_TC_BODY(unistr_utf8_to_header, tc)
+{
+	char *out;
+
+	/* Pure ASCII: returned as-is (trimmed) */
+	out = unistr_utf8_to_header("Hello world");
+	ATF_REQUIRE(out != NULL);
+	ATF_REQUIRE_STREQ(out, "Hello world");
+	free(out);
+
+	/* Leading/trailing whitespace trimmed */
+	out = unistr_utf8_to_header("  Hello  ");
+	ATF_REQUIRE(out != NULL);
+	ATF_REQUIRE_STREQ(out, "Hello");
+	free(out);
+
+	/* Non-ASCII: Q-encoded */
+	out = unistr_utf8_to_header("café");
+	ATF_REQUIRE(out != NULL);
+	ATF_REQUIRE(strstr(out, "=?utf-8?q?") != NULL);
+	ATF_REQUIRE(strstr(out, "?=") != NULL);
+	free(out);
+
+	/* Japanese: Q-encoded */
+	out = unistr_utf8_to_header("太郎");
+	ATF_REQUIRE(out != NULL);
+	ATF_REQUIRE(strstr(out, "=?utf-8?q?") != NULL);
+	free(out);
+
+	/* Spaces become underscores in Q-encoding */
+	out = unistr_utf8_to_header("héllo wörld");
+	ATF_REQUIRE(out != NULL);
+	ATF_REQUIRE(strstr(out, "_") != NULL);
+	free(out);
+}
+
+ATF_TC_BODY(unistr_roundtrip, tc)
+{
+	char *encoded, *decoded;
+
+	/* ASCII roundtrip */
+	encoded = unistr_utf8_to_header("Hello world");
+	decoded = unistr_header_to_utf8(encoded);
+	ATF_REQUIRE_STREQ(decoded, "Hello world");
+	free(encoded);
+	free(decoded);
+
+	/* French accents roundtrip */
+	encoded = unistr_utf8_to_header("café résumé");
+	decoded = unistr_header_to_utf8(encoded);
+	ATF_REQUIRE_STREQ(decoded, "café résumé");
+	free(encoded);
+	free(decoded);
+
+	/* Japanese roundtrip */
+	encoded = unistr_utf8_to_header("太郎");
+	decoded = unistr_header_to_utf8(encoded);
+	ATF_REQUIRE_STREQ(decoded, "太郎");
+	free(encoded);
+	free(decoded);
+
+	/* Russian roundtrip */
+	encoded = unistr_utf8_to_header("Привет мир");
+	decoded = unistr_header_to_utf8(encoded);
+	ATF_REQUIRE_STREQ(decoded, "Привет мир");
+	free(encoded);
+	free(decoded);
+}
+
 ATF_TC_BODY(line_startwithany, tc)
 {
 	strlist l  = tll_init();
@@ -3841,6 +3912,8 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, find_in_list);
 	ATF_TP_ADD_TC(tp, do_access);
 	ATF_TP_ADD_TC(tp, unistr_header_to_utf8);
+	ATF_TP_ADD_TC(tp, unistr_utf8_to_header);
+	ATF_TP_ADD_TC(tp, unistr_roundtrip);
 	ATF_TP_ADD_TC(tp, line_startwithany);
 	ATF_TP_ADD_TC(tp, save_hdr_if_needed);
 	ATF_TP_ADD_TC(tp, autosubscribe_sender);
