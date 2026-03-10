@@ -126,6 +126,9 @@ ATF_TC_WITHOUT_HEAD(getlistdelim_3);
 ATF_TC_WITHOUT_HEAD(getlistdelim_4);
 ATF_TC_WITHOUT_HEAD(statctrl);
 ATF_TC_WITHOUT_HEAD(is_subbed_in);
+ATF_TC_WITHOUT_HEAD(is_subbed_normal);
+ATF_TC_WITHOUT_HEAD(is_subbed_types);
+ATF_TC_WITHOUT_HEAD(unsubscribe_test);
 ATF_TC_WITHOUT_HEAD(getaddrsfromfile);
 ATF_TC_WITHOUT_HEAD(dumpfd2fd);
 ATF_TC_WITHOUT_HEAD(copy_file);
@@ -1338,6 +1341,94 @@ ATF_TC_BODY(is_subbed_in, tc)
 		is_subbed_in(-1, "plop", "meh");
 	}
 	atf_utils_wait(p, EXIT_FAILURE, "", "");
+}
+
+ATF_TC_BODY(is_subbed_normal, tc)
+{
+	struct ml ml;
+	init_ml(true);
+	ml_init(&ml);
+	ml.dir = "list";
+	ml_open(&ml, false);
+
+	/* No subscribers yet */
+	ATF_REQUIRE_EQ(is_subbed(ml.fd, "user@example.com", false), SUB_NONE);
+
+	/* Add a normal subscriber */
+	atf_utils_create_file("list/subscribers.d/u", "user@example.com\n");
+
+	/* Re-open to get fresh fd */
+	ml_open(&ml, false);
+	ATF_REQUIRE_EQ(is_subbed(ml.fd, "user@example.com", false), SUB_NORMAL);
+
+	/* Case-insensitive match */
+	ATF_REQUIRE_EQ(is_subbed(ml.fd, "User@Example.COM", false), SUB_NORMAL);
+
+	/* Non-subscribed address */
+	ATF_REQUIRE_EQ(is_subbed(ml.fd, "other@example.com", false), SUB_NONE);
+}
+
+ATF_TC_BODY(is_subbed_types, tc)
+{
+	struct ml ml;
+	init_ml(true);
+	ml_init(&ml);
+	ml.dir = "list";
+	ml_open(&ml, false);
+
+	/* Add a digest subscriber */
+	atf_utils_create_file("list/digesters.d/d", "digest@example.com\n");
+	ml_open(&ml, false);
+	ATF_REQUIRE_EQ(is_subbed(ml.fd, "digest@example.com", false), SUB_DIGEST);
+
+	/* Add a nomail subscriber */
+	atf_utils_create_file("list/nomailsubs.d/n", "nomail@example.com\n");
+	ml_open(&ml, false);
+	ATF_REQUIRE_EQ(is_subbed(ml.fd, "nomail@example.com", false), SUB_NOMAIL);
+
+	/* Add same address as both normal and digest -> SUB_BOTH */
+	atf_utils_create_file("list/subscribers.d/b", "both@example.com\n");
+	atf_utils_create_file("list/digesters.d/b", "both@example.com\n");
+	ml_open(&ml, false);
+	ATF_REQUIRE_EQ(is_subbed(ml.fd, "both@example.com", true), SUB_BOTH);
+
+	/* Without 'both' flag, returns SUB_NORMAL on first match */
+	ATF_REQUIRE_EQ(is_subbed(ml.fd, "both@example.com", false), SUB_NORMAL);
+}
+
+ATF_TC_BODY(unsubscribe_test, tc)
+{
+	struct ml ml;
+	init_ml(true);
+	ml_init(&ml);
+	ml.dir = "list";
+	ml_open(&ml, false);
+
+	/* Create subscriber files */
+	atf_utils_create_file("list/subscribers.d/u",
+	    "user1@example.com\nuser2@example.com\n");
+	atf_utils_create_file("list/digesters.d/d", "digest@example.com\n");
+	ml_open(&ml, false);
+
+	/* Verify initial state */
+	ATF_REQUIRE_EQ(is_subbed(ml.fd, "user1@example.com", false), SUB_NORMAL);
+	ATF_REQUIRE_EQ(is_subbed(ml.fd, "user2@example.com", false), SUB_NORMAL);
+	ATF_REQUIRE_EQ(is_subbed(ml.fd, "digest@example.com", false), SUB_DIGEST);
+
+	/* Unsubscribe user1 from normal */
+	ATF_REQUIRE(unsubscribe(ml.fd, "user1@example.com", SUB_NORMAL));
+	ml_open(&ml, false);
+	ATF_REQUIRE_EQ(is_subbed(ml.fd, "user1@example.com", false), SUB_NONE);
+	/* user2 should still be subscribed */
+	ATF_REQUIRE_EQ(is_subbed(ml.fd, "user2@example.com", false), SUB_NORMAL);
+
+	/* Unsubscribe digest subscriber */
+	ATF_REQUIRE(unsubscribe(ml.fd, "digest@example.com", SUB_DIGEST));
+	ml_open(&ml, false);
+	ATF_REQUIRE_EQ(is_subbed(ml.fd, "digest@example.com", false), SUB_NONE);
+
+	/* Unsubscribe non-existent address should still return true */
+	ATF_REQUIRE(unsubscribe(ml.fd, "nobody@example.com", SUB_NORMAL));
 }
 
 ATF_TC_BODY(getaddrsfromfile, tc)
@@ -3703,6 +3794,9 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, getlistdelim_4);
 	ATF_TP_ADD_TC(tp, statctrl);
 	ATF_TP_ADD_TC(tp, is_subbed_in);
+	ATF_TP_ADD_TC(tp, is_subbed_normal);
+	ATF_TP_ADD_TC(tp, is_subbed_types);
+	ATF_TP_ADD_TC(tp, unsubscribe_test);
 	ATF_TP_ADD_TC(tp, getaddrsfromfile);
 	ATF_TP_ADD_TC(tp, dumpfd2fd);
 	ATF_TP_ADD_TC(tp, copy_file);
