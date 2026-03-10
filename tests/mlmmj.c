@@ -181,6 +181,7 @@ ATF_TC_WITHOUT_HEAD(unistr_roundtrip);
 ATF_TC_WITHOUT_HEAD(line_startwithany);
 ATF_TC_WITHOUT_HEAD(save_hdr_if_needed);
 ATF_TC_WITHOUT_HEAD(autosubscribe_sender);
+ATF_TC_WITHOUT_HEAD(scan_headers_test);
 ATF_TC_WITHOUT_HEAD(substitute_test);
 ATF_TC_WITHOUT_HEAD(voodoo_header_manipulation);
 ATF_TC_WITHOUT_HEAD(voodoo_double_call);
@@ -3541,6 +3542,96 @@ ATF_TC_BODY(autosubscribe_sender, tc)
 	}
 }
 
+ATF_TC_BODY(scan_headers_test, tc)
+{
+	struct mailhdr readhdrs[] = {
+		{ "From:", 0, NULL },
+		{ "To:", 0, NULL },
+		{ "Subject:", 0, NULL },
+		{ "Cc:", 0, NULL },
+		{ NULL, 0, NULL }
+	};
+	strlist allhdrs = tll_init();
+	strlist allunfoldeds = tll_init();
+	FILE *f;
+
+	/* Simple headers */
+	atf_utils_create_file("scan1.txt",
+	    "From: alice@example.org\n"
+	    "To: list@example.org\n"
+	    "Subject: Test message\n"
+	    "\n"
+	    "Body.\n");
+	f = fopen("scan1.txt", "r");
+	ATF_REQUIRE(f != NULL);
+	scan_headers(f, readhdrs, &allhdrs, &allunfoldeds);
+	fclose(f);
+
+	ATF_REQUIRE_EQ(readhdrs[0].valuecount, 1);
+	ATF_REQUIRE(strstr(readhdrs[0].values[0], "alice@example.org") != NULL);
+	ATF_REQUIRE_EQ(readhdrs[1].valuecount, 1);
+	ATF_REQUIRE(strstr(readhdrs[1].values[0], "list@example.org") != NULL);
+	ATF_REQUIRE_EQ(readhdrs[2].valuecount, 1);
+	ATF_REQUIRE(strstr(readhdrs[2].values[0], "Test message") != NULL);
+	ATF_REQUIRE_EQ(readhdrs[3].valuecount, 0);
+
+	ATF_REQUIRE_EQ(tll_length(allhdrs), 3);
+	ATF_REQUIRE_EQ(tll_length(allunfoldeds), 3);
+
+	tll_free_and_free(allhdrs, free);
+	tll_free_and_free(allunfoldeds, free);
+
+	/* Folded header (continuation line) */
+	{
+	struct mailhdr readhdrs2[] = {
+		{ "Subject:", 0, NULL },
+		{ NULL, 0, NULL }
+	};
+	strlist allhdrs2 = tll_init();
+	strlist allunfoldeds2 = tll_init();
+
+	atf_utils_create_file("scan2.txt",
+	    "Subject: This is a very long\n"
+	    "  subject line\n"
+	    "\n"
+	    "Body.\n");
+	f = fopen("scan2.txt", "r");
+	ATF_REQUIRE(f != NULL);
+	scan_headers(f, readhdrs2, &allhdrs2, &allunfoldeds2);
+	fclose(f);
+
+	ATF_REQUIRE_EQ(readhdrs2[0].valuecount, 1);
+	/* Unfolded header should have both parts */
+	ATF_REQUIRE_EQ(tll_length(allhdrs2), 1);
+	ATF_REQUIRE(strstr(tll_front(allhdrs2), "subject line") != NULL);
+	/* allunfoldeds keeps the original folded form */
+	ATF_REQUIRE_EQ(tll_length(allunfoldeds2), 1);
+	ATF_REQUIRE(strstr(tll_front(allunfoldeds2), "\n") != NULL);
+
+	tll_free_and_free(allhdrs2, free);
+	tll_free_and_free(allunfoldeds2, free);
+	}
+
+	/* Empty headers (just body) */
+	{
+	struct mailhdr readhdrs3[] = {
+		{ "From:", 0, NULL },
+		{ NULL, 0, NULL }
+	};
+	strlist allhdrs3 = tll_init();
+
+	atf_utils_create_file("scan3.txt", "\nBody only.\n");
+	f = fopen("scan3.txt", "r");
+	ATF_REQUIRE(f != NULL);
+	scan_headers(f, readhdrs3, &allhdrs3, NULL);
+	fclose(f);
+
+	ATF_REQUIRE_EQ(readhdrs3[0].valuecount, 0);
+	ATF_REQUIRE_EQ(tll_length(allhdrs3), 0);
+	tll_free_and_free(allhdrs3, free);
+	}
+}
+
 ATF_TC_BODY(substitute_test, tc)
 {
 	struct ml ml;
@@ -4257,6 +4348,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, line_startwithany);
 	ATF_TP_ADD_TC(tp, save_hdr_if_needed);
 	ATF_TP_ADD_TC(tp, autosubscribe_sender);
+	ATF_TP_ADD_TC(tp, scan_headers_test);
 	ATF_TP_ADD_TC(tp, substitute_test);
 	ATF_TP_ADD_TC(tp, voodoo_header_manipulation);
 	ATF_TP_ADD_TC(tp, voodoo_double_call);
