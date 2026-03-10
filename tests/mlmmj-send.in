@@ -77,11 +77,9 @@ EOF
 resend_removes_subfile_on_success_body()
 {
 	mlmmjsend=$(command -v mlmmj-send)
-	atf_check $top_builddir/tests/fakesmtpd
-	trap kill_fakesmtp EXIT TERM
 	init_ml ml
 	echo "ml@test" > ml/control/listaddress
-	echo "25678" > ml/control/smtpport
+	start_fakesmtp ml
 	echo "heloname" > ml/control/smtphelo
 	cat > mailfile <<EOF
 From: sender@test
@@ -105,11 +103,9 @@ EOF
 resend_fd_no_unlink_body()
 {
 	mlmmjsend=$(command -v mlmmj-send)
-	atf_check $top_builddir/tests/fakesmtpd
-	trap kill_fakesmtp EXIT TERM
 	init_ml ml
 	echo "ml@test" > ml/control/listaddress
-	echo "25678" > ml/control/smtpport
+	start_fakesmtp ml
 	echo "heloname" > ml/control/smtphelo
 	cat > mailfile <<EOF
 From: sender@test

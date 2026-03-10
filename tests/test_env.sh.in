@@ -38,7 +38,21 @@ init_ml()
 
 kill_fakesmtp()
 {
-	pid=$(cat fakesmtp.pid)
-	kill -15 $pid
+	if [ -f fakesmtp.pid ]; then
+		pid=$(cat fakesmtp.pid)
+		kill -15 $pid 2>/dev/null
+		wait $pid 2>/dev/null
+	fi
+	rm -f fakesmtp.pid fakesmtp.port
+}
+
+# Start fakesmtpd and configure the list to use its dynamic port.
+# Usage: start_fakesmtp <listdir>
+start_fakesmtp()
+{
+	local ml="$1"
+	atf_check $top_builddir/tests/fakesmtpd
+	trap kill_fakesmtp EXIT TERM INT
+	cat fakesmtp.port > "$ml/control/smtpport"
 }
 

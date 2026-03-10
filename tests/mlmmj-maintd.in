@@ -702,11 +702,9 @@ run_digests
 
 resend_requeue_body()
 {
-	atf_check $top_builddir/tests/fakesmtpd
-	trap kill_fakesmtp EXIT TERM
 	init_ml list
 	echo "test@test" > list/control/listaddress
-	echo "25678" > list/control/smtpport
+	start_fakesmtp list
 	echo "heloname" > list/control/smtphelo
 	# Not a directory
 cat >> list/requeue/1 <<EOF
@@ -902,11 +900,9 @@ EOF
 
 resend_queue_body()
 {
-	atf_check $top_builddir/tests/fakesmtpd
-	trap kill_fakesmtp EXIT TERM
 	init_ml list
 	echo "test@test" > list/control/listaddress
-	echo "25678" > list/control/smtpport
+	start_fakesmtp list
 	echo "heloname" > list/control/smtphelo
 	touch list/queue/file
 	touch list/queue/plop.hey

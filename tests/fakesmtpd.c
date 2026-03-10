@@ -26,6 +26,7 @@
 #include <netinet/in.h>
 
 #include <err.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -47,6 +48,15 @@ static struct replies {
 	{ "DATA", "354 End data with <CR><LF>.<CR><LF>\n" },
 };
 
+static volatile sig_atomic_t got_signal = 0;
+
+static void
+signal_handler(int sig)
+{
+	(void)sig;
+	got_signal = 1;
+}
+
 int
 main(void)
 {
@@ -54,6 +64,7 @@ main(void)
 	FILE *f;
 	socklen_t clsize = sizeof(struct sockaddr_in);
 	struct sockaddr_in me = { 0 }, cl;
+	socklen_t melen = sizeof(me);
 	char *line = NULL;
 	size_t linecap = 0;
 	int mailnum = 0;
@@ -66,26 +77,41 @@ main(void)
 		err(EXIT_FAILURE, "setsockopt");
 	me.sin_family = AF_INET;
 	me.sin_addr.s_addr = inet_addr("127.0.0.1");
-	/* specific interface */
-	me.sin_port = htons(25678);
+	me.sin_port = htons(0);
 	if (bind(s, (struct sockaddr *) &me, sizeof(me)) == -1)
-		err(EXIT_FAILURE, "bin");
+		err(EXIT_FAILURE, "bind");
+	if (getsockname(s, (struct sockaddr *) &me, &melen) == -1)
+		err(EXIT_FAILURE, "getsockname");
 	if (listen(s, 1) == -1)
 		err(EXIT_FAILURE, "listen");
 
+	/* Write assigned port before daemonizing so the parent can read it */
+	f = fopen("fakesmtp.port", "w");
+	if (f == NULL)
+		err(EXIT_FAILURE, "fopen port");
+	fprintf(f, "%d\n", ntohs(me.sin_port));
+	fclose(f);
+
 	if (daemon(1, 0) != 0)
 		err(EXIT_FAILURE, "daemon");
+
+	signal(SIGTERM, signal_handler);
+	signal(SIGINT, signal_handler);
+
 	f = fopen("fakesmtp.pid", "w+");
 	if (f == NULL)
-		err(EXIT_FAILURE, "fopen");
+		err(EXIT_FAILURE, "fopen pid");
 	fprintf(f, "%d\n", getpid());
 	fclose(f);
 	for (;;) {
 		char *mail;
 		FILE *fp, *fp2;
 		c = accept(s, (struct sockaddr *) &cl, &clsize);
-		if (c == -1)
+		if (c == -1) {
+			if (got_signal)
+				break;
 			err(EXIT_FAILURE, "accept");
+		}
 
 		mailnum++;
 		asprintf(&mail, "mail-%d.txt", mailnum);
@@ -126,6 +152,11 @@ next:
 		fclose(fp2);
 		fclose(f);
 	}
+
+	free(line);
+	close(s);
+	unlink("fakesmtp.pid");
+	unlink("fakesmtp.port");
 
 	return (EXIT_SUCCESS);
 

@@ -80,7 +80,7 @@ Bcc: list@test
 EOF
 	echo "list@test" > list/control/listaddress
 # ensure we don't try to really send email to a real mailserver
-	echo "25678" > list/control/smtpport
+	echo 1 > list/control/smtpport
 	rmdir list/text
 	ln -s ${top_srcdir}/listtexts/en list/text
 	atf_check -s exit:0 $mlmmjprocess -L list -m mailfile
@@ -97,13 +97,11 @@ EOF
 # EXTENSION=owner must read the owner file and deliver to its address.
 owner_recipextra_body()
 {
-	atf_check $top_builddir/tests/fakesmtpd
-	trap kill_fakesmtp EXIT TERM
 	init_ml list
 	rmdir list/text
 	ln -s ${top_srcdir}/listtexts/en list/text
 	echo "list@test" > list/control/listaddress
-	echo "25678" > list/control/smtpport
+	start_fakesmtp list
 	echo "heloname" > list/control/smtphelo
 	echo "theowner@test" > list/control/owner
 	cat > mailfile <<EOF
@@ -128,7 +126,7 @@ cleanup_queue_on_owner_write_failure_body()
 	# first voodoo succeeds but the second fails on dup().
 	init_ml list
 	echo "list@test" > list/control/listaddress
-	echo "25678" > list/control/smtpport
+	echo 1 > list/control/smtpport
 	echo "theowner@test" > list/control/owner
 	rmdir list/text
 	ln -s ${top_srcdir}/listtexts/en list/text
