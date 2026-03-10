@@ -84,10 +84,24 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 	bool subject_present = false;
 	int dupfd = dup(infd);
 	FILE *f = dupfd != -1 ? fdopen(dupfd, "r") : NULL;
+	int outdupfd;
+	FILE *outf;
 
 	if (f == NULL) {
 		if (dupfd != -1)
 			close(dupfd);
+		return -1;
+	}
+
+	outdupfd = dup(outfd);
+	if (outdupfd == -1) {
+		fclose(f);
+		return -1;
+	}
+	outf = fdopen(outdupfd, "w");
+	if (outf == NULL) {
+		close(outdupfd);
+		fclose(f);
 		return -1;
 	}
 
@@ -115,12 +129,14 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 		if(!hdrsadded &&
 		    ( strncasecmp(hdrline, "mime", 4) == 0)) {
 			if(hdrfd >= 0) {
+				fflush(outf);
 			        if(process_headers_fd(hdrfd,outfd,posteraddr ? posteraddr : "") < 0) {
 					log_error(LOG_ARGS, "Could not "
 						"add extra headers");
 					free(unfolded);
 					tll_free_and_free(allunfoldeds, free);
 					free(posteraddr);
+					fclose(outf);
 					fclose(f);
 					return -1;
 				}
@@ -135,7 +151,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 				unqp = decode_qp(hdrline + 8, false);
 				if(strstr(hdrline + 8, prefix) == NULL &&
 				   strstr(unqp, prefix) == NULL) {
-					dprintf(outfd, "Subject: %s%s\n", prefix, hdrline + 8);
+					fprintf(outf, "Subject: %s%s\n", prefix, hdrline + 8);
 					free(unqp);
 					free(unfolded);
 					continue;
@@ -146,12 +162,12 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 
 		/* Should it be stripped? */
 		if(!delhdrs || !line_startwithany(hdrline, delhdrs, true))
-			dprintf(outfd, "%s", unfolded);
+			fprintf(outf, "%s", unfolded);
 
 		/* Should Reply-To be added? */
 		if(replyto) {
 			if(strncasecmp(hdrline, "From:", 5) == 0) {
-				dprintf(outfd, "Reply-To:%s\n", hdrline + 5);
+				fprintf(outf, "Reply-To:%s\n", hdrline + 5);
 			}
 		}
 		free(unfolded);
@@ -159,11 +175,13 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 
 	if(!hdrsadded ) {
 		if(hdrfd >= 0) {
+			fflush(outf);
 		  if(process_headers_fd(hdrfd,outfd,posteraddr ? posteraddr : "") < 0) {
 				log_error(LOG_ARGS, "Could not "
 					"add extra headers");
 				tll_free_and_free(allunfoldeds, free);
 				free(posteraddr);
+				fclose(outf);
 				fclose(f);
 				return -1;
 			}
@@ -171,18 +189,21 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 	}
 
 	if (prefix && !subject_present) {
-		dprintf(outfd, "Subject: %s\n", prefix);
+		fprintf(outf, "Subject: %s\n", prefix);
 		subject_present = true;
 	}
 	/* write LF */
-	if(dprintf(outfd, "\n") < 0) {
+	if(fprintf(outf, "\n") < 0) {
 	        tll_free_and_free(allunfoldeds, free);
 		log_error(LOG_ARGS, "Error writing hdrs.");
 		free(posteraddr);
+		fclose(outf);
 		fclose(f);
 		return -1;
 	}
-	
+	fflush(outf);
+	fclose(outf);
+
 	tll_free_and_free(allunfoldeds, free);
 
 	lseek(infd, ftello(f), SEEK_SET);
