@@ -4369,6 +4369,94 @@ ATF_TC_BODY(digest_thread_grouping, tc)
 	free(queuepath);
 }
 
+ATF_TC_WITHOUT_HEAD(digest_thread_stops_at_headers);
+ATF_TC_BODY(digest_thread_stops_at_headers, tc)
+{
+	thread_list_state *tls;
+	const char *line;
+
+	/*
+	 * Create archive files where the body contains lines that look like
+	 * headers. The thread builder must stop at the blank line and never
+	 * parse the body, so the fake "Subject:" in the body must be ignored.
+	 */
+	mkdir("fakelist", 0755);
+	mkdir("fakelist/archive", 0755);
+	atf_utils_create_file("fakelist/archive/1",
+	    "From: alice@test\n"
+	    "Subject: Real subject\n"
+	    "\n"
+	    "Subject: Fake subject in body\n"
+	    "From: fake@body\n");
+
+	atf_utils_create_file("fakelist/archive/2",
+	    "From: bob@test\n"
+	    "Subject: Re: Real subject\n"
+	    "\n"
+	    "body text\n");
+
+	atf_utils_create_file("fakelist/archive/3",
+	    "From: charlie@test\n"
+	    "Subject: Other topic\n"
+	    "\n"
+	    "Subject: Decoy\n");
+
+	tls = init_thread_list("fakelist", 1, 3);
+	rewind_thread_list(tls);
+
+	/* Thread 1: "Real subject" (mails 1 and 2 grouped via Re:) */
+	line = get_thread_list_line(tls);
+	ATF_REQUIRE_MSG(line != NULL, "expected thread 1 subject");
+	ATF_CHECK_MSG(strstr(line, "Real subject") != NULL,
+	    "thread 1 subject should be 'Real subject', got: %s", line);
+
+	/* Mail 1 in thread 1: alice */
+	line = get_thread_list_line(tls);
+	ATF_REQUIRE(line != NULL);
+	ATF_CHECK_MSG(strstr(line, "1 - ") != NULL && strstr(line, "alice") != NULL,
+	    "expected mail 1 from alice, got: %s", line);
+
+	/* Mail 2 in thread 1: bob (Re: grouped) */
+	line = get_thread_list_line(tls);
+	ATF_REQUIRE(line != NULL);
+	ATF_CHECK_MSG(strstr(line, "2 - ") != NULL && strstr(line, "bob") != NULL,
+	    "expected mail 2 from bob, got: %s", line);
+
+	/* Separator between threads */
+	line = get_thread_list_line(tls);
+	ATF_REQUIRE(line != NULL);
+	ATF_CHECK_MSG(strcmp(line, "\n") == 0,
+	    "expected blank separator, got: %s", line);
+
+	/* Thread 2: "Other topic" (only mail 3) */
+	line = get_thread_list_line(tls);
+	ATF_REQUIRE(line != NULL);
+	ATF_CHECK_MSG(strstr(line, "Other topic") != NULL,
+	    "thread 2 subject should be 'Other topic', got: %s", line);
+
+	/* Mail 3 in thread 2: charlie */
+	line = get_thread_list_line(tls);
+	ATF_REQUIRE(line != NULL);
+	ATF_CHECK_MSG(strstr(line, "3 - ") != NULL && strstr(line, "charlie") != NULL,
+	    "expected mail 3 from charlie, got: %s", line);
+
+	/* Separator */
+	line = get_thread_list_line(tls);
+	ATF_REQUIRE(line != NULL);
+	ATF_CHECK(strcmp(line, "\n") == 0);
+
+	/* End */
+	line = get_thread_list_line(tls);
+	ATF_CHECK(line == NULL);
+
+	/* "Fake subject in body" must NOT have created a third thread */
+	ATF_CHECK_MSG(tls->num_threads == 2,
+	    "expected 2 threads (body headers ignored), got %d",
+	    tls->num_threads);
+
+	finish_thread_list(tls);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, random_int);
@@ -4487,6 +4575,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, checkwait_smtpreply_closed);
 	ATF_TP_ADD_TC(tp, digest_thread_list_format);
 	ATF_TP_ADD_TC(tp, digest_thread_grouping);
+	ATF_TP_ADD_TC(tp, digest_thread_stops_at_headers);
 
 	return (atf_no_error());
 }

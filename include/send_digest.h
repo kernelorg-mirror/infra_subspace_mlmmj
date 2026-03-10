@@ -23,5 +23,34 @@
 
 #pragma once
 
+struct digest_mail {
+	int idx;
+	char *from;
+};
+
+struct digest_thread {
+	char *subject;
+	int num_mails;
+	struct digest_mail *mails;
+};
+
+struct thread_list_state;
+typedef struct thread_list_state thread_list_state;
+struct thread_list_state {
+	const char *listdir;
+	int firstindex;
+	int lastindex;
+	int num_threads;
+	struct digest_thread *threads;
+	int cur_thread;
+	int cur_mail;
+};
+
+thread_list_state *init_thread_list(const char *listdir,
+		int firstindex, int lastindex);
+void rewind_thread_list(void *state);
+const char *get_thread_list_line(void *state);
+void finish_thread_list(thread_list_state *s);
+
 int send_digest(struct ml *ml, int lastindex, int index,
 		int issue, const char *addr, const char *mlmmjsend);

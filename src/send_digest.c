@@ -42,32 +42,8 @@
 #include "utils.h"
 
 
-struct mail {
-	int idx;
-	char *from;
-};
 
-struct thread {
-	char *subject;
-	int num_mails;
-	struct mail *mails;
-};
-
-
-struct thread_list_state;
-typedef struct thread_list_state thread_list_state;
-struct thread_list_state {
-	const char *listdir;
-	int firstindex;
-	int lastindex;
-	int num_threads;
-	struct thread *threads;
-	int cur_thread;
-	int cur_mail;
-};
-
-
-static thread_list_state *init_thread_list(
+thread_list_state *init_thread_list(
 		const char *listdir, int firstindex, int lastindex)
 {
 	/* We use a static variable rather than dynamic allocation as
@@ -83,16 +59,16 @@ static thread_list_state *init_thread_list(
 }
 
 
-static void rewind_thread_list(void * state)
+void rewind_thread_list(void * state)
 {
 	thread_list_state *s = (thread_list_state *)state;
 	FILE *archivef;
 	int i, j, thread_idx;
 	char *line = NULL, *tmp, *subj, *from, *tmpfrom;
-	size_t linecap = 0;
+	size_t linecap = 0, tmplen;
 	char *archivename;
-	int num_threads = 0;
-	struct thread *threads = NULL;
+	int num_threads = 0, threads_alloc = 0;
+	struct digest_thread *threads = NULL;
 	if (s->cur_thread != -1) {
 		/* We have gathered the data already; just rewind */
 		s->cur_thread = 0;
@@ -112,11 +88,14 @@ static void rewind_thread_list(void * state)
 		from = NULL;
 
 		while (getline(&line, &linecap, archivef) > 0) {
+			/* stop at end of headers */
+			if (line[0] == '\n' ||
+			    (line[0] == '\r' && line[1] == '\n'))
+				break;
 			if (strncasecmp(line, "Subject:", 8) == 0) {
 				free(subj);
 				subj = unistr_header_to_utf8(line + 8);
-			}
-			if (strncasecmp(line, "From:", 5) == 0) {
+			} else if (strncasecmp(line, "From:", 5) == 0) {
 				free(from);
 				from = unistr_header_to_utf8(line + 5);
 			}
@@ -144,40 +123,42 @@ static void rewind_thread_list(void * state)
 		}
 		/* tmp is now the clean subject */
 
+		tmplen = strlen(tmp);
 		thread_idx = -1;
 		for (j=0; j<num_threads; j++) {
-			/* subject is stored with trailing \n for display,
-			 * compare only the meaningful part */
-			if (strncmp(tmp, threads[j].subject,
-			    strlen(tmp)) == 0 &&
-			    threads[j].subject[strlen(tmp)] == '\n') {
+			if (strncmp(tmp, threads[j].subject, tmplen) == 0 &&
+			    threads[j].subject[tmplen] == '\n') {
 				thread_idx = j;
 				break;
 			}
 		}
 		if (thread_idx == -1) {
+			if (num_threads == threads_alloc) {
+				threads_alloc = threads_alloc ? threads_alloc * 2 : 16;
+				threads = xrealloc(threads,
+						threads_alloc*sizeof(struct digest_thread));
+			}
+			xasprintf(&(threads[num_threads].subject), "%s\n", tmp);
+			threads[num_threads].num_mails = 0;
+			threads[num_threads].mails = NULL;
+			thread_idx = num_threads;
 			num_threads++;
-			threads = xrealloc(threads,
-					num_threads*sizeof(struct thread));
-			xasprintf(&(threads[num_threads-1].subject), "%s\n", tmp);
-			threads[num_threads-1].num_mails = 0;
-			threads[num_threads-1].mails = NULL;
-			thread_idx = num_threads-1;
 		}
 
 		tmp = from;
-		for (;;) {
-			if (isspace(*tmp)) {
-				tmp++;
-				continue;
-			}
-			break;
-		}
+		while (isspace(*tmp))
+			tmp++;
 		/* tmp is now left-trimmed from */
 
 		threads[thread_idx].num_mails++;
-		threads[thread_idx].mails = xrealloc(threads[thread_idx].mails,
-				threads[thread_idx].num_mails*sizeof(struct mail));
+		if (threads[thread_idx].num_mails > 1 &&
+		    (threads[thread_idx].num_mails & (threads[thread_idx].num_mails - 1)) == 0) {
+			/* power of 2: double the allocation */
+			threads[thread_idx].mails = xrealloc(threads[thread_idx].mails,
+					threads[thread_idx].num_mails*2*sizeof(struct digest_mail));
+		} else if (threads[thread_idx].num_mails == 1) {
+			threads[thread_idx].mails = xmalloc(sizeof(struct digest_mail));
+		}
 		threads[thread_idx].mails[threads[thread_idx].num_mails-1].idx = i;
 		xasprintf(&tmpfrom, "      %d - %s\n", i, tmp);
 		threads[thread_idx].mails[threads[thread_idx].num_mails-1].from = tmpfrom;
@@ -196,7 +177,7 @@ static void rewind_thread_list(void * state)
 }
 
 
-static const char *get_thread_list_line(void * state)
+const char *get_thread_list_line(void * state)
 {
 	thread_list_state *s = (thread_list_state *)state;
 
@@ -217,7 +198,7 @@ static const char *get_thread_list_line(void * state)
 }
 
 
-static void finish_thread_list(thread_list_state * s)
+void finish_thread_list(thread_list_state * s)
 {
 	int i, j;
 	if (s->threads == NULL) return;
