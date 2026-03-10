@@ -2809,7 +2809,57 @@ ATF_TC_BODY(gethdrline, tc)
 
 ATF_TC_BODY(readlf, tc)
 {
+	int fd;
+	char *buf;
+
+	/* Invalid fd */
 	ATF_REQUIRE(readlf(-1, true) == NULL);
+
+	/* Empty file */
+	atf_utils_create_file("rlf_empty", "");
+	fd = open("rlf_empty", O_RDONLY);
+	ATF_REQUIRE(readlf(fd, true) == NULL);
+	/* fd closed by readlf */
+
+	/* Single line, oneline=true: returns chomped line */
+	atf_utils_create_file("rlf_one", "hello\n");
+	fd = open("rlf_one", O_RDONLY);
+	buf = readlf(fd, true);
+	ATF_REQUIRE(buf != NULL);
+	ATF_REQUIRE_STREQ(buf, "hello");
+	free(buf);
+
+	/* Multiple lines, oneline=true: returns only first line */
+	atf_utils_create_file("rlf_multi", "first\nsecond\nthird\n");
+	fd = open("rlf_multi", O_RDONLY);
+	buf = readlf(fd, true);
+	ATF_REQUIRE(buf != NULL);
+	ATF_REQUIRE_STREQ(buf, "first");
+	free(buf);
+
+	/* Single line, oneline=false: returns entire content */
+	atf_utils_create_file("rlf_one2", "hello\n");
+	fd = open("rlf_one2", O_RDONLY);
+	buf = readlf(fd, false);
+	ATF_REQUIRE(buf != NULL);
+	ATF_REQUIRE_STREQ(buf, "hello\n");
+	free(buf);
+
+	/* Multiple lines, oneline=false: returns all content */
+	atf_utils_create_file("rlf_multi2", "first\nsecond\nthird\n");
+	fd = open("rlf_multi2", O_RDONLY);
+	buf = readlf(fd, false);
+	ATF_REQUIRE(buf != NULL);
+	ATF_REQUIRE_STREQ(buf, "first\nsecond\nthird\n");
+	free(buf);
+
+	/* No trailing newline, oneline=true */
+	atf_utils_create_file("rlf_notrim", "notrim");
+	fd = open("rlf_notrim", O_RDONLY);
+	buf = readlf(fd, true);
+	ATF_REQUIRE(buf != NULL);
+	ATF_REQUIRE_STREQ(buf, "notrim");
+	free(buf);
 }
 
 ATF_TC_BODY(mod_get_addr_type, tc)
