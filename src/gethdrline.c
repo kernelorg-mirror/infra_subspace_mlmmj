@@ -26,6 +26,7 @@
 #include <unistd.h>
 
 #include "xmalloc.h"
+#include "xstring.h"
 #include "gethdrline.h"
 #include "strgen.h"
 #include "wrappers.h"
@@ -35,9 +36,10 @@
 
 char *gethdrline(FILE *f, char **unfolded)
 {
-	char *line = NULL, *retstr = NULL, *oldretstr = NULL, *oldunfolded = NULL;
+	char *line = NULL;
 	int ch;
 	size_t linecap = 0;
+	xstring *folded = NULL, *raw = NULL;
 
 	if (getline(&line, &linecap, f) <= 0) {
 		if (unfolded != NULL)
@@ -45,49 +47,46 @@ char *gethdrline(FILE *f, char **unfolded)
 		return NULL;
 	}
 
-	if (unfolded != NULL)
-		*unfolded = xstrdup(line);
+	if (unfolded != NULL) {
+		raw = xstring_new();
+		fputs(line, raw->fp);
+	}
 
 	chomp(line);
 
 	/* end-of-headers */
 	if (*line == '\0') {
-		if (unfolded != NULL) {
-			free(*unfolded);
+		xstring_free(raw);
+		if (unfolded != NULL)
 			*unfolded = NULL;
-		}
 		free(line);
 		return NULL;
 	}
 
-	retstr = xstrdup(line);
+	folded = xstring_new();
+	fputs(line, folded->fp);
+
 	for(;;) {
 		/* look ahead one char to determine if we need to fold */
 		ch = fgetc(f);
 		if (ch == EOF)
-			goto out;
+			break;
 
 		ungetc(ch, f);
 		if ((ch != '\t') && (ch != ' '))  /* no more folding */
-			goto out;
+			break;
 
 		if (getline(&line, &linecap, f) <= 0)
-			goto out;
+			break;
 
-		if (unfolded != NULL) {
-			oldunfolded = *unfolded;
-			xasprintf(unfolded, "%s%s",
-			    oldunfolded != NULL ? oldunfolded : "", line);
-			free(oldunfolded);
-		}
+		if (raw != NULL)
+			fputs(line, raw->fp);
 
 		chomp(line);
-		oldretstr = retstr;
-		xasprintf(&retstr, "%s%s",
-		    oldretstr != NULL ? oldretstr : "", line);
-		free(oldretstr);
+		fputs(line, folded->fp);
 	}
-out:
 	free(line);
-	return (retstr);
+	if (unfolded != NULL)
+		*unfolded = xstring_get(raw);
+	return xstring_get(folded);
 }
