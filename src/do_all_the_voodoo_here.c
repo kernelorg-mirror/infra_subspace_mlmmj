@@ -124,7 +124,6 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 					fclose(f);
 					return -1;
 				}
-				fsync(outfd);
 			}
 			hdrsadded = true;
 		}
@@ -168,7 +167,6 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 				fclose(f);
 				return -1;
 			}
-			fsync(outfd);
 		}
 	}
 
