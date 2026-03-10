@@ -465,14 +465,21 @@ requeuemail(int listfd, int index, strlist *addrs, const char *addr)
 	 * we write the failing address to ensure the potential good
 	 * ones will be tried first when mlmmj-maintd sends out mails
 	 * that have been requeued. addrcount was so far we were */
-	if (addrs != NULL) {
-		tll_foreach(*addrs, it) {
-			dprintf(addrfd, "%s\n", it->item);
+	{
+		FILE *addrf = fdopen(addrfd, "a");
+		if (addrf == NULL) {
+			close(addrfd);
+			return (false);
 		}
+		if (addrs != NULL) {
+			tll_foreach(*addrs, it) {
+				fprintf(addrf, "%s\n", it->item);
+			}
+		}
+		if (addr != NULL)
+			fprintf(addrf, "%s\n", addr);
+		fclose(addrf);
 	}
-	if (addr != NULL)
-		dprintf(addrfd, "%s\n", addr);
-	close(addrfd);
 
 	return (true);
 }

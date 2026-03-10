@@ -73,16 +73,22 @@ int log_oper(int listfd, const char *basename, const char *fmt, ...)
 	else
 		ct[24] = '\0';
 
-	va_start(ap, fmt);
-	if (dprintf(fd, "%s ", ct) < 0)
-		log_error(LOG_ARGS, "Could not write to %s", basename);
-	if (vdprintf(fd, fmt, ap) <0)
-		log_error(LOG_ARGS, "Could not write to %s", basename);
-	if (dprintf(fd, "\n") < 0)
-		log_error(LOG_ARGS, "Could not write to %s", basename);
-	va_end(ap);
-
-	close(fd);
+	{
+		FILE *f = fdopen(fd, "a");
+		if (f == NULL) {
+			close(fd);
+			return -1;
+		}
+		va_start(ap, fmt);
+		if (fprintf(f, "%s ", ct) < 0)
+			log_error(LOG_ARGS, "Could not write to %s", basename);
+		else if (vfprintf(f, fmt, ap) < 0)
+			log_error(LOG_ARGS, "Could not write to %s", basename);
+		else if (fprintf(f, "\n") < 0)
+			log_error(LOG_ARGS, "Could not write to %s", basename);
+		va_end(ap);
+		fclose(f);
+	}
 
 	return 0;
 }

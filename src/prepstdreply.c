@@ -1614,7 +1614,7 @@ void close_text(text *txt)
 
 bool
 prepstdreply_to(text *txt, struct ml *ml, const char *from, const char *to,
-    const char *replyto, int tofd, const char *msgid)
+    const char *replyto, FILE *tof, const char *msgid)
 {
 	bool ret = false;
 	char *tmp, *line;
@@ -1622,7 +1622,7 @@ prepstdreply_to(text *txt, struct ml *ml, const char *from, const char *to,
 	size_t len;
 	char *headers[10] = { NULL }; /* relies on NULL to flag end */
 
-	for (i=0; i<6; i++) { 
+	for (i=0; i<6; i++) {
 		tmp = xstrdup("randomN");
 		tmp[6] = '0' + i;
 		char *str = random_str();
@@ -1673,7 +1673,7 @@ prepstdreply_to(text *txt, struct ml *ml, const char *from, const char *to,
 		if (*line == ' ' || *line == '\t') {
 			/* line beginning with linear whitespace is a
 			   continuation of previous header line */
-			if(dprintf(tofd, "%s\n", line) < 0) {
+			if(fprintf(tof, "%s\n", line) < 0) {
 				log_error(LOG_ARGS, "Could not write std mail");
 				free(line);
 				goto freeandreturn;
@@ -1709,7 +1709,7 @@ prepstdreply_to(text *txt, struct ml *ml, const char *from, const char *to,
 				xasprintf(&line, "Subject: %s", tmp);
 				free(tmp);
 			}
-			if(dprintf(tofd, "%s\n", line) < 0) {
+			if(fprintf(tof, "%s\n", line) < 0) {
 				log_error(LOG_ARGS, "Could not write std mail");
 				free(line);
 				goto freeandreturn;
@@ -1720,7 +1720,7 @@ prepstdreply_to(text *txt, struct ml *ml, const char *from, const char *to,
 	}
 
 	for (i=0; headers[i] != NULL; i++) {
-		if(dprintf(tofd, "%s\n", headers[i]) < 0) {
+		if(fprintf(tof, "%s\n", headers[i]) < 0) {
 			log_error(LOG_ARGS, "Could not write std mail");
 			if (line)
 				free(line);
@@ -1729,7 +1729,7 @@ prepstdreply_to(text *txt, struct ml *ml, const char *from, const char *to,
 	}
 
 	/* end the headers */
-	if(dprintf(tofd, "\n") < 0) {
+	if(fprintf(tof, "\n") < 0) {
 		log_error(LOG_ARGS, "Could not write std mail");
 		if (line)
 			free(line);
@@ -1740,16 +1740,13 @@ prepstdreply_to(text *txt, struct ml *ml, const char *from, const char *to,
 		line = get_processed_text_line(txt, false, ml);
 	}
 	while(line) {
-			if(dprintf(tofd, "%s\n", line) < 0) {
+			if(fprintf(tof, "%s\n", line) < 0) {
 				log_error(LOG_ARGS, "Could not write std mail");
 				goto freeandreturn;
 			}
 		free(line);
 		line = get_processed_text_line(txt, false, ml);
 	}
-
-	fsync(tofd);
-	close(tofd);
 
 	ret = true;
 
@@ -1761,6 +1758,7 @@ freeandreturn:
 char *prepstdreply(text *txt, struct ml *ml, const char *from, const char *to, const char *replyto)
 {
 	int outfd;
+	FILE *outf;
 	char *tmp, *retstr = NULL;
 
 
@@ -1774,19 +1772,28 @@ char *prepstdreply(text *txt, struct ml *ml, const char *from, const char *to, c
 		outfd = open(retstr, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
 
 	} while ((outfd < 0) && (errno == EEXIST));
-	
+
 	if(outfd < 0) {
 		log_error(LOG_ARGS, "Could not open std mail %s", retstr);
 		free(retstr);
 		close_text(txt);
 		return NULL;
 	}
-	if (!prepstdreply_to(txt, ml, from, to, replyto, outfd, NULL)) {
+	outf = fdopen(outfd, "w");
+	if (outf == NULL) {
 		close(outfd);
+		unlink(retstr);
+		free(retstr);
+		close_text(txt);
+		return NULL;
+	}
+	if (!prepstdreply_to(txt, ml, from, to, replyto, outf, NULL)) {
+		fclose(outf);
 		unlink(retstr);
 		free(retstr);
 		close_text(txt);
 		return (NULL);
 	}
+	fclose(outf);
 	return (retstr);
 }

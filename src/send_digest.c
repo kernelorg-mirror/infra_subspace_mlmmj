@@ -225,6 +225,7 @@ int send_digest(struct ml *ml, int firstindex, int lastindex,
 	char *tmp, *queuename = NULL, *archivename, *subject = NULL, *line = NULL;
 	char *boundary = NULL;
 	thread_list_state *tls;
+	FILE *f = NULL;
 
 	if (addr) {
 		errno = 0;
@@ -336,7 +337,14 @@ fallback_subject:
 		free(tmp);
 	}
 
-	if (dprintf(fd, "From: %s%shelp@%s"
+	{
+		int dupfd = dup(fd);
+		if (dupfd == -1) goto cleanup;
+		f = fdopen(dupfd, "w");
+		if (f == NULL) { close(dupfd); goto cleanup; }
+	}
+
+	if (fprintf(f, "From: %s%shelp@%s"
 	    "\nMIME-Version: 1.0"
 	    "\nContent-Type: multipart/" DIGESTMIMETYPE "; "
 	    "boundary=%s"
@@ -348,6 +356,7 @@ fallback_subject:
 	}
 
 	if (hdrfd >= 0) {
+		fflush(f);
 		if (dumpfd2fd(hdrfd, fd) < 0) {
 			log_error(LOG_ARGS, "Could not write digest headers "
 					"to '%s'", queuename);
@@ -357,14 +366,14 @@ fallback_subject:
 		hdrfd = -1;
 	}
 
-	if (dprintf(fd, "\n") < 0) {
+	if (fprintf(f, "\n") < 0) {
 		log_error(LOG_ARGS, "Could not write digest headers to '%s'",
 				queuename);
 		goto cleanup;
 	}
 
 	if (txt != NULL && !statctrl(ml->ctrlfd, "nodigesttext")) {
-		if (dprintf(fd, "\n--%s"
+		if (fprintf(f, "\n--%s"
 		    "\nContent-Type: text/plain; charset=UTF-8"
 		    "\nContent-Transfer-Encoding: 8bit"
 		    "\n\n", boundary) < 0) {
@@ -376,7 +385,7 @@ fallback_subject:
 		for (;;) {
 			line = get_processed_text_line(txt, false, ml);
 			if (line == NULL) break;
-			if (dprintf(fd, "%s\n", line) < 0) {
+			if (fprintf(f, "%s\n", line) < 0) {
 				log_error(LOG_ARGS, "Could not write"
 						" std mail");
 				break;
@@ -405,7 +414,7 @@ fallback_subject:
 		if (archivefd < 0)
 			continue;
 
-		if (dprintf(fd, "\n--%s"
+		if (fprintf(f, "\n--%s"
 		    "\nContent-Type: message/rfc822"
 		    "\nContent-Disposition: inline; filename=\"%s_%s.eml\"\n\n",
 		    boundary, ml->name, buf) < 0) {
@@ -415,6 +424,7 @@ fallback_subject:
 			goto cleanup;
 		}
 
+		fflush(f);
 		if (dumpfd2fd(archivefd, fd) < 0) {
 			log_error(LOG_ARGS, "Could not write digest part %d "
 					"to '%s'", i, queuename);
@@ -424,12 +434,14 @@ fallback_subject:
 		archivefd = -1;
 	}
 
-	if (dprintf(fd, "\n--%s--\n", boundary) < 0) {
+	if (fprintf(f, "\n--%s--\n", boundary) < 0) {
 		log_error(LOG_ARGS, "Could not write digest end to '%s'",
 				queuename);
 		goto cleanup;
 	}
 
+	fclose(f);
+	f = NULL;
 	close(fd);
 	fd = -1;
 
@@ -438,6 +450,8 @@ fallback_subject:
 	retval = 0;
 
 cleanup:
+	if (f != NULL)
+		fclose(f);
 	if (fd >= 0) {
 		close(fd);
 		unlink(queuename);

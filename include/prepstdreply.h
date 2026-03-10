@@ -26,6 +26,7 @@
 #define PREPSTDREPLY_H
 
 #include <stdbool.h>
+#include <stdio.h>
 #include "mlmmj.h"
 
 struct text;
@@ -66,7 +67,7 @@ void register_formatted(text *txt, const char *token,
 		rewind_function rew, get_function get, void * state);
 char *get_processed_text_line(text *txt, bool headers, struct ml *ml);
 bool prepstdreply_to(text *txt, struct ml *ml,
-		const char *from, const char *to, const char *replyto, int tofd, const char *messageid);
+		const char *from, const char *to, const char *replyto, FILE *tof, const char *messageid);
 char *prepstdreply(text *txt, struct ml *ml,
 		const char *from, const char *to, const char *replyto);
 void close_text(text *txt);

@@ -133,7 +133,7 @@ ATF_TC_WITHOUT_HEAD(getaddrsfromfile);
 ATF_TC_WITHOUT_HEAD(dumpfd2fd);
 ATF_TC_WITHOUT_HEAD(dumpfd2fd_large);
 ATF_TC_WITHOUT_HEAD(dumpfd2fd_empty);
-ATF_TC_WITHOUT_HEAD(process_headers_fd_test);
+ATF_TC_WITHOUT_HEAD(process_headers_test);
 ATF_TC_WITHOUT_HEAD(copy_file);
 ATF_TC_WITHOUT_HEAD(copy_file_1);
 ATF_TC_WITHOUT_HEAD(copy_file_2);
@@ -1573,17 +1573,19 @@ ATF_TC_BODY(dumpfd2fd_empty, tc)
 	ATF_REQUIRE_EQ(st.st_size, 0);
 }
 
-ATF_TC_BODY(process_headers_fd_test, tc)
+ATF_TC_BODY(process_headers_test, tc)
 {
-	int infd, outfd;
+	int infd;
+	FILE *outf;
 
 	/* Simple header passthrough */
 	atf_utils_create_file("hdr_in", "X-Custom: value\n\n");
 	infd = open("hdr_in", O_RDONLY);
-	outfd = open("hdr_out", O_WRONLY|O_CREAT|O_TRUNC, 0644);
-	ATF_REQUIRE_EQ(process_headers_fd(infd, outfd, "sender@test"), 0);
+	outf = fopen("hdr_out", "w");
+	ATF_REQUIRE(outf != NULL);
+	ATF_REQUIRE_EQ(process_headers(infd, outf, "sender@test"), 0);
 	close(infd);
-	close(outfd);
+	fclose(outf);
 	if (!atf_utils_compare_file("hdr_out", "X-Custom: value\n")) {
 		atf_utils_cat_file("hdr_out", ">");
 		atf_tc_fail("Simple header passthrough failed");
@@ -1592,10 +1594,11 @@ ATF_TC_BODY(process_headers_fd_test, tc)
 	/* $posteraddr$ substitution */
 	atf_utils_create_file("hdr_in2", "Reply-To: $posteraddr$\n\n");
 	infd = open("hdr_in2", O_RDONLY);
-	outfd = open("hdr_out2", O_WRONLY|O_CREAT|O_TRUNC, 0644);
-	ATF_REQUIRE_EQ(process_headers_fd(infd, outfd, "bob@example.com"), 0);
+	outf = fopen("hdr_out2", "w");
+	ATF_REQUIRE(outf != NULL);
+	ATF_REQUIRE_EQ(process_headers(infd, outf, "bob@example.com"), 0);
 	close(infd);
-	close(outfd);
+	fclose(outf);
 	if (!atf_utils_compare_file("hdr_out2", "Reply-To: bob@example.com\n")) {
 		atf_utils_cat_file("hdr_out2", ">");
 		atf_tc_fail("$posteraddr$ substitution failed");
@@ -1605,10 +1608,11 @@ ATF_TC_BODY(process_headers_fd_test, tc)
 	atf_utils_create_file("hdr_in3",
 	    "X-Original-From: $posteraddr$\nX-List: mylist\n\n");
 	infd = open("hdr_in3", O_RDONLY);
-	outfd = open("hdr_out3", O_WRONLY|O_CREAT|O_TRUNC, 0644);
-	ATF_REQUIRE_EQ(process_headers_fd(infd, outfd, "alice@test.org"), 0);
+	outf = fopen("hdr_out3", "w");
+	ATF_REQUIRE(outf != NULL);
+	ATF_REQUIRE_EQ(process_headers(infd, outf, "alice@test.org"), 0);
 	close(infd);
-	close(outfd);
+	fclose(outf);
 	if (!atf_utils_compare_file("hdr_out3",
 	    "X-Original-From: alice@test.org\nX-List: mylist\n")) {
 		atf_utils_cat_file("hdr_out3", ">");
@@ -1618,10 +1622,11 @@ ATF_TC_BODY(process_headers_fd_test, tc)
 	/* Empty input */
 	atf_utils_create_file("hdr_in4", "");
 	infd = open("hdr_in4", O_RDONLY);
-	outfd = open("hdr_out4", O_WRONLY|O_CREAT|O_TRUNC, 0644);
-	ATF_REQUIRE_EQ(process_headers_fd(infd, outfd, "test@test"), 0);
+	outf = fopen("hdr_out4", "w");
+	ATF_REQUIRE(outf != NULL);
+	ATF_REQUIRE_EQ(process_headers(infd, outf, "test@test"), 0);
 	close(infd);
-	close(outfd);
+	fclose(outf);
 	struct stat st;
 	ATF_REQUIRE_EQ(stat("hdr_out4", &st), 0);
 	ATF_REQUIRE_EQ(st.st_size, 0);
@@ -1972,15 +1977,15 @@ ATF_TC_BODY(text_0, tc)
 	int fd = open("intext", O_RDONLY);
 	text *txt = open_text_fd(fd);
 	ATF_REQUIRE(txt != NULL);
-	int tofd = open("totext", O_CREAT|O_WRONLY, 0644);
+	FILE *tof = fopen("totext", "w");
+	ATF_REQUIRE(tof != NULL);
 	init_ml(true);
 	ml_init(&ml);
 	ml.dir = "list";
 	ATF_REQUIRE(ml_open(&ml, false));
-	ATF_REQUIRE(prepstdreply_to(txt, &ml, "me@fqdn.org", "to@plop.org", NULL, tofd, "Message-Id: <fake>"));
+	ATF_REQUIRE(prepstdreply_to(txt, &ml, "me@fqdn.org", "to@plop.org", NULL, tof, "Message-Id: <fake>"));
 	close_text(txt);
-	fsync(tofd);
-	close(tofd);
+	fclose(tof);
 	close(fd);
 	if (!atf_utils_compare_file("totext", "From: me@fqdn.org\n"
 		"To: to@plop.org\n"
@@ -2020,16 +2025,16 @@ ATF_TC_BODY(text_1, tc)
 	int fd = open("intext", O_RDONLY);
 	text *txt = open_text_fd(fd);
 	ATF_REQUIRE(txt != NULL);
-	int tofd = open("totext", O_CREAT|O_WRONLY, 0644);
+	FILE *tof = fopen("totext", "w");
+	ATF_REQUIRE(tof != NULL);
 	init_ml(true);
 	ml_init(&ml);
 	ml.dir = "list";
 	ATF_REQUIRE(ml_open(&ml, false));
 	register_default_unformatted(txt, &ml);
-	ATF_REQUIRE(prepstdreply_to(txt, &ml, "me@fqdn.org", "to@plop.org", "bla@me.org", tofd, "Message-Id: <fake>"));
+	ATF_REQUIRE(prepstdreply_to(txt, &ml, "me@fqdn.org", "to@plop.org", "bla@me.org", tof, "Message-Id: <fake>"));
 	close_text(txt);
-	fsync(tofd);
-	close(tofd);
+	fclose(tof);
 	close(fd);
 	if (!atf_utils_compare_file("totext", "Subject: huhu\n"
 		"From: me@fqdn.org\n"
@@ -2121,9 +2126,12 @@ ATF_TC_BODY(list_subs, tc)
 	ATF_REQUIRE_STREQ(get_sub(s), "auser2");
 	ATF_REQUIRE(get_sub(s) == NULL);
 	finish_subs_list(NULL);
-	int fd = open("output", O_WRONLY|O_CREAT, 0644);
-	print_subs(fd, s);
-	close(fd);
+	{
+		FILE *f = fopen("output", "w");
+		ATF_REQUIRE(f != NULL);
+		print_subs(f, s);
+		fclose(f);
+	}
 	if (!atf_utils_compare_file("output", "auser1\nauser2\n")) {
 		atf_utils_cat_file("output", "");
 		atf_tc_fail("Unexpected output, expected");
@@ -4514,7 +4522,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, dumpfd2fd);
 	ATF_TP_ADD_TC(tp, dumpfd2fd_large);
 	ATF_TP_ADD_TC(tp, dumpfd2fd_empty);
-	ATF_TP_ADD_TC(tp, process_headers_fd_test);
+	ATF_TP_ADD_TC(tp, process_headers_test);
 	ATF_TP_ADD_TC(tp, copy_file);
 	ATF_TP_ADD_TC(tp, copy_file_1);
 	ATF_TP_ADD_TC(tp, copy_file_2);

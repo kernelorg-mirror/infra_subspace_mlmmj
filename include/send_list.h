@@ -23,6 +23,8 @@
 
 #pragma once
 
+#include <stdio.h>
+
 #include "mlmmj.h"
 
 void send_list(struct ml *ml, const char *emailaddr) __dead2;
@@ -31,4 +33,4 @@ struct subs_list_state *init_subs_list(int fd, const char *dirname);
 void rewind_subs_list(void *state);
 const char *get_sub(void *state);
 void finish_subs_list(struct subs_list_state *s);
-void print_subs(int fd, struct subs_list_state *s);
+void print_subs(FILE *f, struct subs_list_state *s);

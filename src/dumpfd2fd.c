@@ -84,11 +84,11 @@ int dumpfd2fd(int from, int to)
 	return (r);
 }
 
-int process_headers_fd(int infd, int outfd, const char *from)
+int process_headers(int infd, FILE *outf, const char *from)
 {
 	char *line = NULL, *p, *to_be_subst, *new_line;
 	size_t linecap = 0;
-	int r, dupfd;
+	int dupfd;
 	FILE *f;
 
 	dupfd = dup(infd);
@@ -112,20 +112,20 @@ int process_headers_fd(int infd, int outfd, const char *from)
 			*to_be_subst = '\0';
 			to_be_subst += 12;
 			xasprintf(&new_line, "%s%s%s", p, from, to_be_subst);
-			if ((r = dprintf(outfd, "%s", new_line)) < 0) {
+			if (fprintf(outf, "%s", new_line) < 0) {
 				log_error(LOG_ARGS, "Could not write headers");
 				free(new_line);
 				free(line);
 				fclose(f);
-				return r;
+				return -1;
 			}
 			free(new_line);
 		} else {
-			if ((r = dprintf(outfd, "%s", p)) < 0) {
+			if (fprintf(outf, "%s", p) < 0) {
 				log_error(LOG_ARGS, "Could not write headers");
 				free(line);
 				fclose(f);
-				return r;
+				return -1;
 			}
 		}
 	}

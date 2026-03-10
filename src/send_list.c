@@ -129,12 +129,12 @@ void finish_subs_list(struct subs_list_state *s)
 }
 
 
-void print_subs(int fd, struct subs_list_state *s)
+void print_subs(FILE *f, struct subs_list_state *s)
 {
 	const char *sub;
 	rewind_subs_list(s);
 	while ((sub = get_sub(s)) != NULL)
-		dprintf(fd, "%s\n", sub);
+		fprintf(f, "%s\n", sub);
 }
 
 
@@ -168,18 +168,25 @@ void send_list(struct ml *ml, const char *emailaddr)
 	/* DEPRECATED */
 	/* Add lists manually if they weren't encountered in the list text */
 	if (!normalsls->used && !digestsls->used && !nomailsls->used) {
+		FILE *f;
 		fd = open(queuefilename, O_WRONLY|O_APPEND);
 		if(fd < 0) {
 			log_error(LOG_ARGS, "Could not open sub list mail");
 			exit(EXIT_FAILURE);
 		}
-		print_subs(fd, normalsls);
-		dprintf(fd, "\n-- \n");
-		print_subs(fd, nomailsls);
-		dprintf(fd, "\n-- \n");
-		print_subs(fd, digestsls);
-		dprintf(fd, "\n-- \nend of output\n");
-		close(fd);
+		f = fdopen(fd, "a");
+		if(f == NULL) {
+			close(fd);
+			log_error(LOG_ARGS, "Could not fdopen sub list mail");
+			exit(EXIT_FAILURE);
+		}
+		print_subs(f, normalsls);
+		fprintf(f, "\n-- \n");
+		print_subs(f, nomailsls);
+		fprintf(f, "\n-- \n");
+		print_subs(f, digestsls);
+		fprintf(f, "\n-- \nend of output\n");
+		fclose(f);
 	}
 
 	finish_subs_list(normalsls);

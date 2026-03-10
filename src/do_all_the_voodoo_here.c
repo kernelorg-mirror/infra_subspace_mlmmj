@@ -129,8 +129,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 		if(!hdrsadded &&
 		    ( strncasecmp(hdrline, "mime", 4) == 0)) {
 			if(hdrfd >= 0) {
-				fflush(outf);
-			        if(process_headers_fd(hdrfd,outfd,posteraddr ? posteraddr : "") < 0) {
+			        if(process_headers(hdrfd,outf,posteraddr ? posteraddr : "") < 0) {
 					log_error(LOG_ARGS, "Could not "
 						"add extra headers");
 					free(unfolded);
@@ -175,8 +174,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 
 	if(!hdrsadded ) {
 		if(hdrfd >= 0) {
-			fflush(outf);
-		  if(process_headers_fd(hdrfd,outfd,posteraddr ? posteraddr : "") < 0) {
+		  if(process_headers(hdrfd,outf,posteraddr ? posteraddr : "") < 0) {
 				log_error(LOG_ARGS, "Could not "
 					"add extra headers");
 				tll_free_and_free(allunfoldeds, free);
