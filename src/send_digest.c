@@ -236,13 +236,14 @@ static void finish_thread_list(thread_list_state * s)
 int send_digest(struct ml *ml, int firstindex, int lastindex,
 		int issue, const char *addr, const char *mlmmjsend)
 {
-	int i, fd, archivefd, hdrfd;
+	int i, fd, archivefd = -1, hdrfd = -1;
+	int retval = -1;
 	size_t len;
-	text * txt;
+	text *txt = NULL;
 	char buf[100];
 	char *tmp, *queuename = NULL, *archivename, *subject = NULL, *line = NULL;
-	char *boundary;
-	thread_list_state * tls;
+	char *boundary = NULL;
+	thread_list_state *tls;
 
 	if (addr) {
 		errno = 0;
@@ -253,7 +254,7 @@ int send_digest(struct ml *ml, int firstindex, int lastindex,
 
 	if (firstindex > lastindex)
 		return -1;
-	
+
 	do {
 		tmp = random_str();
 		free(queuename);
@@ -270,7 +271,6 @@ int send_digest(struct ml *ml, int firstindex, int lastindex,
 	}
 
 	hdrfd = openat(ml->ctrlfd, "customheaders", O_RDONLY);
-
 	boundary = random_str();
 
 	txt = open_text_file(ml->fd, "digest");
@@ -361,59 +361,41 @@ fallback_subject:
 	    "boundary=%s"
 	    "\nSubject: %s\n",
 	    ml->name, ml->delim, ml->fqdn, boundary, subject) < 0) {
-		free(subject);
-		goto errdighdrs;
-	}
-	free(subject);
-
-	if(hdrfd >= 0 && dumpfd2fd(hdrfd, fd) < 0) {
-		goto errdighdrs;
-	}
-
-	close(hdrfd);
-	hdrfd = -1;
-
-	if (dprintf(fd, "\n") < 0) {
-errdighdrs:
 		log_error(LOG_ARGS, "Could not write digest headers to '%s'",
 				queuename);
-		close(fd);
-		unlink(queuename);
-		free(boundary);
-		free(queuename);
-		if (txt != NULL) {
-			close_text(txt);
-			free(line);
-		}
-		if (hdrfd > 0) {
-			close(hdrfd);
-		}
-		return -1;
+		goto cleanup;
 	}
 
-	if ((txt != NULL) && !statctrl(ml->ctrlfd, "nodigesttext")) {
+	if (hdrfd >= 0) {
+		if (dumpfd2fd(hdrfd, fd) < 0) {
+			log_error(LOG_ARGS, "Could not write digest headers "
+					"to '%s'", queuename);
+			goto cleanup;
+		}
+		close(hdrfd);
+		hdrfd = -1;
+	}
 
+	if (dprintf(fd, "\n") < 0) {
+		log_error(LOG_ARGS, "Could not write digest headers to '%s'",
+				queuename);
+		goto cleanup;
+	}
+
+	if (txt != NULL && !statctrl(ml->ctrlfd, "nodigesttext")) {
 		if (dprintf(fd, "\n--%s"
 		    "\nContent-Type: text/plain; charset=UTF-8"
 		    "\nContent-Transfer-Encoding: 8bit"
 		    "\n\n", boundary) < 0) {
 			log_error(LOG_ARGS, "Could not write digest text/plain"
 					" part headers to '%s'", queuename);
-			close(fd);
-			unlink(queuename);
-			free(boundary);
-			free(queuename);
-			if (txt != NULL) {
-				close_text(txt);
-				free(line);
-			}
-			return -1;
+			goto cleanup;
 		}
 
 		for (;;) {
 			line = get_processed_text_line(txt, false, ml);
 			if (line == NULL) break;
-			if(dprintf(fd, "%s\n", line) < 0) {
+			if (dprintf(fd, "%s\n", line) < 0) {
 				log_error(LOG_ARGS, "Could not write"
 						" std mail");
 				break;
@@ -424,14 +406,17 @@ errdighdrs:
 
 		finish_thread_list(tls);
 		close_text(txt);
+		txt = NULL;
 	} else if (txt != NULL) {
 		finish_thread_list(tls);
 		close_text(txt);
+		txt = NULL;
 	}
 
-	if (line != NULL) free(line);
+	free(line);
+	line = NULL;
 
-	for (i=firstindex; i<=lastindex; i++) {
+	for (i = firstindex; i <= lastindex; i++) {
 		xasprintf(&archivename, "archive/%d", i);
 		archivefd = openat(ml->fd, archivename, O_RDONLY);
 		free(archivename);
@@ -446,44 +431,48 @@ errdighdrs:
 			log_error(LOG_ARGS, "Could not write digest part "
 					"headers for archive index %d to "
 					"'%s'", i, queuename);
-			close(fd);
-			close(archivefd);
-			unlink(queuename);
-			free(boundary);
-			free(queuename);
-			return -1;
+			goto cleanup;
 		}
 
 		if (dumpfd2fd(archivefd, fd) < 0) {
 			log_error(LOG_ARGS, "Could not write digest part %d "
-					"to '%s'", i,
-					queuename);
-			close(fd);
-			close(archivefd);
-			unlink(queuename);
-			free(boundary);
-			free(queuename);
-			return -1;
+					"to '%s'", i, queuename);
+			goto cleanup;
 		}
 		close(archivefd);
+		archivefd = -1;
 	}
 
 	if (dprintf(fd, "\n--%s--\n", boundary) < 0) {
 		log_error(LOG_ARGS, "Could not write digest end to '%s'",
 				queuename);
-		close(fd);
-		unlink(queuename);
-		free(boundary);
-		free(queuename);
-		return -1;
+		goto cleanup;
 	}
 
 	close(fd);
-	free(boundary);
+	fd = -1;
 
 	exec_and_wait(mlmmjsend, "-l", "7", "-L", ml->dir, "-m", queuename,
 	    NULL);
+	retval = 0;
+
+cleanup:
+	if (fd >= 0) {
+		close(fd);
+		unlink(queuename);
+	}
+	if (archivefd >= 0)
+		close(archivefd);
+	if (hdrfd >= 0)
+		close(hdrfd);
+	if (txt != NULL) {
+		finish_thread_list(tls);
+		close_text(txt);
+	}
+	free(subject);
+	free(line);
+	free(boundary);
 	free(queuename);
 
-	return 0;
+	return retval;
 }
