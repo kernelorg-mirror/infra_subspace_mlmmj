@@ -149,10 +149,10 @@ initsmtp(int *sockfd, const char *relayhost, unsigned short port, const char *he
 		}
 
 		log_error(LOG_ARGS, "Error with HELO. Reply: "
-				"[%s]", reply);
+				"[%s]. Check smtphelo configuration.",
+				reply);
 		free(reply);
-		/* FIXME: quit and tell admin to configure
-		 * correctly */
+		endsmtp(sockfd);
 		retval = MLMMJ_HELO;
 		break;
 
