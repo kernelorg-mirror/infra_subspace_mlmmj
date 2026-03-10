@@ -29,10 +29,12 @@
 #include <limits.h>
 #include <ctype.h>
 
+#include <stdio.h>
+#include <string.h>
+
 #include "config.h"
 #include "log_error.h"
 #include "xmalloc.h"
-#include "mygetline.h"
 
 #define DUMPBUF 4096
 
@@ -82,32 +84,53 @@ int dumpfd2fd(int from, int to)
 	return (r);
 }
 
-int process_headers_fd(int infd, int outfd,const char *from)
+int process_headers_fd(int infd, int outfd, const char *from)
 {
-	char *line;
-	int r;
+	char *line = NULL, *p, *to_be_subst, *new_line;
+	size_t linecap = 0;
+	int r, dupfd;
+	FILE *f;
 
-	while((line = mygetline(infd))) {
-		/* skip empty lines */
-		while (isspace(*line))
-			line++;
-		if (line[0] == '\0')
-			continue;
-	        char *to_be_subst ; char *new_line ;
-		to_be_subst = strstr(line,"$posteraddr$") ;
-		if ( to_be_subst != NULL) {
-		        *to_be_subst = '\0' ;
-			to_be_subst = to_be_subst + 12 ;
-			xasprintf(&new_line, "%s%s%s", line, from , to_be_subst ) ;
-			free(line);
-			line=new_line ;
-		}
-	        if( (r=dprintf(outfd, "%s", line)) < 0) {
-		        log_error(LOG_ARGS, "Could not write headers");
-			return r ;
-		}
-		free(line);
+	dupfd = dup(infd);
+	if (dupfd == -1)
+		return -1;
+	f = fdopen(dupfd, "r");
+	if (f == NULL) {
+		close(dupfd);
+		return -1;
 	}
-	return 0 ;
+
+	while (getline(&line, &linecap, f) > 0) {
+		/* skip empty lines */
+		p = line;
+		while (isspace(*p))
+			p++;
+		if (*p == '\0')
+			continue;
+		to_be_subst = strstr(p, "$posteraddr$");
+		if (to_be_subst != NULL) {
+			*to_be_subst = '\0';
+			to_be_subst += 12;
+			xasprintf(&new_line, "%s%s%s", p, from, to_be_subst);
+			if ((r = dprintf(outfd, "%s", new_line)) < 0) {
+				log_error(LOG_ARGS, "Could not write headers");
+				free(new_line);
+				free(line);
+				fclose(f);
+				return r;
+			}
+			free(new_line);
+		} else {
+			if ((r = dprintf(outfd, "%s", p)) < 0) {
+				log_error(LOG_ARGS, "Could not write headers");
+				free(line);
+				fclose(f);
+				return r;
+			}
+		}
+	}
+	free(line);
+	fclose(f);
+	return 0;
 }
 
