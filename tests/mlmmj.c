@@ -604,7 +604,7 @@ ATF_TC_BODY(write_mailbody, tc)
 	fp = fopen("myemailbody.txt", "r");
 	ATF_REQUIRE(fp != NULL);
 	int fd = open("out.txt", O_CREAT|O_WRONLY, 0644);
-	write_mailbody(fd, fp, "test@plop.meh");
+	ATF_REQUIRE_EQ(write_mailbody(fd, fp, "test@plop.meh"), 0);
 	fclose(fp);
 	close(fd);
 	if (!atf_utils_compare_file("out.txt", "line")) {
@@ -617,7 +617,7 @@ ATF_TC_BODY(write_mailbody, tc)
 	fp = fopen("myemailbody.txt", "r");
 	ATF_REQUIRE(fp != NULL);
 	fd = open("out.txt", O_CREAT|O_TRUNC|O_WRONLY, 0644);
-	write_mailbody(fd, fp, "test@plop.meh");
+	ATF_REQUIRE_EQ(write_mailbody(fd, fp, "test@plop.meh"), 0);
 	close(fd);
 	fclose(fp);
 	if (!atf_utils_compare_file("out.txt", "line\r\n")) {
@@ -630,7 +630,7 @@ ATF_TC_BODY(write_mailbody, tc)
 	fp = fopen("myemailbody.txt", "r");
 	ATF_REQUIRE(fp != NULL);
 	fd = open("out.txt", O_CREAT|O_TRUNC|O_WRONLY, 0644);
-	write_mailbody(fd, fp,  "test@plop.meh");
+	ATF_REQUIRE_EQ(write_mailbody(fd, fp,  "test@plop.meh"), 0);
 	close(fd);
 	fclose(fp);
 	if (!atf_utils_compare_file("out.txt", "line\r\n..")) {
@@ -643,7 +643,7 @@ ATF_TC_BODY(write_mailbody, tc)
 	fp = fopen("myemailbody.txt", "r");
 	ATF_REQUIRE(fp != NULL);
 	fd = open("out.txt", O_CREAT|O_TRUNC|O_WRONLY, 0644);
-	write_mailbody(fd, fp,  "test@plop.meh");
+	ATF_REQUIRE_EQ(write_mailbody(fd, fp,  "test@plop.meh"), 0);
 	close(fd);
 	fclose(fp);
 	if (!atf_utils_compare_file("out.txt", "line\r\n..no")) {
@@ -656,7 +656,7 @@ ATF_TC_BODY(write_mailbody, tc)
 	fp = fopen("myemailbody.txt", "r");
 	ATF_REQUIRE(fp != NULL);
 	fd = open("out.txt", O_CREAT|O_TRUNC|O_WRONLY, 0644);
-	write_mailbody(fd, fp,  "test@plop.meh");
+	ATF_REQUIRE_EQ(write_mailbody(fd, fp,  "test@plop.meh"), 0);
 	close(fd);
 	fclose(fp);
 	if (!atf_utils_compare_file("out.txt", "line\r\nTo: test@plop.meh\r\n\r\n")) {
@@ -669,7 +669,7 @@ ATF_TC_BODY(write_mailbody, tc)
 	fp = fopen("myemailbody.txt", "r");
 	ATF_REQUIRE(fp != NULL);
 	fd = open("out.txt", O_CREAT|O_TRUNC|O_WRONLY, 0644);
-	write_mailbody(fd, fp,  "test@plop.meh");
+	ATF_REQUIRE_EQ(write_mailbody(fd, fp,  "test@plop.meh"), 0);
 	close(fd);
 	fclose(fp);
 	if (!atf_utils_compare_file("out.txt", "line\r\nTo: test@plop.meh\r\n\r\nline2\r\n\r\n")) {
@@ -682,12 +682,45 @@ ATF_TC_BODY(write_mailbody, tc)
 	fp = fopen("myemailbody.txt", "r");
 	ATF_REQUIRE(fp != NULL);
 	fd = open("out.txt", O_CREAT|O_TRUNC|O_WRONLY, 0644);
-	write_mailbody(fd, fp,  NULL);
+	ATF_REQUIRE_EQ(write_mailbody(fd, fp,  NULL), 0);
 	close(fd);
 	fclose(fp);
 	if (!atf_utils_compare_file("out.txt", "line\r\n\r\nline2\r\n\r\n")) {
 		atf_utils_cat_file("out.txt", ">");
 		atf_tc_fail("Unexpected output (no to header)");
+	}
+
+	/* Error: invalid fd returns -1 */
+	atf_utils_create_file("myemailbody.txt", "line\n");
+	fp = fopen("myemailbody.txt", "r");
+	ATF_REQUIRE(fp != NULL);
+	ATF_REQUIRE_EQ(write_mailbody(-1, fp, NULL), -1);
+	fclose(fp);
+
+	/* Multiple dot-stuffed lines in sequence */
+	atf_utils_create_file("myemailbody.txt", "header\n\n.line1\n.line2\n..already\n");
+	fp = fopen("myemailbody.txt", "r");
+	ATF_REQUIRE(fp != NULL);
+	fd = open("out.txt", O_CREAT|O_TRUNC|O_WRONLY, 0644);
+	ATF_REQUIRE_EQ(write_mailbody(fd, fp, NULL), 0);
+	close(fd);
+	fclose(fp);
+	if (!atf_utils_compare_file("out.txt", "header\r\n\r\n..line1\r\n..line2\r\n...already\r\n")) {
+		atf_utils_cat_file("out.txt", ">");
+		atf_tc_fail("Unexpected output (multiple dot-stuffed lines)");
+	}
+
+	/* To header inserted only once */
+	atf_utils_create_file("myemailbody.txt", "hdr1\nhdr2\n\nbody\n");
+	fp = fopen("myemailbody.txt", "r");
+	ATF_REQUIRE(fp != NULL);
+	fd = open("out.txt", O_CREAT|O_TRUNC|O_WRONLY, 0644);
+	ATF_REQUIRE_EQ(write_mailbody(fd, fp, "rcpt@test"), 0);
+	close(fd);
+	fclose(fp);
+	if (!atf_utils_compare_file("out.txt", "hdr1\r\nhdr2\r\nTo: rcpt@test\r\n\r\nbody\r\n")) {
+		atf_utils_cat_file("out.txt", ">");
+		atf_tc_fail("Unexpected output (To header placement)");
 	}
 }
 
