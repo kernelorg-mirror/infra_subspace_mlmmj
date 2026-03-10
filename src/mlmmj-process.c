@@ -130,6 +130,22 @@ out:
 }
 
 
+static void
+send_mail_from_file(struct ml *ml, const char *from, const char *to,
+    const char *filename)
+{
+	struct mail mail;
+
+	memset(&mail, 0, sizeof(mail));
+	mail.from = from;
+	mail.to = to;
+	mail.fp = fopen(filename, "r");
+	if (send_single_mail(&mail, ml, false))
+		unlink(filename);
+	if (mail.fp)
+		fclose(mail.fp);
+}
+
 static void newmoderated(struct ml *ml, const char *mailfilename,
 		  const char *mlmmjsend, const char *efromsender,
 		  const char *subject, const char *posteraddr,
@@ -144,7 +160,6 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 	const char *mailbasename = mybasename(mailfilename);
 	int notifymod = 0;
 	bool selfmoderate = 0;
-	struct mail mail;
 #if 0
 	printf("mailfilename = [%s], mailbasename = [%s]\n", mailfilename,
 			                                     mailbasename);
@@ -213,37 +228,16 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 
 		finish_memory_lines(mls);
 
-		memset(&mail, 0, sizeof(mail));
-		mail.from = from;
-		mail.to = efromsender;
-		mail.fp = fopen(qfname, "r");
-		if (send_single_mail(&mail, ml, false))
-			unlink(qfname);
-		if (mail.fp)
-			fclose(mail.fp);
+		send_mail_from_file(ml, from, efromsender, qfname);
 	}
 
 	if (efromismod) {
-		memset(&mail, 0, sizeof(mail));
-		mail.from = from;
-		mail.to = efromsender;
-		mail.fp = fopen(queuefilename, "r");
-		if (send_single_mail(&mail, ml, false))
-			unlink(queuefilename);
-		if (mail.fp)
-			fclose(mail.fp);
+		send_mail_from_file(ml, from, efromsender, queuefilename);
 		exit(EXIT_SUCCESS);
 	}
 
 	if (selfmoderate) {
-		memset(&mail, 0, sizeof(mail));
-		mail.from = from;
-		mail.to = to;
-		mail.fp = fopen(queuefilename, "r");
-		if (send_single_mail(&mail, ml, false))
-			unlink(queuefilename);
-		if (mail.fp)
-			fclose(mail.fp);
+		send_mail_from_file(ml, from, to, queuefilename);
 		exit(EXIT_SUCCESS);
 	}
 
