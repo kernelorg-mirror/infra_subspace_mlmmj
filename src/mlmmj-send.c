@@ -203,7 +203,8 @@ int send_mail_many_fd(int sockfd, struct mail *mail, struct ml *ml, int subfd,
 int send_mail_many_list(int sockfd, struct mail *mail, struct ml *ml, strlist *addrs,
     const char *archivefilename)
 {
-	int res = 0, status, index;
+	int res = 0, status;
+	int index = archivefilename ? get_index_from_filename(archivefilename) : -1;
 	char *bounceaddr, *addr;
 
 	while (tll_length(*addrs) > 0) {
@@ -220,14 +221,12 @@ int send_mail_many_list(int sockfd, struct mail *mail, struct ml *ml, strlist *a
 			/* we got SIGTERM, so save the addresses and bail */
 			log_error(LOG_ARGS, "TERM signal received, "
 						"shutting down.");
-			index = get_index_from_filename(archivefilename);
 			status = requeuemail(ml->fd, index, addrs, addr);
 			free(addr);
 			return status;
 		}
 		if (mail->from == NULL) {
-			int i = get_index_from_filename(archivefilename);
-			bounceaddr = get_bounce_from_adr(addr, ml, i);
+			bounceaddr = get_bounce_from_adr(addr, ml, index);
 			mail->from = bounceaddr;
 		}
 		mail->to = addr;
@@ -238,7 +237,6 @@ int send_mail_many_list(int sockfd, struct mail *mail, struct ml *ml, strlist *a
 		}
 		if(res && archivefilename) {
 			/* we failed, so save the addresses and bail */
-			index = get_index_from_filename(archivefilename);
 			status = requeuemail(ml->fd, index, addrs, addr);
 			free(addr);
 			return status;
