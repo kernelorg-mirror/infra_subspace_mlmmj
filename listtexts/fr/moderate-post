@@ -12,9 +12,6 @@ Content-Transfer-Encoding: 8bit
 
 %wrap%Un message de <$posteraddr$> ayant pour sujet "$subject$" a été soumis
 pour envoi. Il vous est demandé de le modérer 
-%ifreason selfmoderated%
-  parce que vous êtes le demandeur et n'êtes pas inscrit.
-%endif%
 %ifreason modnonsubposts%
   parce que le demandeur n'est pas inscrit.
 %endif%
@@ -33,10 +30,8 @@ Le message est ci-dessous.
 %wrap%Si vous ne souhaitez faire aucune de ces actions, vous pouvez envoyer
 un message à <$rejectaddr$> ou simplement ignorer ce message.
 
-%ifnreason selfmoderated%
 Les modérateurs suivants ont reçu ce mail :
 - %moderators%
-%endif%
 
 --=_$random0$$random1$_=
 Content-Type: message/rfc822

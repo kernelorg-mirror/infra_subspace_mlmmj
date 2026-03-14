@@ -12,9 +12,6 @@ Content-Transfer-Encoding: 8bit
 
 %wrap%Το μήνυμα με αποστολέα <$posteraddr$> και θέμα "$subject$" πρέπει να
 ελεγχθεί πριν τη δημοσίευσή του
-%ifreason selfmoderated%
-  Επειδή είσαι ο αποστολέας και δεν είσαι εγγεγραμμένος.
-%endif%
 %ifreason modnonsubposts%
   καθώς ο αποστολέας του μηνύματος δεν είναι εγγεγραμμένος στη λίστα.
 %endif%
@@ -33,10 +30,8 @@ Content-Transfer-Encoding: 8bit
 %wrap%Αν δεν επιθυμείτε να κάνετε τίποτα από τα παραπάνω τότε στείλτε ένα
 μήνυμα στο <$rejectaddr$> ή απλά αγνοήστε το μήνυμα αυτό.
 
-%ifnreason selfmoderated%
 Το μήνυμα αυτό απεστάλη στους παρακάτω διαχειριστές :
 - %moderators%
-%endif%
 
 --=_$random0$$random1$_=
 Content-Type: message/rfc822

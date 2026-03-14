@@ -12,9 +12,6 @@ Content-Transfer-Encoding: 8bit
 
 %wrap%A message from <$posteraddr$> with subject "$subject$" has been
 submitted for posting. You are being asked to moderate
-%ifreason selfmoderated%
-  because you are the requester and not subscribed.
-%endif%
 %ifreason modnonsubposts%
   because the requester is not a subscriber.
 %endif%
@@ -32,10 +29,8 @@ which can usually be done simply by replying to this message.
 %wrap%If you do not want to do any of this, either send a message to
 <$rejectaddr$> or simply ignore this message.
 
-%ifnreason selfmoderated%
 The following moderators have received this mail:
 - %moderators%
-%endif%
 
 --=_$random0$$random1$_=
 Content-Type: message/rfc822

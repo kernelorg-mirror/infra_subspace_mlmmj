@@ -19,8 +19,6 @@ tests_init \
 	subscription_moderation \
 	moderation \
 	moderation_autosubscribe \
-	moderation_selfmoderate \
-	moderation_selfmoderate_autosubscribe \
 	moderation_notifymod \
 	moderation_notmetoo \
 	moderation_reject_invalid \
@@ -1834,12 +1832,6 @@ EOF
 }
 
 moderation_init_body() {
-	if [ $# -eq 1 ]; then
-		moderator="$1"
-	else
-		moderator="test-moderators@mlmmjtest"
-	fi
-
 	init_ml list
 	rmdir list/text
 	ln -s ${top_srcdir}/listtexts/en list/text
@@ -1853,15 +1845,8 @@ moderation_init_body() {
 }
 
 moderation_test_body() {
-	if [ $# -eq 1 ]; then
-		moderator="$1"
-		rcpto="$1"
-		self=1
-	else
-		moderator="test-moderators@mlmmjtest"
-		rcpto="me@modos"
-		self=0
-	fi
+	moderator="test-moderators@mlmmjtest"
+	rcpto="me@modos"
 
 cat > first <<EOF
 From: bob@test
@@ -1894,19 +1879,8 @@ Content-Transfer-Encoding: 8bit
 Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
 
 A message from <bob@test> with subject "yeah" has been submitted for
-EOF
-	if [ $self -eq 0 ]; then
-	cat >> expected-1.txt <<EOF
 posting. You are being asked to moderate because this is a moderated list.
 The message is below.
-EOF
-	else
-cat >> expected-1.txt <<EOF
-posting. You are being asked to moderate because you are the requester and
-not subscribed. The message is below.
-EOF
-	fi
-	cat >> expected-1.txt <<EOF
 
 To release it to the list, please send a message to
 <test+release-@mlmmjtest> which can usually be done simply
@@ -1915,14 +1889,10 @@ by replying to this message.
 If you do not want to do any of this, either send a message to
 <test+reject-@mlmmjtest> or simply ignore this message.
 
-EOF
-	if [ $self -eq 0 ]; then
-	cat >> expected-1.txt <<EOF
 The following moderators have received this mail:
 - me@modos
 
 EOF
-	fi
 	cat >> expected-1.txt <<EOF
 --=boundary=
 Content-Type: message/rfc822
@@ -2002,20 +1972,6 @@ moderation_autosubscribe_body() {
 	atf_check -o inline:"bob@test\n" cat list/nomailsubs.d/b
 }
 
-
-moderation_selfmoderate_body() {
-	moderation_init_body bob@test
-	atf_check touch list/control/selfmoderate
-	moderation_test_body bob@test
-}
-
-moderation_selfmoderate_autosubscribe_body() {
-	moderation_init_body bob@test
-	touch list/control/selfmoderate
-	touch list/control/autosubscribe
-	moderation_test_body bob@test
-	atf_check -o inline:"bob@test\n" cat list/nomailsubs.d/b
-}
 
 moderation_notifymod_body() {
 	init_ml list

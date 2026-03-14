@@ -12,9 +12,6 @@ Content-Transfer-Encoding: 8bit
 
 %wrap%Viesti osoitteesta <$posteraddr$> otsikolla "$subject$" on lähetetty
 listalle välitettäväksi. Sinua pyydetään moderoimaan viesti, koska
-%ifreason selfmoderated%
- Koska olet lähettäjä etkä ole tilaaja.
-%endif%
 %ifreason modnonsubposts%
   viestin lähettäjä ei ole listan tilaaja.
 %endif%
@@ -32,10 +29,8 @@ Viesti on luettavissa alla.
 %wrap%Jos et halua viestiä hyväksyttävän, lähetä viesti osoitteeseen
 <$rejectaddr$> tai jätä tämä viesti kokonaan huomioimatta.
 
-%ifnreason selfmoderated%
 Seuraavat moderaattorit ovat saaneet tämän viestin:
 - %moderators%
-%endif%
 
 --=_$random0$$random1$_=
 Content-Type: message/rfc822

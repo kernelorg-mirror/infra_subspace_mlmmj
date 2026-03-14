@@ -12,9 +12,6 @@ Content-Transfer-Encoding: 8bit
 
 %wrap%Od <$posteraddr$> bola na zverejnenie doručená správa s predmetom
 "$subject$". Žiadame Vás o jej preverenie,
-%ifreason selfmoderated%
-  lebo si odosielateľ a nie si abonentom.
-%endif%
 %ifreason modnonsubposts%
   lebo jej odosielateľ nie je abonentom diskusie.
 %endif%
@@ -32,10 +29,8 @@ Správa je pripojená nižšie.
 %wrap%Ak nechcete vykonať žiadnu z týchto akcií, pošlite mail na
 <$rejectaddr$> alebo jednoducho túto správu ignorujte.
 
-%ifnreason selfmoderated%
 Túto správu dostali nasledujúci moderátori:
 - %moderators%
-%endif%
 
 --=_$random0$$random1$_=
 Content-Type: message/rfc822

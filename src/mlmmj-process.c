@@ -60,8 +60,7 @@ enum modreason {
 	MODNONSUBPOSTS,
 	MODNONMODPOSTS,
 	ACCESS,
-	MODERATED,
-	SELFMODERATED
+	MODERATED
 };
 
 
@@ -69,8 +68,7 @@ static char *modreason_strs[] = {
 	"modnonsubposts",
 	"modnonmodposts",
 	"access",
-	"moderated",
-	"selfmoderated"
+	"moderated"
 };
 
 static void
@@ -159,7 +157,6 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 	const char *efromismod = NULL;
 	const char *mailbasename = mybasename(mailfilename);
 	int notifymod = 0;
-	bool selfmoderate = 0;
 #if 0
 	printf("mailfilename = [%s], mailbasename = [%s]\n", mailfilename,
 			                                     mailbasename);
@@ -181,14 +178,7 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 
 	gen_addr(from, ml, "owner");
 
-	selfmoderate = statctrl(ml->ctrlfd, "selfmoderate");
-
-	if (selfmoderate) {
-		to = xstrdup(posteraddr);
-		modreason = SELFMODERATED;
-	} else {
-		xasprintf(&to, "%s-moderators@%s", ml->name, ml->fqdn);
-	}
+	xasprintf(&to, "%s-moderators@%s", ml->name, ml->fqdn);
 
 	txt = open_text(ml->fd, "moderate", "post",
 			modreason_strs[modreason], NULL, "moderation");
@@ -257,11 +247,6 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 
 	if (efromismod) {
 		send_mail_from_file(ml, from, efromsender, queuefilename);
-		exit(EXIT_SUCCESS);
-	}
-
-	if (selfmoderate) {
-		send_mail_from_file(ml, from, to, queuefilename);
 		exit(EXIT_SUCCESS);
 	}
 
