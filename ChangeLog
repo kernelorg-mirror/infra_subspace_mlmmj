@@ -1,3 +1,17 @@
+1.8.0
+ o New 'subrelease' feature: on lists with 'subonlypost', non-subscribers
+   can simultaneously subscribe and release their denied post by replying
+   to a single address. Three variants are provided: subrelease (normal
+   subscription), digestsubrelease, and nomailsubrelease.
+ o Remove 'selfmoderate' feature, superseded by 'subrelease'.
+ o Fix thread grouping in digest.
+ o Fix garbage output in send_digest.
+ o Properly close SMTP connection on EHLO failure.
+ o Improve error handling in send_mail.
+ o Clean up queue file on second do_all_the_voodoo_here failure.
+ o Use buffered I/O where possible for better performance.
+ o Update exim4 configuration hints for exim4 >= 4.94.
+ o Many new unit tests.
 1.7.1
  o Fix build with older GCC.
  o Fix a crash when processing email from list+owner.
