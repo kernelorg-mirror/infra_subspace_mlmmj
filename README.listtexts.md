@@ -464,6 +464,11 @@ Unformatted substitutions that are available are:
   listname+subscribe-digest@domain.tld
   DEPRECATED: use $list+$subscribe-digest@$domain$ instead
 
+- $digestsubreleaseaddr$
+  (available only in deny-post-subonlypost and wait-post-modnonsubposts)
+  the address to which to send mail to simultaneously subscribe to the digest
+  version of the list and release the post in question
+
 - $digestthreads$
   (available only in digest)
   the formatted list of threads included in the digest
@@ -508,6 +513,11 @@ Unformatted substitutions that are available are:
   listname+subscribe@domain.tld
   DEPRECATED: use $list+$subscribe@$domain$ instead
 
+- $listsubreleaseaddr$
+  (available only in deny-post-subonlypost and wait-post-modnonsubposts)
+  the address to which to send mail to simultaneously subscribe to the list
+  and release the post in question
+
 - $listunsubaddr$
   listname+unsubscribe@domain.tld
   DEPRECATED: use $list+$unsubscribe@$domain$ instead
@@ -535,6 +545,11 @@ Unformatted substitutions that are available are:
 - $nomailsubaddr$
   listname+subscribe-nomail@domain.tld
   DEPRECATED: use $list+$subscribe-nomail@$domain$ instead
+
+- $nomailsubreleaseaddr$
+  (available only in deny-post-subonlypost and wait-post-modnonsubposts)
+  the address to which to send mail to simultaneously subscribe to the no-mail
+  version of the list and release the post in question
 
 - $nomailunsubaddr$
   listname+unsubscribe-nomail@domain.tld

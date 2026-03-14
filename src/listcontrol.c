@@ -72,6 +72,9 @@ static struct ctrl_command ctrl_commands[] = {
 	{ "confunsub-nomail",   true , false, true , CTRL_CONFUNSUB_NOMAIL },
 	{ "confunsub",          true , false, true , CTRL_CONFUNSUB },
 	{ "bounces",            true , true , true , CTRL_BOUNCES },
+	{ "subrelease",         true , true , true , CTRL_SUBRELEASE },
+	{ "digestsubrelease",   true , true , true , CTRL_DIGESTSUBRELEASE },
+	{ "nomailsubrelease",   true , true , true , CTRL_NOMAILSUBRELEASE },
 	{ "release",            true , true , true , CTRL_RELEASE },
 	{ "reject",             true , true , true , CTRL_REJECT },
 	{ "permit",             true , true , true , CTRL_PERMIT },
@@ -400,6 +403,20 @@ int listcontrol(strlist *fromemails, struct ml *ml, const char *controlstr,
 		exit(EXIT_SUCCESS);
 		break;
 
+	/* listname+subrelease-COOKIE@domain.tld */
+	case CTRL_SUBRELEASE:
+		ts = SUB_NORMAL;
+		/* fallthrough */
+	/* listname+digestsubrelease-COOKIE@domain.tld */
+	case CTRL_DIGESTSUBRELEASE:
+		if (ts == SUB_NONE)
+			ts = SUB_DIGEST;
+		/* fallthrough */
+	/* listname+nomailsubrelease-COOKIE@domain.tld */
+	case CTRL_NOMAILSUBRELEASE:
+		if (ts == SUB_NONE)
+			ts = SUB_NOMAIL;
+		/* fallthrough */
 	/* listname+release-COOKIE@domain.tld */
 	case CTRL_RELEASE:
 	/* DEPRECATED: listname+moderate-COOKIE@domain.tld */
@@ -437,8 +454,15 @@ int listcontrol(strlist *fromemails, struct ml *ml, const char *controlstr,
 			unlinkat(ml->fd, omitfilename, 0);
 		free(omitfilename);
 		free(moderatefilename);
-		bool autosubscribe = statctrl(ml->ctrlfd, "autosubscribe");
-		if (autosubscribe) {
+		if (ts != SUB_NONE) {
+			/* subrelease: always subscribe with requested type */
+			int mfd = openat(ml->fd, sendfilename, O_RDONLY);
+			if (mfd == -1) {
+				free(sendfilename);
+				return (-1);
+			}
+			autosubscribe_sender(ml, mfd, ts);
+		} else if (statctrl(ml->ctrlfd, "autosubscribe")) {
 			int mfd = openat(ml->fd, sendfilename, O_RDONLY);
 			if (mfd == -1) {
 				free(sendfilename);

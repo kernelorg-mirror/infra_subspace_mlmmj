@@ -222,7 +222,31 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 		register_formatted(txt, "moderators",
 				rewind_memory_lines, get_memory_line, mls);
 		register_originalmail(txt, mailfilename);
-		qfname = prepstdreply(txt, ml, "$listowner$", efromsender, NULL);
+
+		char *subreplyto = NULL;
+		if (modreason == MODNONSUBPOSTS &&
+		    !statctrl(ml->ctrlfd, "closedlist") &&
+		    !statctrl(ml->ctrlfd, "closedlistsub")) {
+			char *listsubreleaseaddr;
+			char *digestsubreleaseaddr;
+			char *nomailsubreleaseaddr;
+			gen_addr_cookie(listsubreleaseaddr, ml,
+			    "subrelease-", mailbasename);
+			gen_addr_cookie(digestsubreleaseaddr, ml,
+			    "digestsubrelease-", mailbasename);
+			gen_addr_cookie(nomailsubreleaseaddr, ml,
+			    "nomailsubrelease-", mailbasename);
+			register_unformatted(txt,
+			    "listsubreleaseaddr", listsubreleaseaddr);
+			register_unformatted(txt,
+			    "digestsubreleaseaddr", digestsubreleaseaddr);
+			register_unformatted(txt,
+			    "nomailsubreleaseaddr", nomailsubreleaseaddr);
+			subreplyto = listsubreleaseaddr;
+		}
+
+		qfname = prepstdreply(txt, ml, "$listowner$", efromsender,
+		    subreplyto);
 		MY_ASSERT(qfname);
 		close_text(txt);
 
@@ -817,11 +841,52 @@ int main(int argc, char **argv)
 			    register_unformatted(txt, "subject", subject);
 			    register_unformatted(txt, "posteraddr", testaddr);
 			    register_originalmail(txt, donemailname);
+
+			    bool closedlist = statctrl(ml.ctrlfd, "closedlist");
+			    bool closedlistsub = statctrl(ml.ctrlfd, "closedlistsub");
+			    char *subreplyto = NULL;
+
+			    if (subonlypost && !closedlist && !closedlistsub) {
+				char *modname;
+				char *listsubreleaseaddr;
+				char *digestsubreleaseaddr;
+				char *nomailsubreleaseaddr;
+				xasprintf(&modname, "%s/moderation/%s",
+				    ml.dir, randomstr);
+				if (rename(donemailname, modname) != 0) {
+					log_error(LOG_ARGS,
+					    "could not rename(%s,%s)",
+					    donemailname, modname);
+					free(modname);
+					close_text(txt);
+					free_parsed_hdrs(readhdrs, fromemails,
+					    originalfromemails, toemails,
+					    ccemails, rpemails, dtemails,
+					    allheaders);
+					exit(EXIT_FAILURE);
+				}
+				free(modname);
+				gen_addr_cookie(listsubreleaseaddr, &ml,
+				    "subrelease-", randomstr);
+				gen_addr_cookie(digestsubreleaseaddr, &ml,
+				    "digestsubrelease-", randomstr);
+				gen_addr_cookie(nomailsubreleaseaddr, &ml,
+				    "nomailsubrelease-", randomstr);
+				register_unformatted(txt,
+				    "listsubreleaseaddr", listsubreleaseaddr);
+				register_unformatted(txt,
+				    "digestsubreleaseaddr", digestsubreleaseaddr);
+				register_unformatted(txt,
+				    "nomailsubreleaseaddr", nomailsubreleaseaddr);
+				subreplyto = listsubreleaseaddr;
+			    }
+
 			    queuefilename = prepstdreply(txt, &ml,
-				    "$listowner$", testaddr, NULL);
+				    "$listowner$", testaddr, subreplyto);
 			    MY_ASSERT(queuefilename)
 			    close_text(txt);
-			    unlink(donemailname);
+			    if (subreplyto == NULL)
+				unlink(donemailname);
 			    free(donemailname);
 			    send_help(&ml, queuefilename, testaddr);
 			}
