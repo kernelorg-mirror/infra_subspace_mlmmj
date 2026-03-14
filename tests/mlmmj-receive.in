@@ -3382,6 +3382,16 @@ EOF
 	# Verify the released mail was sent to subscribers (including bob who just subscribed)
 	cat > expected-release.txt <<EOF
 EHLO heloname
+MAIL FROM:<test+bounces-1-bob=test@mlmmjtest>
+RCPT TO:<bob@test>
+DATA
+From: bob@test
+To: test@mlmmjtest
+Subject: yeah
+
+Let's go, first email
+
+.
 MAIL FROM:<test+bounces-1-user=test@mlmmjtest>
 RCPT TO:<user@test>
 DATA
@@ -3394,16 +3404,6 @@ Let's go, first email
 .
 MAIL FROM:<test+bounces-1-user2=test@mlmmjtest>
 RCPT TO:<user2@test>
-DATA
-From: bob@test
-To: test@mlmmjtest
-Subject: yeah
-
-Let's go, first email
-
-.
-MAIL FROM:<test+bounces-1-bob=test@mlmmjtest>
-RCPT TO:<bob@test>
 DATA
 From: bob@test
 To: test@mlmmjtest
