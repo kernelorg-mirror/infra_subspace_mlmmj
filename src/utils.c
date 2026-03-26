@@ -213,15 +213,9 @@ lock(int fd, bool wr)
 	lck.l_whence = SEEK_SET;
 	lck.l_start = 0;
 	lck.l_len = 0;
-	int i = 0;
 	do {
-		i++;
-		if (i == 2) {
-			warn("plop");
-			exit(1);
-		}
 		r = fcntl(fd, F_SETLKW, &lck);
-	} while (r < 0 && errno != EINTR);
+	} while (r < 0 && errno == EINTR);
 	if (r == -1) {
 		close(fd);
 		return (false);
