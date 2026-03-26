@@ -40,7 +40,8 @@ char *checkwait_smtpreply(int sockfd, int replytype)
 		do {
 			free(smtpreply);
 			smtpreply = mygetline(sockfd);
-		} while (strncmp(smtpreply, "250-", 4) == 0);
+		} while (smtpreply != NULL &&
+		    strncmp(smtpreply, "250-", 4) == 0);
 	} else {
 		smtpreply = mygetline(sockfd);
 	}
