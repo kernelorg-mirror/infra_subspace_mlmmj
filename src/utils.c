@@ -187,12 +187,16 @@ exec_and_wait(const char *arg, ...)
 		return (-1);
 	}
 	while (waitpid(p, &pstat, 0) == -1) {
-		if (errno != EINTR)
-			warn("Could not wait for the execution of '%s'", argv[0]);
+		if (errno == EINTR)
+			continue;
+		warn("Could not wait for the execution of '%s'", argv[0]);
 		free(argv);
 		return (-1);
 	}
 	free(argv);
+
+	if (!WIFEXITED(pstat))
+		return (-1);
 
 	return (WEXITSTATUS(pstat));
 }

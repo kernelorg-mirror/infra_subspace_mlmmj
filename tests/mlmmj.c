@@ -343,7 +343,7 @@ ATF_TC_BODY(exec_or_die, tc)
 
 ATF_TC_BODY(exec_and_wait, tc)
 {
-	int val = exec_and_wait("/usr/bin/nopenope", NULL);
+	int val = exec_and_wait("nopenope", NULL);
 	ATF_REQUIRE_EQ(val, -1);
 	val = exec_and_wait("true", NULL);
 	ATF_REQUIRE_EQ(val, 0);
