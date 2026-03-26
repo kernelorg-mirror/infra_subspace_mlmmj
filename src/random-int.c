@@ -34,34 +34,21 @@
 int random_int(void)
 {
 #ifndef HAVE_ARC4RANDOM_UNIFORM
-	static int init = 0;
-	unsigned int seed;
 	int devrandom;
-	uint32_t ch;
-
-	if (init) return rand();
-
-	seed = (unsigned int)time(NULL);
+	uint32_t val;
 
 	devrandom = open("/dev/urandom", O_RDONLY);
-	if(devrandom < 0)
+	if (devrandom < 0)
 		devrandom = open("/dev/random", O_RDONLY);
 
 	if (devrandom >= 0) {
-		readn(devrandom, &ch, 1);
-		seed ^= ch;
-		readn(devrandom, &ch, 1);
-		seed ^= ch << 8;
-		readn(devrandom, &ch, 1);
-		seed ^= ch << 16;
-		readn(devrandom, &ch, 1);
-		seed ^= ch << 24;
+		readn(devrandom, &val, sizeof(val));
 		close(devrandom);
+		return (int)(val & 0x7fffffff);
 	}
 
-	srand(seed);
-	init = 1;
-
+	/* Last resort fallback if no random device available */
+	srand((unsigned int)time(NULL) ^ (unsigned int)getpid());
 	return rand();
 #else
 	return arc4random_uniform(INT_MAX);
