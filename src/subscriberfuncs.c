@@ -415,7 +415,7 @@ do_unsubscribe(struct ml *ml, const char *addr, enum subtype typesub,
 void
 mod_get_addr_and_type(struct ml *ml, const char *modstr, char **addrptr, enum subtype *subtypeptr)
 {
-	int fd, dfd;
+	int fd = -1, dfd;
 	char *readtype, *modfilename = NULL;
 	char *buf, *walk;
 	size_t i;
