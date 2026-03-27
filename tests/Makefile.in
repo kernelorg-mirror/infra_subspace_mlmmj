@@ -1,0 +1,45 @@
+include @builddir@/mk/defs.mk
+
+@if tests
+LOCAL_CFLAGS= -I@builddir@ -I$(top_srcdir)/include @PKG_ATF_C_CFLAGS@ -DTOP_SRCDIR=\"@abs_top_srcdir@\"
+
+include $(MK)/common.mk
+
+TESTS_SH= \
+	functional-tests.sh \
+	mlmmj-bounce.sh \
+	mlmmj-maintd.sh \
+	mlmmj-receive.sh \
+	mlmmj-sub.sh \
+	mlmmj-list.sh \
+	mlmmj-process.sh \
+	mlmmj-send.sh
+
+TESTS_SHELL=	$(TESTS_SH:.sh=)
+
+all: mlmmj fakesmtpd $(TESTS_SHELL)
+
+mlmmj: mlmmj.o mlmmj_tests.o $(top_builddir)/src/libmlmmj.a
+	$(CC) -o $@ mlmmj.o mlmmj_tests.o $(top_builddir)/src/libmlmmj.a $(LDFLAGS) @PKG_ATF_C_LDFLAGS@ @PKG_ATF_C_LIBS@
+
+fakesmtpd: fakesmtpd.o
+	$(CC) -o $@ fakesmtpd.o $(LDFLAGS)
+
+check: all
+	kyua --config='$(top_builddir)/kyua.conf' test \
+	    --kyuafile='$(top_srcdir)/Kyuafile' --build-root='$(top_builddir)'
+
+clean:
+	rm -f mlmmj fakesmtpd *.o *.Po $(TESTS_SHELL)
+
+install:
+
+.sh:
+	install -m 755 $< $@
+
+@else
+all:
+clean:
+install:
+check:
+@endif

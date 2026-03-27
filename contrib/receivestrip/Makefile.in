@@ -1,0 +1,18 @@
+include @builddir@/mk/defs.mk
+
+@if receive-strip
+PROG= mlmmj-receive-strip
+SRCS= mlmmj-receive-strip.c
+LOCAL_CFLAGS= -I@builddir@ -I$(top_srcdir)/include -DDEFAULTTEXTDIR='"@textlibdir@"'
+LDFLAGS+= $(top_builddir)/src/libmlmmj.a
+
+include $(MK)/prog.mk
+
+install: $(PROG)
+	install -d -m 755 $(DESTDIR)$(sbindir)
+	install -m 755 $(PROG) $(DESTDIR)$(sbindir)/
+@else
+all:
+clean:
+install:
+@endif

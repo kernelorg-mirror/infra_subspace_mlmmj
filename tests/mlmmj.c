@@ -2188,10 +2188,13 @@ static void
 setup_listtext(const atf_tc_t *tc)
 {
 	char *dir = NULL;
+	const char *srcdir;
 	rmdir("list/text");
-	ATF_REQUIRE_MSG(atf_tc_has_config_var(tc, "top_srcdir"), "missing configuration variable 'top_srcdir'");
-	xasprintf(&dir, "%s/listtexts/en",
-	    atf_tc_get_config_var(tc, "top_srcdir"));
+	if (atf_tc_has_config_var(tc, "top_srcdir"))
+		srcdir = atf_tc_get_config_var(tc, "top_srcdir");
+	else
+		srcdir = TOP_SRCDIR;
+	xasprintf(&dir, "%s/listtexts/en", srcdir);
 
 	symlink(dir, "list/text");
 }

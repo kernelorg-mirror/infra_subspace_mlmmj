@@ -1,0 +1,60 @@
+include @builddir@/mk/defs.mk
+
+LIB= mlmmj
+SRCS= access.c mail-functions.c chomp.c incindexfile.c \
+      checkwait_smtpreply.c init_sockfd.c strgen.c \
+      random-int.c print-version.c log_error.c mygetline.c \
+      getaddrsfromfile.c readn.c \
+      subscriberfuncs.c find_email_adr.c dumpfd2fd.c \
+      listcontrol.c send_help.c prepstdreply.c \
+      do_all_the_voodoo_here.c log_oper.c send_list.c \
+      unistr.c gethdrline.c send_digest.c \
+      statctrl.c ctrlvalue.c getlistdelim.c ctrlvalues.c \
+      utils.c mlmmj.c send_mail.c
+
+LOCAL_CFLAGS= -I@builddir@ -I$(top_srcdir)/include -DDEFAULTTEXTDIR='"@textlibdir@"'
+
+include $(MK)/static-lib.mk
+
+PROGRAMS= mlmmj-send mlmmj-receive mlmmj-process mlmmj-sub \
+          mlmmj-unsub mlmmj-bounce mlmmj-maintd mlmmj-list
+
+all: $(PROGRAMS)
+
+mlmmj-send: mlmmj-send.o libmlmmj.a
+	$(CC) -o $@ mlmmj-send.o libmlmmj.a $(LDFLAGS)
+
+mlmmj-receive: mlmmj-receive.o libmlmmj.a
+	$(CC) -o $@ mlmmj-receive.o libmlmmj.a $(LDFLAGS)
+
+mlmmj-process: mlmmj-process.o libmlmmj.a
+	$(CC) -o $@ mlmmj-process.o libmlmmj.a $(LDFLAGS)
+
+mlmmj-sub: mlmmj-sub.o libmlmmj.a
+	$(CC) -o $@ mlmmj-sub.o libmlmmj.a $(LDFLAGS)
+
+mlmmj-unsub: mlmmj-unsub.o libmlmmj.a
+	$(CC) -o $@ mlmmj-unsub.o libmlmmj.a $(LDFLAGS)
+
+mlmmj-bounce: mlmmj-bounce.o libmlmmj.a
+	$(CC) -o $@ mlmmj-bounce.o libmlmmj.a $(LDFLAGS)
+
+mlmmj-maintd: mlmmj-maintd.o libmlmmj.a
+	$(CC) -o $@ mlmmj-maintd.o libmlmmj.a $(LDFLAGS)
+
+mlmmj-list: mlmmj-list.o libmlmmj.a
+	$(CC) -o $@ mlmmj-list.o libmlmmj.a $(LDFLAGS)
+
+clean: clean-progs
+
+clean-progs:
+	rm -f $(PROGRAMS) $(PROGRAMS:=.o)
+
+install: $(PROGRAMS)
+	install -d -m 755 $(DESTDIR)$(sbindir)
+	for p in $(PROGRAMS); do install -m 755 $$p $(DESTDIR)$(sbindir)/; done
+	install -m 755 mlmmj-make-ml $(DESTDIR)$(sbindir)/
+	ln -f -s mlmmj-receive $(DESTDIR)$(sbindir)/mlmmj-recieve
+	ln -f -s mlmmj-make-ml $(DESTDIR)$(sbindir)/mlmmj-make-ml.sh
+	install -d -m 755 $(DESTDIR)$(mandir)/man1
+	for m in $(top_srcdir)/man/*.1; do install -m 644 $$m $(DESTDIR)$(mandir)/man1/; done

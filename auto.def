@@ -1,0 +1,77 @@
+# vim:se syn=tcl:
+#
+
+use cc cc-lib pkg-config
+
+define VERSION 1.8.0
+
+options {
+	with-asan => "build with libasan support"
+	with-ubsan => "build with libubsan support"
+	with-coverage => "build with coverage flags"
+	enable-receive-strip=0 => "build mlmmj-receive-strip"
+	enable-tests=1 => "build and run tests"
+}
+
+cc-check-tools ar ranlib strip
+
+# Function checks
+cc-check-functions arc4random_uniform copy_file_range
+
+if {[opt-bool with-asan]} {
+	define ASAN_CFLAGS "-O0 -ggdb -fsanitize=address"
+	define ASAN_LDFLAGS "-fsanitize=address"
+	define asan 1
+}
+
+if {[opt-bool with-ubsan]} {
+	define UBSAN_CFLAGS "-O0 -ggdb -fsanitize=undefined"
+	define UBSAN_LDFLAGS "-fsanitize=undefined"
+	define ubsan 1
+}
+
+if {[opt-bool with-coverage]} {
+	define COVERAGE_CFLAGS "-O0 -ggdb -fprofile-arcs -ftest-coverage -fprofile-generate"
+	define COVERAGE_LDFLAGS "-fprofile-generate"
+	define coverage 1
+}
+
+if {[opt-bool enable-receive-strip]} {
+	define receive-strip 1
+}
+
+define textlibdir [get-define datadir]/mlmmj/text.skel
+
+if {[opt-bool enable-tests]} {
+	if {![pkg-config-init 0]} {
+		user-error "Unable to find pkg-config (required for tests)"
+	}
+	if {![pkg-config atf-c]} {
+		user-error "Unable to find atf-c via pkg-config (required for tests)"
+	}
+	if {![cc-check-progs kyua]} {
+		user-error "A 'kyua' binary is required when the tests are enabled."
+	}
+	if {![cc-path-progs atf-sh]} {
+		user-error "An 'atf-sh' binary is required when the tests are enabled."
+	}
+	define TESTDIR tests
+	define tests 1
+} else {
+	define TESTDIR ""
+}
+
+make-config-header config.h -auto {VERSION}
+make-template mk/defs.mk.in
+make-template Makefile.in
+make-template src/Makefile.in
+make-template listtexts/Makefile.in
+make-template contrib/Makefile.in
+make-template contrib/receivestrip/Makefile.in
+make-template src/mlmmj-make-ml.in
+make-template kyua.conf.in
+
+if {[opt-bool enable-tests]} {
+	make-template tests/Makefile.in
+	make-template tests/test_env.sh.in
+}

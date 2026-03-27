@@ -1,0 +1,14 @@
+include @builddir@/mk/defs.mk
+
+all:
+
+clean:
+
+install:
+	for lang in $(top_srcdir)/listtexts/*/; do \
+		langname=$$(basename $$lang); \
+		install -d -m 755 $(DESTDIR)@textlibdir@/$$langname; \
+		for f in $$lang/*; do \
+			install -m 644 $$f $(DESTDIR)@textlibdir@/$$langname/; \
+		done; \
+	done
