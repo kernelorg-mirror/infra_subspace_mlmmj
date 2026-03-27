@@ -501,13 +501,6 @@ bouncemail(int listfd, const char *theaddress, const char *identifier)
 		return (BOUNCE_OK);
 	}
 
-	if(fstatat(bdfd, address, &st, AT_SYMLINK_NOFOLLOW) == 0) {
-		if(S_ISLNK(st.st_mode)) {
-			log_error(LOG_ARGS, "bounce/%s is a symbolic link", address);
-			free(address);
-			return (BOUNCE_FAIL);
-		}
-	}
 	*tmp = '@';
 	if (is_subbed(listfd, address, 0) == SUB_NONE) {
 		log_error(LOG_ARGS, "%s is bouncing but not subscribed?",
@@ -516,7 +509,7 @@ bouncemail(int listfd, const char *theaddress, const char *identifier)
 		return (BOUNCE_OK);
 	}
 	*tmp = '=';
-	bfd = openat(bdfd, address, O_WRONLY|O_APPEND|O_CREAT, S_IRUSR|S_IWUSR);
+	bfd = openat(bdfd, address, O_WRONLY|O_APPEND|O_CREAT|O_NOFOLLOW, S_IRUSR|S_IWUSR);
 	close(bdfd);
 	if (bfd == -1) {
 		log_error(LOG_ARGS, "Cound not open(bounce/%s)", address);
