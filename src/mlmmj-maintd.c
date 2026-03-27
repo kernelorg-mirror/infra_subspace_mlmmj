@@ -211,6 +211,8 @@ resend_queue(struct ml *ml, int logfd)
 					unlinkat(qfd, reptoname, 0);
 				}
 			}
+			free(from);
+			free(to);
 			free(reptoname);
 			free(fromname);
 			free(toname);
@@ -251,6 +253,9 @@ resend_queue(struct ml *ml, int logfd)
 			unlinkat(qfd, toname, 0);
 			unlinkat(qfd, reptoname, 0);
 		}
+		free(from);
+		free(to);
+		free(repto);
 		free(reptoname);
 		free(fromname);
 		free(toname);
