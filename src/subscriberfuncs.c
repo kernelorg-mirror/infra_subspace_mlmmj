@@ -632,7 +632,8 @@ subscribe_type(int listfd, char *address, enum subtype typesub)
 		if(st.st_mode & S_IWGRP) {
 			groupwritable = S_IRGRP|S_IWGRP;
 			umask(S_IWOTH);
-			setgid(st.st_gid);
+			if (setgid(st.st_gid) < 0)
+				err(EXIT_FAILURE, "setgid");
 		}
 	}
 
