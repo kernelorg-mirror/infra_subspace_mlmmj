@@ -125,6 +125,11 @@ void unistr_append_utf8(unistr *str, const char *binary, size_t bin_len)
 			}
 			for (;j>0; j--) {
 				i++;
+				if (i >= bin_len) {
+					/* truncated byte sequence */
+					ch = '?';
+					break;
+				}
 				ch <<= 6;
 				if ((bin[i] & 192) != 128) {
 					/* invalid byte sequence */
