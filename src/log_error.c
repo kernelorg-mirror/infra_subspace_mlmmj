@@ -33,20 +33,15 @@
 #include "log_error.h"
 #include "config.h"
 
-#ifdef HAVE_SYSLOG_H
 #include <syslog.h>
-#endif
 
 static char *log_name = NULL;
 static bool syslog_is_open = false;
-#ifdef HAVE_SYSLOG
 static int syslog_logopt = LOG_PID|LOG_CONS;
-#endif
 
 static void
 _openlog(bool reopen)
 {
-#ifdef HAVE_SYSLOG
 	if (!reopen) {
 		if (syslog_is_open)
 			return;
@@ -56,7 +51,6 @@ _openlog(bool reopen)
 	}
 	openlog(log_name, syslog_logopt, LOG_MAIL);
 	syslog_is_open = true;
-#endif
 }
 
 void log_set_name(const char* name)
@@ -70,10 +64,8 @@ void log_set_name(const char* name)
 void
 log_activate_stderr(void)
 {
-#ifdef HAVE_SYSLOG
 	syslog_logopt |= LOG_PERROR;
 	_openlog(true);
-#endif
 }
 
 void
@@ -106,15 +98,8 @@ log_err(const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-#ifdef HAVE_SYSLOG
 	_openlog(false);
 	vsyslog(LOG_ERR, fmt, ap);
-#else
-	char *buf;
-	vasprintf(&buf, fmt, ap);
-	fprintf(stderr, "%s[%d]: %s\n", log_name, (int) getpid(), buf);
-	free(buf);
-#endif
 	va_end(ap);
 }
 
@@ -134,12 +119,7 @@ void log_error(const char *file, int line, const char *errstr,
 
 	if (!log_name) log_name = "mlmmj-UNKNOWN";
 
-#ifdef HAVE_SYSLOG
 	_openlog(true);
 	syslog(LOG_ERR, "%s:%d: %s: %s", file, line, buf, errstr);
-#else
-	fprintf(stderr, "%s[%d]: %s:%d: %s: %s\n", log_name, (int)getpid(),
-			file, line, buf, errstr);
-#endif
 	free(buf);
 }
