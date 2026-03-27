@@ -353,10 +353,13 @@ unsubscribe(int listfd, const char *address, enum subtype typesub)
 			continue;
 		}
 
-		if (st.st_size == 0)
+		if (st.st_size == 0) {
+			close(rfd);
 			continue;
+		}
 		if (!S_ISREG(st.st_mode)) {
 			log_err("Non regular files in subscribers.d");
+			close(rfd);
 			continue;
 		}
 
