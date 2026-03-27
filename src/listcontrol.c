@@ -403,7 +403,9 @@ int listcontrol(strlist *fromemails, struct ml *ml, const char *controlstr,
 		} else {
 			*c++ = '\0';
 		}
-		bret = bouncemail(ml->fd, lowercase(c), bouncenr);
+		char *lowered = lowercase(c);
+		bret = bouncemail(ml->fd, lowered, bouncenr);
+		free(lowered);
 		if (bret == BOUNCE_DONE)
 			save_lastbouncedmsg(ml->fd, c, mailname);
 		if (bret == BOUNCE_FAIL)
