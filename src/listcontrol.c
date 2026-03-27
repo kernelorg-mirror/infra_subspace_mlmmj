@@ -110,6 +110,15 @@ is_valid_email(const char *email, const char *log)
 			    " Ignoring mail", log);
 		return (false);
 	}
+	for (const char *p = email; *p != '\0'; p++) {
+		if ((unsigned char)*p < 0x20) {
+			errno = 0;
+			log_error(LOG_ARGS, "%s request has "
+			    "control character in From: header."
+			    " Ignoring mail", log);
+			return (false);
+		}
+	}
 	return (true);
 }
 

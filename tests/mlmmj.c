@@ -2846,6 +2846,25 @@ ATF_TC_BODY(listcontrol, tc)
 	unlink("list/control/closedlist");
 	atf_utils_create_file("list/control/closedlistsub", "");
 	ATF_REQUIRE_EQ(listcontrol(&fromemails, &ml, "subscribe", NULL, "meh"), -1);
+
+	/* is_valid_email: reject addresses without @ */
+	strlist no_at = tll_init();
+	tll_push_back(no_at, "invalid-address");
+	ATF_REQUIRE_EQ(listcontrol(&no_at, &ml, "help", NULL, "meh"), -1);
+
+	/* is_valid_email: reject addresses with control characters */
+	strlist crlf = tll_init();
+	tll_push_back(crlf, "evil@bad\r\nBcc: victim");
+	ATF_REQUIRE_EQ(listcontrol(&crlf, &ml, "help", NULL, "meh"), -1);
+
+	strlist lf = tll_init();
+	tll_push_back(lf, "evil@bad\n");
+	ATF_REQUIRE_EQ(listcontrol(&lf, &ml, "help", NULL, "meh"), -1);
+
+	strlist nul = tll_init();
+	tll_push_back(nul, "evil\x01@bad");
+	ATF_REQUIRE_EQ(listcontrol(&nul, &ml, "help", NULL, "meh"), -1);
+
 }
 
 ATF_TC_BODY(send_help, tc)
