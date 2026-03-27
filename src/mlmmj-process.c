@@ -72,18 +72,18 @@ static char *modreason_strs[] = {
 };
 
 static void
-free_parsed_hdrs(struct mailhdr *readhdrs, strlist fromemails,
-    strlist originalfromemails, strlist toemails, strlist ccemails,
-    strlist rpemails, strlist dtemails, strlist allheaders)
+free_parsed_hdrs(struct mailhdr *readhdrs, strlist *fromemails,
+    strlist *originalfromemails, strlist *toemails, strlist *ccemails,
+    strlist *rpemails, strlist *dtemails, strlist *allheaders)
 {
 	free_mailhdrs(readhdrs);
-	tll_free_and_free(fromemails, free);
-	tll_free_and_free(originalfromemails, free);
-	tll_free_and_free(toemails, free);
-	tll_free_and_free(ccemails, free);
-	tll_free_and_free(rpemails, free);
-	tll_free_and_free(dtemails, free);
-	tll_free_and_free(allheaders, free);
+	vec_free_and_free(fromemails, free);
+	vec_free_and_free(originalfromemails, free);
+	vec_free_and_free(toemails, free);
+	vec_free_and_free(ccemails, free);
+	vec_free_and_free(rpemails, free);
+	vec_free_and_free(dtemails, free);
+	vec_free_and_free(allheaders, free);
 }
 
 static bool is_moderator(int listfd, const char *address,
@@ -287,17 +287,17 @@ int main(int argc, char **argv)
 	char *envstr;
 	const char *efrom = "";
 	struct stat st;
-	strlist fromemails = tll_init();
-	strlist originalfromemails = tll_init();
-	strlist toemails = tll_init();
-	strlist ccemails = tll_init();
-	strlist rpemails = tll_init();
-	strlist dtemails = tll_init();
+	strlist fromemails = vec_init();
+	strlist originalfromemails = vec_init();
+	strlist toemails = vec_init();
+	strlist ccemails = vec_init();
+	strlist rpemails = vec_init();
+	strlist dtemails = vec_init();
 	strlist *testfrom = NULL;
 	strlist *access_rules = NULL;
 	strlist *list_rules = NULL;
 	strlist *delheaders = NULL;
-	strlist allheaders = tll_init();
+	strlist allheaders = vec_init();
 	strlist *listaddrs = NULL;
 	struct mailhdr readhdrs[] = {
 		{ "From:", 0, NULL },
@@ -385,8 +385,8 @@ int main(int argc, char **argv)
 	if (delheaders == NULL)
 		delheaders = xcalloc(1, sizeof(*delheaders));
 
-	tll_push_back(*delheaders, xstrdup("From "));
-	tll_push_back(*delheaders, xstrdup("Return-Path:"));
+	vec_push(delheaders, xstrdup("From "));
+	vec_push(delheaders, xstrdup("Return-Path:"));
 
 	subjectprefix = ctrlvalue(ml.ctrlfd, "prefix");
 
@@ -399,12 +399,12 @@ int main(int argc, char **argv)
 		close(donemailfd);
 		unlink(donemailname);
 		free(donemailname);
-		free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
-			    toemails, ccemails, rpemails, dtemails, allheaders);
+		free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
+			    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
 		exit(EXIT_FAILURE);
 	}
 
-	tll_free_and_free(*delheaders, free);
+	vec_free_and_free(delheaders, free);
 
 	close(rawmailfd);
 	close(donemailfd);
@@ -452,7 +452,7 @@ int main(int argc, char **argv)
 			    recipextra != NULL ? NULL : &recipextra);
 	}
 	if (listaddrs)
-		tll_free_and_free(*listaddrs, free);
+		vec_free_and_free(listaddrs, free);
 	free(listaddrs);
 
 	if (recipextra && *recipextra == '\0') {
@@ -470,32 +470,32 @@ int main(int argc, char **argv)
 	}
 
 	/* discard malformed mail with invalid From: unless it's a bounce */
-	if (tll_length(fromemails) != 1 &&
+	if (fromemails.len != 1 &&
 			(recipextra == NULL ||
 			strncmp(recipextra, "bounces", 7) != 0)) {
-		tll_foreach(fromemails, it)
+		vec_foreach(fromemails, _i)
 			printf("fromemails.emaillist[] = %s\n",
-					it->item);
+					fromemails.d[_i]);
 		xasprintf(&discardname, "%s/queue/discarded/%s", ml.dir, randomstr);
 		log_error(LOG_ARGS, "Discarding %s due to invalid From:",
 				mailfile);
-		tll_foreach(fromemails, it)
+		vec_foreach(fromemails, _i)
 			log_error(LOG_ARGS, "fromemails.emaillist[] = %s\n",
-					it->item);
+					fromemails.d[_i]);
 		rename(mailfile, discardname);
 		unlink(donemailname);
 		free(donemailname);
 		free(discardname);
 		free(randomstr);
-		free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
-			    toemails, ccemails, rpemails, dtemails, allheaders);
+		free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
+			    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
 		exit(EXIT_SUCCESS);
 	}
 	/* The only time posteraddr will remain unset is when the mail is a
 	 * bounce, so the mail will be processed by listcontrol() and the
 	 * program will terminate before posteraddr is used. */
-	if (tll_length(fromemails) > 0)
-			posteraddr = tll_front(fromemails);
+	if (fromemails.len > 0)
+			posteraddr = fromemails.d[0];
 
 	/* Return-Path: addresses */
 	for(i = 0; i < readhdrs[3].valuecount; i++) {
@@ -506,9 +506,9 @@ int main(int argc, char **argv)
 	if ((envstr = getenv("SENDER")) != NULL) {
 		/* qmail, postfix, exim */
 		efrom = envstr;
-	} else if (tll_length(rpemails) >= 1) {
+	} else if (rpemails.len >= 1) {
 		/* the (first) Return-Path: header */
-		efrom = tll_front(rpemails);
+		efrom = rpemails.d[0];
 	}
 
 	/* Subject: */
@@ -523,43 +523,43 @@ int main(int argc, char **argv)
 			/* strip envelope from before resending */
 			int ownfd = openat(ml.ctrlfd, "owner", O_RDONLY);
 			xasprintf(&owner, "%d", ownfd);
-			tll_push_back(*delheaders, xstrdup("From "));
-			tll_push_back(*delheaders, xstrdup("Return-Path:"));
+			vec_push(delheaders, xstrdup("From "));
+			vec_push(delheaders, xstrdup("Return-Path:"));
 
 			if ((rawmailfd = open(mailfile, O_RDONLY)) < 0) {
 				log_error(LOG_ARGS, "could not open() "
 						    "input mail file");
-				free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
-					    toemails, ccemails, rpemails, dtemails, allheaders);
+				free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
+					    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
 				exit(EXIT_FAILURE);
 			}
 			if ((donemailfd = open(donemailname,
 						O_WRONLY|O_TRUNC)) < 0) {
 				log_error(LOG_ARGS, "could not open() "
 						    "output mail file");
-				free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
-					    toemails, ccemails, rpemails, dtemails, allheaders);
+				free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
+					    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
 				exit(EXIT_FAILURE);
 			}
 			{
-			strlist ownerhdrs = tll_init();
+			strlist ownerhdrs = vec_init();
 			if (do_all_the_voodoo_here(rawmailfd, donemailfd, -1,
 					-1, delheaders,
 					NULL, &ownerhdrs, NULL, 0) < 0) {
 				log_error(LOG_ARGS, "do_all_the_voodoo_here");
-				tll_free_and_free(ownerhdrs, free);
+				vec_free_and_free(&ownerhdrs, free);
 				close(ownfd);
 				close(rawmailfd);
 				close(donemailfd);
 				unlink(donemailname);
 				free(donemailname);
-				free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
-					    toemails, ccemails, rpemails, dtemails, allheaders);
+				free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
+					    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
 				exit(EXIT_FAILURE);
 			}
-			tll_free_and_free(ownerhdrs, free);
+			vec_free_and_free(&ownerhdrs, free);
 			}
-			tll_free_and_free(*delheaders, free);
+			vec_free_and_free(delheaders, free);
 			close(rawmailfd);
 			close(donemailfd);
 			unlink(mailfile);
@@ -570,15 +570,15 @@ int main(int argc, char **argv)
 			    efrom, "-s", owner, "-a", "-m", donemailname, NULL);
 		}
 		unlink(mailfile);
-		if (tll_length(originalfromemails) > 0)
+		if (originalfromemails.len > 0)
 			testfrom = &originalfromemails;
 		else
 			testfrom = &fromemails;
 		listcontrol(testfrom, &ml, recipextra,
 			    mlmmjsend, donemailname);
 
-		free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
-			    toemails, ccemails, rpemails, dtemails, allheaders);
+		free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
+			    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
 		return EXIT_SUCCESS;
 	}
 
@@ -588,8 +588,8 @@ int main(int argc, char **argv)
 	if (errno != ENOENT) {
 		if (stat(donemailname, &st) < 0) {
 			log_error(LOG_ARGS, "stat(%s,..) failed", donemailname);
-			free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
-				    toemails, ccemails, rpemails, dtemails, allheaders);
+			free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
+				    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
 			exit(EXIT_FAILURE);
 		}
 
@@ -603,8 +603,8 @@ int main(int argc, char **argv)
 				unlink(donemailname);
 				unlink(mailfile);
 				free(donemailname);
-				free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
-					    toemails, ccemails, rpemails, dtemails, allheaders);
+				free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
+					    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
 				exit(EXIT_SUCCESS);
 			}
 
@@ -642,8 +642,8 @@ int main(int argc, char **argv)
 		free(donemailname);
 		free(discardname);
 		free(randomstr);
-		free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
-			    toemails, ccemails, rpemails, dtemails, allheaders);
+		free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
+			    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
 		exit(EXIT_FAILURE);
 	}
 
@@ -662,8 +662,8 @@ int main(int argc, char **argv)
 					mailfile);
 			unlink(donemailname);
 			free(donemailname);
-			free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
-				    toemails, ccemails, rpemails, dtemails, allheaders);
+			free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
+				    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
 			exit(EXIT_SUCCESS);
 		}
 		txt = open_text(ml.fd, "deny", "post",
@@ -706,8 +706,8 @@ int main(int argc, char **argv)
 					mailfile);
 				unlink(donemailname);
 				free(donemailname);
-				free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
-					    toemails, ccemails, rpemails, dtemails, allheaders);
+				free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
+					    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
 				exit(EXIT_SUCCESS);
 			}
 			txt = open_text(ml.fd, "deny", "post",
@@ -737,14 +737,14 @@ int main(int argc, char **argv)
 					    donemailname, discardname);
 				free(donemailname);
 				free(discardname);
-				free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
-					    toemails, ccemails, rpemails, dtemails, allheaders);
+				free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
+					    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
 				exit(EXIT_FAILURE);
 			}
 			free(donemailname);
 			free(discardname);
-			free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
-				    toemails, ccemails, rpemails, dtemails, allheaders);
+			free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
+				    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
                 	exit(EXIT_SUCCESS);
 		} else if (accret == ACT_SEND) {
 			send = 1;
@@ -756,8 +756,8 @@ int main(int argc, char **argv)
 
 	list_rules = ctrlvalues(ml.ctrlfd, "send");
 	if (list_rules != NULL) {
-		tll_foreach(*list_rules, lr) {
-			if (strcasecmp(posteraddr, lr->item) == 0) {
+		vec_foreach(*list_rules, _i) {
+			if (strcasecmp(posteraddr, list_rules->d[_i]) == 0) {
 				send = 1;
 				break;
 			}
@@ -774,8 +774,8 @@ int main(int argc, char **argv)
 		/* Don't send a mail about denial to the list, but silently
 		 * discard and exit. */
 		char *testaddr = posteraddr;
-		if (tll_length(originalfromemails) > 0)
-			testaddr = tll_front(originalfromemails);
+		if (originalfromemails.len > 0)
+			testaddr = originalfromemails.d[0];
 		if (strcasecmp(ml.addr, testaddr) == 0) {
 			log_error(LOG_ARGS, "Discarding %s because"
 					" there are sender restrictions but"
@@ -783,8 +783,8 @@ int main(int argc, char **argv)
 					mailfile);
 			unlink(donemailname);
 			free(donemailname);
-			free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
-				    toemails, ccemails, rpemails, dtemails, allheaders);
+			free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
+				    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
 			exit(EXIT_SUCCESS);
 		}
 		if (subonlypost) {
@@ -810,8 +810,8 @@ int main(int argc, char **argv)
 					mailfile);
 				unlink(donemailname);
 				free(donemailname);
-				free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
-					    toemails, ccemails, rpemails, dtemails, allheaders);
+				free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
+					    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
 				exit(EXIT_SUCCESS);
 			    }
 			    if (subonlypost) {
@@ -844,10 +844,10 @@ int main(int argc, char **argv)
 					    donemailname, modname);
 					free(modname);
 					close_text(txt);
-					free_parsed_hdrs(readhdrs, fromemails,
-					    originalfromemails, toemails,
-					    ccemails, rpemails, dtemails,
-					    allheaders);
+					free_parsed_hdrs(readhdrs, &fromemails,
+					    &originalfromemails, &toemails,
+					    &ccemails, &rpemails, &dtemails,
+					    &allheaders);
 					exit(EXIT_FAILURE);
 				}
 				free(modname);
@@ -895,8 +895,8 @@ int main(int argc, char **argv)
 					    donemailname, mqueuename);
 			free(donemailname);
 			free(mqueuename);
-			free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
-				    toemails, ccemails, rpemails, dtemails, allheaders);
+			free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
+				    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
 			exit(EXIT_FAILURE);
 		}
 		free(donemailname);
@@ -908,8 +908,8 @@ int main(int argc, char **argv)
 					    	    omitfilename);
 				free(mqueuename);
 				free(omitfilename);
-				free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
-					    toemails, ccemails, rpemails, dtemails, allheaders);
+				free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
+					    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
 				exit(EXIT_FAILURE);
 			}
 			free(omitfilename);
@@ -917,8 +917,8 @@ int main(int argc, char **argv)
 				log_error(LOG_ARGS,
 						"could not write omit file");
 				free(mqueuename);
-				free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
-					    toemails, ccemails, rpemails, dtemails, allheaders);
+				free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
+					    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
 				exit(EXIT_FAILURE);
 			}
 			fsync(omitfd);
@@ -926,8 +926,8 @@ int main(int argc, char **argv)
 		}
 		newmoderated(&ml, mqueuename, mlmmjsend, efrom, subject,
 		    posteraddr, modreason);
-		free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
-			    toemails, ccemails, rpemails, dtemails, allheaders);
+		free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
+			    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
 		return EXIT_SUCCESS;
 	}
 
@@ -935,8 +935,8 @@ int main(int argc, char **argv)
 
 	if (noprocess) {
 		free(donemailname);
-		free_parsed_hdrs(readhdrs, fromemails, originalfromemails,
-			    toemails, ccemails, rpemails, dtemails, allheaders);
+		free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
+			    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
 		exit(EXIT_SUCCESS);
 	}
 

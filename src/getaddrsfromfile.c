@@ -1,6 +1,5 @@
 #include <string.h>
 
-#include "tllist.h"
 #include "xmalloc.h"
 #include "mlmmj.h"
 #include "getaddrsfromfile.h"
@@ -22,8 +21,8 @@ getaddrsfromfile(strlist *slist, FILE *f, size_t max)
 		chomp(line);
 		if (*line == '\0')
 			continue;
-		tll_push_back(*slist, xstrdup(line));
-		if (tll_length(*slist) >= max)
+		vec_push(slist, xstrdup(line));
+		if (slist->len >= max)
 			break;
 	}
 	if (feof(f))

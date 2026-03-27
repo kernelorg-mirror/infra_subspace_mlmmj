@@ -521,13 +521,13 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 	if (submods == NULL)
 		return;
 	/* check to see if there's adresses in the submod control file */
-	tll_foreach(*submods, it)
-		a = strchr(it->item, '@');
+	vec_foreach(*submods, _i)
+		a = strchr(submods->d[_i], '@');
 
 	/* no addresses in submod control file, use owner */
 	if(a == NULL) {
 		/* free the submods struct from above */
-		tll_free_and_free(*submods, free);
+		vec_free_and_free(submods, free);
 		free(submods);
 		submods = ctrlvalues(ml->ctrlfd, "owner");
 		modfd = openat(ml->ctrlfd, "owner", O_RDONLY);
@@ -540,10 +540,10 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 	gen_addr_cookie(replyto, ml, "permit-", cookie);
 	gen_addr_cookie(obstruct, ml, "obstruct-", cookie);
 	free(cookie);
-	tll_foreach(*submods, sm) {
+	vec_foreach(*submods, _i) {
 		if (str == NULL)
 			str = xstring_new();
-		fprintf(str->fp, "%s\n", sm->item);
+		fprintf(str->fp, "%s\n", submods->d[_i]);
 	}
 	moderators = xstring_get(str);
 	mls = init_memory_lines(moderators);
@@ -739,7 +739,7 @@ autosubscribe_sender(struct ml *ml, int mailfd, enum subtype typesub)
 		{ "From:", 0, NULL },
 		{ NULL, 0, NULL }
 	};
-	strlist from = tll_init();
+	strlist from = vec_init();
 
 	FILE *f = fdopen(mailfd, "r");
 	if (f == NULL) {
@@ -754,18 +754,18 @@ autosubscribe_sender(struct ml *ml, int mailfd, enum subtype typesub)
 		return;
 	}
 	find_email_adr(readhdrs[0].values[0], &from);
-	if (tll_length(from) == 0) {
-		tll_free(from);
+	if (from.len == 0) {
+		vec_free(&from);
 		free_mailhdrs(readhdrs);
 		return;
 	}
-	if (strchr(tll_front(from), '@') == NULL) {
-		tll_free_and_free(from, free);
+	if (strchr(vec_first(&from), '@') == NULL) {
+		vec_free_and_free(&from, free);
 		free_mailhdrs(readhdrs);
 		return;
 	}
-	subscribe_type(ml->fd, tll_front(from), typesub);
-	tll_free_and_free(from, free);
+	subscribe_type(ml->fd, vec_first(&from), typesub);
+	vec_free_and_free(&from, free);
 	free_mailhdrs(readhdrs);
 }
 

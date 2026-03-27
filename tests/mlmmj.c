@@ -20,7 +20,7 @@
  * IN THE SOFTWARE.
  */
 
-#include "tllist.h"
+#include "vec.h"
 
 #if defined(__clang__)
 #pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
@@ -353,102 +353,102 @@ ATF_TC_BODY(exec_and_wait, tc)
 
 ATF_TC_BODY(find_email_adr, tc)
 {
-	strlist c  = tll_init();
-	strlist c1 = tll_init();
-	strlist c2 = tll_init();
-	strlist c3 = tll_init();
-	strlist c4 = tll_init();
-	strlist c5 = tll_init();
-	strlist c6 = tll_init();
-	strlist c7 = tll_init();
+	strlist c  = vec_init();
+	strlist c1 = vec_init();
+	strlist c2 = vec_init();
+	strlist c3 = vec_init();
+	strlist c4 = vec_init();
+	strlist c5 = vec_init();
+	strlist c6 = vec_init();
+	strlist c7 = vec_init();
 	find_email_adr("test@foo.bar", &c);
-	ATF_REQUIRE_EQ(tll_length(c), 1);
+	ATF_REQUIRE_EQ(c.len, 1);
 	find_email_adr("test@foo.bar, meh@bar", &c1);
-	ATF_REQUIRE_EQ(tll_length(c1), 2);
+	ATF_REQUIRE_EQ(c1.len, 2);
 	find_email_adr("test@foo.bar, meh@bar, nope", &c2);
-	ATF_REQUIRE_EQ(tll_length(c2), 3);
+	ATF_REQUIRE_EQ(c2.len, 3);
 	find_email_adr("name <test@foo.com>", &c3);
-	ATF_REQUIRE_EQ(tll_length(c3), 1);
-	ATF_REQUIRE_STREQ(tll_front(c3), "test@foo.com");
+	ATF_REQUIRE_EQ(c3.len, 1);
+	ATF_REQUIRE_STREQ(c3.d[0], "test@foo.com");
 	find_email_adr("(name <test@foo.com>) test@foo.com", &c4);
-	ATF_REQUIRE_EQ(tll_length(c4), 1);
-	ATF_REQUIRE_STREQ(tll_front(c4), " test@foo.com");
+	ATF_REQUIRE_EQ(c4.len, 1);
+	ATF_REQUIRE_STREQ(c4.d[0], " test@foo.com");
 	find_email_adr("\"name <test@foo.com>\" test@foo.com", &c5);
-	ATF_REQUIRE_EQ(tll_length(c5), 1);
-	ATF_REQUIRE_STREQ(tll_front(c5), "name <test@foo.com> test@foo.com");
+	ATF_REQUIRE_EQ(c5.len, 1);
+	ATF_REQUIRE_STREQ(c5.d[0], "name <test@foo.com> test@foo.com");
 	find_email_adr("\"name <test@foo.com> test@foo.com", &c6);
-	ATF_REQUIRE_EQ(tll_length(c6), 1);
-	ATF_REQUIRE_STREQ(tll_front(c6), "name <test@foo.com> test@foo.com");
+	ATF_REQUIRE_EQ(c6.len, 1);
+	ATF_REQUIRE_STREQ(c6.d[0], "name <test@foo.com> test@foo.com");
 	find_email_adr("\"name <test@foo.com>\\ test@foo.com", &c7);
-	ATF_REQUIRE_EQ(tll_length(c7), 1);
-	ATF_REQUIRE_STREQ(tll_front(c7), "name <test@foo.com> test@foo.com");
+	ATF_REQUIRE_EQ(c7.len, 1);
+	ATF_REQUIRE_STREQ(c7.d[0], "name <test@foo.com> test@foo.com");
 	find_email_adr("\"name <test@foo.com> test@foo.com\\", &c7);
-	ATF_REQUIRE_EQ(tll_length(c7), 2);
-	ATF_REQUIRE_STREQ(tll_back(c7), "name <test@foo.com> test@foo.com");
+	ATF_REQUIRE_EQ(c7.len, 2);
+	ATF_REQUIRE_STREQ(c7.d[c7.len - 1], "name <test@foo.com> test@foo.com");
 	find_email_adr("test at foo.com", &c7);
-	ATF_REQUIRE_EQ(tll_length(c7), 3);
-	ATF_REQUIRE_STREQ(tll_back(c7), "test@foo.com");
+	ATF_REQUIRE_EQ(c7.len, 3);
+	ATF_REQUIRE_STREQ(c7.d[c7.len - 1], "test@foo.com");
 	find_email_adr("test atfoo.com", &c7);
-	ATF_REQUIRE_EQ(tll_length(c7), 4);
-	ATF_REQUIRE_STREQ(tll_back(c7), "test atfoo.com");
+	ATF_REQUIRE_EQ(c7.len, 4);
+	ATF_REQUIRE_STREQ(c7.d[c7.len - 1], "test atfoo.com");
 	find_email_adr("test a t foo.com", &c7);
-	ATF_REQUIRE_EQ(tll_length(c7), 5);
-	ATF_REQUIRE_STREQ(tll_back(c7), "test a t foo.com");
+	ATF_REQUIRE_EQ(c7.len, 5);
+	ATF_REQUIRE_STREQ(c7.d[c7.len - 1], "test a t foo.com");
 	find_email_adr("test@foo.com, \"meh\"", &c7);
-	ATF_REQUIRE_EQ(tll_length(c7), 7);
-	ATF_REQUIRE_STREQ(tll_back(c7), "\"meh\"");
+	ATF_REQUIRE_EQ(c7.len, 7);
+	ATF_REQUIRE_STREQ(c7.d[c7.len - 1], "\"meh\"");
 	find_email_adr("test@foo.com, \"meh\\\"", &c7);
-	ATF_REQUIRE_EQ(tll_length(c7), 9);
-	ATF_REQUIRE_STREQ(tll_back(c7), "meh ");
+	ATF_REQUIRE_EQ(c7.len, 9);
+	ATF_REQUIRE_STREQ(c7.d[c7.len - 1], "meh ");
 	find_email_adr("", &c7);
-	ATF_REQUIRE_EQ(tll_length(c7), 9);
+	ATF_REQUIRE_EQ(c7.len, 9);
 	find_email_adr("\"meh\" , ", &c7);
-	ATF_REQUIRE_EQ(tll_length(c7), 10);
-	ATF_REQUIRE_STREQ(tll_back(c7), "meh");
+	ATF_REQUIRE_EQ(c7.len, 10);
+	ATF_REQUIRE_STREQ(c7.d[c7.len - 1], "meh");
 	find_email_adr("\"meh , ", &c7);
-	ATF_REQUIRE_EQ(tll_length(c7), 11);
-	ATF_REQUIRE_STREQ(tll_back(c7), "meh   ");
+	ATF_REQUIRE_EQ(c7.len, 11);
+	ATF_REQUIRE_STREQ(c7.d[c7.len - 1], "meh   ");
 	find_email_adr("\t,", &c7);
-	ATF_REQUIRE_EQ(tll_length(c7), 11);
+	ATF_REQUIRE_EQ(c7.len, 11);
 	find_email_adr("\r,", &c7);
-	ATF_REQUIRE_EQ(tll_length(c7), 11);
+	ATF_REQUIRE_EQ(c7.len, 11);
 	find_email_adr("\n,", &c7);
-	ATF_REQUIRE_EQ(tll_length(c7), 11);
+	ATF_REQUIRE_EQ(c7.len, 11);
 	find_email_adr(", m", &c7);
-	ATF_REQUIRE_EQ(tll_length(c7), 12);
+	ATF_REQUIRE_EQ(c7.len, 12);
 	find_email_adr(", \"m", &c7);
-	ATF_REQUIRE_EQ(tll_length(c7), 13);
+	ATF_REQUIRE_EQ(c7.len, 13);
 	find_email_adr("bob @ foo.net", &c7);
-	ATF_REQUIRE_EQ(tll_length(c7), 14);
-	ATF_REQUIRE_STREQ(tll_back(c7), "bob@foo.net");
+	ATF_REQUIRE_EQ(c7.len, 14);
+	ATF_REQUIRE_STREQ(c7.d[c7.len - 1], "bob@foo.net");
 	find_email_adr("bob @foo.net", &c7);
-	ATF_REQUIRE_EQ(tll_length(c7), 15);
-	ATF_REQUIRE_STREQ(tll_back(c7), "bob @foo.net");
+	ATF_REQUIRE_EQ(c7.len, 15);
+	ATF_REQUIRE_STREQ(c7.d[c7.len - 1], "bob @foo.net");
 	find_email_adr("bob @foo.net>", &c7);
-	ATF_REQUIRE_EQ(tll_length(c7), 16);
-	ATF_REQUIRE_STREQ(tll_back(c7), "bob @foo.net>");
+	ATF_REQUIRE_EQ(c7.len, 16);
+	ATF_REQUIRE_STREQ(c7.d[c7.len - 1], "bob @foo.net>");
 	find_email_adr("<bob @foo.net> garbage,", &c7);
-	ATF_REQUIRE_EQ(tll_length(c7), 17);
-	ATF_REQUIRE_STREQ(tll_back(c7), "bob @foo.net");
+	ATF_REQUIRE_EQ(c7.len, 17);
+	ATF_REQUIRE_STREQ(c7.d[c7.len - 1], "bob @foo.net");
 	find_email_adr("<bob @foo.net> garbage (more garbage) ,", &c7);
-	ATF_REQUIRE_EQ(tll_length(c7), 18);
-	ATF_REQUIRE_STREQ(tll_back(c7), "bob @foo.net");
+	ATF_REQUIRE_EQ(c7.len, 18);
+	ATF_REQUIRE_STREQ(c7.d[c7.len - 1], "bob @foo.net");
 	find_email_adr("<bob @foo.net> garbage \"more garbage\" ,", &c7);
-	ATF_REQUIRE_EQ(tll_length(c7), 19);
-	ATF_REQUIRE_STREQ(tll_back(c7), "bob @foo.net");
+	ATF_REQUIRE_EQ(c7.len, 19);
+	ATF_REQUIRE_STREQ(c7.d[c7.len - 1], "bob @foo.net");
 	find_email_adr("<bob @foo.net> garbage \"more garbage \\ ,", &c7);
-	ATF_REQUIRE_EQ(tll_length(c7), 20);
-	ATF_REQUIRE_STREQ(tll_back(c7), "bob @foo.net");
+	ATF_REQUIRE_EQ(c7.len, 20);
+	ATF_REQUIRE_STREQ(c7.d[c7.len - 1], "bob @foo.net");
 	/* CRLF stripping in skin() */
 	find_email_adr("<evil@bad\r\nBcc: victim@target>", &c7);
-	ATF_REQUIRE_EQ(tll_length(c7), 21);
-	ATF_REQUIRE_STREQ(tll_back(c7), "evil@badBcc: victim@target");
+	ATF_REQUIRE_EQ(c7.len, 21);
+	ATF_REQUIRE_STREQ(c7.d[c7.len - 1], "evil@badBcc: victim@target");
 	find_email_adr("evil@bad\r\n", &c7);
-	ATF_REQUIRE_EQ(tll_length(c7), 22);
-	ATF_REQUIRE_STREQ(tll_back(c7), "evil@bad");
+	ATF_REQUIRE_EQ(c7.len, 22);
+	ATF_REQUIRE_STREQ(c7.d[c7.len - 1], "evil@bad");
 	find_email_adr("test\n@foo.com", &c7);
-	ATF_REQUIRE_EQ(tll_length(c7), 23);
-	ATF_REQUIRE_STREQ(tll_back(c7), "test@foo.com");
+	ATF_REQUIRE_EQ(c7.len, 23);
+	ATF_REQUIRE_STREQ(c7.d[c7.len - 1], "test@foo.com");
 }
 
 ATF_TC_BODY(strtoim, tc)
@@ -1507,7 +1507,7 @@ ATF_TC_BODY(unsubscribe_test, tc)
 
 ATF_TC_BODY(getaddrsfromfile, tc)
 {
-	strlist stl = tll_init();
+	strlist stl = vec_init();
 	ATF_REQUIRE_EQ(getaddrsfromfile(&stl, NULL, 2), -1);
 	atf_utils_create_file("list", "");
 	FILE *fp;
@@ -1521,21 +1521,21 @@ ATF_TC_BODY(getaddrsfromfile, tc)
 	fp = fopen("list", "r");
 	ATF_REQUIRE_EQ(getaddrsfromfile(&stl, fp, 2), 0);
 	fclose(fp);
-	ATF_REQUIRE_EQ_MSG(tll_length(stl), 1, "%zu is not 1", tll_length(stl));
-	ATF_REQUIRE_STREQ(tll_front(stl), "mail1@fqdn");
-	tll_free_and_free(stl, free);
+	ATF_REQUIRE_EQ_MSG(stl.len, 1, "%zu is not 1", stl.len);
+	ATF_REQUIRE_STREQ(stl.d[0], "mail1@fqdn");
+	vec_free_and_free(&stl, free);
 	fp = fopen("list", "r");
 	ATF_REQUIRE_EQ(getaddrsfromfile(&stl, fp, 0), -1);
 	atf_utils_create_file("list", "mail1@fqdn\nmail2@fqdn\nmail3@fqdn");
 	fp = fopen("list", "r");
 	ATF_REQUIRE(getaddrsfromfile(&stl, fp, 2) > 0);
-	ATF_REQUIRE_EQ(tll_length(stl), 2);
-	ATF_REQUIRE_STREQ(tll_front(stl), "mail1@fqdn");
-	ATF_REQUIRE_STREQ(tll_back(stl), "mail2@fqdn");
-	tll_free_and_free(stl, free);
+	ATF_REQUIRE_EQ(stl.len, 2);
+	ATF_REQUIRE_STREQ(stl.d[0], "mail1@fqdn");
+	ATF_REQUIRE_STREQ(stl.d[stl.len - 1], "mail2@fqdn");
+	vec_free_and_free(&stl, free);
 	ATF_REQUIRE_EQ(getaddrsfromfile(&stl, fp, 2), 0);
-	ATF_REQUIRE_EQ_MSG(tll_length(stl), 1, "%zu is not 1", tll_length(stl));
-	ATF_REQUIRE_STREQ(tll_front(stl), "mail3@fqdn");
+	ATF_REQUIRE_EQ_MSG(stl.len, 1, "%zu is not 1", stl.len);
+	ATF_REQUIRE_STREQ(stl.d[0], "mail3@fqdn");
 	fclose(fp);
 }
 
@@ -1740,9 +1740,9 @@ ATF_TC_BODY(controls, tc)
 	atf_utils_create_file("control/val", "line1\nline2\n\nline3\n");
 	strlist *l = ctrlvalues(ctrlfd, "val");
 	ATF_REQUIRE(l != NULL);
-	ATF_REQUIRE_EQ(tll_length(*l), 3);
-	ATF_REQUIRE_STREQ(tll_front(*l), "line1");
-	ATF_REQUIRE_STREQ(tll_back(*l), "line3");
+	ATF_REQUIRE_EQ(l->len, 3);
+	ATF_REQUIRE_STREQ(l->d[0], "line1");
+	ATF_REQUIRE_STREQ(l->d[l->len - 1], "line3");
 	ATF_REQUIRE_EQ(textcontent(ctrlfd, "text"), NULL);
 	mkdir("control/text",0755);
 	ATF_REQUIRE_EQ(textcontent(ctrlfd, "text"), NULL);
@@ -2829,7 +2829,7 @@ ATF_TC_BODY(listcontrol, tc)
 	init_ml(true);
 	ml_init(&ml);
 	ml.dir = "list";
-	strlist fromemails = tll_init();
+	strlist fromemails = vec_init();
 
 	ATF_REQUIRE(ml_open(&ml, false));
 	ATF_REQUIRE_EQ(listcontrol(NULL, &ml, "plop", NULL, "meh"), -1);
@@ -2838,7 +2838,7 @@ ATF_TC_BODY(listcontrol, tc)
 
 	atf_utils_create_file("list/control/closedlist", "");
 	atf_utils_create_file("meh", "mail");
-	tll_push_back(fromemails, "plop@test");
+	vec_push(&fromemails, "plop@test");
 	ATF_REQUIRE_EQ(listcontrol(&fromemails, &ml, "unsubscribe", NULL, "meh"), -1);
 	if (atf_utils_file_exists("me"))
 		atf_tc_fail("mail should have been removed");
@@ -2848,21 +2848,21 @@ ATF_TC_BODY(listcontrol, tc)
 	ATF_REQUIRE_EQ(listcontrol(&fromemails, &ml, "subscribe", NULL, "meh"), -1);
 
 	/* is_valid_email: reject addresses without @ */
-	strlist no_at = tll_init();
-	tll_push_back(no_at, "invalid-address");
+	strlist no_at = vec_init();
+	vec_push(&no_at, "invalid-address");
 	ATF_REQUIRE_EQ(listcontrol(&no_at, &ml, "help", NULL, "meh"), -1);
 
 	/* is_valid_email: reject addresses with control characters */
-	strlist crlf = tll_init();
-	tll_push_back(crlf, "evil@bad\r\nBcc: victim");
+	strlist crlf = vec_init();
+	vec_push(&crlf, "evil@bad\r\nBcc: victim");
 	ATF_REQUIRE_EQ(listcontrol(&crlf, &ml, "help", NULL, "meh"), -1);
 
-	strlist lf = tll_init();
-	tll_push_back(lf, "evil@bad\n");
+	strlist lf = vec_init();
+	vec_push(&lf, "evil@bad\n");
 	ATF_REQUIRE_EQ(listcontrol(&lf, &ml, "help", NULL, "meh"), -1);
 
-	strlist nul = tll_init();
-	tll_push_back(nul, "evil\x01@bad");
+	strlist nul = vec_init();
+	vec_push(&nul, "evil\x01@bad");
 	ATF_REQUIRE_EQ(listcontrol(&nul, &ml, "help", NULL, "meh"), -1);
 
 }
@@ -2906,7 +2906,7 @@ ATF_TC_BODY(send_help, tc)
 
 ATF_TC_BODY(requeuemail, tc)
 {
-	strlist l = tll_init();
+	strlist l = vec_init();
 	init_ml(true);
 	int dfd = open("list", O_DIRECTORY);
 
@@ -2914,7 +2914,7 @@ ATF_TC_BODY(requeuemail, tc)
 	ATF_REQUIRE(!requeuemail(dfd, 1, NULL, NULL));
 	ATF_REQUIRE(!requeuemail(dfd, 1, NULL, NULL));
 	ATF_REQUIRE(!requeuemail(dfd, 1, &l, NULL));
-	tll_push_back(l, "test1");
+	vec_push(&l, "test1");
 	rmdir("list/requeue");
 	ATF_REQUIRE(!requeuemail(dfd, 1, &l, NULL));
 	mkdir("list/requeue", 0755);
@@ -2926,8 +2926,8 @@ ATF_TC_BODY(requeuemail, tc)
 		atf_tc_fail("Invalid queue content");
 	}
 	unlink("list/requeue/1/subscribers");
-	tll_push_back(l, "testhey");
-	tll_push_back(l, "test2");
+	vec_push(&l, "testhey");
+	vec_push(&l, "test2");
 	ATF_REQUIRE(requeuemail(dfd, 1, &l, NULL));
 	if (!atf_utils_file_exists("list/requeue/1/subscribers"))
 		atf_tc_fail("queue file does not exists");
@@ -2955,7 +2955,7 @@ ATF_TC_BODY(requeuemail, tc)
 
 	/* Same with an empty addrs list instead of NULL */
 	unlink("list/requeue/1/subscribers");
-	strlist empty = tll_init();
+	strlist empty = vec_init();
 	ATF_REQUIRE(requeuemail(dfd, 1, &empty, "solo@lost"));
 	if (!atf_utils_compare_file("list/requeue/1/subscribers", "solo@lost\n")) {
 		atf_utils_cat_file("list/requeue/1/subscribers", ">");
@@ -3322,57 +3322,57 @@ ATF_TC_BODY(send_probe_archive, tc)
 
 ATF_TC_BODY(find_in_list, tc)
 {
-	strlist bla = tll_init();
+	strlist bla = vec_init();
 	ATF_REQUIRE(find_in_list(NULL, NULL) == NULL);
 	ATF_REQUIRE(find_in_list(&bla, NULL) == NULL);
 	ATF_REQUIRE(find_in_list(&bla, "test") == NULL);
-	tll_push_back(bla, NULL);
+	vec_push(&bla, NULL);
 	ATF_REQUIRE(find_in_list(&bla, "test") == NULL);
-	tll_push_back(bla, "plop");
+	vec_push(&bla, "plop");
 	ATF_REQUIRE(find_in_list(&bla, "test") == NULL);
-	tll_push_back(bla, "test");
+	vec_push(&bla, "test");
 	ATF_REQUIRE_STREQ(find_in_list(&bla, "test"), "test");
-	tll_pop_back(bla);
-	tll_push_back(bla, "test longer");
+	vec_pop(&bla);
+	vec_push(&bla, "test longer");
 	ATF_REQUIRE_STREQ(find_in_list(&bla, "test"), "test longer");
 }
 
 ATF_TC_BODY(parse_content_type, tc)
 {
 	char *m, *b;
-	strlist hdrs = tll_init();
+	strlist hdrs = vec_init();
 	parse_content_type(NULL, &m, &b);
 	ATF_REQUIRE(m == NULL);
 	ATF_REQUIRE(b == NULL);
-	tll_push_back(hdrs, "From: plop");
+	vec_push(&hdrs, "From: plop");
 	parse_content_type(&hdrs, &m, &b);
 	ATF_REQUIRE(m == NULL);
 	ATF_REQUIRE(b == NULL);
-	tll_push_back(hdrs, "Content-Type:");
+	vec_push(&hdrs, "Content-Type:");
 	parse_content_type(&hdrs, &m, &b);
 	ATF_REQUIRE(m == NULL);
 	ATF_REQUIRE(b == NULL);
-	tll_pop_back(hdrs);
-	tll_push_back(hdrs, "Content-Type: multipart/mixed");
+	vec_pop(&hdrs);
+	vec_push(&hdrs, "Content-Type: multipart/mixed");
 	parse_content_type(&hdrs, &m, &b);
 	ATF_REQUIRE_STREQ(m, "multipart/mixed");
 	free(m);
 	ATF_REQUIRE(b == NULL);
-	tll_pop_back(hdrs);
-	tll_push_back(hdrs, "Content-Type: multipart/mixed;");
+	vec_pop(&hdrs);
+	vec_push(&hdrs, "Content-Type: multipart/mixed;");
 	parse_content_type(&hdrs, &m, &b);
 	ATF_REQUIRE_STREQ(m, "multipart/mixed");
 	free(m);
 	ATF_REQUIRE(b == NULL);
-	tll_pop_back(hdrs);
-	tll_push_back(hdrs, "Content-Type: multipart/mixed;\tboundary=bla");
+	vec_pop(&hdrs);
+	vec_push(&hdrs, "Content-Type: multipart/mixed;\tboundary=bla");
 	parse_content_type(&hdrs, &m, &b);
 	ATF_REQUIRE_STREQ(m, "multipart/mixed");
 	free(m);
 	ATF_REQUIRE_STREQ(b,"bla");
 	free(b);
-	tll_pop_back(hdrs);
-	tll_push_back(hdrs, "Content-Type: multipart/mixed;\tboundary=bla;");
+	vec_pop(&hdrs);
+	vec_push(&hdrs, "Content-Type: multipart/mixed;\tboundary=bla;");
 	parse_content_type(&hdrs, &m, &b);
 	ATF_REQUIRE_STREQ(m, "multipart/mixed");
 	free(m);
@@ -3382,9 +3382,9 @@ ATF_TC_BODY(parse_content_type, tc)
 
 ATF_TC_BODY(do_access, tc)
 {
-	strlist rules = tll_init();
-	strlist headers = tll_init();
-	tll_push_back(rules, "allow");
+	strlist rules = vec_init();
+	strlist headers = vec_init();
+	vec_push(&rules, "allow");
 	char *msg = NULL;
 	char *qualifier = NULL;
 
@@ -3395,31 +3395,31 @@ ATF_TC_BODY(do_access, tc)
 	ATF_REQUIRE_EQ(do_access(&rules, NULL, "test@plop", &msg, &qualifier), ACT_ALLOW);
 	ATF_REQUIRE_STREQ(msg, "access - A mail from \"test@plop\" was allowed by rule #0 \"allow\"");
 	ATF_REQUIRE(qualifier == NULL);
-	tll_pop_back(rules);
-	tll_push_back(rules, "deny");
+	vec_pop(&rules);
+	vec_push(&rules, "deny");
 	ATF_REQUIRE_EQ(do_access(&rules, NULL, "test@plop", &msg, &qualifier), ACT_DENY);
 	ATF_REQUIRE_STREQ(msg, "access - A mail from \"test@plop\" was denied by rule #0 \"deny\"");
 	ATF_REQUIRE(qualifier == NULL);
-	tll_pop_back(rules);
-	tll_push_back(rules, "crap");
+	vec_pop(&rules);
+	vec_push(&rules, "crap");
 	ATF_REQUIRE_EQ(do_access(&rules, NULL, "test@plop", &msg, &qualifier), ACT_DENY);
 	ATF_REQUIRE_STREQ(msg, "Unable to parse rule #0 \"crap\": Missing action keyword. Denying post from \"test@plop\"");
 	ATF_REQUIRE(qualifier == NULL);
-	tll_pop_back(rules);
-	tll_push_back(headers, "from: toto@bla");
-	tll_push_back(rules, "moderate ^from: toto@");
+	vec_pop(&rules);
+	vec_push(&headers, "from: toto@bla");
+	vec_push(&rules, "moderate ^from: toto@");
 	ATF_REQUIRE_EQ(do_access(&rules, &headers, "test@plop", &msg, &qualifier), ACT_MODERATE);
 	ATF_REQUIRE_STREQ(msg, "access - A mail from \"test@plop\" with header \"from: toto@bla\" was moderated by rule #0 \"moderate ^from: toto@\"");
 	ATF_REQUIRE(qualifier == NULL);
-	tll_push_front(rules, "moderatemeh ^from: toto@");
+	vec_push_front(&rules, "moderatemeh ^from: toto@");
 	ATF_REQUIRE_EQ(do_access(&rules, &headers, "test@plop", &msg, &qualifier), ACT_DENY);
 	ATF_REQUIRE_STREQ(msg, "Unable to parse rule #0 \"moderatemeh ^from: toto@\": Invalid character after action keyword. Denying post from \"test@plop\"");
 	ATF_REQUIRE(qualifier == NULL);
-	tll_push_front(rules, "moderate- ^from: toto@");
+	vec_push_front(&rules, "moderate- ^from: toto@");
 	ATF_REQUIRE_EQ(do_access(&rules, &headers, "test@plop", &msg, &qualifier), ACT_MODERATE);
 	ATF_REQUIRE(qualifier == NULL);
 	ATF_REQUIRE_STREQ(msg, "access - A mail from \"test@plop\" with header \"from: toto@bla\" was moderated by rule #0 \"moderate- ^from: toto@\"");
-	tll_push_front(rules, "moderate-meh ^from: toto@");
+	vec_push_front(&rules, "moderate-meh ^from: toto@");
 	ATF_REQUIRE_EQ(do_access(&rules, &headers, "test@plop", &msg, &qualifier), ACT_MODERATE);
 	ATF_REQUIRE_STREQ(qualifier, "meh");
 	ATF_REQUIRE_STREQ(msg, "access - A mail from \"test@plop\" with header \"from: toto@bla\" was moderated by rule #0 \"moderate-meh ^from: toto@\"");
@@ -3529,13 +3529,13 @@ ATF_TC_BODY(unistr_roundtrip, tc)
 
 ATF_TC_BODY(line_startwithany, tc)
 {
-	strlist l  = tll_init();
-	tll_push_back(l, "bla");
+	strlist l  = vec_init();
+	vec_push(&l, "bla");
 	ATF_REQUIRE(!line_startwithany("BLA", &l, false));
 	ATF_REQUIRE(line_startwithany("BLA", &l, true));
 	ATF_REQUIRE(!line_startwithany("BLOP", &l, false));
 	ATF_REQUIRE(!line_startwithany("BLOP", &l, true));
-	tll_push_back(l, "BLOP");
+	vec_push(&l, "BLOP");
 	ATF_REQUIRE(line_startwithany("BLOP", &l, false));
 	ATF_REQUIRE(line_startwithany("BLOP", &l, true));
 }
@@ -3611,8 +3611,8 @@ ATF_TC_BODY(scan_headers_test, tc)
 		{ "Cc:", 0, NULL },
 		{ NULL, 0, NULL }
 	};
-	strlist allhdrs = tll_init();
-	strlist allunfoldeds = tll_init();
+	strlist allhdrs = vec_init();
+	strlist allunfoldeds = vec_init();
 	FILE *f;
 
 	/* Simple headers */
@@ -3635,11 +3635,11 @@ ATF_TC_BODY(scan_headers_test, tc)
 	ATF_REQUIRE(strstr(readhdrs[2].values[0], "Test message") != NULL);
 	ATF_REQUIRE_EQ(readhdrs[3].valuecount, 0);
 
-	ATF_REQUIRE_EQ(tll_length(allhdrs), 3);
-	ATF_REQUIRE_EQ(tll_length(allunfoldeds), 3);
+	ATF_REQUIRE_EQ(allhdrs.len, 3);
+	ATF_REQUIRE_EQ(allunfoldeds.len, 3);
 
-	tll_free_and_free(allhdrs, free);
-	tll_free_and_free(allunfoldeds, free);
+	vec_free_and_free(&allhdrs, free);
+	vec_free_and_free(&allunfoldeds, free);
 
 	/* Folded header (continuation line) */
 	{
@@ -3647,8 +3647,8 @@ ATF_TC_BODY(scan_headers_test, tc)
 		{ "Subject:", 0, NULL },
 		{ NULL, 0, NULL }
 	};
-	strlist allhdrs2 = tll_init();
-	strlist allunfoldeds2 = tll_init();
+	strlist allhdrs2 = vec_init();
+	strlist allunfoldeds2 = vec_init();
 
 	atf_utils_create_file("scan2.txt",
 	    "Subject: This is a very long\n"
@@ -3662,14 +3662,14 @@ ATF_TC_BODY(scan_headers_test, tc)
 
 	ATF_REQUIRE_EQ(readhdrs2[0].valuecount, 1);
 	/* Unfolded header should have both parts */
-	ATF_REQUIRE_EQ(tll_length(allhdrs2), 1);
-	ATF_REQUIRE(strstr(tll_front(allhdrs2), "subject line") != NULL);
+	ATF_REQUIRE_EQ(allhdrs2.len, 1);
+	ATF_REQUIRE(strstr(allhdrs2.d[0], "subject line") != NULL);
 	/* allunfoldeds keeps the original folded form */
-	ATF_REQUIRE_EQ(tll_length(allunfoldeds2), 1);
-	ATF_REQUIRE(strstr(tll_front(allunfoldeds2), "\n") != NULL);
+	ATF_REQUIRE_EQ(allunfoldeds2.len, 1);
+	ATF_REQUIRE(strstr(allunfoldeds2.d[0], "\n") != NULL);
 
-	tll_free_and_free(allhdrs2, free);
-	tll_free_and_free(allunfoldeds2, free);
+	vec_free_and_free(&allhdrs2, free);
+	vec_free_and_free(&allunfoldeds2, free);
 	}
 
 	/* Empty headers (just body) */
@@ -3678,7 +3678,7 @@ ATF_TC_BODY(scan_headers_test, tc)
 		{ "From:", 0, NULL },
 		{ NULL, 0, NULL }
 	};
-	strlist allhdrs3 = tll_init();
+	strlist allhdrs3 = vec_init();
 
 	atf_utils_create_file("scan3.txt", "\nBody only.\n");
 	f = fopen("scan3.txt", "r");
@@ -3687,8 +3687,8 @@ ATF_TC_BODY(scan_headers_test, tc)
 	fclose(f);
 
 	ATF_REQUIRE_EQ(readhdrs3[0].valuecount, 0);
-	ATF_REQUIRE_EQ(tll_length(allhdrs3), 0);
-	tll_free_and_free(allhdrs3, free);
+	ATF_REQUIRE_EQ(allhdrs3.len, 0);
+	vec_free_and_free(&allhdrs3, free);
 	}
 }
 
@@ -3754,8 +3754,8 @@ ATF_TC_BODY(substitute_test, tc)
 
 ATF_TC_BODY(voodoo_header_manipulation, tc)
 {
-	strlist allheaders = tll_init();
-	strlist delhdrs = tll_init();
+	strlist allheaders = vec_init();
+	strlist delhdrs = vec_init();
 	struct mailhdr readhdrs[] = {
 		{ "From:", 0, NULL },
 		{ "To:", 0, NULL },
@@ -3774,7 +3774,7 @@ ATF_TC_BODY(voodoo_header_manipulation, tc)
 	    "Body text here.\n");
 
 	/* Delete Return-Path header */
-	tll_push_back(delhdrs, strdup("Return-Path:"));
+	vec_push(&delhdrs, strdup("Return-Path:"));
 
 	/* Custom header to inject */
 	atf_utils_create_file("customhdr.txt", "X-List-ID: mylist\n");
@@ -3835,14 +3835,14 @@ ATF_TC_BODY(voodoo_header_manipulation, tc)
 		atf_tc_fail("Body missing");
 	}
 
-	tll_free_and_free(allheaders, free);
-	tll_free_and_free(delhdrs, free);
+	vec_free_and_free(&allheaders, free);
+	vec_free_and_free(&delhdrs, free);
 }
 
 ATF_TC_BODY(voodoo_replyto, tc)
 {
-	strlist allheaders = tll_init();
-	strlist delhdrs = tll_init();
+	strlist allheaders = vec_init();
+	strlist delhdrs = vec_init();
 	struct mailhdr readhdrs[] = {
 		{ "From:", 0, NULL },
 		{ "To:", 0, NULL },
@@ -3879,14 +3879,14 @@ ATF_TC_BODY(voodoo_replyto, tc)
 		atf_tc_fail("From header missing");
 	}
 
-	tll_free_and_free(allheaders, free);
-	tll_free_and_free(delhdrs, free);
+	vec_free_and_free(&allheaders, free);
+	vec_free_and_free(&delhdrs, free);
 }
 
 ATF_TC_BODY(voodoo_prefix_dedup, tc)
 {
-	strlist allheaders = tll_init();
-	strlist delhdrs = tll_init();
+	strlist allheaders = vec_init();
+	strlist delhdrs = vec_init();
 	struct mailhdr readhdrs[] = {
 		{ "From:", 0, NULL },
 		{ "To:", 0, NULL },
@@ -3924,12 +3924,12 @@ ATF_TC_BODY(voodoo_prefix_dedup, tc)
 		atf_tc_fail("Subject prefix duplicated");
 	}
 
-	tll_free_and_free(allheaders, free);
-	tll_free_and_free(delhdrs, free);
+	vec_free_and_free(&allheaders, free);
+	vec_free_and_free(&delhdrs, free);
 
 	/* Mail without Subject: prefix should be added as new Subject */
 	{
-	strlist allheaders2 = tll_init();
+	strlist allheaders2 = vec_init();
 	struct mailhdr readhdrs2[] = {
 		{ "From:", 0, NULL },
 		{ "To:", 0, NULL },
@@ -3959,22 +3959,22 @@ ATF_TC_BODY(voodoo_prefix_dedup, tc)
 		atf_tc_fail("Subject not added for mail without subject");
 	}
 
-	tll_free_and_free(allheaders2, free);
+	vec_free_and_free(&allheaders2, free);
 	}
 }
 
 /*
  * Regression test: calling do_all_the_voodoo_here() twice with the same
  * allhdrs list (without clearing it) used to trigger an assertion in
- * tll_pop_front(allunfoldeds) because allhdrs had stale entries from the
+ * vec_pop_front on allunfoldeds because allhdrs had stale entries from the
  * first call while allunfoldeds was freshly initialized.
  * This is the code path hit when mlmmj-process handles a mail addressed
  * to list+owner (recipextra == "owner").
  */
 ATF_TC_BODY(voodoo_double_call, tc)
 {
-	strlist allheaders = tll_init();
-	strlist delhdrs = tll_init();
+	strlist allheaders = vec_init();
+	strlist delhdrs = vec_init();
 	struct mailhdr readhdrs[] = {
 		{ "From:", 0, NULL },
 		{ "To:", 0, NULL },
@@ -3994,8 +3994,8 @@ ATF_TC_BODY(voodoo_double_call, tc)
 	    "\n"
 	    "A new user has subscribed.\n");
 
-	tll_push_back(delhdrs, strdup("From "));
-	tll_push_back(delhdrs, strdup("Return-Path:"));
+	vec_push(&delhdrs, strdup("From "));
+	vec_push(&delhdrs, strdup("Return-Path:"));
 
 	/* First call: populates allheaders (normal processing path) */
 	infd = open("testmail.txt", O_RDONLY);
@@ -4008,13 +4008,13 @@ ATF_TC_BODY(voodoo_double_call, tc)
 	close(infd);
 	close(outfd);
 
-	ATF_REQUIRE_MSG(tll_length(allheaders) > 0,
+	ATF_REQUIRE_MSG(allheaders.len > 0,
 	    "allheaders should be populated after first call");
 
 	/* Second call with the same allheaders, simulating the
 	 * recipextra == "owner" path. Before the fix this would abort
 	 * with: Assertion failed: allunfoldeds.length > 0 */
-	tll_free_and_free(allheaders, free);
+	vec_free_and_free(&allheaders, free);
 	infd = open("testmail.txt", O_RDONLY);
 	ATF_REQUIRE(infd >= 0);
 	outfd = open("out2.txt", O_RDWR|O_CREAT|O_TRUNC, 0600);
@@ -4025,8 +4025,8 @@ ATF_TC_BODY(voodoo_double_call, tc)
 	close(infd);
 	close(outfd);
 
-	tll_free_and_free(allheaders, free);
-	tll_free_and_free(delhdrs, free);
+	vec_free_and_free(&allheaders, free);
+	vec_free_and_free(&delhdrs, free);
 }
 
 /*
@@ -4040,7 +4040,7 @@ ATF_TC_BODY(voodoo_double_call, tc)
  */
 ATF_TC_BODY(voodoo_failure_cleans_queue, tc)
 {
-	strlist allheaders = tll_init();
+	strlist allheaders = vec_init();
 	struct mailhdr readhdrs[] = {
 		{ "From:", 0, NULL },
 		{ "To:", 0, NULL },
@@ -4089,7 +4089,7 @@ ATF_TC_BODY(voodoo_failure_cleans_queue, tc)
 	ATF_REQUIRE_MSG(access("queuefile.txt", F_OK) != 0,
 	    "queue file should be cleaned up after voodoo failure");
 
-	tll_free_and_free(allheaders, free);
+	vec_free_and_free(&allheaders, free);
 }
 
 ATF_TC_BODY(checkwait_smtpreply_connect, tc)

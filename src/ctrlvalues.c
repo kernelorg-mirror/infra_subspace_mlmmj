@@ -49,7 +49,7 @@ strlist *ctrlvalues(int ctrlfd, const char *ctrlstr)
 		/* Ignore empty lines */
 		if (*line == '\0')
 			continue;
-		tll_push_back(*ret, xstrdup(line));
+		vec_push(ret, xstrdup(line));
 	}
 	free(line);
 	fclose(f);

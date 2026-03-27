@@ -35,7 +35,6 @@
 #include "init_sockfd.h"
 #include "mlmmj.h"
 #include "strgen.h"
-#include "tllist.h"
 #include "xmalloc.h"
 #include "ctrlvalue.h"
 #include "utils.h"
@@ -433,7 +432,7 @@ requeuemail(int listfd, int index, strlist *addrs, const char *addr)
 	int addrfd, dfd;
 	char *dirname;
 
-	if ((addrs == NULL || tll_length(*addrs) == 0) && addr == NULL)
+	if ((addrs == NULL || addrs->len == 0) && addr == NULL)
 		return (false);
 	xasprintf(&dirname, "requeue/%d", index);
 	if(mkdirat(listfd, dirname, 0750) < 0 && errno != EEXIST) {
@@ -472,8 +471,8 @@ requeuemail(int listfd, int index, strlist *addrs, const char *addr)
 			return (false);
 		}
 		if (addrs != NULL) {
-			tll_foreach(*addrs, it) {
-				fprintf(addrf, "%s\n", it->item);
+			vec_foreach(*addrs, _i) {
+				fprintf(addrf, "%s\n", addrs->d[_i]);
 			}
 		}
 		if (addr != NULL)

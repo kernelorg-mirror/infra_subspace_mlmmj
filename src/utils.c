@@ -298,9 +298,9 @@ addrmatch(const char *listaddr, const char *addr,
 bool
 find_email(strlist *list, strlist *matches, const char *delim, char **recipextra)
 {
-	tll_foreach(*list, lit) {
-		tll_foreach(*matches, mit) {
-			if (addrmatch(mit->item, lit->item, delim, recipextra))
+	vec_foreach(*list, _li) {
+		vec_foreach(*matches, _mi) {
+			if (addrmatch(matches->d[_mi], list->d[_li], delim, recipextra))
 				return true;
 		}
 	}
@@ -344,9 +344,9 @@ line_startwithany(const char *el, const strlist *list,  bool ignore_case)
 	size_t len;
 	cmp_fn_t cmp = ignore_case ? strncasecmp : strncmp;
 
-	tll_foreach(*list, it) {
-		len = strlen(it->item);
-		if (cmp(el, it->item, len) == 0)
+	vec_foreach(*list, _i) {
+		len = strlen(list->d[_i]);
+		if (cmp(el, list->d[_i], len) == 0)
 			return (true);
 	}
 

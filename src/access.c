@@ -46,7 +46,6 @@ do_access(strlist *rules, strlist *headers, const char *from, char **msg, char *
 	unsigned int not;
 	regex_t regexp;
 	char *hdr;
-	size_t i = 0;
 	if (msg != NULL)
 		*msg = NULL;
 	if (qualifier != NULL)
@@ -55,8 +54,8 @@ do_access(strlist *rules, strlist *headers, const char *from, char **msg, char *
 	if (rules == NULL)
 		return (ACT_ALLOW);
 
-	tll_foreach(*rules, it) {
-		rule_ptr = it->item;
+	vec_foreach(*rules, _i) {
+		rule_ptr = rules->d[_i];
 		if (strncmp(rule_ptr, "allow", 5) == 0) {
 			rule_ptr += 5;
 			act = ACT_ALLOW;
@@ -75,9 +74,9 @@ do_access(strlist *rules, strlist *headers, const char *from, char **msg, char *
 		} else {
 			errno = 0;
 			if (msg != NULL)
-				xasprintf(msg, "Unable to parse rule #%d \"%s\":"
+				xasprintf(msg, "Unable to parse rule #%zu \"%s\":"
 					" Missing action keyword. Denying post from \"%s\"",
-					i, it->item, from);
+					_i, rules->d[_i], from);
 			return ACT_DENY;
 		}
 
@@ -95,16 +94,16 @@ do_access(strlist *rules, strlist *headers, const char *from, char **msg, char *
 			/* the rule is a keyword and no regexp */
 			if (msg != NULL)
 				xasprintf(msg, "access -"
-					" A mail from \"%s\" was %s by rule #%d \"%s\"",
-					from, action_strs[act], i, it->item);
+					" A mail from \"%s\" was %s by rule #%zu \"%s\"",
+					from, action_strs[act], _i, rules->d[_i]);
 			return act;
 		} else {
 			/* we must have space or end of string */
 			errno = 0;
 			if (msg != NULL)
-				xasprintf(msg, "Unable to parse rule #%d \"%s\":"
+				xasprintf(msg, "Unable to parse rule #%zu \"%s\":"
 					" Invalid character after action keyword."
-					" Denying post from \"%s\"", i, it->item, from);
+					" Denying post from \"%s\"", _i, rules->d[_i], from);
 			return ACT_DENY;
 		}
 
@@ -131,19 +130,19 @@ do_access(strlist *rules, strlist *headers, const char *from, char **msg, char *
 			regfree(&regexp);
 			errno = 0;
 			if (msg != NULL)
-				xasprintf(msg, "regcomp() failed for rule #%d \"%s\""
+				xasprintf(msg, "regcomp() failed for rule #%zu \"%s\""
 					" (message: '%s') (expression: '%s')"
 					" Denying post from \"%s\"",
-					i, it->item, errbuf, rule_ptr, from);
+					_i, rules->d[_i], errbuf, rule_ptr, from);
 			return ACT_DENY;
 		}
 
 		match = 0;
-		tll_foreach(*headers, header) {
-			if (regexec(&regexp, header->item, 0, NULL, 0)
+		vec_foreach(*headers, _j) {
+			if (regexec(&regexp, headers->d[_j], 0, NULL, 0)
 					== 0) {
 				match = 1;
-				hdr = header->item;
+				hdr = headers->d[_j];
 				break;
 			}
 		}
@@ -155,18 +154,17 @@ do_access(strlist *rules, strlist *headers, const char *from, char **msg, char *
 				if (msg != NULL)
 					xasprintf(msg, "access -"
 						" A mail from \"%s\" with header \"%s\" was %s by"
-						" rule #%d \"%s\"", from, hdr, action_strs[act],
-						i, it->item);
+						" rule #%zu \"%s\"", from, hdr, action_strs[act],
+						_i, rules->d[_i]);
 			} else {
 				if (msg != NULL)
 					xasprintf(msg, "access -"
-						" A mail from \"%s\" was %s by rule #%d \"%s\""
+						" A mail from \"%s\" was %s by rule #%zu \"%s\""
 						" because no header matched.", from,
-						action_strs[act], i, it->item);
+						action_strs[act], _i, rules->d[_i]);
 			}
 			return act;
 		}
-		i++;
 	}
 
 	xasprintf(msg, "access -"

@@ -246,7 +246,7 @@ oncemore:
 
 		adr = skin(cur);
 		if (adr)
-			tll_push_back(*retstruct, adr);
+			vec_push(retstruct, adr);
 	}
 
 	free(s);

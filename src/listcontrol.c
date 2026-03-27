@@ -224,22 +224,22 @@ int listcontrol(strlist *fromemails, struct ml *ml, const char *controlstr,
 
 #if 0
 	log_error(LOG_ARGS, "controlstr = [%s]\n", controlstr);
-	log_error(LOG_ARGS, "tll_front(*fromemails) = [%s]\n",
-			tll_front(*fromemails));
+	log_error(LOG_ARGS, "fromemails[0] = [%s]\n",
+			fromemails->d[0]);
 #endif
 	cc = get_ctrl_command(controlstr, &param);
 	if (cc == NULL)
 		return (-1);
 
-	if (tll_length(*fromemails) != 1 && cc->type != CTRL_BOUNCES) {
+	if (fromemails->len != 1 && cc->type != CTRL_BOUNCES) {
 		errno = 0;
 		log_error(LOG_ARGS, "Ignoring mail with invalid From: "
-			"which was not a bounce: %d", tll_length(*fromemails));
+			"which was not a bounce: %d", fromemails->len);
 		return -1;
 	}
 	
-	if (tll_length(*fromemails) >= 1)
-		lc.fromemail = tll_front(*fromemails);
+	if (fromemails->len >= 1)
+		lc.fromemail = fromemails->d[0];
 	lc.mlmmjsend = mlmmjsend;
 
 	/* We only need the control mail when bouncing, to save bounced msg */
@@ -556,41 +556,41 @@ permit:
 			return -1;
 		}
 		log_oper(ml->fd, OPLOGFNAME, "%s obstructed %s",
-			tll_front(*fromemails), param);
+			fromemails->d[0], param);
 		free(param);
 		free(gatekeepfilename);
 		break;
 
 	/* listname+help@domain.tld */
 	case CTRL_HELP:
-		if (!is_valid_email(tll_front(*fromemails), "A help"))
+		if (!is_valid_email(fromemails->d[0], "A help"))
 			return -1;
 		log_oper(ml->fd, OPLOGFNAME, "%s requested help",
-				tll_front(*fromemails));
+				fromemails->d[0]);
 		txt = open_text(ml->fd, "help", NULL, NULL, NULL, "listhelp");
 		MY_ASSERT(txt);
 		register_default_unformatted(txt, ml);
 		queuefilename = prepstdreply(txt, ml,
-				"$listowner$", tll_front(*fromemails), NULL);
+				"$listowner$", fromemails->d[0], NULL);
 		MY_ASSERT(queuefilename);
 		close_text(txt);
-		send_help(ml, queuefilename, tll_front(*fromemails));
+		send_help(ml, queuefilename, fromemails->d[0]);
 		break;
 
 	/* listname+faq@domain.tld */
 	case CTRL_FAQ:
-		if (!is_valid_email(tll_front(*fromemails), "A faq"))
+		if (!is_valid_email(fromemails->d[0], "A faq"))
 			return -1;
 		log_oper(ml->fd, OPLOGFNAME, "%s requested faq",
-		    tll_front(*fromemails));
+		    fromemails->d[0]);
 		txt = open_text(ml->fd, "faq", NULL, NULL, NULL, "listfaq");
 		MY_ASSERT(txt);
 		register_default_unformatted(txt, ml);
 		queuefilename = prepstdreply(txt, ml,
-				"$listowner$", tll_front(*fromemails), NULL);
+				"$listowner$", fromemails->d[0], NULL);
 		MY_ASSERT(queuefilename);
 		close_text(txt);
-		send_help(ml, queuefilename, tll_front(*fromemails));
+		send_help(ml, queuefilename, fromemails->d[0]);
 		break;
 
 	/* listname+get-INDEX@domain.tld */
@@ -603,7 +603,7 @@ permit:
 			return -1;
 		}
 		if (statctrl(ml->ctrlfd, "subonlyget")) {
-			if (is_subbed(ml->fd, tll_front(*fromemails), 0) ==
+			if (is_subbed(ml->fd, fromemails->d[0], 0) ==
 					SUB_NONE) {
 				errno = 0;
 				log_error(LOG_ARGS, "A get request was sent"
@@ -633,7 +633,7 @@ permit:
 		}
 		struct mail mail = { 0 };
 		char *bounceaddr;
-		mail.to = tll_front(*fromemails);
+		mail.to = fromemails->d[0];
 		bounceaddr = get_bounce_from_adr(mail.to, ml, index);
 		mail.from = bounceaddr;
 		mail.fp = fdopen(fd, "r");
@@ -645,7 +645,7 @@ permit:
 			return -1;
 		}
 		log_oper(ml->fd, OPLOGFNAME, "%s got archive/%s",
-				tll_front(*fromemails), param);
+				fromemails->d[0], param);
 		if (!send_single_mail(&mail, ml, true)) {
 			/* TODO: save to queue */
 			fclose(mail.fp);
@@ -664,7 +664,7 @@ permit:
 	case CTRL_LIST:
 		if (statctrl(ml->ctrlfd, "nolistsubsemail"))
 			return -1;
-		const char *owner = tll_front(*fromemails);
+		const char *owner = fromemails->d[0];
 		if (!ctrlvalues_contains(ml->ctrlfd, "owner", owner, false)) {
 			errno = 0;
 			log_error(LOG_ARGS, "A list request was sent to the"

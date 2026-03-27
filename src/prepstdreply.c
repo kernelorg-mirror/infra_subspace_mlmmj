@@ -110,9 +110,9 @@ struct text {
 	char *reason;
 	char *type;
 	source *src;
-	tll(struct substitution *) substs;
+	vec_t(struct substitution *) substs;
 	char *mailname;
-	tll(struct formatted *) fmts;
+	vec_t(struct formatted *) fmts;
 	int wrapindent;
 	int wrapwidth;
 	enum wrap_mode wrapmode;
@@ -371,8 +371,8 @@ do_substitute(xstring *str, const char *line, int listfd, int ctrlfd, text *txt)
 			value = textcontent(listfd, token);
 	} else {
 		found = false;
-		tll_foreach(txt->substs, it) {
-			subst = it->item;
+		vec_foreach(txt->substs, _i) {
+			subst = txt->substs.d[_i];
 			if (strlen (subst->token) == len &&
 			    strncmp(key, subst->token, len) == 0) {
 				fputs(subst->subst, str->fp);
@@ -418,8 +418,8 @@ static void substitute_one(char **line_p, char **pos_p, int *width_p,
 		token = filename_token(token + 5);
 		if (token != NULL) value = textcontent(listfd, token);
 	} else {
-		tll_foreach(txt->substs, it) {
-			subst = it->item;
+		vec_foreach(txt->substs, _i) {
+			subst = txt->substs.d[_i];
 			if(strcmp(token, subst->token) == 0) {
 				value = xstrdup(subst->subst);
 				break;
@@ -568,7 +568,7 @@ void register_unformatted(text *txt, const char *token, const char *replacement)
 	struct substitution * subst = xmalloc(sizeof(struct substitution));
 	subst->token = xstrdup(token);
 	subst->subst = xstrdup(replacement);
-	tll_push_back(txt->substs, subst);
+	vec_push(&txt->substs, subst);
 }
 
 void
@@ -629,7 +629,7 @@ void register_formatted(text *txt, const char *token,
 	fmt->rew = rew;
 	fmt->get = get;
 	fmt->state = state;
-	tll_push_back(txt->fmts, fmt);
+	vec_push(&txt->fmts, fmt);
 }
 
 
@@ -1101,8 +1101,8 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 		return 0;
 	}
 
-	tll_foreach(txt->fmts, it) {
-		fmt = it->item;
+	vec_foreach(txt->fmts, _i) {
+		fmt = txt->fmts.d[_i];
 		if (strcmp(token, fmt->token) == 0) {
 			begin_new_formatted_source(txt, line_p, pos_p, width_p,
 					endpos + 1, fmt, 0);
@@ -1601,9 +1601,9 @@ void close_text(text *txt)
 	while (txt->src != NULL) {
 		close_source(txt);
 	}
-	tll_free_and_free(txt->substs, substitution_free);
+	vec_free_and_free(&txt->substs, substitution_free);
 	if (txt->mailname != NULL) free(txt->mailname);
-	tll_free_and_free(txt->fmts, formatted_free);
+	vec_free_and_free(&txt->fmts, formatted_free);
 	while (txt->cond != NULL) {
 		cond = txt->cond;
 		txt->cond = txt->cond->outer;

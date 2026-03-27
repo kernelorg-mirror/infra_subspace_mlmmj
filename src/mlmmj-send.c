@@ -94,19 +94,19 @@ int send_mail_verp(int sockfd, strlist *addrs, struct mail *mail,
 		if (reply2 != NULL) free(reply2);
 		return MLMMJ_FROM;
 	}
-	tll_foreach(*addrs, it) {
+	vec_foreach(*addrs, _i) {
 		if(gotsigterm) {
 			log_error(LOG_ARGS, "TERM signal received, "
 					"shutting down.");
 			return -1;
 		}
-		if(strchr(it->item, '@') == NULL) {
+		if(strchr(addrs->d[_i], '@') == NULL) {
 			errno = 0;
 			log_error(LOG_ARGS, "No @ in address, ignoring %s",
-					it->item);
+					addrs->d[_i]);
 			continue;
 		}
-		retval = write_rcpt_to(sockfd, it->item);
+		retval = write_rcpt_to(sockfd, addrs->d[_i]);
 		if(retval) {
 			log_error(LOG_ARGS, "Could not write RCPT TO:\n");
 			return retval;
@@ -169,7 +169,7 @@ int send_mail_many_fd(int sockfd, struct mail *mail, struct ml *ml, int subfd,
     const char *archivefilename)
 {
 	int res, ret;
-	strlist stl = tll_init();
+	strlist stl = vec_init();
 	FILE *f = fdopen(subfd, "r");
 
 	if (f == NULL) {
@@ -180,20 +180,20 @@ int send_mail_many_fd(int sockfd, struct mail *mail, struct ml *ml, int subfd,
 
 	do {
 		res = getaddrsfromfile(&stl, f, maxverprecips);
-		if(tll_length(stl) == maxverprecips) {
+		if(stl.len == maxverprecips) {
 			ret = send_mail_many_list(sockfd, mail, ml, &stl,
 			    archivefilename);
-			tll_free_and_free(stl, free);
+			vec_free_and_free(&stl, free);
 			if(ret < 0)
 				return ret;
 		}
 	} while(res > 0);
 	fclose(f);
 
-	if(tll_length(stl)) {
+	if(stl.len) {
 		ret = send_mail_many_list(sockfd, mail, ml, &stl,
 		    archivefilename);
-		tll_free_and_free(stl, free);
+		vec_free_and_free(&stl, free);
 		return ret;
 	}
 
@@ -207,8 +207,8 @@ int send_mail_many_list(int sockfd, struct mail *mail, struct ml *ml, strlist *a
 	int index = archivefilename ? get_index_from_filename(archivefilename) : -1;
 	char *bounceaddr, *addr;
 
-	while (tll_length(*addrs) > 0) {
-		addr = tll_pop_front(*addrs);
+	while (addrs->len > 0) {
+		addr = vec_pop_front(addrs);
 		bounceaddr = NULL;
 		if(strchr(addr, '@') == NULL) {
 			errno = 0;
@@ -292,7 +292,7 @@ int main(int argc, char **argv)
 	DIR *subddir;
 	struct dirent *dp;
 	struct stat st;
-	strlist stl = tll_init();
+	strlist stl = vec_init();
 	struct sigaction sigact;
 	struct mail mail = { 0 };
 	struct ml ml;
@@ -584,11 +584,13 @@ int main(int argc, char **argv)
 			do {
 				res = getaddrsfromfile(&stl, f, maxverprecips);
 				if(omit != NULL) {
-					tll_foreach(stl, it)
-						if (strcmp(it->item, omit) == 0)
-							tll_remove_and_free(stl, it, free);
+					vec_foreach(stl, _j)
+						if (strcmp(stl.d[_j], omit) == 0) {
+							vec_remove_and_free(&stl, _j, free);
+							_j--;
+						}
 				}
-				if(tll_length(stl) == maxverprecips) {
+				if(stl.len == maxverprecips) {
 					sockfd = newsmtp(&ml, relayhost);
 					if(verp) {
 						mail.from = verpfrom;
@@ -612,12 +614,12 @@ int main(int argc, char **argv)
 					} else {
 						endsmtp(&sockfd);
 					}
-					tll_free_and_free(stl, free);
+					vec_free_and_free(&stl, free);
 				}
 			} while(res > 0);
 			fclose(f);
 		}
-		if(tll_length(stl)) {
+		if(stl.len) {
 			sockfd = newsmtp(&ml, relayhost);
 			if(verp) {
 				mail.from = verpfrom;
@@ -636,7 +638,7 @@ int main(int argc, char **argv)
 			} else {
 				endsmtp(&sockfd);
 			}
-			tll_free_and_free(stl, free);
+			vec_free_and_free(&stl, free);
 		}
 		free(verpfrom);
 		closedir(subddir);

@@ -79,12 +79,12 @@ static int read_hdrs(int fd, strlist *allhdrs, strlist* delmime, strlist* denymi
 			free(line);
 			break;
 		}
-		if(!tll_length(*allhdrs) || ((line[0] != '\t') && (line[0] != ' '))) /* first header line or no more unfolding */
-			tll_push_back(*allhdrs, line);
+		if(!allhdrs->len || ((line[0] != '\t') && (line[0] != ' '))) /* first header line or no more unfolding */
+			vec_push(allhdrs, line);
 		else{
-			xasprintf(&tmp, "%s%s", tll_back(*allhdrs), line);
-			free(tll_pop_back(*allhdrs));
-			tll_push_back(*allhdrs, tmp);
+			xasprintf(&tmp, "%s%s", vec_last(allhdrs), line);
+			free(vec_pop(allhdrs));
+			vec_push(allhdrs, tmp);
 		}
 		free(line);
 	}
@@ -106,8 +106,8 @@ static int read_hdrs(int fd, strlist *allhdrs, strlist* delmime, strlist* denymi
  * returns 0 on success
  */
 static int write_hdrs(int outfd, strlist* hdrs,off_t* unwantedmime_hdrpos) {
-	tll_foreach(*hdrs, hdr) {
-		if(dprintf(outfd, "%s", hdr->item) < 0){
+	vec_foreach(*hdrs, _i) {
+		if(dprintf(outfd, "%s", hdrs->d[_i]) < 0){
 			log_error(LOG_ARGS, "Error when dumping headers");
 			return -1;
 		}
@@ -168,7 +168,7 @@ static int parse_body(int infd,int outfd, strlist* delmime, strlist* denymime,
 			strip = 0;
 			/* check if the boundary is the beginning of a new part */
 			if(strncmp(line + strlen(boundary),"--",2)){
-				strlist hdrs = tll_init();
+				strlist hdrs = vec_init();
 				char* new_boundary = NULL;
 				/* check if this part should be stripped */
 				if(read_hdrs(infd, &hdrs,delmime,denymime,deny,&new_boundary) == MIME_STRIP)
@@ -190,7 +190,7 @@ static int parse_body(int infd,int outfd, strlist* delmime, strlist* denymime,
 						return -1;
 					}
 				}
-				tll_free_and_free(hdrs, free);
+				vec_free_and_free(&hdrs, free);
 				if(new_boundary)
 					free(new_boundary);
 			}else{
@@ -218,7 +218,7 @@ static int parse_body(int infd,int outfd, strlist* delmime, strlist* denymime,
 
 /* read a mail stripping unwanted parts */
 static int dump_mail(int infd, int outfd,char* listdir) {
-	strlist hdrs = tll_init();
+	strlist hdrs = vec_init();
 	strlist *delmime;
 	strlist *denymime;
 	char* boundary=NULL;
@@ -243,7 +243,7 @@ static int dump_mail(int infd, int outfd,char* listdir) {
 	}
 
 	/* free mail header */
-	tll_free_and_free(hdrs, free);
+	vec_free_and_free(&hdrs, free);
 
 	if(result == MIME_OK && !deny) {
 		/* try to parse the mail */
@@ -271,11 +271,11 @@ static int dump_mail(int infd, int outfd,char* listdir) {
 
 	/* free mime types */
 	if(delmime) {
-		tll_free_and_free(*delmime, free);
+		vec_free_and_free(delmime, free);
 		free(delmime);
 	}
 	if(denymime) {
-		tll_free_and_free(*denymime, free);
+		vec_free_and_free(denymime, free);
 		free(denymime);
 	}
 	return 0;

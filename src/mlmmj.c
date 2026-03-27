@@ -137,8 +137,8 @@ find_in_list(strlist *l, const char *pattern)
 		return (NULL);
 	len = strlen(pattern);
 
-	tll_foreach(*l, el) {
-		char *str = el->item;
+	vec_foreach(*l, _i) {
+		char *str = l->d[_i];
 		if (str == NULL)
 			continue;
 		if (strncasecmp(str, pattern, len) == 0)
@@ -550,7 +550,7 @@ char *dsnparseaddr(const char *mailname)
 	char *line, *hdr, *walk, *addr = NULL, *boundary = NULL;
 	bool quoted = false;
 	bool indsn = false;
-	strlist emails = tll_init();
+	strlist emails = vec_init();
 
 	f = fopen(mailname, "r");
 	if(f == NULL) {
@@ -610,9 +610,9 @@ char *dsnparseaddr(const char *mailname)
 					break;
 				}
 				find_email_adr(walk+1, &emails);
-				if(tll_length(emails) > 0) {
-					addr = xstrdup(tll_front(emails));
-					tll_free_and_free(emails, free);
+				if(emails.len > 0) {
+					addr = xstrdup(vec_first(&emails));
+					vec_free_and_free(&emails, free);
 				}
 				break;
 			}
@@ -646,7 +646,7 @@ char *dsnparseaddr(const char *mailname)
 	free(buf);
 	free(boundary);
 	fclose(f);
-	tll_free_and_free(emails, free);
+	vec_free_and_free(&emails, free);
 	return addr;
 }
 

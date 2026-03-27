@@ -27,7 +27,7 @@
 #include "config.h"
 #include <stdbool.h>
 #include <time.h>
-#include <tllist.h>
+#include <vec.h>
 
 #ifndef MLMMJ_UNUSED
 #define MLMMJ_UNUSED __attribute__((__unused__))
@@ -84,7 +84,7 @@ struct ml {
 	int ctrlfd;
 };
 
-typedef tll(char *) strlist;
+typedef vec_t(char *) strlist;
 
 typedef enum bounce {
 	BOUNCE_OK,

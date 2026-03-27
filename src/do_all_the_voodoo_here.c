@@ -60,12 +60,12 @@ scan_headers(FILE *f, struct mailhdr *readhdrs, strlist *allhdrs, strlist *allun
 
 		if (allhdrs != NULL) {
 			/* Snatch a copy of the header */
-			tll_push_back(*allhdrs, xstrdup(hdrline));
+			vec_push(allhdrs, xstrdup(hdrline));
 		}
-		
+
 		if (allunfoldeds != NULL) {
 			/* Snatch a copy of unfolded */
-			tll_push_back(*allunfoldeds, xstrdup(unfolded));
+			vec_push(allunfoldeds, xstrdup(unfolded));
 		}
 		
 		free(hdrline);
@@ -78,7 +78,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 		 strlist *allhdrs, const char *prefix, int replyto)
 {
 	char *hdrline, *unfolded, *unqp;
-	strlist allunfoldeds = tll_init();
+	strlist allunfoldeds = vec_init();
 	char *posteraddr = NULL;
 	bool hdrsadded = false;
 	bool subject_present = false;
@@ -109,20 +109,20 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 
 	/* if we have custom headers , extract posteraddr from current header */
 	if(hdrfd >= 0) {
-		strlist fromemails = tll_init();
+		strlist fromemails = vec_init();
 		if ( readhdrs[0].valuecount == 1 ) {
 		        find_email_adr(readhdrs[0].values[0], &fromemails);
-			if (tll_length(fromemails) > 0)
-				posteraddr = xstrdup(tll_front(fromemails));
+			if (fromemails.len > 0)
+				posteraddr = xstrdup(vec_first(&fromemails));
 		}
-		tll_free_and_free(fromemails, free);
+		vec_free_and_free(&fromemails, free);
 	}
 	/* scan all headers from allhdrs , and do the real things */
-	tll_foreach(*allhdrs, a_header ) {
+	vec_foreach(*allhdrs, _i) {
 
 	        /* hdrline contains the unfolded value of the header and unfolded contains the original data */
-	        hdrline=a_header->item ;
-		unfolded=tll_pop_front(allunfoldeds) ;
+	        hdrline=allhdrs->d[_i] ;
+		unfolded=xstrdup(allunfoldeds.d[_i]) ;
 
 		/* add extra headers before MIME* headers,
 		   or after all headers */
@@ -133,7 +133,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 					log_error(LOG_ARGS, "Could not "
 						"add extra headers");
 					free(unfolded);
-					tll_free_and_free(allunfoldeds, free);
+					vec_free_and_free(&allunfoldeds, free);
 					free(posteraddr);
 					fclose(outf);
 					fclose(f);
@@ -177,7 +177,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 		  if(process_headers(hdrfd,outf,posteraddr ? posteraddr : "") < 0) {
 				log_error(LOG_ARGS, "Could not "
 					"add extra headers");
-				tll_free_and_free(allunfoldeds, free);
+				vec_free_and_free(&allunfoldeds, free);
 				free(posteraddr);
 				fclose(outf);
 				fclose(f);
@@ -192,7 +192,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 	}
 	/* write LF */
 	if(fprintf(outf, "\n") < 0) {
-	        tll_free_and_free(allunfoldeds, free);
+	        vec_free_and_free(&allunfoldeds, free);
 		log_error(LOG_ARGS, "Error writing hdrs.");
 		free(posteraddr);
 		fclose(outf);
@@ -202,7 +202,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 	fflush(outf);
 	fclose(outf);
 
-	tll_free_and_free(allunfoldeds, free);
+	vec_free_and_free(&allunfoldeds, free);
 
 	lseek(infd, ftello(f), SEEK_SET);
 	/* Just print the rest of the mail */
