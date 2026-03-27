@@ -25,6 +25,7 @@
 #define MYGETLINE_H
 
 #define BUFSIZE 256
+#define MAXLINESIZE (64 * 1024)
 
 char *mygetline(int fd);
 

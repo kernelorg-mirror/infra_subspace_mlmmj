@@ -60,7 +60,13 @@ static char *mygetuntil(int fd, int eof)
 		}
 
 		if(i == buf_size - 1) {
+			if(buf_size >= MAXLINESIZE) {
+				free(buf);
+				return NULL;
+			}
 			buf_size *= 2;
+			if(buf_size > MAXLINESIZE)
+				buf_size = MAXLINESIZE;
 			buf = xrealloc(buf, buf_size);
 		}
 		buf[i++] = ch;
