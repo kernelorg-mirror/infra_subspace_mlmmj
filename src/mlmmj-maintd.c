@@ -244,7 +244,7 @@ resend_queue(struct ml *ml, int logfd)
 		int mailfd = openat(qfd, dp->d_name, O_RDONLY);
 		mail.fp = fdopen(mailfd, "r");
 		if (mail.fp == NULL)
-			err(1, "merde");
+			err(1, "fdopen queue/%s", dp->d_name);
 		if (send_single_mail(&mail, ml, false)) {
 			unlinkat(qfd, dp->d_name, 0);
 			unlinkat(qfd, fromname, 0);
