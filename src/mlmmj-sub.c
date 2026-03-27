@@ -188,13 +188,13 @@ int main(int argc, char **argv)
 	if(changeuid) {
 		uid = getuid();
 		if(!uid && fstat(ml.fd, &st) == 0 && uid != st.st_uid) {
-			printf("Changing to uid %d, owner of %s.\n",
-					(int)st.st_uid, ml.dir);
-			if(setuid(st.st_uid) < 0) {
-				perror("setuid");
-				fprintf(stderr, "Continuing as uid %d\n",
-				    (int)uid);
-			}
+			printf("Changing to uid %d gid %d, owner of %s.\n",
+					(int)st.st_uid, (int)st.st_gid,
+					ml.dir);
+			if(setgid(st.st_gid) < 0)
+				err(EXIT_FAILURE, "setgid");
+			if(setuid(st.st_uid) < 0)
+				err(EXIT_FAILURE, "setuid");
 		}
 	}
 
