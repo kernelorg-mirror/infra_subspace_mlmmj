@@ -111,7 +111,7 @@ log_err(const char *fmt, ...)
 	vsyslog(LOG_ERR, fmt, ap);
 #else
 	char *buf;
-	i = vasprintf(&buf, fmt, ap);
+	vasprintf(&buf, fmt, ap);
 	fprintf(stderr, "%s[%d]: %s\n", log_name, (int) getpid(), buf);
 	free(buf);
 #endif
