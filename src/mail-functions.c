@@ -38,6 +38,14 @@
 #include "wrappers.h"
 #include "log_error.h"
 
+static bool
+addr_has_crlf(const char *addr)
+{
+	if (addr == NULL)
+		return false;
+	return (strchr(addr, '\r') != NULL || strchr(addr, '\n') != NULL);
+}
+
 static int
 write_sock(int sockfd, const char *errstr, const char *fmt, ...) {
 	int bytes_written;
@@ -65,6 +73,10 @@ int write_helo(int sockfd, const char *hostname)
 
 int write_mail_from(int sockfd, const char *from_addr, const char *extra)
 {
+	if (addr_has_crlf(from_addr)) {
+		log_error(LOG_ARGS, "MAIL FROM address contains CR/LF, rejecting");
+		return -1;
+	}
 	if(extra && extra[0] != '\0') {
 		if(extra[0] == ' ') extra++;
 		return (write_sock(sockfd, "FROM", "MAIL FROM:<%s> %s\r\n",
@@ -75,6 +87,10 @@ int write_mail_from(int sockfd, const char *from_addr, const char *extra)
 
 int write_rcpt_to(int sockfd, const char *rcpt_addr)
 {
+	if (addr_has_crlf(rcpt_addr)) {
+		log_error(LOG_ARGS, "RCPT TO address contains CR/LF, rejecting");
+		return -1;
+	}
 	return (write_sock(sockfd, "TO", "RCPT TO:<%s>\r\n", rcpt_addr));
 }
 
@@ -133,6 +149,10 @@ int write_dot(int sockfd)
 
 int write_replyto(int sockfd, const char *replyaddr)
 {
+	if (addr_has_crlf(replyaddr)) {
+		log_error(LOG_ARGS, "Reply-To address contains CR/LF, rejecting");
+		return -1;
+	}
 	return write_sock(sockfd, "Reply-To header", "Reply-To: %s\r\n", replyaddr);
 }
 

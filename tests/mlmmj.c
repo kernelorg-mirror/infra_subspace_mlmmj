@@ -439,6 +439,16 @@ ATF_TC_BODY(find_email_adr, tc)
 	find_email_adr("<bob @foo.net> garbage \"more garbage \\ ,", &c7);
 	ATF_REQUIRE_EQ(tll_length(c7), 20);
 	ATF_REQUIRE_STREQ(tll_back(c7), "bob @foo.net");
+	/* CRLF stripping in skin() */
+	find_email_adr("<evil@bad\r\nBcc: victim@target>", &c7);
+	ATF_REQUIRE_EQ(tll_length(c7), 21);
+	ATF_REQUIRE_STREQ(tll_back(c7), "evil@badBcc: victim@target");
+	find_email_adr("evil@bad\r\n", &c7);
+	ATF_REQUIRE_EQ(tll_length(c7), 22);
+	ATF_REQUIRE_STREQ(tll_back(c7), "evil@bad");
+	find_email_adr("test\n@foo.com", &c7);
+	ATF_REQUIRE_EQ(tll_length(c7), 23);
+	ATF_REQUIRE_STREQ(tll_back(c7), "test@foo.com");
 }
 
 ATF_TC_BODY(strtoim, tc)
@@ -557,6 +567,13 @@ ATF_TC_BODY(write_replyto, tc)
 	close(fd);
 	if (!atf_utils_compare_file("replyto.txt", "Reply-To: toto\r\n"))
 		atf_tc_fail("Unexpected output");
+	/* CRLF injection */
+	fd = open("replyto.txt", O_CREAT|O_WRONLY|O_TRUNC, 0644);
+	ATF_REQUIRE_EQ(write_replyto(fd, "evil@bad\r\nBcc: victim@target"), -1);
+	close(fd);
+	fd = open("replyto.txt", O_CREAT|O_WRONLY|O_TRUNC, 0644);
+	ATF_REQUIRE_EQ(write_replyto(fd, "evil@bad\nBcc: victim@target"), -1);
+	close(fd);
 }
 
 ATF_TC_BODY(write_rcpt_to, tc)
@@ -569,6 +586,13 @@ ATF_TC_BODY(write_rcpt_to, tc)
 		atf_utils_cat_file("rcpt_to.txt", "");
 		atf_tc_fail("Unexpected output");
 	}
+	/* CRLF injection */
+	fd = open("rcpt_to.txt", O_CREAT|O_WRONLY|O_TRUNC, 0644);
+	ATF_REQUIRE_EQ(write_rcpt_to(fd, "evil@bad\r\nRCPT TO:<victim@target>"), -1);
+	close(fd);
+	fd = open("rcpt_to.txt", O_CREAT|O_WRONLY|O_TRUNC, 0644);
+	ATF_REQUIRE_EQ(write_rcpt_to(fd, "evil@bad\nRCPT TO:<victim@target>"), -1);
+	close(fd);
 }
 
 ATF_TC_BODY(write_mail_from, tc)
@@ -602,6 +626,13 @@ ATF_TC_BODY(write_mail_from, tc)
 		atf_utils_cat_file("mail_from.txt", "");
 		atf_tc_fail("Unexpected output");
 	}
+	/* CRLF injection */
+	fd = open("mail_from.txt", O_CREAT|O_WRONLY|O_TRUNC, 0644);
+	ATF_REQUIRE_EQ(write_mail_from(fd, "evil@bad\r\nMAIL FROM:<spoof>", NULL), -1);
+	close(fd);
+	fd = open("mail_from.txt", O_CREAT|O_WRONLY|O_TRUNC, 0644);
+	ATF_REQUIRE_EQ(write_mail_from(fd, "evil@bad\nMAIL FROM:<spoof>", NULL), -1);
+	close(fd);
 }
 
 ATF_TC_BODY(write_mailbody, tc)

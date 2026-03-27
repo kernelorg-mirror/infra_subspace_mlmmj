@@ -90,7 +90,14 @@ static char *skin(char *name)
 
 	if (strchr(name, '(') == NULL && strchr(name, '<') == NULL
 	    && strchr(name, ' ') == NULL) {
-		return (xstrdup(name));
+		nbuf = xstrdup(name);
+		/* Strip CR and LF to prevent header/SMTP injection */
+		for (cp = cp2 = nbuf; *cp != '\0'; cp++) {
+			if (*cp != '\r' && *cp != '\n')
+				*cp2++ = *cp;
+		}
+		*cp2 = '\0';
+		return (nbuf);
 	}
 	nbuf = xmalloc(strlen(name) +1);
 
@@ -174,6 +181,13 @@ static char *skin(char *name)
 				bufend = cp2;
 			}
 		}
+	}
+	*cp2 = '\0';
+
+	/* Strip CR and LF to prevent header/SMTP injection */
+	for (cp = cp2 = nbuf; *cp != '\0'; cp++) {
+		if (*cp != '\r' && *cp != '\n')
+			*cp2++ = *cp;
 	}
 	*cp2 = '\0';
 
