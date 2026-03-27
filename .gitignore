@@ -17,7 +17,6 @@ Makefile
 /config.h.in
 /config.log
 /config.status
-/configure
 /kyua.conf
 /src/mlmmj-bounce
 /src/mlmmj-list
