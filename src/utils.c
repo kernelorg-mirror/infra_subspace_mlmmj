@@ -198,6 +198,13 @@ exec_and_wait(const char *arg, ...)
 	if (!WIFEXITED(pstat))
 		return (-1);
 
+	/*
+	 * posix_spawnp(3) may report exec() failures via the child's exit
+	 * status (127) instead of the return value.
+	 */
+	if (WEXITSTATUS(pstat) == 127)
+		return (-1);
+
 	return (WEXITSTATUS(pstat));
 }
 
