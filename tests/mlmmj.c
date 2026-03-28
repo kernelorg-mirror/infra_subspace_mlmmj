@@ -2833,41 +2833,203 @@ ATF_TC_BODY(listcontrol, tc)
 	ml_init(&ml);
 	ml.dir = "list";
 	strlist fromemails = vec_init();
+	strlist rtoemails = vec_init();
 
 	ATF_REQUIRE(ml_open(&ml, false));
-	ATF_REQUIRE_EQ(listcontrol(NULL, &ml, "plop", NULL, "meh"), -1);
+	ATF_REQUIRE_EQ(listcontrol(NULL, &rtoemails, &ml, "plop", NULL, "meh"), -1);
 
-	ATF_REQUIRE_EQ(listcontrol(&fromemails, &ml, "help", NULL, "meh"), -1);
+	ATF_REQUIRE_EQ(listcontrol(&fromemails, &rtoemails, &ml, "help", NULL, "meh"), -1);
 
 	atf_utils_create_file("list/control/closedlist", "");
 	atf_utils_create_file("meh", "mail");
 	vec_push(&fromemails, "plop@test");
-	ATF_REQUIRE_EQ(listcontrol(&fromemails, &ml, "unsubscribe", NULL, "meh"), -1);
+	ATF_REQUIRE_EQ(listcontrol(&fromemails, &rtoemails, &ml, "unsubscribe", NULL, "meh"), -1);
 	if (atf_utils_file_exists("me"))
 		atf_tc_fail("mail should have been removed");
 
 	unlink("list/control/closedlist");
 	atf_utils_create_file("list/control/closedlistsub", "");
-	ATF_REQUIRE_EQ(listcontrol(&fromemails, &ml, "subscribe", NULL, "meh"), -1);
+	ATF_REQUIRE_EQ(listcontrol(&fromemails, &rtoemails, &ml, "subscribe", NULL, "meh"), -1);
 
 	/* is_valid_email: reject addresses without @ */
 	strlist no_at = vec_init();
 	vec_push(&no_at, "invalid-address");
-	ATF_REQUIRE_EQ(listcontrol(&no_at, &ml, "help", NULL, "meh"), -1);
+	ATF_REQUIRE_EQ(listcontrol(&no_at, &rtoemails, &ml, "help", NULL, "meh"), -1);
 
 	/* is_valid_email: reject addresses with control characters */
 	strlist crlf = vec_init();
 	vec_push(&crlf, "evil@bad\r\nBcc: victim");
-	ATF_REQUIRE_EQ(listcontrol(&crlf, &ml, "help", NULL, "meh"), -1);
+	ATF_REQUIRE_EQ(listcontrol(&crlf, &rtoemails, &ml, "help", NULL, "meh"), -1);
 
 	strlist lf = vec_init();
 	vec_push(&lf, "evil@bad\n");
-	ATF_REQUIRE_EQ(listcontrol(&lf, &ml, "help", NULL, "meh"), -1);
+	ATF_REQUIRE_EQ(listcontrol(&lf, &rtoemails, &ml, "help", NULL, "meh"), -1);
 
 	strlist nul = vec_init();
 	vec_push(&nul, "evil\x01@bad");
-	ATF_REQUIRE_EQ(listcontrol(&nul, &ml, "help", NULL, "meh"), -1);
+	ATF_REQUIRE_EQ(listcontrol(&nul, &rtoemails, &ml, "help", NULL, "meh"), -1);
 
+}
+
+ATF_TC_WITHOUT_HEAD(listcontrol_subscribe_replyto);
+ATF_TC_BODY(listcontrol_subscribe_replyto, tc)
+{
+	struct ml ml;
+	init_ml(true);
+	ml_init(&ml);
+	ml.dir = "list";
+
+	ATF_REQUIRE(ml_open(&ml, false));
+	setup_listtext(tc);
+
+	/* When Reply-To has exactly 1 address and command is subscribe,
+	 * the Reply-To address should be used for subscription */
+	strlist fromemails = vec_init();
+	strlist rtoemails = vec_init();
+	vec_push(&fromemails, "sender@example.com");
+	vec_push(&rtoemails, "sender+list@example.com");
+
+	atf_utils_create_file("list/control/nosubconfirm", "");
+	atf_utils_create_file("list/control/smtpport", "25678");
+	atf_utils_create_file("list/control/smtphelo", "heloname");
+
+	int smtppipe[2];
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
+	pid_t p2 = single_mail_reception(smtppipe[1]);
+	atf_utils_readline(smtppipe[0]);
+
+	/* subscribe should use Reply-To address */
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		listcontrol(&fromemails, &rtoemails, &ml, "subscribe",
+		    NULL, "meh");
+		_exit(EXIT_SUCCESS);
+	}
+	atf_utils_wait(p2, 0, "save:mailout.txt", "");
+	atf_utils_wait(p, 0, "", "");
+
+	/* The subscribed address should be the Reply-To, not From */
+	ATF_CHECK(atf_utils_grep_file("sender\\+list@example.com",
+	    "list/subscribers.d/s"));
+	ATF_CHECK(!atf_utils_grep_file("sender@example.com",
+	    "list/subscribers.d/s"));
+}
+
+ATF_TC_WITHOUT_HEAD(listcontrol_subscribe_no_replyto);
+ATF_TC_BODY(listcontrol_subscribe_no_replyto, tc)
+{
+	struct ml ml;
+	init_ml(true);
+	ml_init(&ml);
+	ml.dir = "list";
+
+	ATF_REQUIRE(ml_open(&ml, false));
+	setup_listtext(tc);
+
+	/* When Reply-To is empty, From address should be used */
+	strlist fromemails = vec_init();
+	strlist rtoemails = vec_init();
+	vec_push(&fromemails, "sender@example.com");
+
+	atf_utils_create_file("list/control/nosubconfirm", "");
+	atf_utils_create_file("list/control/smtpport", "25678");
+	atf_utils_create_file("list/control/smtphelo", "heloname");
+
+	int smtppipe[2];
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
+	pid_t p2 = single_mail_reception(smtppipe[1]);
+	atf_utils_readline(smtppipe[0]);
+
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		listcontrol(&fromemails, &rtoemails, &ml, "subscribe",
+		    NULL, "meh");
+		_exit(EXIT_SUCCESS);
+	}
+	atf_utils_wait(p2, 0, "save:mailout.txt", "");
+	atf_utils_wait(p, 0, "", "");
+
+	/* The subscribed address should be the From address */
+	ATF_CHECK(atf_utils_grep_file("sender@example.com",
+	    "list/subscribers.d/s"));
+}
+
+ATF_TC_WITHOUT_HEAD(listcontrol_subscribe_replyto_multiple);
+ATF_TC_BODY(listcontrol_subscribe_replyto_multiple, tc)
+{
+	struct ml ml;
+	init_ml(true);
+	ml_init(&ml);
+	ml.dir = "list";
+
+	ATF_REQUIRE(ml_open(&ml, false));
+	setup_listtext(tc);
+
+	/* When Reply-To has multiple addresses, ignore it and use From */
+	strlist fromemails = vec_init();
+	strlist rtoemails = vec_init();
+	vec_push(&fromemails, "sender@example.com");
+	vec_push(&rtoemails, "addr1@example.com");
+	vec_push(&rtoemails, "addr2@example.com");
+
+	atf_utils_create_file("list/control/nosubconfirm", "");
+	atf_utils_create_file("list/control/smtpport", "25678");
+	atf_utils_create_file("list/control/smtphelo", "heloname");
+
+	int smtppipe[2];
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
+	pid_t p2 = single_mail_reception(smtppipe[1]);
+	atf_utils_readline(smtppipe[0]);
+
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		listcontrol(&fromemails, &rtoemails, &ml, "subscribe",
+		    NULL, "meh");
+		_exit(EXIT_SUCCESS);
+	}
+	atf_utils_wait(p2, 0, "save:mailout.txt", "");
+	atf_utils_wait(p, 0, "", "");
+
+	/* Multiple Reply-To addresses: fall back to From */
+	ATF_CHECK(atf_utils_grep_file("sender@example.com",
+	    "list/subscribers.d/s"));
+}
+
+ATF_TC_WITHOUT_HEAD(listcontrol_unsubscribe_ignores_replyto);
+ATF_TC_BODY(listcontrol_unsubscribe_ignores_replyto, tc)
+{
+	struct ml ml;
+	init_ml(true);
+	ml_init(&ml);
+	ml.dir = "list";
+
+	ATF_REQUIRE(ml_open(&ml, false));
+
+	/* Reply-To should be ignored for non-subscribe commands */
+	strlist fromemails = vec_init();
+	strlist rtoemails = vec_init();
+	vec_push(&fromemails, "sender@example.com");
+	vec_push(&rtoemails, "sender+list@example.com");
+
+	/* Subscribe first so we can unsubscribe */
+	atf_utils_create_file("list/subscribers.d/s",
+	    "sender@example.com\n");
+
+	atf_utils_create_file("list/control/nosubconfirm", "");
+	atf_utils_create_file("meh", "mail");
+
+	/* Unsubscribe should use From, not Reply-To */
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		listcontrol(&fromemails, &rtoemails, &ml, "unsubscribe",
+		    NULL, "meh");
+		_exit(EXIT_SUCCESS);
+	}
+	atf_utils_wait(p, 0, "", "");
+
+	/* sender@example.com should be unsubscribed (From was used).
+	 * The file is removed entirely when the last subscriber is gone. */
+	ATF_CHECK(!atf_utils_file_exists("list/subscribers.d/s"));
 }
 
 ATF_TC_BODY(send_help, tc)
@@ -4605,6 +4767,10 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, generate_subconfirm);
 	ATF_TP_ADD_TC(tp, send_confirmation_mail);
 	ATF_TP_ADD_TC(tp, listcontrol);
+	ATF_TP_ADD_TC(tp, listcontrol_subscribe_replyto);
+	ATF_TP_ADD_TC(tp, listcontrol_subscribe_no_replyto);
+	ATF_TP_ADD_TC(tp, listcontrol_subscribe_replyto_multiple);
+	ATF_TP_ADD_TC(tp, listcontrol_unsubscribe_ignores_replyto);
 	ATF_TP_ADD_TC(tp, send_help);
 	ATF_TP_ADD_TC(tp, requeuemail);
 	ATF_TP_ADD_TC(tp, gethdrline);

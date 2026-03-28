@@ -74,7 +74,8 @@ static char *modreason_strs[] = {
 static void
 free_parsed_hdrs(struct mailhdr *readhdrs, strlist *fromemails,
     strlist *originalfromemails, strlist *toemails, strlist *ccemails,
-    strlist *rpemails, strlist *dtemails, strlist *allheaders)
+    strlist *rpemails, strlist *dtemails, strlist *rtoemails,
+    strlist *allheaders)
 {
 	free_mailhdrs(readhdrs);
 	vec_free_and_free(fromemails, free);
@@ -83,6 +84,7 @@ free_parsed_hdrs(struct mailhdr *readhdrs, strlist *fromemails,
 	vec_free_and_free(ccemails, free);
 	vec_free_and_free(rpemails, free);
 	vec_free_and_free(dtemails, free);
+	vec_free_and_free(rtoemails, free);
 	vec_free_and_free(allheaders, free);
 }
 
@@ -298,6 +300,7 @@ int main(int argc, char **argv)
 	strlist *list_rules = NULL;
 	strlist *delheaders = NULL;
 	strlist allheaders = vec_init();
+	strlist rtoemails = vec_init();
 	strlist *listaddrs = NULL;
 	struct mailhdr readhdrs[] = {
 		{ "From:", 0, NULL },
@@ -307,6 +310,7 @@ int main(int argc, char **argv)
 		{ "Delivered-To:", 0, NULL },
 		{ "Subject:", 0, NULL },
 		{ "X-Original-From:", 0, NULL },
+		{ "Reply-To:", 0, NULL },
 		{ NULL, 0, NULL }
 	};
 	struct ml ml;
@@ -400,7 +404,7 @@ int main(int argc, char **argv)
 		unlink(donemailname);
 		free(donemailname);
 		free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-			    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
+			    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
 		exit(EXIT_FAILURE);
 	}
 
@@ -468,6 +472,10 @@ int main(int argc, char **argv)
 	for(i = 0; i < readhdrs[6].valuecount; i++) {
 		find_email_adr(readhdrs[6].values[i], &originalfromemails);
 	}
+	/* Reply-To: addresses */
+	for(i = 0; i < readhdrs[7].valuecount; i++) {
+		find_email_adr(readhdrs[7].values[i], &rtoemails);
+	}
 
 	/* discard malformed mail with invalid From: unless it's a bounce */
 	if (fromemails.len != 1 &&
@@ -488,7 +496,7 @@ int main(int argc, char **argv)
 		free(discardname);
 		free(randomstr);
 		free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-			    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
+			    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
 		exit(EXIT_SUCCESS);
 	}
 	/* The only time posteraddr will remain unset is when the mail is a
@@ -530,7 +538,7 @@ int main(int argc, char **argv)
 				log_error(LOG_ARGS, "could not open() "
 						    "input mail file");
 				free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-					    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
+					    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
 				exit(EXIT_FAILURE);
 			}
 			if ((donemailfd = open(donemailname,
@@ -538,7 +546,7 @@ int main(int argc, char **argv)
 				log_error(LOG_ARGS, "could not open() "
 						    "output mail file");
 				free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-					    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
+					    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
 				exit(EXIT_FAILURE);
 			}
 			{
@@ -554,7 +562,7 @@ int main(int argc, char **argv)
 				unlink(donemailname);
 				free(donemailname);
 				free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-					    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
+					    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
 				exit(EXIT_FAILURE);
 			}
 			vec_free_and_free(&ownerhdrs, free);
@@ -574,11 +582,11 @@ int main(int argc, char **argv)
 			testfrom = &originalfromemails;
 		else
 			testfrom = &fromemails;
-		listcontrol(testfrom, &ml, recipextra,
+		listcontrol(testfrom, &rtoemails, &ml, recipextra,
 			    mlmmjsend, donemailname);
 
 		free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-			    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
+			    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
 		return EXIT_SUCCESS;
 	}
 
@@ -589,7 +597,7 @@ int main(int argc, char **argv)
 		if (stat(donemailname, &st) < 0) {
 			log_error(LOG_ARGS, "stat(%s,..) failed", donemailname);
 			free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-				    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
+				    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
 			exit(EXIT_FAILURE);
 		}
 
@@ -604,7 +612,7 @@ int main(int argc, char **argv)
 				unlink(mailfile);
 				free(donemailname);
 				free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-					    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
+					    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
 				exit(EXIT_SUCCESS);
 			}
 
@@ -643,7 +651,7 @@ int main(int argc, char **argv)
 		free(discardname);
 		free(randomstr);
 		free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-			    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
+			    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
 		exit(EXIT_FAILURE);
 	}
 
@@ -663,7 +671,7 @@ int main(int argc, char **argv)
 			unlink(donemailname);
 			free(donemailname);
 			free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-				    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
+				    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
 			exit(EXIT_SUCCESS);
 		}
 		txt = open_text(ml.fd, "deny", "post",
@@ -707,7 +715,7 @@ int main(int argc, char **argv)
 				unlink(donemailname);
 				free(donemailname);
 				free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-					    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
+					    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
 				exit(EXIT_SUCCESS);
 			}
 			txt = open_text(ml.fd, "deny", "post",
@@ -738,13 +746,13 @@ int main(int argc, char **argv)
 				free(donemailname);
 				free(discardname);
 				free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-					    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
+					    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
 				exit(EXIT_FAILURE);
 			}
 			free(donemailname);
 			free(discardname);
 			free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-				    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
+				    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
                 	exit(EXIT_SUCCESS);
 		} else if (accret == ACT_SEND) {
 			send = 1;
@@ -784,7 +792,7 @@ int main(int argc, char **argv)
 			unlink(donemailname);
 			free(donemailname);
 			free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-				    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
+				    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
 			exit(EXIT_SUCCESS);
 		}
 		if (subonlypost) {
@@ -811,7 +819,7 @@ int main(int argc, char **argv)
 				unlink(donemailname);
 				free(donemailname);
 				free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-					    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
+					    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
 				exit(EXIT_SUCCESS);
 			    }
 			    if (subonlypost) {
@@ -847,7 +855,7 @@ int main(int argc, char **argv)
 					free_parsed_hdrs(readhdrs, &fromemails,
 					    &originalfromemails, &toemails,
 					    &ccemails, &rpemails, &dtemails,
-					    &allheaders);
+					    &rtoemails, &allheaders);
 					exit(EXIT_FAILURE);
 				}
 				free(modname);
@@ -896,7 +904,7 @@ int main(int argc, char **argv)
 			free(donemailname);
 			free(mqueuename);
 			free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-				    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
+				    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
 			exit(EXIT_FAILURE);
 		}
 		free(donemailname);
@@ -909,7 +917,7 @@ int main(int argc, char **argv)
 				free(mqueuename);
 				free(omitfilename);
 				free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-					    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
+					    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
 				exit(EXIT_FAILURE);
 			}
 			free(omitfilename);
@@ -918,7 +926,7 @@ int main(int argc, char **argv)
 						"could not write omit file");
 				free(mqueuename);
 				free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-					    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
+					    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
 				exit(EXIT_FAILURE);
 			}
 			fsync(omitfd);
@@ -927,7 +935,7 @@ int main(int argc, char **argv)
 		newmoderated(&ml, mqueuename, mlmmjsend, efrom, subject,
 		    posteraddr, modreason);
 		free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-			    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
+			    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
 		return EXIT_SUCCESS;
 	}
 
@@ -936,7 +944,7 @@ int main(int argc, char **argv)
 	if (noprocess) {
 		free(donemailname);
 		free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-			    &toemails, &ccemails, &rpemails, &dtemails, &allheaders);
+			    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
 		exit(EXIT_SUCCESS);
 	}
 

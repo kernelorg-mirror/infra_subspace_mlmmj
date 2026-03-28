@@ -202,8 +202,8 @@ get_ctrl_command(const char *controlstr, char **param)
 	return (NULL);
 }
 
-int listcontrol(strlist *fromemails, struct ml *ml, const char *controlstr,
-    const char *mlmmjsend, const char *mailname)
+int listcontrol(strlist *fromemails, strlist *rtoemails, struct ml *ml,
+    const char *controlstr, const char *mlmmjsend, const char *mailname)
 {
 	char *bouncenr, *tmpstr;
 	char *param = NULL, *moderatefilename, *gatekeepfilename;
@@ -241,6 +241,15 @@ int listcontrol(strlist *fromemails, struct ml *ml, const char *controlstr,
 	if (fromemails->len >= 1)
 		lc.fromemail = fromemails->d[0];
 	lc.mlmmjsend = mlmmjsend;
+
+	/* For subscribe commands, prefer Reply-To over From */
+	if (rtoemails->len == 1 &&
+	    (cc->type == CTRL_SUBSCRIBE ||
+	     cc->type == CTRL_SUBSCRIBE_DIGEST ||
+	     cc->type == CTRL_SUBSCRIBE_NOMAIL ||
+	     cc->type == CTRL_SUBSCRIBE_BOTH)) {
+		lc.fromemail = rtoemails->d[0];
+	}
 
 	/* We only need the control mail when bouncing, to save bounced msg */
 	if (cc->type != CTRL_BOUNCES)

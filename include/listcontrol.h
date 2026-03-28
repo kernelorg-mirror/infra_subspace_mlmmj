@@ -66,7 +66,7 @@ struct ctrl_command {
 
 struct ctrl_command *get_ctrl_command(const char *controlstr, char **param);
 
-int listcontrol(strlist *fromemails, struct ml *ml,
+int listcontrol(strlist *fromemails, strlist *rtoemails, struct ml *ml,
 		const char *controlstr, const char *mlmmjsend,
 		const char *mailname);
 
