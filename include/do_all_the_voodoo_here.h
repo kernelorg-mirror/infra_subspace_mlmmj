@@ -27,6 +27,7 @@
 
 int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 	      const strlist *delhdrs, struct mailhdr *readhdrs,
-	      strlist *allhdrs, const char *subjectprefix, int replyto);
+	      strlist *allhdrs, const char *subjectprefix, int replyto,
+	      struct ml *ml);
 void scan_headers(FILE *f, struct mailhdr *readhdrs, strlist *allhdrs,
 	strlist *allunfoldeds);

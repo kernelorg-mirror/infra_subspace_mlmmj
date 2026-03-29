@@ -30,6 +30,7 @@
 #include "gethdrline.h"
 #include "strgen.h"
 #include "ctrlvalue.h"
+#include "statctrl.h"
 #include "do_all_the_voodoo_here.h"
 #include "log_error.h"
 #include "wrappers.h"
@@ -73,9 +74,36 @@ scan_headers(FILE *f, struct mailhdr *readhdrs, strlist *allhdrs, strlist *allun
 	}
 }
 
+static void
+write_list_headers(FILE *outf, struct ml *ml)
+{
+	char *owner;
+
+	if (ml == NULL)
+		return;
+	if (statctrl(ml->ctrlfd, "nolistheaders"))
+		return;
+
+	fprintf(outf, "List-Id: <%s.%s>\n", ml->name, ml->fqdn);
+	fprintf(outf, "List-Post: <mailto:%s@%s>\n", ml->name, ml->fqdn);
+	fprintf(outf, "List-Help: <mailto:%s%shelp@%s>\n",
+	    ml->name, ml->delim, ml->fqdn);
+	fprintf(outf, "List-Subscribe: <mailto:%s%ssubscribe@%s>\n",
+	    ml->name, ml->delim, ml->fqdn);
+	fprintf(outf, "List-Unsubscribe: <mailto:%s%sunsubscribe@%s>\n",
+	    ml->name, ml->delim, ml->fqdn);
+	owner = ctrlvalue(ml->ctrlfd, "owner");
+	if (owner != NULL) {
+		fprintf(outf, "List-Owner: <mailto:%s>\n", owner);
+		free(owner);
+	}
+	fprintf(outf, "Precedence: list\n");
+}
+
 int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 		 const strlist *delhdrs, struct mailhdr *readhdrs,
-		 strlist *allhdrs, const char *prefix, int replyto)
+		 strlist *allhdrs, const char *prefix, int replyto,
+		 struct ml *ml)
 {
 	char *hdrline, *unfolded, *unqp;
 	strlist allunfoldeds = vec_init();
@@ -140,6 +168,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 					return -1;
 				}
 			}
+			write_list_headers(outf, ml);
 			hdrsadded = true;
 		}
 
@@ -184,6 +213,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 				return -1;
 			}
 		}
+		write_list_headers(outf, ml);
 	}
 
 	if (prefix && !subject_present) {

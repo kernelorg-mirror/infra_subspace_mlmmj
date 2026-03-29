@@ -398,7 +398,7 @@ int main(int argc, char **argv)
 
 	if (do_all_the_voodoo_here(rawmailfd, donemailfd, hdrfd, footfd,
 				delheaders, readhdrs,
-				&allheaders, subjectprefix, replyto) < 0) {
+				&allheaders, subjectprefix, replyto, &ml) < 0) {
 		log_error(LOG_ARGS, "Error in do_all_the_voodoo_here");
 		close(donemailfd);
 		unlink(donemailname);
@@ -553,7 +553,7 @@ int main(int argc, char **argv)
 			strlist ownerhdrs = vec_init();
 			if (do_all_the_voodoo_here(rawmailfd, donemailfd, -1,
 					-1, delheaders,
-					NULL, &ownerhdrs, NULL, 0) < 0) {
+					NULL, &ownerhdrs, NULL, 0, NULL) < 0) {
 				log_error(LOG_ARGS, "do_all_the_voodoo_here");
 				vec_free_and_free(&ownerhdrs, free);
 				close(ownfd);

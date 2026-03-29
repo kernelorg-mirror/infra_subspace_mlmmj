@@ -103,6 +103,7 @@ simple_body()
 	rmdir list/text
 	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
+	touch list/control/nolistheaders
 	start_fakesmtp list
 	echo "heloname" > list/control/smtphelo
 	cat > incoming-invalid << EOF
@@ -1649,6 +1650,7 @@ subscription_moderation_body() {
 	rmdir list/text
 	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
+	touch list/control/nolistheaders
 	start_fakesmtp list
 	echo "heloname" > list/control/smtphelo
 
@@ -1836,6 +1838,7 @@ moderation_init_body() {
 	rmdir list/text
 	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
+	touch list/control/nolistheaders
 	start_fakesmtp list
 	echo "heloname" > list/control/smtphelo
 
@@ -1978,6 +1981,7 @@ moderation_notifymod_body() {
 	rmdir list/text
 	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
+	touch list/control/nolistheaders
 	start_fakesmtp list
 	echo "heloname" > list/control/smtphelo
 
@@ -2141,6 +2145,7 @@ moderation_notmetoo_body() {
 	rmdir list/text
 	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
+	touch list/control/nolistheaders
 	start_fakesmtp list
 	echo "heloname" > list/control/smtphelo
 
@@ -2266,6 +2271,7 @@ moderation_reject_invalid_body() {
 	rmdir list/text
 	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
+	touch list/control/nolistheaders
 	start_fakesmtp list
 	echo "heloname" > list/control/smtphelo
 
@@ -2352,6 +2358,7 @@ maxmailsize_body() {
 	rmdir list/text
 	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
+	touch list/control/nolistheaders
 	start_fakesmtp list
 	echo "heloname" > list/control/smtphelo
 
@@ -2418,6 +2425,7 @@ maxmailsize0_body() {
 	rmdir list/text
 	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
+	touch list/control/nolistheaders
 	start_fakesmtp list
 	echo "heloname" > list/control/smtphelo
 
@@ -2485,6 +2493,7 @@ normal_email_body()
 	rmdir list/text
 	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
+	touch list/control/nolistheaders
 	start_fakesmtp list
 	echo "heloname" > list/control/smtphelo
 
@@ -2687,6 +2696,7 @@ delheaders_body()
 	rmdir list/text
 	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
+	touch list/control/nolistheaders
 	start_fakesmtp list
 	echo "heloname" > list/control/smtphelo
 	printf "X-H1\nNope\n" > list/control/delheaders
@@ -2736,6 +2746,7 @@ delheaders_extras_body()
 	rmdir list/text
 	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
+	touch list/control/nolistheaders
 	start_fakesmtp list
 	echo "heloname" > list/control/smtphelo
 	printf "X-k3\nx-h1\nx-L\n\n\n \n\t\nplop\nx-sym-colon:\nNope\n" > list/control/delheaders
@@ -2811,6 +2822,7 @@ customheaders_body()
 	echo test@mlmmjtest > list/control/listaddress
 	start_fakesmtp list
 	echo "heloname" > list/control/smtphelo
+	touch list/control/nolistheaders
 	printf "X-H1: test\nNope: really not\n" > list/control/customheaders
 
 	printf "user@test\nuser2@test" > list/subscribers.d/u
@@ -2903,6 +2915,7 @@ customheaders_blanks_body()
 	rmdir list/text
 	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
+	touch list/control/nolistheaders
 	start_fakesmtp list
 	echo "heloname" > list/control/smtphelo
 	printf "X-H1: test\nNope: really not\n\n   \n" > list/control/customheaders
@@ -2997,6 +3010,7 @@ customheaders_with_subst_body()
 	rmdir list/text
 	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
+	touch list/control/nolistheaders
 	start_fakesmtp list
 	echo "heloname" > list/control/smtphelo
 	printf "X-H1: test\nNope: really not\nX-Poster-Address: \$posteraddr\$\n" > list/control/customheaders
@@ -3095,6 +3109,7 @@ verp_body()
 	rmdir list/text
 	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
+	touch list/control/nolistheaders
 	start_fakesmtp list
 	echo "postfix" > list/control/verp
 	echo 2 > list/control/maxverprecips
@@ -3172,6 +3187,7 @@ normal_email_with_dot_body()
 	rmdir list/text
 	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
+	touch list/control/nolistheaders
 	start_fakesmtp list
 	echo "heloname" > list/control/smtphelo
 
@@ -3233,6 +3249,7 @@ multi_line_headers_body()
 	rmdir list/text
 	ln -s ${top_srcdir}/listtexts/en list/text
 	echo test@mlmmjtest > list/control/listaddress
+	touch list/control/nolistheaders
 	start_fakesmtp list
 	echo "heloname" > list/control/smtphelo
 

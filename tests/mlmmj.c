@@ -191,6 +191,9 @@ ATF_TC_WITHOUT_HEAD(voodoo_prefix_dedup);
 ATF_TC_WITHOUT_HEAD(voodoo_header_manipulation);
 ATF_TC_WITHOUT_HEAD(voodoo_double_call);
 ATF_TC_WITHOUT_HEAD(voodoo_failure_cleans_queue);
+ATF_TC_WITHOUT_HEAD(voodoo_listheaders);
+ATF_TC_WITHOUT_HEAD(voodoo_listheaders_disabled);
+ATF_TC_WITHOUT_HEAD(voodoo_listheaders_owner);
 ATF_TC_WITHOUT_HEAD(checkwait_smtpreply_connect);
 ATF_TC_WITHOUT_HEAD(checkwait_smtpreply_ehlo_multiline);
 ATF_TC_WITHOUT_HEAD(checkwait_smtpreply_errors);
@@ -4057,7 +4060,7 @@ ATF_TC_BODY(voodoo_header_manipulation, tc)
 	ATF_REQUIRE(outfd >= 0);
 
 	ret = do_all_the_voodoo_here(infd, outfd, hdrfd, footfd,
-	    &delhdrs, readhdrs, &allheaders, "[LIST]", 0);
+	    &delhdrs, readhdrs, &allheaders, "[LIST]", 0, NULL);
 	ATF_REQUIRE_EQ(ret, 0);
 	close(infd);
 	close(outfd);
@@ -4130,7 +4133,7 @@ ATF_TC_BODY(voodoo_replyto, tc)
 
 	/* replyto=1 should add Reply-To from From header */
 	ATF_REQUIRE_EQ(do_all_the_voodoo_here(infd, outfd, -1, -1,
-	    &delhdrs, readhdrs, &allheaders, NULL, 1), 0);
+	    &delhdrs, readhdrs, &allheaders, NULL, 1, NULL), 0);
 	close(infd);
 	close(outfd);
 
@@ -4174,7 +4177,7 @@ ATF_TC_BODY(voodoo_prefix_dedup, tc)
 	ATF_REQUIRE(outfd >= 0);
 
 	ATF_REQUIRE_EQ(do_all_the_voodoo_here(infd, outfd, -1, -1,
-	    &delhdrs, readhdrs, &allheaders, "[LIST]", 0), 0);
+	    &delhdrs, readhdrs, &allheaders, "[LIST]", 0, NULL), 0);
 	close(infd);
 	close(outfd);
 
@@ -4214,7 +4217,7 @@ ATF_TC_BODY(voodoo_prefix_dedup, tc)
 	ATF_REQUIRE(outfd >= 0);
 
 	ATF_REQUIRE_EQ(do_all_the_voodoo_here(infd, outfd, -1, -1,
-	    &delhdrs, readhdrs2, &allheaders2, "[LIST]", 0), 0);
+	    &delhdrs, readhdrs2, &allheaders2, "[LIST]", 0, NULL), 0);
 	close(infd);
 	close(outfd);
 
@@ -4268,7 +4271,7 @@ ATF_TC_BODY(voodoo_double_call, tc)
 	outfd = open("out1.txt", O_RDWR|O_CREAT|O_TRUNC, 0600);
 	ATF_REQUIRE(outfd >= 0);
 	ret = do_all_the_voodoo_here(infd, outfd, -1, -1,
-	    &delhdrs, readhdrs, &allheaders, NULL, 0);
+	    &delhdrs, readhdrs, &allheaders, NULL, 0, NULL);
 	ATF_REQUIRE_EQ(ret, 0);
 	close(infd);
 	close(outfd);
@@ -4285,7 +4288,7 @@ ATF_TC_BODY(voodoo_double_call, tc)
 	outfd = open("out2.txt", O_RDWR|O_CREAT|O_TRUNC, 0600);
 	ATF_REQUIRE(outfd >= 0);
 	ret = do_all_the_voodoo_here(infd, outfd, -1, -1,
-	    &delhdrs, NULL, &allheaders, NULL, 0);
+	    &delhdrs, NULL, &allheaders, NULL, 0, NULL);
 	ATF_REQUIRE_EQ(ret, 0);
 	close(infd);
 	close(outfd);
@@ -4338,7 +4341,7 @@ ATF_TC_BODY(voodoo_failure_cleans_queue, tc)
 	ATF_REQUIRE(outfd >= 0);
 
 	ret = do_all_the_voodoo_here(infd, outfd, -1, -1,
-	    NULL, readhdrs, &allheaders, NULL, 0);
+	    NULL, readhdrs, &allheaders, NULL, 0, NULL);
 	close(infd);
 	close(outfd);
 
@@ -4355,6 +4358,188 @@ ATF_TC_BODY(voodoo_failure_cleans_queue, tc)
 	    "queue file should be cleaned up after voodoo failure");
 
 	vec_free_and_free(&allheaders, free);
+}
+
+ATF_TC_BODY(voodoo_listheaders, tc)
+{
+	struct ml ml;
+	strlist allheaders = vec_init();
+	struct mailhdr readhdrs[] = {
+		{ "From:", 0, NULL },
+		{ "To:", 0, NULL },
+		{ "Subject:", 0, NULL },
+		{ NULL, 0, NULL }
+	};
+	int infd, outfd, ret;
+
+	init_ml(true);
+	ml_init(&ml);
+	ml.dir = "list";
+	ml_open(&ml, false);
+
+	atf_utils_create_file("listhdr_in.txt",
+	    "From: sender@example.org\n"
+	    "To: test@test\n"
+	    "Subject: Hello\n"
+	    "\n"
+	    "Body.\n");
+
+	infd = open("listhdr_in.txt", O_RDONLY);
+	ATF_REQUIRE(infd >= 0);
+	outfd = open("listhdr_out.txt", O_RDWR|O_CREAT|O_TRUNC, 0600);
+	ATF_REQUIRE(outfd >= 0);
+
+	ret = do_all_the_voodoo_here(infd, outfd, -1, -1,
+	    NULL, readhdrs, &allheaders, NULL, 0, &ml);
+	ATF_REQUIRE_EQ(ret, 0);
+	close(infd);
+	close(outfd);
+
+	const char *path = "listhdr_out.txt";
+	if (!atf_utils_grep_file("List-Id: <test\\.test>", path)) {
+		atf_utils_cat_file(path, ">");
+		atf_tc_fail("List-Id header missing");
+	}
+	if (!atf_utils_grep_file("List-Post: <mailto:test@test>", path)) {
+		atf_utils_cat_file(path, ">");
+		atf_tc_fail("List-Post header missing");
+	}
+	if (!atf_utils_grep_file("List-Help: <mailto:test\\+help@test>", path)) {
+		atf_utils_cat_file(path, ">");
+		atf_tc_fail("List-Help header missing");
+	}
+	if (!atf_utils_grep_file("List-Subscribe: <mailto:test\\+subscribe@test>", path)) {
+		atf_utils_cat_file(path, ">");
+		atf_tc_fail("List-Subscribe header missing");
+	}
+	if (!atf_utils_grep_file("List-Unsubscribe: <mailto:test\\+unsubscribe@test>", path)) {
+		atf_utils_cat_file(path, ">");
+		atf_tc_fail("List-Unsubscribe header missing");
+	}
+	if (!atf_utils_grep_file("Precedence: list", path)) {
+		atf_utils_cat_file(path, ">");
+		atf_tc_fail("Precedence header missing");
+	}
+	/* No owner file -> no List-Owner */
+	if (atf_utils_grep_file("List-Owner:", path)) {
+		atf_utils_cat_file(path, ">");
+		atf_tc_fail("List-Owner should not be present without control/owner");
+	}
+
+	vec_free_and_free(&allheaders, free);
+	ml_close(&ml);
+}
+
+ATF_TC_BODY(voodoo_listheaders_disabled, tc)
+{
+	struct ml ml;
+	strlist allheaders = vec_init();
+	struct mailhdr readhdrs[] = {
+		{ "From:", 0, NULL },
+		{ "To:", 0, NULL },
+		{ "Subject:", 0, NULL },
+		{ NULL, 0, NULL }
+	};
+	int infd, outfd, ret;
+
+	init_ml(true);
+	ml_init(&ml);
+	ml.dir = "list";
+	ml_open(&ml, false);
+
+	/* Create the nolistheaders control file */
+	atf_utils_create_file("list/control/nolistheaders", "");
+
+	/* Re-open to pick up new control file */
+	ml_open(&ml, false);
+
+	atf_utils_create_file("listhdr_dis_in.txt",
+	    "From: sender@example.org\n"
+	    "To: test@test\n"
+	    "Subject: Hello\n"
+	    "\n"
+	    "Body.\n");
+
+	infd = open("listhdr_dis_in.txt", O_RDONLY);
+	ATF_REQUIRE(infd >= 0);
+	outfd = open("listhdr_dis_out.txt", O_RDWR|O_CREAT|O_TRUNC, 0600);
+	ATF_REQUIRE(outfd >= 0);
+
+	ret = do_all_the_voodoo_here(infd, outfd, -1, -1,
+	    NULL, readhdrs, &allheaders, NULL, 0, &ml);
+	ATF_REQUIRE_EQ(ret, 0);
+	close(infd);
+	close(outfd);
+
+	const char *path = "listhdr_dis_out.txt";
+	if (atf_utils_grep_file("List-Id:", path)) {
+		atf_utils_cat_file(path, ">");
+		atf_tc_fail("List-Id should not be present when nolistheaders is set");
+	}
+	if (atf_utils_grep_file("List-Post:", path)) {
+		atf_utils_cat_file(path, ">");
+		atf_tc_fail("List-Post should not be present when nolistheaders is set");
+	}
+	if (atf_utils_grep_file("Precedence:", path)) {
+		atf_utils_cat_file(path, ">");
+		atf_tc_fail("Precedence should not be present when nolistheaders is set");
+	}
+
+	vec_free_and_free(&allheaders, free);
+	ml_close(&ml);
+}
+
+ATF_TC_BODY(voodoo_listheaders_owner, tc)
+{
+	struct ml ml;
+	strlist allheaders = vec_init();
+	struct mailhdr readhdrs[] = {
+		{ "From:", 0, NULL },
+		{ "To:", 0, NULL },
+		{ "Subject:", 0, NULL },
+		{ NULL, 0, NULL }
+	};
+	int infd, outfd, ret;
+
+	init_ml(true);
+	ml_init(&ml);
+	ml.dir = "list";
+	ml_open(&ml, false);
+
+	/* Create owner control file */
+	atf_utils_create_file("list/control/owner", "admin@example.com");
+	ml_open(&ml, false);
+
+	atf_utils_create_file("listhdr_own_in.txt",
+	    "From: sender@example.org\n"
+	    "To: test@test\n"
+	    "Subject: Hello\n"
+	    "\n"
+	    "Body.\n");
+
+	infd = open("listhdr_own_in.txt", O_RDONLY);
+	ATF_REQUIRE(infd >= 0);
+	outfd = open("listhdr_own_out.txt", O_RDWR|O_CREAT|O_TRUNC, 0600);
+	ATF_REQUIRE(outfd >= 0);
+
+	ret = do_all_the_voodoo_here(infd, outfd, -1, -1,
+	    NULL, readhdrs, &allheaders, NULL, 0, &ml);
+	ATF_REQUIRE_EQ(ret, 0);
+	close(infd);
+	close(outfd);
+
+	const char *path = "listhdr_own_out.txt";
+	if (!atf_utils_grep_file("List-Owner: <mailto:admin@example.com>", path)) {
+		atf_utils_cat_file(path, ">");
+		atf_tc_fail("List-Owner header missing");
+	}
+	if (!atf_utils_grep_file("List-Id:", path)) {
+		atf_utils_cat_file(path, ">");
+		atf_tc_fail("List-Id header missing");
+	}
+
+	vec_free_and_free(&allheaders, free);
+	ml_close(&ml);
 }
 
 ATF_TC_BODY(checkwait_smtpreply_connect, tc)
@@ -4899,6 +5084,9 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, voodoo_header_manipulation);
 	ATF_TP_ADD_TC(tp, voodoo_double_call);
 	ATF_TP_ADD_TC(tp, voodoo_failure_cleans_queue);
+	ATF_TP_ADD_TC(tp, voodoo_listheaders);
+	ATF_TP_ADD_TC(tp, voodoo_listheaders_disabled);
+	ATF_TP_ADD_TC(tp, voodoo_listheaders_owner);
 	ATF_TP_ADD_TC(tp, checkwait_smtpreply_connect);
 	ATF_TP_ADD_TC(tp, checkwait_smtpreply_ehlo_multiline);
 	ATF_TP_ADD_TC(tp, checkwait_smtpreply_errors);
