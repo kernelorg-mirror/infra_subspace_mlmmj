@@ -102,7 +102,7 @@ if [ -z "$FQDN" ]; then
 fi
 
 if [ -z "$OWNER" ]; then
-	OWNERDEF="postmaster"
+	OWNERDEF="postmaster@$FQDN"
 	printf 'The emailaddress of the list owner? [%s] : ' "$OWNERDEF"
 	read -r OWNER
 	if [ -z "$OWNER" ]; then
