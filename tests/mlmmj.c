@@ -118,6 +118,9 @@ ATF_TC_WITHOUT_HEAD(do_bouncemail);
 ATF_TC_WITHOUT_HEAD(bouncemail);
 ATF_TC_WITHOUT_HEAD(send_mail_basics);
 ATF_TC_WITHOUT_HEAD(send_mail);
+ATF_TC_WITHOUT_HEAD(send_mail_xforwardedto);
+ATF_TC_WITHOUT_HEAD(send_mail_xsignedrecipient);
+ATF_TC_WITHOUT_HEAD(send_mail_both_headers);
 ATF_TC_WITHOUT_HEAD(getlistdelim);
 ATF_TC_WITHOUT_HEAD(getlistdelim_0);
 ATF_TC_WITHOUT_HEAD(getlistdelim_1);
@@ -1341,6 +1344,103 @@ ATF_TC_BODY(send_mail, tc)
 	mail.addtohdr = true;
 	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), 0);
 	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRCPT TO:<plop@meh>\r\nDATA\r\nheaders\r\nTo: plop@meh\r\n\r\nbody\r\n\r\n.\r\n", "");
+}
+
+ATF_TC_BODY(send_mail_xforwardedto, tc)
+{
+	int smtppipe[2];
+	struct mail mail = { 0 };
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		const char *replies [] = {
+			"250 2.1.0 OK\n",
+			"250 2.1.0 OK\n",
+			"350 2.1.0 OK\n",
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			"250 2.1.0 OK\n",
+		};
+		read_print_reply(smtppipe[0], replies, NELEM(replies));
+		exit(0);
+	}
+	close(smtppipe[0]);
+	mail.to = "plop@meh";
+	mail.from = "test@meh";
+	atf_utils_create_file("mymail.txt", "headers\n\nbody\n");
+	mail.fp = fopen("mymail.txt", "r");
+	mail.xforwardedto = true;
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), 0);
+	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRCPT TO:<plop@meh>\r\nDATA\r\nX-Forwarded-To: plop@meh\r\nheaders\r\n\r\nbody\r\n\r\n.\r\n", "");
+}
+
+ATF_TC_BODY(send_mail_xsignedrecipient, tc)
+{
+	int smtppipe[2];
+	struct mail mail = { 0 };
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		const char *replies [] = {
+			"250 2.1.0 OK\n",
+			"250 2.1.0 OK\n",
+			"350 2.1.0 OK\n",
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			"250 2.1.0 OK\n",
+		};
+		read_print_reply(smtppipe[0], replies, NELEM(replies));
+		exit(0);
+	}
+	close(smtppipe[0]);
+	mail.to = "plop@meh";
+	mail.from = "test@meh";
+	atf_utils_create_file("mymail.txt", "headers\n\nbody\n");
+	mail.fp = fopen("mymail.txt", "r");
+	mail.xsignedrecipient = true;
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), 0);
+	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRCPT TO:<plop@meh>\r\nDATA\r\nX-Signed-Recipient: i=1; plop@meh\r\nheaders\r\n\r\nbody\r\n\r\n.\r\n", "");
+}
+
+ATF_TC_BODY(send_mail_both_headers, tc)
+{
+	int smtppipe[2];
+	struct mail mail = { 0 };
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
+	pid_t p = atf_utils_fork();
+	if (p == 0) {
+		const char *replies [] = {
+			"250 2.1.0 OK\n",
+			"250 2.1.0 OK\n",
+			"350 2.1.0 OK\n",
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			"250 2.1.0 OK\n",
+		};
+		read_print_reply(smtppipe[0], replies, NELEM(replies));
+		exit(0);
+	}
+	close(smtppipe[0]);
+	mail.to = "plop@meh";
+	mail.from = "test@meh";
+	atf_utils_create_file("mymail.txt", "headers\n\nbody\n");
+	mail.fp = fopen("mymail.txt", "r");
+	mail.addtohdr = true;
+	mail.xforwardedto = true;
+	mail.xsignedrecipient = true;
+	ATF_REQUIRE_EQ(send_mail(smtppipe[1], &mail, -1, -1, false), 0);
+	atf_utils_wait(p, 0, "MAIL FROM:<test@meh>\r\nRCPT TO:<plop@meh>\r\nDATA\r\nX-Forwarded-To: plop@meh\r\nX-Signed-Recipient: i=1; plop@meh\r\nheaders\r\nTo: plop@meh\r\n\r\nbody\r\n\r\n.\r\n", "");
 }
 
 ATF_TC_BODY(getlistdelim, tc)
@@ -4722,6 +4822,9 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, bouncemail);
 	ATF_TP_ADD_TC(tp, send_mail_basics);
 	ATF_TP_ADD_TC(tp, send_mail);
+	ATF_TP_ADD_TC(tp, send_mail_xforwardedto);
+	ATF_TP_ADD_TC(tp, send_mail_xsignedrecipient);
+	ATF_TP_ADD_TC(tp, send_mail_both_headers);
 	ATF_TP_ADD_TC(tp, getlistdelim);
 	ATF_TP_ADD_TC(tp, getlistdelim_0);
 	ATF_TP_ADD_TC(tp, getlistdelim_1);

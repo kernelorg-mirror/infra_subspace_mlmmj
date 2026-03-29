@@ -34,6 +34,8 @@ struct mail {
 	const char *replyto;
 	FILE *fp;
 	bool addtohdr;
+	bool xforwardedto;
+	bool xsignedrecipient;
 };
 
 int newsmtp(struct ml *ml, const char *relayhost);

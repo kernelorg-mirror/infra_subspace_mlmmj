@@ -432,6 +432,8 @@ int main(int argc, char **argv)
 		break;
 	case '3':
 		mail.addtohdr = statctrl(ml.ctrlfd, "addtohdr");
+		mail.xforwardedto = statctrl(ml.ctrlfd, "xforwardedto");
+		mail.xsignedrecipient = statctrl(ml.ctrlfd, "dara");
 		/* FALLTHROUGH */
 	case '4': /* sending mails to subfile */
 		subfd = strtoim(subfilename, 0, INT_MAX, &errp);
@@ -443,6 +445,8 @@ int main(int argc, char **argv)
 		break;
 	default: /* normal list mail -- now handled when forking */
 		mail.addtohdr = statctrl(ml.ctrlfd, "addtohdr");
+		mail.xforwardedto = statctrl(ml.ctrlfd, "xforwardedto");
+		mail.xsignedrecipient = statctrl(ml.ctrlfd, "dara");
 		break;
 	}
 
@@ -526,10 +530,9 @@ int main(int argc, char **argv)
 			verp = xstrdup("XVERP=-=");
 		}
 
-		if(mail.addtohdr && verp) {
-			log_error(LOG_ARGS, "Cannot use VERP and add "
-					"To: header. Not sending with "
-					"VERP.");
+		if((mail.addtohdr || mail.xforwardedto || mail.xsignedrecipient) && verp) {
+			log_error(LOG_ARGS, "Cannot use VERP with per-recipient "
+					"headers. Not sending with VERP.");
 			free(verp);
 			verp = NULL;
 		}

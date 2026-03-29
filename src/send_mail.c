@@ -327,6 +327,19 @@ send_mail(int sockfd, struct mail *mail, int listfd, int ctrlfd, bool bounce)
 		}
 	}
 
+	if (mail->xforwardedto) {
+		if (dprintf(sockfd, "X-Forwarded-To: %s\r\n", mail->to) < 0) {
+			log_error(LOG_ARGS, "Could not write X-Forwarded-To header\n");
+			return -1;
+		}
+	}
+	if (mail->xsignedrecipient) {
+		if (dprintf(sockfd, "X-Signed-Recipient: i=1; %s\r\n", mail->to) < 0) {
+			log_error(LOG_ARGS, "Could not write X-Signed-Recipient header\n");
+			return -1;
+		}
+	}
+
 	retval = write_mailbody(sockfd, mail->fp,
 	    mail->addtohdr ? mail->to : NULL);
 	if(retval) {
