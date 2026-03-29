@@ -19,6 +19,10 @@ The functionality:
  * VERP support
  * Delivery Status Notification (RFC1891) support
  * Rich, customisable texts for automated operations
+ * RFC 2919/2369 List-Id, List-Post, List-Help, List-Subscribe,
+   List-Unsubscribe and Precedence headers (can be disabled)
+ * Optional Deliverability headers (X-Forwarded-To, X-Signed-Recipient / DARA)
+ * Optional Partitioned archive directories (YYYY/MM layout)
 
 To use mlmmj, do the following:
 
@@ -26,7 +30,7 @@ To use mlmmj, do the following:
     a ports collection from a BSD or Gentoo. To compile, untar the tar-ball
     and do:
 
-        $ autoreconf -i && ./configure && make && make install
+        $ ./configure && make && make install
 
     If you want to filter multipart/mime messages, pass the option
     --enable-receive-strip to configure, and take a look at
@@ -120,8 +124,14 @@ That's it! You probably want to go through the next steps too.
 
     etc.
 
- 6) If you want custom headers like X-Mailinglist, Reply-To: etc. just add a
-    file called 'customheaders' in the list control/ directory like this:
+ 6) mlmmj automatically generates RFC 2919/2369 headers (List-Id, List-Post,
+    List-Help, List-Subscribe, List-Unsubscribe, Precedence) on all list
+    messages. List-Owner is included when control/owner exists. To disable
+    these, create control/nolistheaders.
+
+    If you want additional custom headers like X-Mailinglist, Reply-To: etc.
+    just add a file called 'customheaders' in the list control/ directory
+    like this:
     $ cat /var/spool/mlmmj/mlmmj-test/control/customheaders
     X-Mailinglist: mlmmj-test
     Reply-To: mlmmj-test@domain.tld
