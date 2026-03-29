@@ -46,6 +46,7 @@
 #include "log_oper.h"
 #include "utils.h"
 #include "send_mail.h"
+#include "archive.h"
 
 #define log(...) dprintf(logfd, __VA_ARGS__);
 #define opendirat(_dirfd, _fd, _dirent, _path) \
@@ -302,9 +303,8 @@ resend_requeue(struct ml *ml, const char *mlmmjsend, int logfd)
 
 		int requeuefd = openat(fd, dp->d_name, O_DIRECTORY);
 
-		xasprintf(&archivefilename, "archive/%s", dp->d_name);
-		int archivefd = openat(ml->fd, archivefilename, O_RDONLY);
-		free(archivefilename);
+		int archivefd = archive_open(ml->fd, ml->ctrlfd,
+		    atoi(dp->d_name));
 
 		/* Explicitly initialize for each mail we examine */
 		fromrequeuedir = false;
@@ -712,6 +712,9 @@ void do_maintenance(struct ml *ml, const char *mlmmjsend, const char *mlmmjbounc
 	if (!probe_bouncers(ml, mlmmjbounce, logfd))
 		log_err("An error occurred while sending probes for bouncers, "
 		    "see %s", MAINTD_LOGFILE);
+
+	log("archive_migrate\n");
+	archive_migrate(ml->fd, ml->ctrlfd, logfd);
 
 	log("run_digests\n");
 	if (!run_digests(ml, mlmmjsend, logfd))

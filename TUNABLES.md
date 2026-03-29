@@ -156,6 +156,14 @@ entire content is used as value, it's marked "text".
    If this file exists, the mail won't be saved in the archive but simply
    deleted.
 
+ * archivepartition		(boolean)
+
+   If this file exists, archived mails are stored in a YYYY/MM/ directory
+   hierarchy under `archive/` (e.g. `archive/2026/03/42`) instead of the
+   default flat layout (`archive/42`). Existing flat archives are
+   automatically migrated by `mlmmj-maintd` based on file modification
+   time. Reading always works regardless of layout.
+
  * nosubconfirm			(boolean)
 
    If this file exists, no mail confirmation is needed to subscribe to the

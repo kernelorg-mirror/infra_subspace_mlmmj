@@ -77,6 +77,7 @@
 #include "unistr.h"
 #include "do_all_the_voodoo_here.h"
 #include "send_digest.h"
+#include "archive.h"
 
 ATF_TC_WITHOUT_HEAD(random_int);
 ATF_TC_WITHOUT_HEAD(chomp);
@@ -200,6 +201,13 @@ ATF_TC_WITHOUT_HEAD(checkwait_smtpreply_errors);
 ATF_TC_WITHOUT_HEAD(checkwait_smtpreply_closed);
 ATF_TC_WITHOUT_HEAD(digest_thread_list_format);
 ATF_TC_WITHOUT_HEAD(digest_thread_grouping);
+ATF_TC_WITHOUT_HEAD(archive_open_flat);
+ATF_TC_WITHOUT_HEAD(archive_open_partitioned);
+ATF_TC_WITHOUT_HEAD(archive_open_fallback);
+ATF_TC_WITHOUT_HEAD(archive_path_write_flat);
+ATF_TC_WITHOUT_HEAD(archive_path_write_partitioned);
+ATF_TC_WITHOUT_HEAD(archive_migrate_test);
+ATF_TC_WITHOUT_HEAD(archive_migrate_noop);
 
 ATF_TC_BODY(random_int, tc)
 {
@@ -4882,6 +4890,7 @@ ATF_TC_BODY(digest_thread_stops_at_headers, tc)
 {
 	thread_list_state *tls;
 	const char *line;
+	int fakelistfd, fakectrlfd;
 
 	/*
 	 * Create archive files where the body contains lines that look like
@@ -4890,6 +4899,9 @@ ATF_TC_BODY(digest_thread_stops_at_headers, tc)
 	 */
 	mkdir("fakelist", 0755);
 	mkdir("fakelist/archive", 0755);
+	mkdir("fakelist/control", 0755);
+	fakelistfd = open("fakelist", O_RDONLY|O_DIRECTORY);
+	fakectrlfd = openat(fakelistfd, "control", O_RDONLY|O_DIRECTORY);
 	atf_utils_create_file("fakelist/archive/1",
 	    "From: alice@test\n"
 	    "Subject: Real subject\n"
@@ -4909,7 +4921,7 @@ ATF_TC_BODY(digest_thread_stops_at_headers, tc)
 	    "\n"
 	    "Subject: Decoy\n");
 
-	tls = init_thread_list("fakelist", 1, 3);
+	tls = init_thread_list("fakelist", fakelistfd, fakectrlfd, 1, 3);
 	rewind_thread_list(tls);
 
 	/* Thread 1: "Real subject" (mails 1 and 2 grouped via Re:) */
@@ -4963,6 +4975,185 @@ ATF_TC_BODY(digest_thread_stops_at_headers, tc)
 	    tls->num_threads);
 
 	finish_thread_list(tls);
+	close(fakectrlfd);
+	close(fakelistfd);
+}
+
+ATF_TC_BODY(archive_open_flat, tc)
+{
+	int listfd, ctrlfd, fd;
+
+	init_ml(true);
+	listfd = open("list", O_RDONLY|O_DIRECTORY);
+	ctrlfd = openat(listfd, "control", O_RDONLY|O_DIRECTORY);
+
+	atf_utils_create_file("list/archive/42", "test content\n");
+	fd = archive_open(listfd, ctrlfd, 42);
+	ATF_REQUIRE_MSG(fd != -1, "archive_open should find flat archive/42");
+	close(fd);
+
+	fd = archive_open(listfd, ctrlfd, 999);
+	ATF_CHECK_MSG(fd == -1, "archive_open should return -1 for missing index");
+
+	close(ctrlfd);
+	close(listfd);
+}
+
+ATF_TC_BODY(archive_open_partitioned, tc)
+{
+	int listfd, ctrlfd, fd;
+
+	init_ml(true);
+	listfd = open("list", O_RDONLY|O_DIRECTORY);
+	ctrlfd = openat(listfd, "control", O_RDONLY|O_DIRECTORY);
+
+	mkdir("list/archive/2026", 0755);
+	mkdir("list/archive/2026/03", 0755);
+	atf_utils_create_file("list/archive/2026/03/42", "partitioned content\n");
+
+	fd = archive_open(listfd, ctrlfd, 42);
+	ATF_REQUIRE_MSG(fd != -1,
+	    "archive_open should find archive/2026/03/42 via subdirectory scan");
+	close(fd);
+
+	close(ctrlfd);
+	close(listfd);
+}
+
+ATF_TC_BODY(archive_open_fallback, tc)
+{
+	int listfd, ctrlfd, fd;
+
+	init_ml(true);
+	listfd = open("list", O_RDONLY|O_DIRECTORY);
+	ctrlfd = openat(listfd, "control", O_RDONLY|O_DIRECTORY);
+
+	/* Enable partitioning */
+	atf_utils_create_file("list/control/archivepartition", "");
+
+	/* But place file in flat layout */
+	atf_utils_create_file("list/archive/42", "flat content\n");
+
+	fd = archive_open(listfd, ctrlfd, 42);
+	ATF_REQUIRE_MSG(fd != -1,
+	    "archive_open should find flat archive/42 even with partitioning enabled");
+	close(fd);
+
+	close(ctrlfd);
+	close(listfd);
+}
+
+ATF_TC_BODY(archive_path_write_flat, tc)
+{
+	int listfd, ctrlfd;
+	char *path;
+
+	init_ml(true);
+	listfd = open("list", O_RDONLY|O_DIRECTORY);
+	ctrlfd = openat(listfd, "control", O_RDONLY|O_DIRECTORY);
+
+	path = archive_path_write(listfd, ctrlfd, 42);
+	ATF_CHECK_STREQ_MSG(path, "archive/42",
+	    "Without archivepartition, path should be archive/N");
+	free(path);
+
+	close(ctrlfd);
+	close(listfd);
+}
+
+ATF_TC_BODY(archive_path_write_partitioned, tc)
+{
+	int listfd, ctrlfd;
+	char *path;
+	struct stat st;
+
+	init_ml(true);
+	listfd = open("list", O_RDONLY|O_DIRECTORY);
+	ctrlfd = openat(listfd, "control", O_RDONLY|O_DIRECTORY);
+
+	atf_utils_create_file("list/control/archivepartition", "");
+
+	path = archive_path_write(listfd, ctrlfd, 42);
+	ATF_REQUIRE_MSG(path != NULL, "archive_path_write should return a path");
+	/* Path should match archive/YYYY/MM/42 */
+	ATF_CHECK_MSG(strncmp(path, "archive/", 8) == 0,
+	    "path should start with archive/, got: %s", path);
+	ATF_CHECK_MSG(strstr(path, "/42") != NULL,
+	    "path should end with /42, got: %s", path);
+	/* Verify the directory was created */
+	char *dirpath;
+	xasprintf(&dirpath, "list/%s", path);
+	/* Remove the filename part to get directory */
+	char *slash = strrchr(dirpath, '/');
+	*slash = '\0';
+	ATF_CHECK_MSG(stat(dirpath, &st) == 0 && S_ISDIR(st.st_mode),
+	    "archive_path_write should create subdirectories: %s", dirpath);
+	free(dirpath);
+	free(path);
+
+	close(ctrlfd);
+	close(listfd);
+}
+
+ATF_TC_BODY(archive_migrate_test, tc)
+{
+	int listfd, ctrlfd;
+	struct stat st;
+
+	init_ml(true);
+	listfd = open("list", O_RDONLY|O_DIRECTORY);
+	ctrlfd = openat(listfd, "control", O_RDONLY|O_DIRECTORY);
+
+	atf_utils_create_file("list/control/archivepartition", "");
+	atf_utils_create_file("list/archive/1", "mail one\n");
+	atf_utils_create_file("list/archive/2", "mail two\n");
+
+	archive_migrate(listfd, ctrlfd, -1);
+
+	/* Flat files should be gone */
+	ATF_CHECK_MSG(fstatat(listfd, "archive/1", &st, 0) == -1,
+	    "flat archive/1 should be moved");
+	ATF_CHECK_MSG(fstatat(listfd, "archive/2", &st, 0) == -1,
+	    "flat archive/2 should be moved");
+
+	/* Files should be readable via archive_open */
+	int fd1 = archive_open(listfd, ctrlfd, 1);
+	ATF_REQUIRE_MSG(fd1 != -1, "archive_open should find migrated file 1");
+	close(fd1);
+
+	int fd2 = archive_open(listfd, ctrlfd, 2);
+	ATF_REQUIRE_MSG(fd2 != -1, "archive_open should find migrated file 2");
+	close(fd2);
+
+	close(ctrlfd);
+	close(listfd);
+}
+
+ATF_TC_BODY(archive_migrate_noop, tc)
+{
+	int listfd, ctrlfd;
+
+	init_ml(true);
+	listfd = open("list", O_RDONLY|O_DIRECTORY);
+	ctrlfd = openat(listfd, "control", O_RDONLY|O_DIRECTORY);
+
+	atf_utils_create_file("list/control/archivepartition", "");
+
+	/* No flat files to migrate */
+	mkdir("list/archive/2026", 0755);
+	mkdir("list/archive/2026/03", 0755);
+	atf_utils_create_file("list/archive/2026/03/1", "already migrated\n");
+
+	/* Should be a no-op, no crash */
+	archive_migrate(listfd, ctrlfd, -1);
+
+	/* File should still be there */
+	int fd = archive_open(listfd, ctrlfd, 1);
+	ATF_REQUIRE_MSG(fd != -1, "archive_open should still find file after noop migrate");
+	close(fd);
+
+	close(ctrlfd);
+	close(listfd);
 }
 
 ATF_TP_ADD_TCS(tp)
@@ -5094,6 +5285,13 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, digest_thread_list_format);
 	ATF_TP_ADD_TC(tp, digest_thread_grouping);
 	ATF_TP_ADD_TC(tp, digest_thread_stops_at_headers);
+	ATF_TP_ADD_TC(tp, archive_open_flat);
+	ATF_TP_ADD_TC(tp, archive_open_partitioned);
+	ATF_TP_ADD_TC(tp, archive_open_fallback);
+	ATF_TP_ADD_TC(tp, archive_path_write_flat);
+	ATF_TP_ADD_TC(tp, archive_path_write_partitioned);
+	ATF_TP_ADD_TC(tp, archive_migrate_test);
+	ATF_TP_ADD_TC(tp, archive_migrate_noop);
 
 	return (atf_no_error());
 }

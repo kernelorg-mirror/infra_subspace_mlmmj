@@ -40,16 +40,20 @@
 #include "statctrl.h"
 #include "unistr.h"
 #include "utils.h"
+#include "archive.h"
 
 
 
 thread_list_state *init_thread_list(
-		const char *listdir, int firstindex, int lastindex)
+		const char *listdir, int listfd, int ctrlfd,
+		int firstindex, int lastindex)
 {
 	/* We use a static variable rather than dynamic allocation as
 	 * there will never be two lists in use simultaneously */
 	static thread_list_state s;
 	s.listdir = listdir;
+	s.listfd = listfd;
+	s.ctrlfd = ctrlfd;
 	s.firstindex = firstindex;
 	s.lastindex = lastindex;
 	s.num_threads = 0;
@@ -66,7 +70,6 @@ void rewind_thread_list(void * state)
 	int i, j, thread_idx;
 	char *line = NULL, *tmp, *subj, *from, *tmpfrom;
 	size_t linecap = 0, tmplen;
-	char *archivename;
 	int num_threads = 0, threads_alloc = 0;
 	struct digest_thread *threads = NULL;
 	if (s->cur_thread != -1) {
@@ -77,12 +80,14 @@ void rewind_thread_list(void * state)
 	}
 
 	for (i=s->firstindex; i<=s->lastindex; i++) {
-		xasprintf(&archivename, "%s/archive/%d", s->listdir, i);
-		archivef = fopen(archivename, "r");
-		free(archivename);
-
-		if (archivef == NULL)
+		int afd = archive_open(s->listfd, s->ctrlfd, i);
+		if (afd == -1)
 			continue;
+		archivef = fdopen(afd, "r");
+		if (archivef == NULL) {
+			close(afd);
+			continue;
+		}
 
 		subj = NULL;
 		from = NULL;
@@ -222,7 +227,7 @@ int send_digest(struct ml *ml, int firstindex, int lastindex,
 	size_t len;
 	text *txt = NULL;
 	char buf[100];
-	char *tmp, *queuename = NULL, *archivename, *subject = NULL, *line = NULL;
+	char *tmp, *queuename = NULL, *subject = NULL, *line = NULL;
 	char *boundary = NULL;
 	thread_list_state *tls;
 	FILE *f = NULL;
@@ -278,7 +283,8 @@ int send_digest(struct ml *ml, int firstindex, int lastindex,
 	snprintf(buf, sizeof(buf), "%d", issue);
 	register_unformatted(txt, "digestissue", buf);
 
-	tls = init_thread_list(ml->dir, firstindex, lastindex);
+	tls = init_thread_list(ml->dir, ml->fd, ml->ctrlfd,
+	    firstindex, lastindex);
 	register_formatted(txt, "digestthreads", rewind_thread_list,
 			get_thread_list_line, tls);
 
@@ -407,10 +413,7 @@ fallback_subject:
 	line = NULL;
 
 	for (i = firstindex; i <= lastindex; i++) {
-		xasprintf(&archivename, "archive/%d", i);
-		archivefd = openat(ml->fd, archivename, O_RDONLY);
-		free(archivename);
-
+		archivefd = archive_open(ml->fd, ml->ctrlfd, i);
 		if (archivefd < 0)
 			continue;
 

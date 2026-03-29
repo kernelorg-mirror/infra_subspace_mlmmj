@@ -61,6 +61,7 @@
 #include "getaddrsfromfile.h"
 #include "utils.h"
 #include "send_mail.h"
+#include "archive.h"
 
 static size_t maxverprecips = MAXVERPRECIPS;
 static int gotsigterm = 0;
@@ -452,8 +453,11 @@ int main(int argc, char **argv)
 
 	/* initialize the archive filename */
 	if(archive) {
+		char *relpath;
 		mindex = incindexfile(ml.fd);
-		xasprintf(&archivefilename, "%s/archive/%d", ml.dir, mindex);
+		relpath = archive_path_write(ml.fd, ml.ctrlfd, mindex);
+		xasprintf(&archivefilename, "%s/%s", ml.dir, relpath);
+		free(relpath);
 	}
 
 	switch(listctrl) {

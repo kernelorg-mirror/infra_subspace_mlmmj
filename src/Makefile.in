@@ -1,7 +1,7 @@
 include @builddir@/mk/defs.mk
 
 LIB= mlmmj
-SRCS= access.c mail-functions.c chomp.c incindexfile.c \
+SRCS= access.c archive.c mail-functions.c chomp.c incindexfile.c \
       checkwait_smtpreply.c init_sockfd.c strgen.c \
       random-int.c print-version.c log_error.c mygetline.c \
       getaddrsfromfile.c readn.c \

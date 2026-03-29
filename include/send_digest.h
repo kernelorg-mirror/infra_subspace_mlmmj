@@ -38,6 +38,8 @@ struct thread_list_state;
 typedef struct thread_list_state thread_list_state;
 struct thread_list_state {
 	const char *listdir;
+	int listfd;
+	int ctrlfd;
 	int firstindex;
 	int lastindex;
 	int num_threads;
@@ -46,8 +48,8 @@ struct thread_list_state {
 	int cur_mail;
 };
 
-thread_list_state *init_thread_list(const char *listdir,
-		int firstindex, int lastindex);
+thread_list_state *init_thread_list(const char *listdir, int listfd,
+		int ctrlfd, int firstindex, int lastindex);
 void rewind_thread_list(void *state);
 const char *get_thread_list_line(void *state);
 void finish_thread_list(thread_list_state *s);

@@ -34,6 +34,7 @@
 
 #include "xmalloc.h"
 #include "mlmmj.h"
+#include "archive.h"
 #include "listcontrol.h"
 #include "prepstdreply.h"
 #include "send_help.h"
@@ -209,7 +210,7 @@ int listcontrol(strlist *fromemails, strlist *rtoemails, struct ml *ml,
 	char *param = NULL, *moderatefilename, *gatekeepfilename;
 	char *omitfilename;
 	char *omit = NULL;
-	char *c, *archivefilename, *sendfilename, *tosend;
+	char *c, *sendfilename, *tosend;
 	text *txt;
 	char *queuefilename;
 	enum subtype ts = SUB_NONE;
@@ -632,11 +633,9 @@ permit:
 			return -1;
 		}
 		int index = strtoim(param, 0, INT_MAX, NULL);
-		xasprintf(&archivefilename, "archive/%d", index);
-		int fd = openat(ml->fd, archivefilename, O_RDONLY|O_CLOEXEC);
+		int fd = archive_open(ml->fd, ml->ctrlfd, index);
 		if (fd == -1) {
 			log_error(LOG_ARGS, "Unable to open archive file");
-			free(archivefilename);
 			free(param);
 			return -1;
 		}
@@ -649,7 +648,6 @@ permit:
 		if (mail.fp == NULL) {
 			close(fd);
 			free(bounceaddr);
-			free(archivefilename);
 			free(param);
 			return -1;
 		}
@@ -659,13 +657,11 @@ permit:
 			/* TODO: save to queue */
 			fclose(mail.fp);
 			free(bounceaddr);
-			free(archivefilename);
 			free(param);
 			return -1;
 		}
 		fclose(mail.fp);
 		free(bounceaddr);
-		free(archivefilename);
 		free(param);
 		break;
 
