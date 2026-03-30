@@ -303,7 +303,7 @@ resend_requeue(struct ml *ml, const char *mlmmjsend, int logfd)
 
 		int requeuefd = openat(fd, dp->d_name, O_DIRECTORY);
 
-		int archivefd = archive_open(ml->fd, ml->ctrlfd,
+		int archivefd = archive_open(ml->fd,
 		    atoi(dp->d_name));
 
 		/* Explicitly initialize for each mail we examine */

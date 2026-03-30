@@ -4988,11 +4988,11 @@ ATF_TC_BODY(archive_open_flat, tc)
 	ctrlfd = openat(listfd, "control", O_RDONLY|O_DIRECTORY);
 
 	atf_utils_create_file("list/archive/42", "test content\n");
-	fd = archive_open(listfd, ctrlfd, 42);
+	fd = archive_open(listfd, 42);
 	ATF_REQUIRE_MSG(fd != -1, "archive_open should find flat archive/42");
 	close(fd);
 
-	fd = archive_open(listfd, ctrlfd, 999);
+	fd = archive_open(listfd, 999);
 	ATF_CHECK_MSG(fd == -1, "archive_open should return -1 for missing index");
 
 	close(ctrlfd);
@@ -5011,7 +5011,7 @@ ATF_TC_BODY(archive_open_partitioned, tc)
 	mkdir("list/archive/2026/03", 0755);
 	atf_utils_create_file("list/archive/2026/03/42", "partitioned content\n");
 
-	fd = archive_open(listfd, ctrlfd, 42);
+	fd = archive_open(listfd, 42);
 	ATF_REQUIRE_MSG(fd != -1,
 	    "archive_open should find archive/2026/03/42 via subdirectory scan");
 	close(fd);
@@ -5034,7 +5034,7 @@ ATF_TC_BODY(archive_open_fallback, tc)
 	/* But place file in flat layout */
 	atf_utils_create_file("list/archive/42", "flat content\n");
 
-	fd = archive_open(listfd, ctrlfd, 42);
+	fd = archive_open(listfd, 42);
 	ATF_REQUIRE_MSG(fd != -1,
 	    "archive_open should find flat archive/42 even with partitioning enabled");
 	close(fd);
@@ -5108,7 +5108,7 @@ ATF_TC_BODY(archive_migrate_test, tc)
 	atf_utils_create_file("list/archive/1", "mail one\n");
 	atf_utils_create_file("list/archive/2", "mail two\n");
 
-	archive_migrate(listfd, ctrlfd, -1);
+	archive_migrate(listfd, -1);
 
 	/* Flat files should be gone */
 	ATF_CHECK_MSG(fstatat(listfd, "archive/1", &st, 0) == -1,
@@ -5117,11 +5117,11 @@ ATF_TC_BODY(archive_migrate_test, tc)
 	    "flat archive/2 should be moved");
 
 	/* Files should be readable via archive_open */
-	int fd1 = archive_open(listfd, ctrlfd, 1);
+	int fd1 = archive_open(listfd, 1);
 	ATF_REQUIRE_MSG(fd1 != -1, "archive_open should find migrated file 1");
 	close(fd1);
 
-	int fd2 = archive_open(listfd, ctrlfd, 2);
+	int fd2 = archive_open(listfd, 2);
 	ATF_REQUIRE_MSG(fd2 != -1, "archive_open should find migrated file 2");
 	close(fd2);
 
@@ -5145,10 +5145,10 @@ ATF_TC_BODY(archive_migrate_noop, tc)
 	atf_utils_create_file("list/archive/2026/03/1", "already migrated\n");
 
 	/* Should be a no-op, no crash */
-	archive_migrate(listfd, ctrlfd, -1);
+	archive_migrate(listfd, -1);
 
 	/* File should still be there */
-	int fd = archive_open(listfd, ctrlfd, 1);
+	int fd = archive_open(listfd, 1);
 	ATF_REQUIRE_MSG(fd != -1, "archive_open should still find file after noop migrate");
 	close(fd);
 

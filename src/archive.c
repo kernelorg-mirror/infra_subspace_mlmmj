@@ -37,7 +37,7 @@
 #include "xmalloc.h"
 
 int
-archive_open(int listfd, int ctrlfd MLMMJ_UNUSED, int index)
+archive_open(int listfd, int index)
 {
 	char buf[64];
 	int archivefd, fd;

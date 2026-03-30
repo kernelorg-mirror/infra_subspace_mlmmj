@@ -80,7 +80,7 @@ void rewind_thread_list(void * state)
 	}
 
 	for (i=s->firstindex; i<=s->lastindex; i++) {
-		int afd = archive_open(s->listfd, s->ctrlfd, i);
+		int afd = archive_open(s->listfd, i);
 		if (afd == -1)
 			continue;
 		archivef = fdopen(afd, "r");
@@ -413,7 +413,7 @@ fallback_subject:
 	line = NULL;
 
 	for (i = firstindex; i <= lastindex; i++) {
-		archivefd = archive_open(ml->fd, ml->ctrlfd, i);
+		archivefd = archive_open(ml->fd, i);
 		if (archivefd < 0)
 			continue;
 

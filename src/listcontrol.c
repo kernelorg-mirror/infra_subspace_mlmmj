@@ -633,7 +633,7 @@ permit:
 			return -1;
 		}
 		int index = strtoim(param, 0, INT_MAX, NULL);
-		int fd = archive_open(ml->fd, ml->ctrlfd, index);
+		int fd = archive_open(ml->fd, index);
 		if (fd == -1) {
 			log_error(LOG_ARGS, "Unable to open archive file");
 			free(param);
