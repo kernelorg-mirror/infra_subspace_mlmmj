@@ -24,4 +24,4 @@
 
 int archive_open(int listfd, int ctrlfd, int index);
 char *archive_path_write(int listfd, int ctrlfd, int index);
-void archive_migrate(int listfd, int ctrlfd, int logfd);
+void archive_migrate(int listfd, int logfd);

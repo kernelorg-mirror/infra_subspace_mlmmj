@@ -140,7 +140,7 @@ archive_path_write(int listfd, int ctrlfd, int index)
 }
 
 void
-archive_migrate(int listfd, int ctrlfd, int logfd)
+archive_migrate(int listfd, int logfd)
 {
 	int archivefd;
 	DIR *dirp;
@@ -148,9 +148,6 @@ archive_migrate(int listfd, int ctrlfd, int logfd)
 	struct stat st;
 	char **names = NULL;
 	size_t nnames = 0, namesalloc = 0;
-
-	if (!statctrl(ctrlfd, "archivepartition"))
-		return;
 
 	archivefd = openat(listfd, "archive",
 	    O_RDONLY|O_DIRECTORY|O_CLOEXEC);

@@ -713,8 +713,10 @@ void do_maintenance(struct ml *ml, const char *mlmmjsend, const char *mlmmjbounc
 		log_err("An error occurred while sending probes for bouncers, "
 		    "see %s", MAINTD_LOGFILE);
 
-	log("archive_migrate\n");
-	archive_migrate(ml->fd, ml->ctrlfd, logfd);
+	if (statctrl(ml->ctrlfd, "archivepartition")) {
+		log("archive_migrate\n");
+		archive_migrate(ml->fd, logfd);
+	}
 
 	log("run_digests\n");
 	if (!run_digests(ml, mlmmjsend, logfd))
