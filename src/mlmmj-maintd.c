@@ -333,9 +333,11 @@ resend_requeue(struct ml *ml, const char *mlmmjsend, int logfd)
 		unlinkat(requeuefd, "subscribers", 0);
 
 		xasprintf(&subnewname, "%d", subfd);
-		xasprintf(&archivefilename, "%d", dup(archivefd));
+		fcntl(archivefd, F_SETFD, 0);
+		xasprintf(&archivefilename, "%d", archivefd);
 		exec_and_wait(mlmmjsend, "-l", "3", "-L", ml->dir, "-m",
 		    archivefilename, "-s", subnewname, "-a", "-D", NULL);
+		fcntl(archivefd, F_SETFD, FD_CLOEXEC);
 		free(subnewname);
 		free(archivefilename);
 		if (fromrequeuedir)
