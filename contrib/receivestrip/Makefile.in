@@ -9,8 +9,8 @@ LDFLAGS+= $(top_builddir)/src/libmlmmj.a
 include $(MK)/prog.mk
 
 install: $(PROG)
-	install -d -m 755 $(DESTDIR)$(sbindir)
-	install -m 755 $(PROG) $(DESTDIR)$(sbindir)/
+	install -d -m 755 $(DESTDIR)$(bindir)
+	install -m 755 $(PROG) $(DESTDIR)$(bindir)/
 @else
 all:
 clean:

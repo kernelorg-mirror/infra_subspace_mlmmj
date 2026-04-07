@@ -51,10 +51,10 @@ clean-progs:
 	rm -f $(PROGRAMS) $(PROGRAMS:=.o)
 
 install: $(PROGRAMS)
-	install -d -m 755 $(DESTDIR)$(sbindir)
-	for p in $(PROGRAMS); do install -m 755 $$p $(DESTDIR)$(sbindir)/; done
-	install -m 755 mlmmj-make-ml $(DESTDIR)$(sbindir)/
-	ln -f -s mlmmj-receive $(DESTDIR)$(sbindir)/mlmmj-recieve
-	ln -f -s mlmmj-make-ml $(DESTDIR)$(sbindir)/mlmmj-make-ml.sh
+	install -d -m 755 $(DESTDIR)$(bindir)
+	for p in $(PROGRAMS); do install -m 755 $$p $(DESTDIR)$(bindir)/; done
+	install -m 755 mlmmj-make-ml $(DESTDIR)$(bindir)/
+	ln -f -s mlmmj-receive $(DESTDIR)$(bindir)/mlmmj-recieve
+	ln -f -s mlmmj-make-ml $(DESTDIR)$(bindir)/mlmmj-make-ml.sh
 	install -d -m 755 $(DESTDIR)$(mandir)/man1
 	for m in $(top_srcdir)/man/*.1; do install -m 644 $$m $(DESTDIR)$(mandir)/man1/; done
