@@ -29,9 +29,9 @@ Zpráva byla zamítnuta moderátorem konference.
 %ifreason subonlypost%
   Adresa, ze které byla zpráva zaslána, není v seznamu členů konference.
 
-  %ifncontrol closedlist%%ifncontrol closedlistsub%
+  %ifncontrol closedlist%%ifncontrol closedlistsub%%ifncontrol moderators%
     %^%%text subrelease%
-  %endif%%endif%
+  %endif%%endif%%endif%
 
   %ifcontrol closedlist closedlistsub%
     %^%%wrap%Pokud si přejete být členem konference kontaktujte správce.

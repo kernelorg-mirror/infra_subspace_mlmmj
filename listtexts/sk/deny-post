@@ -31,9 +31,9 @@ do mailovej diskusie
 %ifreason subonlypost%
   lebo nie ste abonentom diskusie.
 
-  %ifncontrol closedlist%%ifncontrol closedlistsub%
+  %ifncontrol closedlist%%ifncontrol closedlistsub%%ifncontrol moderators%
     %^%%text subrelease%
-  %endif%%endif%
+  %endif%%endif%%endif%
 
   %ifcontrol closedlist closedlistsub%
     %^%%wrap%Ak sa chcete stať abonentom, kontaktujte administrátora

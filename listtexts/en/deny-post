@@ -31,9 +31,9 @@ be delivered to the list
 %ifreason subonlypost%
   because you are not a list subscriber.
 
-  %ifncontrol closedlist%%ifncontrol closedlistsub%
+  %ifncontrol closedlist%%ifncontrol closedlistsub%%ifncontrol moderators%
     %^%%text subrelease%
-  %endif%%endif%
+  %endif%%endif%%endif%
 
   %ifcontrol closedlist closedlistsub%
     %^%%wrap%If you wish to become a subscriber, you will need to contact a

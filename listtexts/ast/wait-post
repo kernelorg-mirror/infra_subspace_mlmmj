@@ -22,9 +22,9 @@ a la llista
 %ifreason modnonsubposts%
   porque nun yes suscriptor.
 
-  %ifncontrol closedlist%%ifncontrol closedlistsub%
+  %ifncontrol closedlist%%ifncontrol closedlistsub%%ifncontrol moderators%
     %^%%text subrelease%
-  %endif%%endif%
+  %endif%%endif%%endif%
 %endif%
 
 (El mensaxe ta más abaxo.)

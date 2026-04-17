@@ -22,9 +22,9 @@ de le délivrer à la liste
 %ifreason modnonsubposts%
   parce que vous n'êtes pas inscrit.
 
-  %ifncontrol closedlist%%ifncontrol closedlistsub%
+  %ifncontrol closedlist%%ifncontrol closedlistsub%%ifncontrol moderators%
     %^%%text subrelease%
-  %endif%%endif%
+  %endif%%endif%%endif%
 %endif%
 
 (Le message apparaît ci-dessous.)

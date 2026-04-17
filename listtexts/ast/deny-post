@@ -30,9 +30,9 @@ entregar a la llista
 %ifreason subonlypost%
   porque nun yes suscriptor de la llista.
 
-  %ifncontrol closedlist%%ifncontrol closedlistsub%
+  %ifncontrol closedlist%%ifncontrol closedlistsub%%ifncontrol moderators%
     %^%%text subrelease%
-  %endif%%endif%
+  %endif%%endif%%endif%
 
   %ifcontrol closedlist closedlistsub%
     %^%%wrap%Si quies suscribite, tendrás de comunicate con un alministrador

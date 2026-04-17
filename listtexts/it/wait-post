@@ -22,9 +22,9 @@ di rilasciarlo,
 %ifreason modnonsubposts%
   perché non sei iscritto/a.
 
-  %ifncontrol closedlist%%ifncontrol closedlistsub%
+  %ifncontrol closedlist%%ifncontrol closedlistsub%%ifncontrol moderators%
     %^%%text subrelease%
-  %endif%%endif%
+  %endif%%endif%%endif%
 %endif%
 
 (Il messaggio è riportato sotto.)

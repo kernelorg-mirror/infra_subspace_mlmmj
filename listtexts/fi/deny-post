@@ -33,9 +33,9 @@ välittää postituslistalle,
 %ifreason subonlypost%
   koska et ole postituslistan tilaaja.
 
-  %ifncontrol closedlist%%ifncontrol closedlistsub%
+  %ifncontrol closedlist%%ifncontrol closedlistsub%%ifncontrol moderators%
     %^%%text subrelease%
-  %endif%%endif%
+  %endif%%endif%%endif%
 
   %ifcontrol closedlist closedlistsub%
     %^%%wrap%Jos haluta liittyä postituslistalle, ota yhteyttä listan

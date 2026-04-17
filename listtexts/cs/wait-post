@@ -21,9 +21,9 @@ Moderátoři konference byli kontaktováni, aby tuto zprávu schválili před za
 %ifreason modnonsubposts%
   Důvodem je, že nejste členem konference (nebo píšete zprávu z adresy, se kterou nejste v konferenci přihlášen).
 
-  %ifncontrol closedlist%%ifncontrol closedlistsub%
+  %ifncontrol closedlist%%ifncontrol closedlistsub%%ifncontrol moderators%
     %^%%text subrelease%
-  %endif%%endif%
+  %endif%%endif%%endif%
 %endif%
 
 (Zpráva je uvedena níže.)

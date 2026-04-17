@@ -32,9 +32,9 @@ nicht über die Liste verteilt werden,
 %ifreason subonlypost%
   weil Sie die Liste nicht abonniert haben.
 
-  %ifncontrol closedlist%%ifncontrol closedlistsub%
+  %ifncontrol closedlist%%ifncontrol closedlistsub%%ifncontrol moderators%
     %^%%text subrelease%
-  %endif%%endif%
+  %endif%%endif%%endif%
 
   %ifcontrol closedlist closedlistsub%
     %^%%wrap%Wenn Sie die Liste abonnieren möchten, kontaktieren Sie einen

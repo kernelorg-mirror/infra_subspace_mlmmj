@@ -24,9 +24,9 @@ Content-Transfer-Encoding: 8bit
 需要版主审核后才能发布到该列表\=。
 
 %ifreason modnonsubposts%
-  %ifncontrol closedlist%%ifncontrol closedlistsub%
+  %ifncontrol closedlist%%ifncontrol closedlistsub%%ifncontrol moderators%
     %^%%text subrelease%
-  %endif%%endif%
+  %endif%%endif%%endif%
 %endif%
 
 （\=下为邮件\=。\=）

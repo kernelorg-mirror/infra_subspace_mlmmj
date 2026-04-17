@@ -22,9 +22,9 @@ lista de espera para revisão
 %ifreason modnonsubposts%
   porque você não é um subscritor.
 
-  %ifncontrol closedlist%%ifncontrol closedlistsub%
+  %ifncontrol closedlist%%ifncontrol closedlistsub%%ifncontrol moderators%
     %^%%text subrelease%
-  %endif%%endif%
+  %endif%%endif%%endif%
 %endif%
 
 (Mensagem segue em baixo.)

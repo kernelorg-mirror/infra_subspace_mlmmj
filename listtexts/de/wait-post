@@ -22,9 +22,9 @@ erforderlich,
 %ifreason modnonsubposts%
   weil Sie nicht auf der Liste eingeschrieben sind.
 
-  %ifncontrol closedlist%%ifncontrol closedlistsub%
+  %ifncontrol closedlist%%ifncontrol closedlistsub%%ifncontrol moderators%
     %^%%text subrelease%
-  %endif%%endif%
+  %endif%%endif%%endif%
 %endif%
 
 (Die ist unten angefügt.)

@@ -30,9 +30,9 @@ entregue na lista
 %ifreason subonlypost%
   porque você não faz parte da lista.
 
-  %ifncontrol closedlist%%ifncontrol closedlistsub%
+  %ifncontrol closedlist%%ifncontrol closedlistsub%%ifncontrol moderators%
     %^%%text subrelease%
-  %endif%%endif%
+  %endif%%endif%%endif%
 
   %ifcontrol closedlist closedlistsub%
     %^%%wrap%Se pretender subscrever a lista, tem que contactar um

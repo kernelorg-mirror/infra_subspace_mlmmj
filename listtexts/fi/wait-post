@@ -22,9 +22,9 @@ on hyväksyttävä se,
 %ifreason modnonsubposts%
   koska et ole postituslistan tilaaja.
 
-  %ifncontrol closedlist%%ifncontrol closedlistsub%
+  %ifncontrol closedlist%%ifncontrol closedlistsub%%ifncontrol moderators%
     %^%%text subrelease%
-  %endif%%endif%
+  %endif%%endif%%endif%
 %endif%
 
 (Lähetetty viesti on alla.)

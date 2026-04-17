@@ -33,7 +33,8 @@ tests_init \
 	verp \
 	normal_email_with_dot \
 	multi_line_headers \
-	subrelease
+	subrelease \
+	subrelease_with_moderators
 
 mlmmjreceive=$(command -v mlmmj-receive)
 
@@ -3404,4 +3405,37 @@ EOF
 	atf_check -o match:"Subject: yeah" cat mail-2.txt
 	atf_check -o match:"Let's go, first email" cat mail-2.txt
 	atf_check -o match:"QUIT" cat mail-2.txt
+}
+
+subrelease_with_moderators_body()
+{
+	init_ml list
+	rmdir list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
+	echo test@mlmmjtest > list/control/listaddress
+	start_fakesmtp list
+	echo "heloname" > list/control/smtphelo
+
+	touch list/control/subonlypost
+	echo "mod@test" > list/control/moderators
+	printf "user@test\nuser2@test" > list/subscribers.d/u
+
+cat > first <<EOF
+From: bob@test
+To: test@mlmmjtest
+Return-path: bob@test
+Subject: yeah
+
+Let's go, first email
+EOF
+	atf_check -s exit:0 $mlmmjreceive -L list -F <first
+
+	# Verify the deny-post mail does NOT contain subrelease addresses
+	atf_check -o not-match:"subrelease" cat mail-1.txt
+
+	# Verify the mail was NOT held in moderation (no subrelease path)
+	atf_check -s exit:0 test -z "$(ls list/moderation/ 2>/dev/null)"
+
+	# Verify the deny mail was sent to the poster
+	atf_check -o match:"RCPT TO:<bob@test>" cat mail-1.txt
 }

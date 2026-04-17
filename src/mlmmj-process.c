@@ -218,7 +218,8 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 		char *subreplyto = NULL;
 		if (modreason == MODNONSUBPOSTS &&
 		    !statctrl(ml->ctrlfd, "closedlist") &&
-		    !statctrl(ml->ctrlfd, "closedlistsub")) {
+		    !statctrl(ml->ctrlfd, "closedlistsub") &&
+		    !statctrl(ml->ctrlfd, "moderators")) {
 			char *listsubreleaseaddr;
 			char *digestsubreleaseaddr;
 			char *nomailsubreleaseaddr;
@@ -839,7 +840,10 @@ int main(int argc, char **argv)
 			    bool closedlistsub = statctrl(ml.ctrlfd, "closedlistsub");
 			    char *subreplyto = NULL;
 
-			    if (subonlypost && !closedlist && !closedlistsub) {
+			    bool hasmoderators = statctrl(ml.ctrlfd, "moderators");
+
+			    if (subonlypost && !closedlist && !closedlistsub &&
+				!hasmoderators) {
 				char *modname;
 				char *listsubreleaseaddr;
 				char *digestsubreleaseaddr;

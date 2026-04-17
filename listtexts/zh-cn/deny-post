@@ -29,9 +29,9 @@ Content-Transfer-Encoding: 8bit
 %ifreason subonlypost%
   因为您不是列表订户\=。
 
-  %ifncontrol closedlist%%ifncontrol closedlistsub%
+  %ifncontrol closedlist%%ifncontrol closedlistsub%%ifncontrol moderators%
     %text subrelease%
-  %endif%%endif%
+  %endif%%endif%%endif%
 
   %ifcontrol closedlist closedlistsub%
     %^%%wrap%如果您打算成为订户\=，需要联系列表管理员\=。您可以发送邮件

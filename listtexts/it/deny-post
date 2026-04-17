@@ -33,9 +33,9 @@ Content-Transfer-Encoding: 8bit
 %ifreason subonlypost%
   perché non sei iscritto/a alla lista.
 
-  %ifncontrol closedlist%%ifncontrol closedlistsub%
+  %ifncontrol closedlist%%ifncontrol closedlistsub%%ifncontrol moderators%
     %^%%text subrelease%
-  %endif%%endif%
+  %endif%%endif%%endif%
 
   %ifcontrol closedlist closedlistsub%
     %^%%wrap%Se desideri iscriverti, devi contattare l'amministratore della

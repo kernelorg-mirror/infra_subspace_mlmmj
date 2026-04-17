@@ -22,9 +22,9 @@ Content-Transfer-Encoding: 8bit
 %ifreason modnonsubposts%
   καθώς δεν είστε εγγεγραμμένος χρήστης.
 
-  %ifncontrol closedlist%%ifncontrol closedlistsub%
+  %ifncontrol closedlist%%ifncontrol closedlistsub%%ifncontrol moderators%
     %^%%text subrelease%
-  %endif%%endif%
+  %endif%%endif%%endif%
 %endif%
 
 (Παρακάτω ακολουθεί το μήνυμα.)

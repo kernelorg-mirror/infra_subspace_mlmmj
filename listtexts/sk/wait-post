@@ -22,9 +22,9 @@ odsúhlasenie, lebo
 %ifreason modnonsubposts%
   nie ste jej abonentom.
 
-  %ifncontrol closedlist%%ifncontrol closedlistsub%
+  %ifncontrol closedlist%%ifncontrol closedlistsub%%ifncontrol moderators%
     %^%%text subrelease%
-  %endif%%endif%
+  %endif%%endif%%endif%
 %endif%
 
 (Správa je pripojená.)

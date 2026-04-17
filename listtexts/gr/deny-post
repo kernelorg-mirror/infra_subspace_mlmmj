@@ -32,9 +32,9 @@ Content-Transfer-Encoding: 8bit
 %ifreason subonlypost%
   καθώς δεν είστε εγγεγραμμένος στη λίστα.
 
-  %ifncontrol closedlist%%ifncontrol closedlistsub%
+  %ifncontrol closedlist%%ifncontrol closedlistsub%%ifncontrol moderators%
     %^%%text subrelease%
-  %endif%%endif%
+  %endif%%endif%%endif%
 
   %ifcontrol closedlist closedlistsub%
     %^%%wrap%Αν επιθυμείτε να εγγραφείτε στη λίστα ταχυδρομείου, αρκεί να
