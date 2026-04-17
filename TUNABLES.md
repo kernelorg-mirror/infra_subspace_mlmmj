@@ -50,16 +50,25 @@ entire content is used as value, it's marked "text".
 
    When this file is present, only people who are subscribed to the list,
    are allowed to post to it. The check is made against the `From:` header.
+   If a non-subscriber posts and the list has no moderators
+   (`control/moderators` does not exist), the sender receives a denial mail
+   with an option to simultaneously subscribe and release their post.
+   When moderators are configured, this self-release option is disabled and
+   the post is simply denied.
+   This tunable takes precedence over `modonlypost`: if both are present,
+   only the subscriber check is performed.
 
  * modonlypost			(boolean)
 
    When this file is present, only people listed in listdir/control/moderators
    are allowed to post to it. The check is made against the `From:` header.
+   Ignored if `subonlypost` is also present.
 
  * modnonsubposts		(boolean)
 
    When this file is present, all postings from people who are not allowed
    to post to the list will be moderated instead of denied.
+   When used without `modonlypost`, it implies `subonlypost`.
 
  * modreqlife			(normal)
 
