@@ -3,7 +3,8 @@
 
 use cc cc-lib pkg-config
 
-define VERSION 1.9.99
+define PACKAGE_NAME mlmmj
+define VERSION 2.0.0
 
 options {
 	with-asan => "build with libasan support"

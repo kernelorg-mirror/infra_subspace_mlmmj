@@ -3,3 +3,18 @@ include @builddir@/mk/defs.mk
 DIRS= src listtexts contrib @TESTDIR@
 
 include $(MK)/dir.mk
+
+DISTNAME=	$(PACKAGE_NAME)-$(VERSION)
+
+dist:
+	@git archive --format=tar.gz --prefix=$(DISTNAME)/ -o $(DISTNAME).tar.gz HEAD
+	@git archive --format=tar --prefix=$(DISTNAME)/ HEAD | xz > $(DISTNAME).tar.xz
+	@echo "Created $(DISTNAME).tar.gz and $(DISTNAME).tar.xz"
+
+distcheck: dist
+	@rm -rf _distcheck
+	@mkdir _distcheck
+	@tar -xzf $(DISTNAME).tar.gz -C _distcheck
+	@cd _distcheck/$(DISTNAME) && ./configure && $(MAKE) && $(MAKE) check
+	@rm -rf _distcheck
+	@echo "$(DISTNAME) is ready for distribution"
