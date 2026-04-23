@@ -1,3 +1,6 @@
+2.0.1
+ o configure fix --mandir
+ o mk: do not install static library
 2.0.0
  o Generate RFC 2919/2369 List-Id, List-Post, List-Help, List-Subscribe,
    List-Unsubscribe, and Precedence headers by default. List-Owner is
