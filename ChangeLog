@@ -9,23 +9,18 @@
    DARA (ARC replay-resistant authentication) support.
  o Subscription requests now follow the Reply-To header when present.
  o mlmmj-make-ml: use full postmaster@FQDN address as default owner.
- o Replace autotools with autosetup + custom mk framework.
+ o Replace autotools with bbuild build system.
  o Replace foot's tllist.h with vec.h.
  o Prevent header injections in incoming mail.
  o Harden email address validation.
  o Fix TOCTOU race by using O_NOFOLLOW.
  o Limit line length to 64k maximum.
- o Add missing setgid call and test for setgid failures.
- o Prevent crash on broken SMTP connection.
  o Ensure file descriptors are properly initialized.
  o Improve random number generation on platforms without arc4random.
- o Fix multiple exec_and_wait issues (EINTR handling, abnormal exit).
  o Treat exit code 127 (command not found) as error in posix_spawnp.
- o Fix file descriptor leak.
- o Fix two memory leaks and a naming collision.
- o Fix out-of-bounds read in UTF-8 handling.
- o Fix EINTR logic and remove leftover debug code.
- o Fix non-deterministic test ordering in subrelease.
+ o Deactivate subrelease when moderators are defined.
+ o Clarify documentation for subonlypost and modonlypost tunables.
+ o Pass archive directory via fd to mlmmj-send in resend_queue.
 1.8.0
  o New 'subrelease' feature: on lists with 'subonlypost', non-subscribers
    can simultaneously subscribe and release their denied post by replying
