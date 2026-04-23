@@ -17,6 +17,8 @@ TESTS_SH= \
 
 TESTS_SHELL=	$(TESTS_SH:.sh=)
 
+CLEAN_FILES=	*.o *.Po fakesmtpd mlmmj $(TESTS_SHELL)
+
 all: mlmmj fakesmtpd $(TESTS_SHELL)
 
 mlmmj: mlmmj.o mlmmj_tests.o $(top_builddir)/src/libmlmmj.a
@@ -28,9 +30,6 @@ fakesmtpd: fakesmtpd.o
 check: all
 	kyua --config='$(top_builddir)/kyua.conf' test \
 	    --kyuafile='$(top_srcdir)/Kyuafile' --build-root='$(top_builddir)'
-
-clean:
-	rm -f mlmmj fakesmtpd *.o *.Po $(TESTS_SHELL)
 
 install:
 

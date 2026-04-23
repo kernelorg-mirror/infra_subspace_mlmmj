@@ -6,6 +6,8 @@ include $(MK)/dir.mk
 
 DISTNAME=	$(PACKAGE_NAME)-$(VERSION)
 
+DISTCLEAN_FILES= config.h config.log mk/defs.mk
+
 dist:
 	@git archive --format=tar.gz --prefix=$(DISTNAME)/ -o $(DISTNAME).tar.gz HEAD
 	@git archive --format=tar --prefix=$(DISTNAME)/ HEAD | xz > $(DISTNAME).tar.xz

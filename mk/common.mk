@@ -24,3 +24,13 @@ DEPFILES_NONEMPTY=	$(DEPFILES) /nonexistent
 .c.pico:
 	$(CC) -Wall -Wextra -std=gnu17 -D_GNU_SOURCE=1 -MT $@ -MD -MP -MF $*.Tpico -o $@ -c $(CFLAGS) $(LOCAL_CFLAGS) $(SHOBJ_CFLAGS) $<
 	mv $*.Tpico $*.Ppico
+
+clean: clean-files
+
+clean-files:
+	rm -f $(CLEAN_FILES)
+
+distclean: distclean-files
+
+distclean-files:
+	rm -r $(DISTCLEAN_FILES)

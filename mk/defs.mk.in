@@ -55,5 +55,6 @@ install:
 
 check:
 
+DISTCLEAN_FILES=	config.h config.log mk/defs.mk
+
 distclean: clean
-	rm -f config.h config.log mk/defs.mk
