@@ -1,9 +1,6 @@
 image: freebsd/latest
 packages:
   - kyua
-  - autoconf-switch
-  - autoconf
-  - automake
   - atf
   - pkgconf
 sources:
@@ -11,7 +8,6 @@ sources:
 tasks:
   - configure: |
       cd mlmmj
-      autoreconf -fi
       ./configure
   - build: |
       cd mlmmj

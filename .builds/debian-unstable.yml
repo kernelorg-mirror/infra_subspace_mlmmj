@@ -4,16 +4,12 @@ packages:
   - kyua
   - atf-sh
   - libatf-dev
-  - autotools-dev
   - pkg-config
-  - autoconf
-  - automake
 sources:
   - https://codeberg.org/mlmmj/mlmmj
 tasks:
   - configure: |
       cd mlmmj
-      autoreconf -if
       ./configure
   - build: |
       cd mlmmj
