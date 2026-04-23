@@ -101,7 +101,7 @@ get_define() {
 }
 
 is_defined() {
-	awk -v k="$1" -F'\t' '$1 == k { exit 0 } END { exit 1 }' "$_defines" 2>/dev/null
+	awk -v k="$1" -F'\t' '$1 == k { found=1; exit } END { exit !found }' "$_defines" 2>/dev/null
 }
 
 is_true() {
