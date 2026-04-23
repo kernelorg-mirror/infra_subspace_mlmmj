@@ -1,9 +1,11 @@
 # vim:se syn=sh:
 #
 
-define PACKAGE_NAME mlmmj
-define VERSION 2.0.0
-define PACKAGE_STRING "mlmmj 2.0.0"
+_packagename=mlmmj
+_version=2.0.1
+define PACKAGE_NAME $_packagename
+define VERSION $_version
+define PACKAGE_STRING "$_packagename $_version"
 
 options \
 	"with-asan        => build with libasan support" \
