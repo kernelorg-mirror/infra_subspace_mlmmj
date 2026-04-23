@@ -10,14 +10,10 @@
 .dirstamp
 Makefile
 
-/aclocal.m4
-/autom4te.cache/
-/build-aux/
 /config.h
-/config.h.in
 /config.log
-/config.status
 /kyua.conf
+/mk/defs.mk
 /src/mlmmj-bounce
 /src/mlmmj-list
 /src/mlmmj-maintd
@@ -27,7 +23,6 @@ Makefile
 /src/mlmmj-send
 /src/mlmmj-sub
 /src/mlmmj-unsub
-/stamp-h1
 /tests/fakesmtpd
 /tests/functional-tests
 /tests/mlmmj

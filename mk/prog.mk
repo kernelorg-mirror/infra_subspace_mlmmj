@@ -1,6 +1,6 @@
 include $(MK)/common.mk
 
-PROGNAME=	$(PROG)
+PROGNAME=	$(PROG)$(EXEEXT)
 
 all: $(PROGNAME)
 
@@ -10,4 +10,10 @@ $(PROGNAME): $(OBJS)
 clean:
 	rm -f $(PROGNAME) $(OBJS) $(DEPFILES)
 
-install:
+install: $(PROGNAME)
+	install -d -m 755 $(DESTDIR)$(bindir)
+	install -m 755 $(PROGNAME) $(DESTDIR)$(bindir)/
+
+check:
+
+distclean: clean

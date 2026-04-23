@@ -4,7 +4,9 @@ all:
 
 clean:
 
-install:
+install: install-lists
+
+install-lists:
 	for lang in $(top_srcdir)/listtexts/*/; do \
 		langname=$$(basename $$lang); \
 		install -d -m 755 $(DESTDIR)@textlibdir@/$$langname; \

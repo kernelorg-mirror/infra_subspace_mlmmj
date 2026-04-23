@@ -1,0 +1,81 @@
+# vim:se syn=sh:
+#
+
+define PACKAGE_NAME mlmmj
+define VERSION 2.0.0
+define PACKAGE_STRING "mlmmj 2.0.0"
+
+options \
+	"with-asan        => build with libasan support" \
+	"with-lsan        => build with liblsan support" \
+	"with-ubsan       => build with libubsan support" \
+	"with-tsan        => build with libtsan support" \
+	"with-coverage    => build with coverage flags" \
+	"enable-receive-strip=0 => build mlmmj-receive-strip" \
+	"enable-tests=1   => build and run tests"
+
+# Apply command-line arguments now that options are declared
+_configure_apply
+
+cc_check_tools ar ranlib strip
+
+# Function checks
+cc_check_functions arc4random_uniform copy_file_range
+
+if opt_bool with-asan; then
+	define ASAN_CFLAGS "-O0 -ggdb -fsanitize=address"
+	define ASAN_LDFLAGS "-fsanitize=address"
+	define asan 1
+fi
+
+if opt_bool with-ubsan; then
+	define UBSAN_CFLAGS "-O0 -ggdb -fsanitize=undefined"
+	define UBSAN_LDFLAGS "-fsanitize=undefined"
+	define ubsan 1
+fi
+
+if opt_bool with-coverage; then
+	define COVERAGE_CFLAGS -O0 -g -fprofile-arcs -ftest-coverage -fprofile-instr-generate -fcoverage-mapping -DCOVERAGE=1
+	define COVERAGE_LDFLAGS "-fprofile-generate"
+	define coverage 1
+fi
+
+if opt_bool enable-receive-strip; then
+	define receive-strip 1
+fi
+
+define textlibdir "$(get_define datadir)/mlmmj/text.skel"
+
+if opt_bool enable-tests; then
+	if ! pkg_config_init; then
+		user_error "Unable to find pkg-config (required for tests)"
+	fi
+	if ! pkg_config atf-c; then
+		user_error "Unable to find atf-c via pkg-config (required for tests)"
+	fi
+	if ! cc_check_progs kyua; then
+		user_error "A 'kyua' binary is required when the tests are enabled."
+	fi
+	if ! cc_path_progs atf-sh; then
+		user_error "An 'atf-sh' binary is required when the tests are enabled."
+	fi
+	define TESTDIR tests
+	define tests 1
+else
+	define TESTDIR ""
+fi
+
+make_config_header config.h -auto VERSION
+make_template mk/defs.mk.in
+make_template Makefile.in
+make_template src/Makefile.in
+make_template listtexts/Makefile.in
+make_template contrib/Makefile.in
+make_template contrib/receivestrip/Makefile.in
+make_template src/mlmmj-make-ml.in
+make_template kyua.conf.in
+
+if opt_bool enable-tests; then
+	make_template tests/Makefile.in
+	make_template tests/test_env.sh.in
+fi

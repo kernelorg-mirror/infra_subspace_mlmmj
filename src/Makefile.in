@@ -50,7 +50,9 @@ clean: clean-progs
 clean-progs:
 	rm -f $(PROGRAMS) $(PROGRAMS:=.o)
 
-install: $(PROGRAMS)
+install: install-programs
+
+install-programs: $(PROGRAMS)
 	install -d -m 755 $(DESTDIR)$(bindir)
 	for p in $(PROGRAMS); do install -m 755 $$p $(DESTDIR)$(bindir)/; done
 	install -m 755 mlmmj-make-ml $(DESTDIR)$(bindir)/
