@@ -266,10 +266,11 @@ apply_args() {
 				_optname="${_optname%%=*}"
 				define "opt-$_optname" "$_optval"
 				;;
-			CC=*)     define CC "${_arg#CC=}" ;;
-			AR=*)     define AR "${_arg#AR=}" ;;
-			CFLAGS=*) define CFLAGS "${_arg#CFLAGS=}" ;;
-			LDFLAGS=*) define LDFLAGS "${_arg#LDFLAGS=}" ;;
+			[A-Z]*=*)
+				_var="${_arg%%=*}"
+				_val="${_arg#*=}"
+				define "$_var" "$_val"
+				;;
 			*)
 				echo "Warning: unknown option: $_arg" >&2
 				;;
@@ -870,6 +871,25 @@ define srcdir "$_srcdir"
 define abs_top_srcdir "$_srcdir"
 define abs_top_builddir "$_builddir"
 define builddir "$_builddir"
+
+# Import toolchain variables from environment early, so that find_cc
+# and detect_host can respect user overrides.
+for _envvar in CC CXX CPP AR RANLIB NM STRIP CFLAGS CXXFLAGS CPPFLAGS LDFLAGS; do
+	eval "_envval=\"\${$_envvar:-}\""
+	if [ -n "$_envval" ]; then
+		define "$_envvar" "$_envval"
+	fi
+done
+# Early pass: apply VAR=value arguments from command line before detection.
+for _a in "$@"; do
+	case "$_a" in
+		[A-Z]*=*)
+			_var="${_a%%=*}"
+			_val="${_a#*=}"
+			define "$_var" "$_val"
+			;;
+	esac
+done
 
 find_cc
 detect_host
