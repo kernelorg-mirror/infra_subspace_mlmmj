@@ -619,7 +619,7 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 static void
 subscribe_type(int listfd, char *address, enum subtype typesub)
 {
-	int dirfd;;
+	int dirfd;
 	char chstr[2];
 	const char *subdir;
 	int groupwritable = 0, subfilefd;
