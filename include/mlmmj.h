@@ -72,7 +72,7 @@
 #define gen_addr(addr, _ml, _cmd) \
     xasprintf(&addr, "%s%s%s@%s", (_ml)->name, (_ml)->delim, _cmd, (_ml)->fqdn)
 #define gen_addr_cookie(addr, _ml, _cmd, _cookie) \
-    xasprintf(&addr, "%s%s%s%s@%s", (_ml)->name, (_ml)->delim, _cmd, _cookie, (_ml)->fqdn);
+    xasprintf(&addr, "%s%s%s%s@%s", (_ml)->name, (_ml)->delim, _cmd, _cookie, (_ml)->fqdn)
 
 struct ml {
 	const char *dir;

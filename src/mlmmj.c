@@ -63,7 +63,7 @@ send_probe(struct ml *ml, const char *addr)
 
 	myaddr = lowercase(addr);
 
-	gen_addr_cookie(from, ml, "bounces-probe-", myaddr)
+	gen_addr_cookie(from, ml, "bounces-probe-", myaddr);
 
 	a = strrchr(myaddr, '=');
 	if (!a) {
