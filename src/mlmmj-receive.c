@@ -38,8 +38,274 @@
 #include "log_error.h"
 #include "utils.h"
 #include "xmalloc.h"
+#include "mygetline.h"
+#include "ctrlvalues.h"
+#include "chomp.h"
 
 extern char *optarg;
+
+#define UNWANTED_MIME_HDR "X-ThisMailContainsUnwantedMimeParts: N\n"
+
+/*
+ * Read all mail headers from fd into the allhdrs strlist.
+ * Parses Content-Type to extract mime_type and boundary.
+ * Checks mime_type against denymime list.
+ * Sets *deny to 1 if the mail should be denied.
+ */
+static void
+read_headers(int fd, strlist *allhdrs,
+    const strlist *denymime, int *deny, char **boundary)
+{
+	char *mime_type = NULL;
+	char *tmp;
+
+	while (1) {
+		char *line = mygetline(fd);
+		if (!line)        /* EOF, also end of headers */
+			break;
+
+		/* end of headers */
+		if (line[0] == '\n') {
+			free(line);
+			break;
+		}
+		if (!allhdrs->len ||
+		    ((line[0] != '\t') && (line[0] != ' '))) {
+			/* first header or no unfolding */
+			vec_push(allhdrs, line);
+		} else {
+			/* unfolding: append to previous header */
+			xasprintf(&tmp, "%s%s", vec_last(allhdrs), line);
+			free(vec_pop(allhdrs));
+			vec_push(allhdrs, tmp);
+			free(line);
+		}
+	}
+	parse_content_type(allhdrs, &mime_type, boundary);
+	if (mime_type) {
+		if (denymime != NULL &&
+		    line_startwithany(mime_type, denymime, true))
+			*deny = 1;
+		free(mime_type);
+	}
+}
+
+/*
+ * Write headers from hdrs strlist to outfd.
+ * If unwantedmime_hdrpos is not NULL, insert the UNWANTED_MIME_HDR
+ * and save the position of the 'N' character for later update.
+ * Returns 0 on success, -1 on error.
+ */
+static int
+write_headers(int outfd, const strlist *hdrs, off_t *unwantedmime_hdrpos)
+{
+	vec_foreach(*hdrs, _i) {
+		if (dprintf(outfd, "%s", hdrs->d[_i]) < 0) {
+			log_error(LOG_ARGS, "Error when dumping headers");
+			return -1;
+		}
+	}
+
+	if (unwantedmime_hdrpos != NULL) {
+		if (dprintf(outfd, "%s", UNWANTED_MIME_HDR) < 0) {
+			log_error(LOG_ARGS,
+			    "Error writing unwanted mime header");
+			return -1;
+		}
+		*unwantedmime_hdrpos = lseek(outfd, 0, SEEK_CUR);
+		if (*unwantedmime_hdrpos < 2) {
+			log_error(LOG_ARGS, "Error getting file position");
+			return -1;
+		}
+		*unwantedmime_hdrpos -= 2;
+	}
+
+	if (dprintf(outfd, "\n") < 0) {
+		log_error(LOG_ARGS, "Error writing end of headers.");
+		return -1;
+	}
+	return 0;
+}
+
+/*
+ * Seek back to the unwanted mime header position and update N -> Y.
+ * Then seek back to end of file.
+ */
+static int
+update_unwanted_mime_header(int outfd, off_t unwantedmime_hdrpos)
+{
+	if (lseek(outfd, unwantedmime_hdrpos, SEEK_SET) < 0) {
+		log_error(LOG_ARGS, "Error seeking to the unwantedmime_hdr");
+		return -1;
+	}
+
+	if (dprintf(outfd, "Y\n") < 0) {
+		log_error(LOG_ARGS, "Error writing extra header");
+		return -1;
+	}
+
+	if (lseek(outfd, 0, SEEK_END) < 0) {
+		log_error(LOG_ARGS, "Error seeking to the mail end");
+		return -1;
+	}
+	return 0;
+}
+
+/*
+ * Recursively walk a multipart MIME body, writing everything to outfd.
+ * Checks nested Content-Type headers against the deny list.
+ * Returns 0 on success, -1 on error.
+ */
+static int
+parse_body(int infd, int outfd, const strlist *denymime,
+    int *deny, const char *boundary)
+{
+	char *line;
+	size_t blen;
+
+	if (boundary == NULL)
+		return 0;
+
+	blen = strlen(boundary);
+
+	while ((line = mygetline(infd))) {
+		/* Boundary lines start with "--" followed by the boundary */
+		if (strncmp(line, "--", 2) == 0 &&
+		    strncmp(line + 2, boundary, blen) == 0) {
+			/* check if this is a closing boundary
+			 * (trailing "--" after the boundary value) */
+			if (strncmp(line + 2 + blen, "--", 2)) {
+				strlist hdrs = vec_init();
+				char *new_boundary = NULL;
+
+				read_headers(infd, &hdrs, denymime,
+				    deny, &new_boundary);
+
+				/* write the boundary */
+				if (dprintf(outfd, "%s", line) < 0) {
+					log_error(LOG_ARGS,
+					    "Error writing boundary");
+					vec_free_and_free(&hdrs, free);
+					free(new_boundary);
+					free(line);
+					return -1;
+				}
+				/* write the part headers */
+				if (write_headers(outfd, &hdrs, NULL) < 0) {
+					log_error(LOG_ARGS,
+					    "Error writing part hdrs");
+					vec_free_and_free(&hdrs, free);
+					free(new_boundary);
+					free(line);
+					return -1;
+				}
+				vec_free_and_free(&hdrs, free);
+				/* recurse into embedded multipart */
+				if (new_boundary &&
+				    parse_body(infd, outfd, denymime,
+				    deny, new_boundary) != 0) {
+					free(new_boundary);
+					free(line);
+					return -1;
+				}
+				free(new_boundary);
+			} else {
+				/* closing boundary --, write it */
+				if (dprintf(outfd, "%s", line) < 0) {
+					log_error(LOG_ARGS,
+					    "Error writing closing boundary");
+					free(line);
+					return -1;
+				}
+				free(line);
+				break;
+			}
+		} else {
+			/* regular body line, pass through */
+			if (dprintf(outfd, "%s", line) < 0) {
+				log_error(LOG_ARGS,
+				    "Error writing body line");
+				free(line);
+				return -1;
+			}
+		}
+		free(line);
+	}
+	return 0;
+}
+
+/*
+ * Main mail processing function: reads the mail from infd, checks MIME
+ * types against control/mimedeny file, writes the mail to outfd, and adds
+ * an X-ThisMailContainsUnwantedMimeParts: N/Y header.
+ *
+ * If no control/mimedeny file exists, falls back to simple dumpfd2fd.
+ * Returns 0 on success, -1 on error.
+ */
+static int
+process_mail(int infd, int outfd, int listfd)
+{
+	strlist hdrs = vec_init();
+	strlist *denymime = NULL;
+	char *boundary = NULL;
+	int deny = 0, ctrlfd;
+	off_t unwantedmime_hdr_pos = 0;
+
+	/* Open control directory and read control/mimedeny */
+	ctrlfd = openat(listfd, "control", O_DIRECTORY|O_RDONLY|O_CLOEXEC);
+	if (ctrlfd != -1) {
+		denymime = ctrlvalues(ctrlfd, "mimedeny");
+		close(ctrlfd);
+	}
+
+	/* If no mimedeny file, just pass through */
+	if (denymime == NULL)
+		return dumpfd2fd(infd, outfd);
+
+	/* Read mail headers */
+	read_headers(infd, &hdrs, denymime, &deny, &boundary);
+
+	/* Write mail headers (with unwanted mime header) */
+	if (write_headers(outfd, &hdrs, &unwantedmime_hdr_pos) < 0) {
+		log_error(LOG_ARGS, "Could not write mail headers");
+		goto cleanup;
+	}
+
+	vec_free_and_free(&hdrs, free);
+
+	/* If not already denied by the top-level headers, check the body
+	 * (for multipart messages, nested parts may match denymime) */
+	if (!deny) {
+		if (parse_body(infd, outfd, denymime, &deny,
+		    boundary) != 0) {
+			log_error(LOG_ARGS, "Could not parse mail");
+			goto cleanup;
+		}
+	}
+	free(boundary);
+
+	/* Dump the rest of the mail (anything not consumed by parse_body) */
+	if (dumpfd2fd(infd, outfd) != 0) {
+		log_error(LOG_ARGS, "Could not receive mail");
+		goto cleanup;
+	}
+
+	/* Update the N -> Y header if unwanted MIME parts were found */
+	if (deny) {
+		if (update_unwanted_mime_header(outfd,
+		    unwantedmime_hdr_pos) != 0) {
+			log_error(LOG_ARGS, "Could not update header");
+			goto cleanup;
+		}
+	}
+
+cleanup:
+	if (denymime) {
+		vec_free_and_free(denymime, free);
+		free(denymime);
+	}
+	return 0;
+}
 
 static void print_help(const char *prg)
 {
@@ -123,7 +389,7 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	if(dumpfd2fd(STDIN_FILENO, fd) != 0) {
+	if(process_mail(STDIN_FILENO, fd, listfd) != 0) {
 		log_error(LOG_ARGS, "Could not receive mail");
 		exit(EXIT_FAILURE);
 	}

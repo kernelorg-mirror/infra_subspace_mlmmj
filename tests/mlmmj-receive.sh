@@ -34,7 +34,11 @@ tests_init \
 	normal_email_with_dot \
 	multi_line_headers \
 	subrelease \
-	subrelease_with_moderators
+	subrelease_with_moderators \
+	mimedeny_simple \
+	mimedeny_none \
+	mimedeny_nocontenttype \
+	mimedeny_multipart
 
 mlmmjreceive=$(command -v mlmmj-receive)
 
@@ -3439,3 +3443,75 @@ EOF
 	# Verify the deny mail was sent to the poster
 	atf_check -o match:"RCPT TO:<bob@test>" cat mail-1.txt
 }
+
+mimedeny_simple_body()
+{
+	init_ml list
+	echo "text/html" > list/control/mimedeny
+
+	cat > mailcontent <<EOF
+From: bob@test
+Content-Type: text/html
+
+<html><body>test</body></html>
+EOF
+	atf_check -s exit:0 $mlmmjreceive -L list -P -F <mailcontent
+	file=$(find list/incoming -type f)
+	atf_check -o match:"X-ThisMailContainsUnwantedMimeParts: Y" cat $file
+}
+
+mimedeny_none_body()
+{
+	init_ml list
+	echo "text/html" > list/control/mimedeny
+
+	cat > mailcontent <<EOF
+From: bob@test
+Content-Type: text/plain
+
+this is a plain text email
+EOF
+	atf_check -s exit:0 $mlmmjreceive -L list -P -F <mailcontent
+	file=$(find list/incoming -type f)
+	atf_check -o match:"X-ThisMailContainsUnwantedMimeParts: N" cat $file
+}
+
+mimedeny_nocontenttype_body()
+{
+	init_ml list
+	echo "text/html" > list/control/mimedeny
+
+	cat > mailcontent <<EOF
+From: bob@test
+
+this email has no content-type header
+EOF
+	atf_check -s exit:0 $mlmmjreceive -L list -P -F <mailcontent
+	file=$(find list/incoming -type f)
+	atf_check -o match:"X-ThisMailContainsUnwantedMimeParts: N" cat $file
+}
+
+mimedeny_multipart_body()
+{
+	init_ml list
+	echo "text/html" > list/control/mimedeny
+
+	cat > mailcontent <<EOF
+From: bob@test
+Content-Type: multipart/mixed; boundary="myboundary"
+
+--myboundary
+Content-Type: text/plain
+
+this is the plain text part
+--myboundary
+Content-Type: text/html
+
+<html><body>this is the html part</body></html>
+--myboundary--
+EOF
+	atf_check -s exit:0 $mlmmjreceive -L list -P -F <mailcontent
+	file=$(find list/incoming -type f)
+	atf_check -o match:"X-ThisMailContainsUnwantedMimeParts: Y" cat $file
+}
+
