@@ -25,6 +25,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
+#include <errno.h>
 #include <err.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -95,8 +96,12 @@ main(void)
 	if (daemon(1, 0) != 0)
 		err(EXIT_FAILURE, "daemon");
 
-	signal(SIGTERM, signal_handler);
-	signal(SIGINT, signal_handler);
+	struct sigaction sa;
+	sa.sa_handler = signal_handler;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = 0; /* no SA_RESTART so accept() returns EINTR */
+	sigaction(SIGTERM, &sa, NULL);
+	sigaction(SIGINT, &sa, NULL);
 
 	f = fopen("fakesmtp.pid", "w+");
 	if (f == NULL)
@@ -106,9 +111,11 @@ main(void)
 	for (;;) {
 		char *mail;
 		FILE *fp, *fp2;
+		if (got_signal)
+			break;
 		c = accept(s, (struct sockaddr *) &cl, &clsize);
 		if (c == -1) {
-			if (got_signal)
+			if (got_signal || errno == EINTR)
 				break;
 			err(EXIT_FAILURE, "accept");
 		}
