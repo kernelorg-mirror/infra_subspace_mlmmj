@@ -120,6 +120,9 @@ basics_2_body()
 
 	chmod -w lists/ml
 	atf_check -s exit:0 -e match:"Could not open maintdlog.* Permission denied" $mlmmjmaintd -F -L lists/ml
+
+	# re-enable write to dir for clean up to complete correctly
+	chmod +w lists/ml
 }
 
 basics_3_body()
