@@ -46,7 +46,7 @@ mlmmj_boolean("subonlypost",
 mlmmj_boolean("modonlypost",
 			  "Moderators only post",
 			  "When this file is present, only people listed in listdir/control/moderators ".
-			  "are allowed to post to it. The check is made against the "From:" header.");
+			  "are allowed to post to it. The check is made against the \"From:\" header.");
 
 mlmmj_boolean("modnonsubposts",
 			  "Moderate non-allowed posts",
