@@ -284,7 +284,7 @@ int main(int argc, char **argv)
 	char *randomstr = NULL, *mqueuename, *omitfilename;
 	char *mlmmjsend;
 	char *bindir, *subjectprefix, *discardname;
-	text *txt;
+	text *txt = NULL;
 	char *queuefilename, *recipextra = NULL, *owner = NULL;
 	char *subject = NULL, *posteraddr = NULL;
 	char *envstr;

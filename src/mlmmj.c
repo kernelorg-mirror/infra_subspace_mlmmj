@@ -447,7 +447,6 @@ bouncemail(int listfd, const char *theaddress, const char *identifier)
 	char *address = lowercase(theaddress);
 	int fd, bdfd, bfd;
 	time_t t;
-	struct stat st;
 
 	/* check if it's sub/unsub requests bouncing, and in that case
 	 * simply remove the confirmation file. Variablenames address and
