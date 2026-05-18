@@ -4,6 +4,8 @@
 *.la
 *.lo
 *.Po
+*.Ppico
+*.pico
 *.exe
 .libs
 .deps

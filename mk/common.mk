@@ -33,4 +33,4 @@ clean-files:
 distclean: distclean-files
 
 distclean-files:
-	rm -r $(DISTCLEAN_FILES)
+	rm -f $(DISTCLEAN_FILES)

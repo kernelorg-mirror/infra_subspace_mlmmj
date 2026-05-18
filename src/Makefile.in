@@ -48,7 +48,8 @@ mlmmj-list: mlmmj-list.o libmlmmj.a
 clean: clean-progs
 
 clean-progs:
-	rm -f $(PROGRAMS) $(PROGRAMS:=.o)
+	rm -f $(PROGRAMS) $(PROGRAMS:=.o) $(PROGRAMS:=.Po)
+	rm -f mlmmj-make-ml
 
 install: install-programs
 
