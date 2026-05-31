@@ -1,7 +1,12 @@
 Using sendmail
 =====================
 
-If your Sendmail has smrsh enabled, you need to create a symlink to mlmmj-receive in it's allow list folder, such as `/etc/smrsh/`
+If your Sendmail has smrsh enabled, you need to create a symlink to every mlmmj-* file in it's allow list folder, such as `/etc/smrsh/`
+
+```
+cd /etc/smrsh
+find /usr/local/bin/ -name 'mlmmj*' -exec ln -s {} \;
+```
 
 On Fedora-like systems, smrsh is enabled, and the correct user for owning each `/var/spool/mlmmj/*` folder is `mail`.
 
