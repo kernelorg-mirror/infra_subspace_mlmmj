@@ -10,6 +10,8 @@ find /usr/local/bin/ -name 'mlmmj*' -exec ln -s {} \;
 
 On Fedora-like systems, smrsh is enabled, and the correct user for owning each `/var/spool/mlmmj/*` folder is `mail`.
 
+You also need to set `define(`LOCAL_SHELL_FLAGS', `eu9P')dnl` in `sendmail.mc` (see https://marc.info/?l=mlmmj&m=141357956823908&w=2)
+
 Using sendmail + VERP
 =====================
 
