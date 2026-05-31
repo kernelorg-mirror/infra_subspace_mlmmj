@@ -3,7 +3,7 @@ Using sendmail
 
 If your Sendmail has smrsh enabled, you need to create a symlink to mlmmj-receive in it's allow list folder, such as `/etc/smrsh/`
 
-On Fedora-like systems, smrsh is enabled, and the correct user for owning each `/var/spool/mlmmj/*` folder is/var/spool/mlmmj/font/ `mail`.
+On Fedora-like systems, smrsh is enabled, and the correct user for owning each `/var/spool/mlmmj/*` folder is `mail`.
 
 Using sendmail + VERP
 =====================
