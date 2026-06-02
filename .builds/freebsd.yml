@@ -1,6 +1,5 @@
 image: freebsd/latest
 packages:
-  - kyua
   - atf
   - pkgconf
 sources:
