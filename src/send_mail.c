@@ -40,124 +40,78 @@
 #include "utils.h"
 
 int
-initsmtp(int *sockfd, const char *relayhost, unsigned short port, const char *heloname)
+initsmtp(int *sockfd, const char *relayhost, unsigned short port,
+    const char *heloname)
 {
-	int retval = 0;
-	int try_ehlo = 1;
-	char *reply = NULL;
+	bool try_ehlo = true;
+	char *reply;
 
-	do {
+	for (;;) {
 		init_sockfd(sockfd, relayhost, port);
+		if (*sockfd == -1)
+			return (EBADF);
 
-		if(*sockfd == -1) {
-			retval = EBADF;
-			break;
-		}
-
-		if((reply = checkwait_smtpreply(*sockfd, MLMMJ_CONNECT)) != NULL) {
+		if ((reply = checkwait_smtpreply(*sockfd, MLMMJ_CONNECT)) != NULL) {
 			log_error(LOG_ARGS, "No proper greeting to our connect"
-					"Reply: [%s]", reply);
+			    " Reply: [%s]", reply);
 			free(reply);
-			retval = MLMMJ_CONNECT;
-			/* FIXME: Queue etc. */
-			break;
+			return (MLMMJ_CONNECT);
 		}
 
 		if (try_ehlo) {
 			write_ehlo(*sockfd, heloname);
-			if((reply = checkwait_smtpreply(*sockfd, MLMMJ_EHLO))
-					== NULL) {
-				/* EHLO successful don't try more */
-				break;
-			}
+			reply = checkwait_smtpreply(*sockfd, MLMMJ_EHLO);
+			if (reply == NULL)
+				return (0); /* EHLO accepted */
 
-			/* RFC 1869 - 4.5. - In the case of any error response,
-			 * the client SMTP should issue either the HELO or QUIT
-			 * command.
-			 * RFC 1869 - 4.5. - If the server SMTP recognizes the
-			 * EHLO command, but the command argument is
-			 * unacceptable, it will return code 501.
-			 */
+			/* RFC 1869 §4.5: 501 = command argument unacceptable */
 			if (strncmp(reply, "501", 3) == 0) {
 				free(reply);
-				/* Commmand unacceptable; we choose to QUIT but
-				 * ignore any QUIT errors; return that EHLO was
-				 * the error.
-				 */
 				endsmtp(sockfd);
-				retval = MLMMJ_EHLO;
-				break;
+				return (MLMMJ_EHLO);
 			}
 
-			/* RFC 1869 - 4.6. - A server SMTP that conforms to RFC
-			 * 821 but does not support the extensions specified
-			 * here will not recognize the EHLO command and will
-			 * consequently return code 500, as specified in RFC
-			 * 821.  The server SMTP should stay in the same state
-			 * after returning this code (see section 4.1.1 of RFC
-			 * 821).  The client SMTP may then issue either a HELO
-			 * or a QUIT command.
-			 */
-
+			/* RFC 1869 §4.6: non-5xx = broken server, reconnect */
 			if (reply[0] != '5') {
 				free(reply);
-				/* Server doesn't understand EHLO, but gives a
-				 * broken response. Try with new connection.
-				 */
 				endsmtp(sockfd);
-				try_ehlo = 0;
+				try_ehlo = false;
 				continue;
 			}
 
 			free(reply);
 
-			/* RFC 1869 - 4.7. - Other improperly-implemented
-			 * servers will not accept a HELO command after EHLO has
-			 * been sent and rejected.  In some cases, this problem
-			 * can be worked around by sending a RSET after the
-			 * failure response to EHLO, then sending the HELO.
+			/*
+			 * RFC 1869 §4.7: 5xx after EHLO → RSET then HELO
+			 * on the same connection. Ignore RSET reply.
 			 */
 			write_rset(*sockfd);
 			reply = checkwait_smtpreply(*sockfd, MLMMJ_RSET);
-
-			/* RFC 1869 - 4.7. - Clients that do this should be
-			 * aware that many implementations will return a failure
-			 * code (e.g., 503 Bad sequence of commands) in response
-			 * to the RSET. This code can be safely ignored.
-			 */
 			free(reply);
-
-			/* Try HELO on the same connection
-			 */
 		}
 
 		write_helo(*sockfd, heloname);
-		if((reply = checkwait_smtpreply(*sockfd, MLMMJ_HELO))
-				== NULL) {
-			/* EHLO successful don't try more */
-			break;
-		}
+		reply = checkwait_smtpreply(*sockfd, MLMMJ_HELO);
+		if (reply == NULL)
+			return (0); /* HELO accepted */
+
 		if (try_ehlo) {
-			free(reply);
-			/* We reused a connection we tried EHLO on. Maybe
-			 * that's why it failed. Try with new connection.
+			/*
+			 * EHLO succeeded last iteration but HELO failed on
+			 * retry. Try a fresh connection without EHLO.
 			 */
+			free(reply);
 			endsmtp(sockfd);
-			try_ehlo = 0;
+			try_ehlo = false;
 			continue;
 		}
 
 		log_error(LOG_ARGS, "Error with HELO. Reply: "
-				"[%s]. Check smtphelo configuration.",
-				reply);
+		    "[%s]. Check smtphelo configuration.", reply);
 		free(reply);
 		endsmtp(sockfd);
-		retval = MLMMJ_HELO;
-		break;
-
-	} while (1);
-
-	return retval;
+		return (MLMMJ_HELO);
+	}
 }
 
 int
