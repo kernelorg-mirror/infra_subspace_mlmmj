@@ -224,6 +224,10 @@ ATF_TC_BODY(chomp, tc)
 	char test3[] = "\r\n";
 	char test4[] = "test\r\n";
 	char test5[] = "";
+	char test6[] = "\n\n";
+	char test7[] = "\r\n\r\n";
+	char test8[] = "ab\r\ncd\n";
+
 	ATF_REQUIRE(chomp(NULL) == NULL);
 	char *bla = chomp(test1);
 	ATF_REQUIRE(bla != NULL);
@@ -240,6 +244,15 @@ ATF_TC_BODY(chomp, tc)
 	bla = chomp(test5);
 	ATF_REQUIRE(bla != NULL);
 	ATF_REQUIRE_STREQ(bla, "");
+	bla = chomp(test6);
+	ATF_REQUIRE(bla != NULL);
+	ATF_REQUIRE_STREQ(bla, "");
+	bla = chomp(test7);
+	ATF_REQUIRE(bla != NULL);
+	ATF_REQUIRE_STREQ(bla, "");
+	bla = chomp(test8);
+	ATF_REQUIRE(bla != NULL);
+	ATF_REQUIRE_STREQ(bla, "ab\r\ncd");
 }
 
 ATF_TC_BODY(mydirname, tc)
