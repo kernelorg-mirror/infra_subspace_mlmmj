@@ -167,9 +167,10 @@ do_access(strlist *rules, strlist *headers, const char *from, char **msg, char *
 		}
 	}
 
-	xasprintf(msg, "access -"
-			" A mail from \"%s\" didn't match any rules, and"
-			" was denied by default.", from);
+	if (msg != NULL)
+		xasprintf(msg, "access -"
+				" A mail from \"%s\" didn't match any rules, and"
+				" was denied by default.", from);
 	return ACT_DENY;
 }
 
