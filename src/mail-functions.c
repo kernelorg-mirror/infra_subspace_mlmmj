@@ -123,8 +123,10 @@ write_mailbody(int sockfd, FILE *fp, const char *tohdr)
 			 */
 			fputc('.', out);
 			next = fgetc(fp);
-			ungetc(next, fp);
-			next = '.';
+			if (next != EOF)
+				ungetc(next, fp);
+			fputc('.', out);
+			continue;
 		}
 		if (addhdr && tohdr != NULL && next == '\n') {
 			fprintf(out, "To: %s\r\n", tohdr);
