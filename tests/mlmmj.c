@@ -1786,6 +1786,20 @@ ATF_TC_BODY(process_headers_test, tc)
 	struct stat st;
 	ATF_REQUIRE_EQ(stat("hdr_out4", &st), 0);
 	ATF_REQUIRE_EQ(st.st_size, 0);
+
+	/* Body content after blank line is NOT processed */
+	atf_utils_create_file("hdr_in5",
+	    "X-Custom: header\n\nbody line that must be ignored\n");
+	infd = open("hdr_in5", O_RDONLY);
+	outf = fopen("hdr_out5", "w");
+	ATF_REQUIRE(outf != NULL);
+	ATF_REQUIRE_EQ(process_headers(infd, outf, "sender@test"), 0);
+	close(infd);
+	fclose(outf);
+	if (!atf_utils_compare_file("hdr_out5", "X-Custom: header\n")) {
+		atf_utils_cat_file("hdr_out5", ">");
+		atf_tc_fail("process_headers should stop at blank line");
+	}
 }
 
 ATF_TC_BODY(copy_file, tc)

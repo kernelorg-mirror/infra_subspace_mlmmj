@@ -101,12 +101,12 @@ int process_headers(int infd, FILE *outf, const char *from)
 	}
 
 	while (getline(&line, &linecap, f) > 0) {
-		/* skip empty lines */
+		/* stop at end of headers (empty line) */
 		p = line;
 		while (isspace(*p))
 			p++;
 		if (*p == '\0')
-			continue;
+			break;
 		to_be_subst = strstr(p, "$posteraddr$");
 		if (to_be_subst != NULL) {
 			*to_be_subst = '\0';
