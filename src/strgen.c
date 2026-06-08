@@ -100,7 +100,10 @@ char *hostnamestr(void)
 			return xstrdup("localhost");
 		}
 		
-		if (hostname[len-1] == '\0') {
+		/* Check if the hostname was truncated: gethostname() may
+		 * return 0 even when truncation occurs (POSIX allows it).
+		 * If the string fills the buffer, retry with a larger one. */
+		if (strlen(hostname) < len - 1) {
 			break;
 		}
 	}
