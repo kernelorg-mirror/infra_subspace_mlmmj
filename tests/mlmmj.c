@@ -2116,6 +2116,8 @@ ATF_TC_BODY(memory_lines, tc)
 ATF_TC_BODY(text_0, tc)
 {
 	struct ml ml;
+	char *datestr;
+	char *expected;
 	atf_utils_create_file("intext", "plop\n");
 	int fd = open("intext", O_RDONLY);
 	text *txt = open_text_fd(fd);
@@ -2130,24 +2132,30 @@ ATF_TC_BODY(text_0, tc)
 	close_text(txt);
 	fclose(tof);
 	close(fd);
-	if (!atf_utils_compare_file("totext", "From: me@fqdn.org\n"
+	datestr = gendatestr();
+	xasprintf(&expected, "From: me@fqdn.org\n"
 		"To: to@plop.org\n"
 		"Message-Id: <fake>\n"
-		"Message-Id: <fake>\n"
+		"%s\n"
 		"Subject: mlmmj administrivia\n"
 		"MIME-Version: 1.0\n"
 		"Content-Type: text/plain; charset=utf-8\n"
 		"Content-Transfer-Encoding: 8bit\n"
 		"\n"
-		"plop\n")) {
+		"plop\n", datestr);
+	if (!atf_utils_compare_file("totext", expected)) {
 		atf_utils_cat_file("totext", "");
 		atf_tc_fail("Unexpected output");
 	}
+	free(expected);
+	free(datestr);
 }
 
 ATF_TC_BODY(text_1, tc)
 {
 	struct ml ml;
+	char *datestr;
+	char *expected;
 	atf_utils_create_file("intext",
 	   "Subject: huhu\n"
 	   "plop\n"
@@ -2179,11 +2187,12 @@ ATF_TC_BODY(text_1, tc)
 	close_text(txt);
 	fclose(tof);
 	close(fd);
-	if (!atf_utils_compare_file("totext", "Subject: huhu\n"
+	datestr = gendatestr();
+	xasprintf(&expected, "Subject: huhu\n"
 		"From: me@fqdn.org\n"
 		"To: to@plop.org\n"
 		"Message-Id: <fake>\n"
-		"Message-Id: <fake>\n"
+		"%s\n"
 		"MIME-Version: 1.0\n"
 		"Content-Type: text/plain; charset=utf-8\n"
 		"Content-Transfer-Encoding: 8bit\n"
@@ -2203,10 +2212,13 @@ ATF_TC_BODY(text_1, tc)
 		"test+subscribe@test\n"
 		"test+subscribe-digest@test\n"
 		"test+subscribe-nomail@test\n"
-		)) {
+		, datestr);
+	if (!atf_utils_compare_file("totext", expected)) {
 		atf_utils_cat_file("totext", "");
 		atf_tc_fail("Unexpected output");
 	}
+	free(expected);
+	free(datestr);
 }
 
 ATF_TC_BODY(file_lines, tc)
