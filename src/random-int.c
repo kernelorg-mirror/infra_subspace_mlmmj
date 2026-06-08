@@ -35,16 +35,17 @@ int random_int(void)
 {
 #ifndef HAVE_ARC4RANDOM_UNIFORM
 	int devrandom;
-	uint32_t val;
+	uint32_t val = 0;
 
 	devrandom = open("/dev/urandom", O_RDONLY);
 	if (devrandom < 0)
 		devrandom = open("/dev/random", O_RDONLY);
 
 	if (devrandom >= 0) {
-		readn(devrandom, &val, sizeof(val));
+		ssize_t n = readn(devrandom, &val, sizeof(val));
 		close(devrandom);
-		return (int)(val & 0x7fffffff);
+		if (n == (ssize_t)sizeof(val))
+			return (int)(val & 0x7fffffff);
 	}
 
 	/* Last resort fallback if no random device available */
@@ -54,14 +55,3 @@ int random_int(void)
 	return arc4random_uniform(INT_MAX);
 #endif
 }
-#if 0
-int main(int argc, char **argv)
-{
-	int i;
-	
-	for(i = 0; i < 25; i++)
-		printf("%i\n", random_int());
-	
-	return 0;
-}
-#endif
