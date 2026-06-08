@@ -140,6 +140,8 @@ send_mail_from_file(struct ml *ml, const char *from, const char *to,
 	mail.from = from;
 	mail.to = to;
 	mail.fp = fopen(filename, "r");
+	if (mail.fp == NULL)
+		return;
 	if (send_single_mail(&mail, ml, false))
 		unlink(filename);
 	if (mail.fp)

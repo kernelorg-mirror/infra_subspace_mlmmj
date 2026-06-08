@@ -322,6 +322,8 @@ generate_subconfirm(struct ml *ml, const char *subaddr, enum subtype typesub,
 	mail.to = subaddr;
 	mail.from = fromaddr;
 	mail.fp = fopen(queuefilename, "r");
+	if (mail.fp == NULL)
+		exit(EXIT_FAILURE);
 	if (!send_single_mail(&mail, ml, false))
 		save_queue(queuefilename, &mail);
 	else

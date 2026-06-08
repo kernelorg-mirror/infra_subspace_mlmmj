@@ -41,6 +41,10 @@ send_help_noexit(struct ml *ml, const char *queuefilename, const char *emailaddr
 	mail.to = emailaddr;
 	mail.from = fromaddr;
 	mail.fp = fopen(queuefilename, "r");
+	if (mail.fp == NULL) {
+		free(fromaddr);
+		return;
+	}
 	if (!send_single_mail(&mail, ml, false))
 		save_queue(queuefilename, &mail);
 	else
