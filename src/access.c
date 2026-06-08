@@ -35,6 +35,33 @@ static char *action_strs[] = {
 	"discarded"
 };
 
+struct action_keyword {
+	const char *keyword;
+	actions_t action;
+};
+
+static const struct action_keyword action_keywords[] = {
+	{ "allow",    ACT_ALLOW },
+	{ "send",     ACT_SEND },
+	{ "deny",     ACT_DENY },
+	{ "moderate", ACT_MODERATE },
+	{ "discard",  ACT_DISCARD },
+};
+
+static bool
+parse_action(const char **rule_ptr, actions_t *act)
+{
+	for (size_t i = 0; i < NELEM(action_keywords); i++) {
+		size_t len = strlen(action_keywords[i].keyword);
+		if (strncmp(*rule_ptr, action_keywords[i].keyword, len) == 0) {
+			*rule_ptr += len;
+			*act = action_keywords[i].action;
+			return (true);
+		}
+	}
+	return (false);
+}
+
 actions_t
 do_access(strlist *rules, strlist *headers, const char *from, char **msg, char **qualifier)
 {
@@ -56,22 +83,8 @@ do_access(strlist *rules, strlist *headers, const char *from, char **msg, char *
 
 	vec_foreach(*rules, _i) {
 		rule_ptr = rules->d[_i];
-		if (strncmp(rule_ptr, "allow", 5) == 0) {
-			rule_ptr += 5;
-			act = ACT_ALLOW;
-		} else if (strncmp(rule_ptr, "send", 4) == 0) {
-			rule_ptr += 4;
-			act = ACT_SEND;
-		} else if (strncmp(rule_ptr, "deny", 4) == 0) {
-			rule_ptr += 4;
-			act = ACT_DENY;
-		} else if (strncmp(rule_ptr, "moderate", 8) == 0) {
-			rule_ptr += 8;
-			act = ACT_MODERATE;
-		} else if (strncmp(rule_ptr, "discard", 7) == 0) {
-			rule_ptr += 7;
-			act = ACT_DISCARD;
-		} else {
+		if (!parse_action((const char **)&rule_ptr, &act)) {
+
 			errno = 0;
 			if (msg != NULL)
 				xasprintf(msg, "Unable to parse rule #%zu \"%s\":"
