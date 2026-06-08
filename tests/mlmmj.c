@@ -188,6 +188,7 @@ ATF_TC_WITHOUT_HEAD(autosubscribe_sender);
 ATF_TC_WITHOUT_HEAD(scan_headers_test);
 ATF_TC_WITHOUT_HEAD(substitute_test);
 ATF_TC_WITHOUT_HEAD(voodoo_replyto);
+ATF_TC_WITHOUT_HEAD(voodoo_replyto_once);
 ATF_TC_WITHOUT_HEAD(voodoo_prefix_dedup);
 ATF_TC_WITHOUT_HEAD(voodoo_header_manipulation);
 ATF_TC_WITHOUT_HEAD(voodoo_double_call);
@@ -4159,6 +4160,64 @@ ATF_TC_BODY(voodoo_replyto, tc)
 	vec_free_and_free(&delhdrs, free);
 }
 
+ATF_TC_BODY(voodoo_replyto_once, tc)
+{
+	strlist allheaders = vec_init();
+	strlist delhdrs = vec_init();
+	struct mailhdr readhdrs[] = {
+		{ "From:", 0, NULL },
+		{ "To:", 0, NULL },
+		{ "Subject:", 0, NULL },
+		{ NULL, 0, NULL }
+	};
+	int infd, outfd;
+
+	/* Multiple From: headers should only generate one Reply-To */
+	atf_utils_create_file("replyto_once_in.txt",
+	    "From: alice@example.org\n"
+	    "From: bob@example.org\n"
+	    "To: list@example.org\n"
+	    "Subject: Hello\n"
+	    "\n"
+	    "Body.\n");
+
+	infd = open("replyto_once_in.txt", O_RDONLY);
+	ATF_REQUIRE(infd >= 0);
+	outfd = open("replyto_once_out.txt", O_RDWR|O_CREAT|O_TRUNC, 0600);
+	ATF_REQUIRE(outfd >= 0);
+
+	ATF_REQUIRE_EQ(do_all_the_voodoo_here(infd, outfd, -1, -1,
+	    &delhdrs, readhdrs, &allheaders, NULL, 1, NULL), 0);
+	close(infd);
+	close(outfd);
+
+	/* Should have exactly one Reply-To header */
+	if (!atf_utils_grep_file("Reply-To:.*alice@example.org", "replyto_once_out.txt")) {
+		atf_utils_cat_file("replyto_once_out.txt", ">");
+		atf_tc_fail("Reply-To for alice not found");
+	}
+	/* Verify only one Reply-To line exists */
+	int count = 0;
+	FILE *f = fopen("replyto_once_out.txt", "r");
+	if (f != NULL) {
+		char *buf = NULL;
+		size_t bufcap = 0;
+		while (getline(&buf, &bufcap, f) > 0) {
+			if (strncasecmp(buf, "Reply-To:", 9) == 0)
+				count++;
+		}
+		free(buf);
+		fclose(f);
+	}
+	if (count != 1) {
+		atf_utils_cat_file("replyto_once_out.txt", ">");
+		atf_tc_fail("Expected 1 Reply-To header, got %d", count);
+	}
+
+	vec_free_and_free(&allheaders, free);
+	vec_free_and_free(&delhdrs, free);
+}
+
 ATF_TC_BODY(voodoo_prefix_dedup, tc)
 {
 	strlist allheaders = vec_init();
@@ -5271,6 +5330,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, scan_headers_test);
 	ATF_TP_ADD_TC(tp, substitute_test);
 	ATF_TP_ADD_TC(tp, voodoo_replyto);
+	ATF_TP_ADD_TC(tp, voodoo_replyto_once);
 	ATF_TP_ADD_TC(tp, voodoo_prefix_dedup);
 	ATF_TP_ADD_TC(tp, voodoo_header_manipulation);
 	ATF_TP_ADD_TC(tp, voodoo_double_call);
