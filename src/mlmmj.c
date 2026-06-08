@@ -107,6 +107,14 @@ send_probe(struct ml *ml, const char *addr)
 	mail.from = from;
 	mail.fp = fopen(queuefilename, "r");
 	free(queuefilename);
+	if (mail.fp == NULL) {
+		unlinkat(bfd, probefile, 0);
+		close(bfd);
+		free(probefile);
+		free(myaddr);
+		free(from);
+		return (false);
+	}
 	if (!send_single_mail(&mail, ml, false)) {
 		unlinkat(bfd, probefile, 0);
 		if (mail.fp)

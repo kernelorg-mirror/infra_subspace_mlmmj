@@ -42,12 +42,12 @@ static int syslog_logopt = LOG_PID|LOG_CONS;
 static void
 _openlog(bool reopen)
 {
-	if (!reopen) {
+	if (reopen) {
+		if (syslog_is_open)
+			closelog();
+	} else {
 		if (syslog_is_open)
 			return;
-	} else {
-		if (!syslog_is_open)
-			closelog();
 	}
 	openlog(log_name, syslog_logopt, LOG_MAIL);
 	syslog_is_open = true;
@@ -117,7 +117,7 @@ void log_error(const char *file, int line, const char *errstr,
 	if (i < 0 || buf == NULL)
 		abort();
 
-	if (!log_name) log_name = "mlmmj-UNKNOWN";
+	if (!log_name) log_name = xstrdup("mlmmj-UNKNOWN");
 
 	_openlog(true);
 	syslog(LOG_ERR, "%s:%d: %s: %s", file, line, buf, errstr);
