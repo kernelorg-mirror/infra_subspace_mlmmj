@@ -110,6 +110,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 	char *posteraddr = NULL;
 	bool hdrsadded = false;
 	bool subject_present = false;
+	bool replyto_written = false;
 	int dupfd = dup(infd);
 	FILE *f = dupfd != -1 ? fdopen(dupfd, "r") : NULL;
 	int outdupfd;
@@ -193,9 +194,10 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 			fprintf(outf, "%s", unfolded);
 
 		/* Should Reply-To be added? */
-		if(replyto) {
+		if(replyto && !replyto_written) {
 			if(strncasecmp(hdrline, "From:", 5) == 0) {
 				fprintf(outf, "Reply-To:%s\n", hdrline + 5);
+				replyto_written = true;
 			}
 		}
 		free(unfolded);
