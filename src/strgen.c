@@ -159,7 +159,7 @@ char *genmsgid(const char *fqdn)
 char *gendatestr(void)
 {
 	time_t t;
-	locale_t l = newlocale(LC_TIME_MASK, "C", NULL);
+	locale_t l;
 	struct tm lttm;
 	char *timestr;
 
@@ -169,8 +169,13 @@ char *gendatestr(void)
 
 	localtime_r(&t, &lttm);
 
-	strftime_l(timestr, 40, "Date: %a, %d %b %Y %T %z", &lttm, l);
-	freelocale(l);
+	l = newlocale(LC_TIME_MASK, "C", NULL);
+	if (l != (locale_t)0) {
+		strftime_l(timestr, 40, "Date: %a, %d %b %Y %T %z", &lttm, l);
+		freelocale(l);
+	} else {
+		strftime(timestr, 40, "Date: %a, %d %b %Y %T %z", &lttm);
+	}
 
 	return timestr;
 }
