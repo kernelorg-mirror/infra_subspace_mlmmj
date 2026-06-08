@@ -261,75 +261,67 @@ int send_digest(struct ml *ml, int firstindex, int lastindex,
 	boundary = random_str();
 
 	txt = open_text_file(ml->fd, "digest");
-	if (txt == NULL) {
-		log_error(LOG_ARGS, "Could not open listtext 'digest'");
-		goto fallback_subject;
-	}
-	register_default_unformatted(txt, ml);
+	if (txt != NULL) {
+		register_default_unformatted(txt, ml);
 
-	snprintf(buf, sizeof(buf), "%d", firstindex);
-	register_unformatted(txt, "digestfirst", buf);
-
-	snprintf(buf, sizeof(buf), "%d", lastindex);
-	register_unformatted(txt, "digestlast", buf);
-
-	if (lastindex == firstindex) {
 		snprintf(buf, sizeof(buf), "%d", firstindex);
-	} else {
-		snprintf(buf, sizeof(buf), "%d-%d", firstindex, lastindex);
-	}
-	register_unformatted(txt, "digestinterval", buf);
+		register_unformatted(txt, "digestfirst", buf);
 
-	snprintf(buf, sizeof(buf), "%d", issue);
-	register_unformatted(txt, "digestissue", buf);
+		snprintf(buf, sizeof(buf), "%d", lastindex);
+		register_unformatted(txt, "digestlast", buf);
 
-	tls = init_thread_list(ml->dir, ml->fd, ml->ctrlfd,
-	    firstindex, lastindex);
-	register_formatted(txt, "digestthreads", rewind_thread_list,
-			get_thread_list_line, tls);
-
-	line = get_processed_text_line(txt, true, ml);
-
-	if (line == NULL) {
-		log_error(LOG_ARGS, "No content in digest listtext");
-		goto fallback_subject;
-	}
-
-	tmp = line;
-	len = 0;
-	while (*tmp && *tmp != ':') {
-		tmp++;
-		len++;
-	}
-	if (!*tmp) {
-		log_error(LOG_ARGS, "No subject or invalid "
-				"subject in digest listtext");
-		goto fallback_subject;
-	}
-	tmp++;
-	len++;
-	if (strncasecmp(line, "Subject:", len) == 0) {
-		tmp = unistr_utf8_to_header(tmp);
-		xasprintf(&subject, "Subject: %s", tmp);
-		free(tmp);
-
-		/* Skip the empty line after the subject */
-		line = get_processed_text_line(txt, true, ml);
-		if (line == NULL || *line != '\0') {
-			log_error(LOG_ARGS, "Too many headers "
-					"in digest listtext");
-			goto fallback_subject;
+		if (lastindex == firstindex) {
+			snprintf(buf, sizeof(buf), "%d", firstindex);
+		} else {
+			snprintf(buf, sizeof(buf), "%d-%d",
+			    firstindex, lastindex);
 		}
+		register_unformatted(txt, "digestinterval", buf);
 
-		free(line);
-		line = NULL;
-	} else {
-		log_error(LOG_ARGS, "No subject or invalid "
-				"subject in digest listtext");
-		goto fallback_subject;
-	}
+		snprintf(buf, sizeof(buf), "%d", issue);
+		register_unformatted(txt, "digestissue", buf);
 
-fallback_subject:
+		tls = init_thread_list(ml->dir, ml->fd, ml->ctrlfd,
+		    firstindex, lastindex);
+		register_formatted(txt, "digestthreads",
+		    rewind_thread_list, get_thread_list_line, tls);
+
+		line = get_processed_text_line(txt, true, ml);
+		if (line != NULL) {
+			tmp = line;
+			len = 0;
+			while (*tmp && *tmp != ':') {
+				tmp++;
+				len++;
+			}
+			if (*tmp) {
+				tmp++;
+				len++;
+				if (strncasecmp(line, "Subject:", len) == 0) {
+					tmp = unistr_utf8_to_header(tmp);
+					xasprintf(&subject, "Subject: %s",
+					    tmp);
+					free(tmp);
+
+					free(line);
+					line = get_processed_text_line(txt,
+					    true, ml);
+					if (line != NULL && *line == '\0') {
+						free(line);
+						line = NULL;
+					}
+				}
+			}
+		}
+		if (line != NULL) {
+			log_error(LOG_ARGS, "Too many headers "
+			    "in digest listtext");
+			free(line);
+			line = NULL;
+		}
+	} else
+		log_error(LOG_ARGS, "Could not open listtext 'digest'");
+
 	if (subject == NULL) {
 		if (lastindex == firstindex) {
 			snprintf(buf, sizeof(buf), "%d", firstindex);
