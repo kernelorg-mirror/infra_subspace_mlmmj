@@ -1642,10 +1642,7 @@ prepstdreply_to(text *txt, struct ml *ml, const char *from, const char *to,
 	else
 		headers[2] = genmsgid(ml->fqdn);
 	chomp(headers[2]);
-	if (msgid)
-		headers[3] = xstrdup(msgid);
-	else
-		headers[3] = gendatestr();
+	headers[3] = gendatestr();
 	chomp(headers[3]);
 	headers[4] = xstrdup("Subject: mlmmj administrivia");
 	headers[5] = xstrdup("MIME-Version: 1.0");
@@ -1751,6 +1748,8 @@ prepstdreply_to(text *txt, struct ml *ml, const char *from, const char *to,
 	ret = true;
 
 freeandreturn:
+	for (i = 0; i < 10; i++)
+		free(headers[i]);
 
 	return ret;
 }
