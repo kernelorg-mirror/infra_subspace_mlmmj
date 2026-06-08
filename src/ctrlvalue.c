@@ -63,7 +63,11 @@ char *
 textcontent(int listfd, const char *ctrlstr)
 {
 	int fd = openat(listfd, "text", O_DIRECTORY|O_CLOEXEC);
-	char *ret = ctrlval(fd, ctrlstr, false);
+	char *ret;
+
+	if (fd == -1)
+		return (NULL);
+	ret = ctrlval(fd, ctrlstr, false);
 	close(fd);
 	return (ret);
 }
