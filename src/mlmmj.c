@@ -408,6 +408,8 @@ unsubscribe(int listfd, const char *address, enum subtype typesub)
 			posend++;
 		if (pos == start && posend == end) {
 			unlinkat(fd, dp->d_name, 0);
+			munmap(start, st.st_size);
+			close(rfd);
 			continue;
 		}
 
