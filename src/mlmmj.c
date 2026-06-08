@@ -458,45 +458,29 @@ bouncemail(int listfd, const char *theaddress, const char *identifier)
 	int fd, bdfd, bfd;
 	time_t t;
 
-	/* check if it's sub/unsub requests bouncing, and in that case
-	 * simply remove the confirmation file. Variablenames address and
-	 * number are a bit misleading in this case due to the different
-	 * construction of the sub/unsub confirmation From header.
-	 */
-	if (strcmp(identifier, "confsub") == 0) {
-		fd = openat(listfd, "subconf", O_DIRECTORY);
-		if (fd == -1) {
-			free(address);
-			return (BOUNCE_OK);
+	/* If it's a sub/unsub confirmation bounce, remove the file */
+	if (strcmp(identifier, "confsub") == 0 ||
+	    strcmp(identifier, "confunsub") == 0) {
+		const char *dir = (identifier[4] == 's') ? "subconf" : "unsubconf";
+		fd = openat(listfd, dir, O_DIRECTORY);
+		if (fd != -1) {
+			unlinkat(fd, address, 0);
+			close(fd);
 		}
-		unlinkat(fd, address, 0);
-		close(fd);
 		free(address);
 		return (BOUNCE_OK);
 	}
 
-	if (strcmp(identifier, "confunsub") == 0) {
-		fd = openat(listfd, "unsubconf", O_DIRECTORY);
-		if (fd == -1) {
-			free(address);
-			return (BOUNCE_OK);
-		}
-		unlinkat(fd, address, 0);
-		close(fd);
-		free(address);
-		return (BOUNCE_OK);
-	}
-	/* Below checks for bounce probes bouncing. If they do, simply remove
-	 * the probe file and exit successfully. Yes, I know the variables
-	 * have horrible names, but please bear with me.
-	 */
+	/* Open bounce directory for remaining bounce types */
 	bdfd = openat(listfd, "bounce", O_DIRECTORY|O_CLOEXEC);
 	if (bdfd == -1) {
 		log_error(LOG_ARGS, "No bounce directory");
 		free(address);
 		return (BOUNCE_FAIL);
 	}
-	if(strcmp(identifier, "probe") == 0) {
+
+	/* Probe bouncing: simply remove the probe file */
+	if (strcmp(identifier, "probe") == 0) {
 		char *a;
 		xasprintf(&a, "%s-probe", address);
 		unlinkat(bdfd, a, 0);
