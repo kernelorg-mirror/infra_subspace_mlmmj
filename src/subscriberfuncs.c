@@ -104,14 +104,14 @@ find_subscriber(int fd, const char *address)
 }
 
 int
-is_subbed_in(int dirfd, const char *subdirname, const char *address)
+is_subbed_in(int subddir_fd, const char *subdirname, const char *address)
 {
 	int subread;
 	DIR *subddir;
 	struct dirent *dp;
 	bool ret = false;
 
-	if((subddir = fdopendir(dirfd)) == NULL) {
+	if((subddir = fdopendir(subddir_fd)) == NULL) {
 		log_error(LOG_ARGS, "Could not opendir(%s)", subdirname);
 		exit(EXIT_FAILURE);
 	}
@@ -122,7 +122,7 @@ is_subbed_in(int dirfd, const char *subdirname, const char *address)
 		if(!strcmp(dp->d_name, ".."))
 			continue;
 
-		subread = openat(dirfd, dp->d_name, O_RDONLY);
+		subread = openat(dirfd(subddir), dp->d_name, O_RDONLY);
 		if(subread < 0) {
 			log_error(LOG_ARGS, "Could not open %s/%s",
 			  subdirname, dp->d_name);

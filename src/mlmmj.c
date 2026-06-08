@@ -322,7 +322,7 @@ unsubscribe(int listfd, const char *address, enum subtype typesub)
 		return (false);
 	}
 
-	if (fstat(fd, &st) == 0) {
+	if (fstat(dirfd(dir), &st) == 0) {
 		if (st.st_mode & S_IWGRP) {
 			groupwritable = S_IRGRP|S_IWGRP;
 			umask(S_IWOTH);
@@ -339,7 +339,7 @@ unsubscribe(int listfd, const char *address, enum subtype typesub)
 		    strcmp(dp->d_name, "..") == 0)
 			continue;
 
-		rfd = openat(fd, dp->d_name, O_RDONLY, 0644);
+		rfd = openat(dirfd(dir), dp->d_name, O_RDONLY, 0644);
 		if (rfd == -1)
 			continue;
 		if (!lock(rfd, false))
@@ -407,14 +407,14 @@ unsubscribe(int listfd, const char *address, enum subtype typesub)
 		while (posend < end && *posend == '\n')
 			posend++;
 		if (pos == start && posend == end) {
-			unlinkat(fd, dp->d_name, 0);
+			unlinkat(dirfd(dir), dp->d_name, 0);
 			munmap(start, st.st_size);
 			close(rfd);
 			continue;
 		}
 
 		xasprintf(&wrname, "%s.new", dp->d_name);
-		wfd = openat(fd, wrname, O_RDWR|O_CREAT|O_TRUNC,
+		wfd = openat(dirfd(dir), wrname, O_RDWR|O_CREAT|O_TRUNC,
 		    S_IRUSR|S_IWUSR|groupwritable);
 		if (wfd == -1 || !lock(wfd, true)) {
 			log_err("Could not open '%s/%s': %s", subdir, wrname,
@@ -428,7 +428,7 @@ unsubscribe(int listfd, const char *address, enum subtype typesub)
 
 		dprintf(wfd, "%.*s", (int)(pos - start), start);
 		dprintf(wfd, "%.*s", (int) (end - posend), posend);
-		if (renameat(fd, wrname, fd, dp->d_name) == -1) {
+		if (renameat(dirfd(dir), wrname, dirfd(dir), dp->d_name) == -1) {
 			log_err("Could not rename '%s', to '%s'",
 			    wrname, dp->d_name);
 			ret = false;
