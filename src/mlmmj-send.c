@@ -201,50 +201,68 @@ int send_mail_many_fd(int sockfd, struct mail *mail, struct ml *ml, int subfd,
 	return 0;
 }
 
-int send_mail_many_list(int sockfd, struct mail *mail, struct ml *ml, strlist *addrs,
-    const char *archivefilename)
+int
+send_mail_many_list(int sockfd, struct mail *mail, struct ml *ml,
+    strlist *addrs, const char *archivefilename)
 {
-	int res = 0, status;
-	int index = archivefilename ? get_index_from_filename(archivefilename) : -1;
+	int res = 0, status = 0;
+	int index = archivefilename ?
+	    get_index_from_filename(archivefilename) : -1;
 	char *bounceaddr, *addr;
 
-	while (addrs->len > 0) {
-		addr = vec_pop_front(addrs);
+	for (size_t i = 0; i < addrs->len; i++) {
+		addr = addrs->d[i];
 		bounceaddr = NULL;
-		if(strchr(addr, '@') == NULL) {
+		if (strchr(addr, '@') == NULL) {
 			errno = 0;
 			log_error(LOG_ARGS, "No @ in address, ignoring %s",
-					addr);
+			    addr);
 			free(addr);
 			continue;
 		}
-		if(gotsigterm && archivefilename) {
+		if (gotsigterm && archivefilename) {
 			/* we got SIGTERM, so save the addresses and bail */
 			log_error(LOG_ARGS, "TERM signal received, "
-						"shutting down.");
-			status = requeuemail(ml->fd, index, addrs, addr);
+			    "shutting down.");
+			strlist remaining = { .d = &addrs->d[i + 1],
+			    .len = addrs->len - i - 1 };
+			status = requeuemail(ml->fd, index, &remaining, addr);
+			for (size_t j = i + 1; j < addrs->len; j++)
+				free(addrs->d[j]);
 			free(addr);
-			return status;
+			goto out;
 		}
 		if (mail->from == NULL) {
 			bounceaddr = get_bounce_from_adr(addr, ml, index);
 			mail->from = bounceaddr;
 		}
 		mail->to = addr;
-		res = send_mail(sockfd, mail, ml->fd, ml->ctrlfd, bounceaddr != NULL);
+		res = send_mail(sockfd, mail, ml->fd, ml->ctrlfd,
+		    bounceaddr != NULL);
 		if (bounceaddr != NULL) {
 			free(bounceaddr);
 			mail->from = NULL;
 		}
-		if(res && archivefilename) {
+		if (res && archivefilename) {
 			/* we failed, so save the addresses and bail */
-			status = requeuemail(ml->fd, index, addrs, addr);
+			strlist remaining = { .d = &addrs->d[i + 1],
+			    .len = addrs->len - i - 1 };
+			status = requeuemail(ml->fd, index, &remaining, addr);
+			for (size_t j = i + 1; j < addrs->len; j++)
+				free(addrs->d[j]);
 			free(addr);
-			return status;
+			goto out;
 		}
 		free(addr);
 	}
-	return 0;
+out:
+	/*
+	 * The caller will call vec_free_and_free on this strlist.
+	 * Since we already freed each address as we went, reset the
+	 * length to prevent double-free.
+	 */
+	addrs->len = 0;
+	return (status);
 }
 
 static void print_help(const char *prg)
