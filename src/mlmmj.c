@@ -735,8 +735,8 @@ save_hdr_if_needed(const char *line, struct mailhdr *readhdrs)
 void
 free_mailhdrs(struct mailhdr *hdrs)
 {
-	for (int i = 0; hdrs[i].token != NULL; i++) {
-		for (int j = 0; j < hdrs[i].valuecount; j++)
+	for (size_t i = 0; hdrs[i].token != NULL; i++) {
+		for (size_t j = 0; j < hdrs[i].valuecount; j++)
 			free(hdrs[i].values[j]);
 		free(hdrs[i].values);
 		hdrs[i].values = NULL;

@@ -96,7 +96,7 @@ typedef enum bounce {
 
 struct mailhdr {
 	const char *token;
-	int valuecount;
+	size_t valuecount;
 	char **values;
 };
 

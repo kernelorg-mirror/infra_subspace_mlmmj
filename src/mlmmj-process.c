@@ -275,7 +275,8 @@ static void print_help(const char *prg)
 
 int main(int argc, char **argv)
 {
-	int i, opt, moderated = 0, send = 0;
+	size_t i;
+	int opt, moderated = 0, send = 0;
 	enum modreason modreason;
 	int hdrfd, footfd, rawmailfd, donemailfd, omitfd;
 	bool addr_in_to_or_cc, notmetoo, replyto;
