@@ -64,7 +64,7 @@
 #include "archive.h"
 
 static size_t maxverprecips = MAXVERPRECIPS;
-static int gotsigterm = 0;
+static volatile sig_atomic_t gotsigterm = 0;
 
 void catch_sig_term(int sig MLMMJ_UNUSED)
 {
