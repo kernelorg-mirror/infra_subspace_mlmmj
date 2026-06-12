@@ -34,7 +34,6 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <errno.h>
-#include <string.h>
 #include <sys/types.h>
 #include <err.h>
 
@@ -51,7 +50,6 @@
 #include "log_error.h"
 #include "wrappers.h"
 #include "xmalloc.h"
-#include "utils.h"
 
 #define UNWANTED_MIME_HDR "X-ThisMailContainsUnwantedMimeParts: N\n"
 
