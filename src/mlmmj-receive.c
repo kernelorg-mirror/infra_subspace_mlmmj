@@ -394,9 +394,6 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-#if 0
-	log_oper(listdir, OPLOGFNAME, "mlmmj-receive got %s", infilename);
-#endif
 	fsync(fd);
 	close(fd);
 
