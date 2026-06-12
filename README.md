@@ -136,10 +136,15 @@ That's it! You probably want to go through the next steps too.
     X-Mailinglist: mlmmj-test
     Reply-To: mlmmj-test@domain.tld
 
-    The special variable $posteraddr$ is available in customheaders and
-    expands to the email address of the original sender (extracted from the
-    From: header).  This is useful for adding a Reply-To pointing back to
-    the original author, or for DKIM-friendly From: rewriting.
+    Two special variables are available in customheaders:
+
+    $posteraddr$ — expands to the email address of the original sender
+        (extracted from the From: header).  Example: "me@here.com"
+
+    $disarmedfrom$ — expands to the full From: value with special
+        characters replaced for safe use in a display name:
+        '<' → '(',  '>' → ')',  '@' → '='.
+        Example: "Martin (me=here.com)"
 
     DKIM / From: munging recipe
     ---------------------------
@@ -153,7 +158,7 @@ That's it! You probably want to go through the next steps too.
     No code changes needed, just three control files:
 
     control/customheaders:
-        From: "$posteraddr$ via MyList" <mylist@lists.example.com>
+        From: $disarmedfrom$ via MyList <mylist@lists.example.com>
         Reply-To: $posteraddr$
 
     control/delheaders:
@@ -166,9 +171,8 @@ That's it! You probably want to go through the next steps too.
     The resulting From: uses your list domain → MTA signs it → DKIM passes.
     Replies still go to the original sender thanks to Reply-To:.
 
-    If you also want to preserve the original sender's display name, you
-    can use a tool before mlmmj (e.g. a Postfix milter or
-    sender_canonical_maps) to do the rewriting at the MTA level instead.
+    Use $posteraddr$ instead of $disarmedfrom$ in the From: line if you
+    prefer to show only the email address (e.g. for privacy reasons).
 
  7) If you want every mail to have something like:
 

@@ -84,7 +84,8 @@ int dumpfd2fd(int from, int to)
 	return (r);
 }
 
-int process_headers(int infd, FILE *outf, const char *from)
+int process_headers(int infd, FILE *outf, const char *from,
+    const char *disarmedfrom)
 {
 	char *line = NULL, *p, *to_be_subst, *new_line;
 	size_t linecap = 0;
@@ -112,6 +113,20 @@ int process_headers(int infd, FILE *outf, const char *from)
 			*to_be_subst = '\0';
 			to_be_subst += 12;
 			xasprintf(&new_line, "%s%s%s", p, from, to_be_subst);
+			if (fprintf(outf, "%s", new_line) < 0) {
+				log_error(LOG_ARGS, "Could not write headers");
+				free(new_line);
+				free(line);
+				fclose(f);
+				return -1;
+			}
+			free(new_line);
+		} else if (disarmedfrom != NULL &&
+		    (to_be_subst = strstr(p, "$disarmedfrom$")) != NULL) {
+			*to_be_subst = '\0';
+			to_be_subst += 14;
+			xasprintf(&new_line, "%s%s%s", p, disarmedfrom,
+			    to_be_subst);
 			if (fprintf(outf, "%s", new_line) < 0) {
 				log_error(LOG_ARGS, "Could not write headers");
 				free(new_line);
