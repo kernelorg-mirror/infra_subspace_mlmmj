@@ -223,11 +223,6 @@ int listcontrol(strlist *fromemails, strlist *rtoemails, struct ml *ml,
 
 	lc.subconfirm = !statctrl(ml->ctrlfd, "nosubconfirm");
 
-#if 0
-	log_error(LOG_ARGS, "controlstr = [%s]\n", controlstr);
-	log_error(LOG_ARGS, "fromemails[0] = [%s]\n",
-			fromemails->d[0]);
-#endif
 	cc = get_ctrl_command(controlstr, &param);
 	if (cc == NULL)
 		return (-1);

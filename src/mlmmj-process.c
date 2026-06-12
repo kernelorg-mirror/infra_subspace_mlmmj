@@ -161,11 +161,6 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 	const char *efromismod = NULL;
 	const char *mailbasename = mybasename(mailfilename);
 	int notifymod = 0;
-#if 0
-	printf("mailfilename = [%s], mailbasename = [%s]\n", mailfilename,
-			                                     mailbasename);
-#endif
-
 	if (statctrl(ml->ctrlfd, "ifmodsendonlymodmoderate"))
 		efromismod = efromsender;
 
@@ -372,9 +367,6 @@ int main(int argc, char **argv)
 		free(donemailname);
 		exit(EXIT_FAILURE);
 	}
-#if 0
-	log_error(LOG_ARGS, "donemailname = [%s]\n", donemailname);
-#endif
 	if ((rawmailfd = open(mailfile, O_RDONLY)) < 0) {
 		unlink(donemailname);
 		free(donemailname);

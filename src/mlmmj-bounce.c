@@ -151,10 +151,6 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-#if 0
-	log_error(LOG_ARGS, "listdir = [%s] address = [%s] number = [%s]", listdir, address, number);
-#endif
-
 	bret = bouncemail(ml.fd, thisaddr, number);
 	if (bret == BOUNCE_DONE && mailname != NULL)
 		save_lastbouncedmsg(ml.fd, thisaddr, mailname);
