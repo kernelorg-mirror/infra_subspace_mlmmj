@@ -112,7 +112,7 @@ enum subtype {
 	SUB_NONE /* For when an address is not subscribed at all */
 };
 
-extern char *subtype_strs[7]; /* count matches enum above; defined in subscriberfuncs.c */
+extern const char * const subtype_strs[]; /* count matches enum above; defined in subscriberfuncs.c */
 
 enum subreason {
 	SUB_REQUEST = 0,
@@ -123,7 +123,7 @@ enum subreason {
 	SUB_SWITCH
 };
 
-extern char * subreason_strs[6]; /* count matches enum above; defined in subscriberfuncs.c */
+extern const char * const subreason_strs[]; /* count matches enum above; defined in subscriberfuncs.c */
 
 void print_version(const char *prg);
 bool parse_lastdigest(char *line, long *lastindex, time_t *lasttime,

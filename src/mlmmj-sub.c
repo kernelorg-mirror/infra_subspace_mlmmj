@@ -48,7 +48,7 @@
 #include "send_help.h"
 #include "xstring.h"
 
-extern char *subtypes[];
+extern const char * const subtypes[];
 
 static void print_help(const char *prg)
 {

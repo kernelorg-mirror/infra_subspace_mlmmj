@@ -64,7 +64,7 @@ enum modreason {
 };
 
 
-static char *modreason_strs[] = {
+static const char * const modreason_strs[] = {
 	"modnonsubposts",
 	"modnonmodposts",
 	"access",

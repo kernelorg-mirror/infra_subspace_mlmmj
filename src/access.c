@@ -27,7 +27,7 @@
 #include "mlmmj.h" 
 #include "xmalloc.h"
 
-static char *action_strs[] = {
+static const char * const action_strs[] = {
 	"allowed",
 	"sent",
 	"denied",

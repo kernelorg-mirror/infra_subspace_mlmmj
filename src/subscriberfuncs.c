@@ -48,7 +48,7 @@
 #include "find_email_adr.h"
 #include "do_all_the_voodoo_here.h"
 
-char *subtype_strs[] = {
+const char * const subtype_strs[] = {
 	"normal",
 	"digest",
 	"nomail",
@@ -58,7 +58,7 @@ char *subtype_strs[] = {
 	"none"
 };
 
-char * subreason_strs[] = {
+const char * const subreason_strs[] = {
 	"request",
 	"confirm",
 	"permit",
@@ -67,7 +67,7 @@ char * subreason_strs[] = {
 	"switch"
 };
 
-char *subtypes[] = {
+const char * const subtypes[] = {
 	"SUB_NORMAL",
 	"SUB_DIGEST",
 	"SUB_NOMAIL",
