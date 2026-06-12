@@ -2,7 +2,7 @@
 #
 
 _packagename=mlmmj
-_version=2.0.1
+_version=2.1.0
 define PACKAGE_NAME $_packagename
 define VERSION $_version
 define PACKAGE_STRING "$_packagename $_version"

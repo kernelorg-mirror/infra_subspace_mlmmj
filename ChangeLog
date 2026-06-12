@@ -1,3 +1,18 @@
+2.1.0
+ o New $disarmedfrom$ variable for control/customheaders. Expands to
+   the original From: header value with '<', '>', '@' replaced by
+   '(', ')', '=' for safe use in display names ("me@here.com" ->
+   "me=here.com"). Complements $posteraddr$ (raw email address).
+ o mlmmj-sub: batch subscribe via stdin with -a -. Reads one address
+   per line, skips empty lines and '#' comments.
+ o MIME type detection and rejection in mlmmj-receive. Prevent
+   multipart/alternative or multipart/mixed messages from being posted
+   to the list (control/mimedeny).
+ o Fix: fdopendir UB by using dirfd() instead of raw fd
+ o Various code simplifications (send_digest, bouncemail, do_access, initsmtp)
+ o Many new unit tests and test fixes
+ o README: document DKIM/From munging with $posteraddr$ and $disarmedfrom$
+ o README.sendmail.md: update documentation
 2.0.1
  o configure: fix --mandir
  o configure: fix toolchain override
