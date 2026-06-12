@@ -136,6 +136,40 @@ That's it! You probably want to go through the next steps too.
     X-Mailinglist: mlmmj-test
     Reply-To: mlmmj-test@domain.tld
 
+    The special variable $posteraddr$ is available in customheaders and
+    expands to the email address of the original sender (extracted from the
+    From: header).  This is useful for adding a Reply-To pointing back to
+    the original author, or for DKIM-friendly From: rewriting.
+
+    DKIM / From: munging recipe
+    ---------------------------
+
+    Some mail servers reject unsigned messages.  If your MTA only DKIM-signs
+    mail with a From: domain it owns, list messages (which preserve the
+    original sender's external domain) will go out unsigned.
+
+    You can rewrite the From: header to use the list's domain — so your MTA
+    will sign it — while keeping a Reply-To: back to the original author.
+    No code changes needed, just three control files:
+
+    control/customheaders:
+        From: "$posteraddr$ via MyList" <mylist@lists.example.com>
+        Reply-To: $posteraddr$
+
+    control/delheaders:
+        From:
+        Reply-To:
+
+    control/replyto:          (empty file — just touch it)
+
+    This strips the original From: and Reply-To:, then injects new ones.
+    The resulting From: uses your list domain → MTA signs it → DKIM passes.
+    Replies still go to the original sender thanks to Reply-To:.
+
+    If you also want to preserve the original sender's display name, you
+    can use a tool before mlmmj (e.g. a Postfix milter or
+    sender_canonical_maps) to do the rewriting at the MTA level instead.
+
  7) If you want every mail to have something like:
 
         To unsubscribe send a mail to coollist+unsubscribe@lists.domain.net
