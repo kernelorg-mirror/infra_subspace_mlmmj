@@ -57,7 +57,7 @@
 #include "wrappers.h"
 #include "statctrl.h"
 #include "ctrlvalue.h"
-#include "stdbool.h"
+#include <stdbool.h>
 #include "getaddrsfromfile.h"
 #include "utils.h"
 #include "send_mail.h"
