@@ -54,7 +54,7 @@ static void print_help(const char *prg)
 {
 	printf("Usage: %s -L /path/to/list {-a john@doe.org | -m str}\n"
 	       "       [-c] [-C] [-f] [-h] [-L] [-d | -n] [-q] [-r | -R] [-s] [-U] [-V]\n"
-	       " -a: Email address to subscribe \n"
+	       " -a: Email address to subscribe (use - for stdin)\n"
 	       " -c: Send welcome mail (unless requesting confirmation)\n"
 	       " -C: Request mail confirmation (unless switching versions)\n"
 	       " -d: Subscribe to digest of list\n"
@@ -69,6 +69,7 @@ static void print_help(const char *prg)
 	       " -s: Don't send a mail to subscriber if already subscribed\n"
 	       " -U: Don't switch to the user id of the listdir owner\n"
 	       " -V: Print version\n"
+	       "Use '-' as the -a argument to read addresses from stdin (one per line).\n"
 	       "To ensure a silent subscription, use -f -q -s\n");
 	exit(EXIT_SUCCESS);
 }
@@ -101,7 +102,8 @@ int main(int argc, char **argv)
 	while ((opt = getopt(argc, argv, "hbcCdfm:nsVUL:a:qrR")) != -1) {
 		switch(opt) {
 		case 'a':
-			if (strchr(optarg, '@') == NULL)
+			if (strcmp(optarg, "-") != 0 &&
+			    strchr(optarg, '@') == NULL)
 				errx(EXIT_FAILURE, "No '@' in the provided email address '%s'",
 				    optarg);
 			address = optarg;
@@ -194,6 +196,30 @@ int main(int argc, char **argv)
 			if(setuid(st.st_uid) < 0)
 				err(EXIT_FAILURE, "setuid");
 		}
+	}
+
+	if (address != NULL && strcmp(address, "-") == 0) {
+		char *line = NULL;
+		size_t linecap = 0;
+		bool ok = false;
+
+		while (getline(&line, &linecap, stdin) > 0) {
+			chomp(line);
+			if (line[0] == '\0' || line[0] == '#')
+				continue;
+			if (strchr(line, '@') == NULL) {
+				warnx("Skipping invalid address '%s'", line);
+				continue;
+			}
+			if (do_subscribe(&ml, &sub, line))
+				ok = true;
+			else
+				warnx("Failed to subscribe '%s'", line);
+		}
+		free(line);
+		if (ok)
+			exit(EXIT_SUCCESS);
+		exit(EXIT_FAILURE);
 	}
 
 	if (do_subscribe(&ml, &sub, address))

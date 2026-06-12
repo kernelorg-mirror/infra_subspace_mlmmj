@@ -7,12 +7,15 @@
 .Sh SYNOPSIS
 .Nm
 .Fl L Ar /path/to/list
-.Op Fl a Ar john@doe.org | Fl m Ar str
+.Op Fl a Ar john@doe.org | Fl a Ar - | Fl m Ar str
 .Op Fl cCdnfhqrRsUV
 .Sh DESCRIPTION
 .Bl -tag -width pathXXX
 .It Fl a Ar email
-Email address to subscribe
+Email address to subscribe.
+Use
+.Pa -
+to read addresses from stdin (one per line).
 .It Fl c
 Send welcome mail
 .Pq unless requesting confirmation

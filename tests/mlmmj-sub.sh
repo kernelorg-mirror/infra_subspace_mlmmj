@@ -19,6 +19,7 @@ tests_init \
 	add_normal_with_both \
 	add_digest_with_both \
 	add_nomail_with_both \
+	add_batch \
 	remove_basics \
 	remove_normal \
 	remove_normal_confirm \
@@ -427,6 +428,20 @@ add_nomail_with_both_body()
 	atf_check -s exit:1 test -f ml/nomail.d/j
 }
 
+add_batch_body()
+{
+	init_ml ml
+	mlmmjsub=$(command -v mlmmj-sub)
+	echo test@mlmmjtest > ml/control/listaddress
+	printf "alice@foo.org\nbob@bar.net\ncarol@baz.com\n" | \
+	    atf_check -s exit:0 $mlmmjsub -L ml -a - -f -q -s
+	atf_check -o inline:"alice@foo.org\n" cat ml/subscribers.d/a
+	atf_check -o inline:"bob@bar.net\n" cat ml/subscribers.d/b
+	atf_check -o inline:"carol@baz.com\n" cat ml/subscribers.d/c
+	atf_check -o inline:"alice@foo.org\nbob@bar.net\ncarol@baz.com\n" \
+	    cat ml/subscribers.d/a ml/subscribers.d/b ml/subscribers.d/c
+}
+
 remove_normal_body()
 {
 	init_ml ml
@@ -744,7 +759,7 @@ add_basics_body()
 	mlmmjsub=$(command -v mlmmj-sub)
 	helptxt="Usage: $mlmmjsub -L /path/to/list {-a john@doe.org | -m str}
        [-c] [-C] [-f] [-h] [-L] [-d | -n] [-q] [-r | -R] [-s] [-U] [-V]
- -a: Email address to subscribe 
+ -a: Email address to subscribe (use - for stdin)
  -c: Send welcome mail (unless requesting confirmation)
  -C: Request mail confirmation (unless switching versions)
  -d: Subscribe to digest of list
@@ -759,6 +774,7 @@ add_basics_body()
  -s: Don't send a mail to subscriber if already subscribed
  -U: Don't switch to the user id of the listdir owner
  -V: Print version
+Use '-' as the -a argument to read addresses from stdin (one per line).
 To ensure a silent subscription, use -f -q -s"
 	init_ml ml
 	echo "test@mlmmjtest" > ml/control/listaddress
