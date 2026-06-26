@@ -37,6 +37,7 @@
 #endif
 
 #include "xmalloc.h"
+#include "xstring.h"
 #include "mlmmj.h"
 #include "strgen.h"
 #include "wrappers.h"
@@ -200,17 +201,13 @@ decode_char(const char *s)
 char *
 decode_qp(const char *qpstr, bool qformat)
 {
-	char *buffer = NULL;
-	size_t size = 0;
-	FILE *bufp;
-
-	bufp = open_memstream(&buffer, &size);
+	xstring *str = xstring_new();
 
 	while (*qpstr) {
 		switch (*qpstr) {
 		case '=':
 			if (strlen(qpstr) < 2) {
-				fputc(*qpstr, bufp);
+				xstring_putc(str, *qpstr);
 				break;
 			}
 			if (qpstr[1] == '\r' && qpstr[2] == '\n') {
@@ -222,31 +219,30 @@ decode_qp(const char *qpstr, bool qformat)
 				break;
 			}
 			if (strchr("0123456789ABCDEFabcdef", qpstr[1]) == NULL) {
-				fputc(*qpstr, bufp);
+				xstring_putc(str, *qpstr);
 				break;
 			}
 			if (strchr("0123456789ABCDEFabcdef", qpstr[2]) == NULL) {
-				fputc(*qpstr, bufp);
+				xstring_putc(str, *qpstr);
 				break;
 			}
-			fputc(decode_char(qpstr), bufp);
+			xstring_putc(str, decode_char(qpstr));
 			qpstr += 2;
 			break;
 		case '_':
 			if (qformat) {
-				fputc(0x20, bufp);
+				xstring_putc(str, 0x20);
 				break;
 			}
 			/* FALLTHROUGH */
 		default:
-			fputc(*qpstr, bufp);
+			xstring_putc(str, *qpstr);
 			break;
 		}
 		qpstr++;
 	}
-	fclose(bufp);
 
-	return (buffer);
+	return (xstring_get(str));
 }
 
 bool

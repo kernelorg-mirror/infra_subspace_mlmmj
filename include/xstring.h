@@ -54,7 +54,13 @@ do {                          \
    } else {                   \
      s = xstring_new();       \
    }                          \
-} while(0)
+} while (0)
+
+#define xstring_printf(s, fmt, ...)        fprintf((s)->fp, fmt, ##__VA_ARGS__)
+#define xstring_puts(s, str)               fputs(str, (s)->fp)
+#define xstring_flush(s)                   fflush((s)->fp)
+#define xstring_putc(s, c)                 fputc(c, (s)->fp)
+#define xstring_write(s, buf, size, nmemb) fwrite(buf, size, nmemb, (s)->fp)
 
 static inline char *
 xstring_get(xstring *str)
@@ -63,6 +69,16 @@ xstring_get(xstring *str)
 		return (NULL);
 	fclose(str->fp);
 	char *ret = str->buf;
+	free(str);
+	return (ret);
+}
+
+static inline char *
+xstring_get_binary(xstring *str, size_t *size)
+{
+	fclose(str->fp);
+	char *ret = str->buf;
+	*size = str->size;
 	free(str);
 	return (ret);
 }
