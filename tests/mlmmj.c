@@ -3735,6 +3735,57 @@ ATF_TC_BODY(parse_content_type, tc)
 	free(m);
 	ATF_REQUIRE_STREQ(b,"bla");
 	free(b);
+
+	/* Quoted boundary, preserving embedded whitespace. */
+	(void) vec_pop(&hdrs);
+	vec_push(&hdrs, "Content-Type: multipart/mixed; boundary=\"abc def\"");
+	parse_content_type(&hdrs, &m, &b);
+	ATF_REQUIRE_STREQ(m, "multipart/mixed");
+	free(m);
+	ATF_REQUIRE_STREQ(b, "abc def");
+	free(b);
+
+	/* Type terminated by a space with no semicolon before parameters. */
+	(void) vec_pop(&hdrs);
+	vec_push(&hdrs, "Content-Type: text/plain charset=utf-8");
+	parse_content_type(&hdrs, &m, &b);
+	ATF_REQUIRE_STREQ(m, "text/plain");
+	free(m);
+	ATF_REQUIRE(b == NULL);
+
+	/* Case-insensitive boundary keyword. */
+	(void) vec_pop(&hdrs);
+	vec_push(&hdrs, "Content-Type: multipart/mixed; BoUnDaRy=x");
+	parse_content_type(&hdrs, &m, &b);
+	ATF_REQUIRE_STREQ(m, "multipart/mixed");
+	free(m);
+	ATF_REQUIRE_STREQ(b, "x");
+	free(b);
+
+	/* Boundary appears after another parameter. */
+	(void) vec_pop(&hdrs);
+	vec_push(&hdrs, "Content-Type: text/plain; charset=us-ascii; boundary=y");
+	parse_content_type(&hdrs, &m, &b);
+	ATF_REQUIRE_STREQ(m, "text/plain");
+	free(m);
+	ATF_REQUIRE_STREQ(b, "y");
+	free(b);
+
+	/* Quoted media type, no boundary. */
+	(void) vec_pop(&hdrs);
+	vec_push(&hdrs, "Content-Type: \"text/plain\"");
+	parse_content_type(&hdrs, &m, &b);
+	ATF_REQUIRE_STREQ(m, "text/plain");
+	free(m);
+	ATF_REQUIRE(b == NULL);
+
+	/* Unclosed quoted media type runs to end of value. */
+	(void) vec_pop(&hdrs);
+	vec_push(&hdrs, "Content-Type: \"text/plain");
+	parse_content_type(&hdrs, &m, &b);
+	ATF_REQUIRE_STREQ(m, "text/plain");
+	free(m);
+	ATF_REQUIRE(b == NULL);
 }
 
 ATF_TC_BODY(do_access, tc)

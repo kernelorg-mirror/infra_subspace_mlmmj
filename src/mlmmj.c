@@ -48,6 +48,7 @@
 #include "prepstdreply.h"
 #include "find_email_adr.h"
 #include "strgen.h"
+#include "strview.h"
 #include "ctrlvalue.h"
 
 bool
@@ -155,46 +156,72 @@ find_in_list(strlist *l, const char *pattern)
 	return (NULL);
 }
 
+/* Length of the prefix of sv consisting of characters not in stops. */
+static size_t
+sv_span_until(strview_t sv, const char *stops)
+{
+	size_t i;
+
+	for (i = 0; i < sv.len; i++) {
+		if (strchr(stops, sv.ptr[i]) != NULL)
+			break;
+	}
+	return (i);
+}
+
 void
 parse_content_type(strlist *allhdrs, char **mime_type, char **boundary)
 {
-	*boundary = NULL;
-	*mime_type = NULL;
-	char *pos;
-	size_t len = 0;
+	static const char bare_stops[] = "; \t";
+	strview_t v, tok;
+	size_t n;
+	char *hdr;
 
-	char *hdr = find_in_list(allhdrs, "Content-Type:");
+	*mime_type = NULL;
+	*boundary = NULL;
+
+	hdr = find_in_list(allhdrs, "Content-Type:");
 	if (hdr == NULL)
 		return; /* No Content-Type */
-	pos = hdr + 13;
-	while (*pos && (*pos == ' ' || *pos == '\t'))
-		++pos;
-	if (*pos == '"') {
-		++pos;
-		while (pos[len] && pos[len] != '"')
-			++len;
+
+	/* View onto the value following "Content-Type:". */
+	v.ptr = hdr + 13;
+	v.len = strlen(hdr + 13);
+	v = sv_trim(v);
+
+	/* Media type: quoted, or bare up to ';'/space/tab. */
+	if (sv_len(v) > 0 && sv_data(v)[0] == '"') {
+		v.ptr++;
+		v.len--;
+		tok = sv_split(&v, '"');
 	} else {
-		while (pos[len] && pos[len] != ' ' && pos[len] != '\t' && pos[len] != ';')
-			++len;
+		n = sv_span_until(v, bare_stops);
+		tok.ptr = sv_data(v);
+		tok.len = n;
+		v.ptr += n;
+		v.len -= n;
 	}
-	if (len > 0)
-		*mime_type = xstrndup(pos, len);
-	pos += len;
-	len = 0;
-	while (*pos && strncasecmp(pos, "boundary=", 9))
-		++pos;
-	if (*pos == '\0')
-		return; /* No boundaries */
-	pos += 9;
-	if (*pos == '"') {
-		++pos;
-		while (pos[len] && pos[len] != '"')
-			++len;
-	} else {
-		while(pos[len] && pos[len] != ' ' && pos[len] != '\t' && pos[len] != ';')
-			++len;
+	if (sv_len(tok) > 0)
+		*mime_type = xstrndup(sv_data(tok), sv_len(tok));
+
+	/* Boundary parameter, matched case-insensitively after the type. */
+	for (size_t i = 0; i + 9 <= sv_len(v); i++) {
+		if (strncasecmp(sv_data(v) + i, "boundary=", 9) != 0)
+			continue;
+		v.ptr += i + 9;
+		v.len -= i + 9;
+		if (sv_len(v) > 0 && sv_data(v)[0] == '"') {
+			v.ptr++;
+			v.len--;
+			tok = sv_split(&v, '"');
+		} else {
+			n = sv_span_until(v, bare_stops);
+			tok.ptr = sv_data(v);
+			tok.len = n;
+		}
+		*boundary = xstrndup(sv_data(tok), sv_len(tok));
+		return;
 	}
-	*boundary = xstrndup(pos, len);
 }
 
 bool
