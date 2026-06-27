@@ -133,6 +133,9 @@ ATF_TC_WITHOUT_HEAD(is_subbed_in);
 ATF_TC_WITHOUT_HEAD(is_subbed_normal);
 ATF_TC_WITHOUT_HEAD(is_subbed_types);
 ATF_TC_WITHOUT_HEAD(unsubscribe_test);
+ATF_TC_WITHOUT_HEAD(find_addr_line_edge);
+ATF_TC_WITHOUT_HEAD(is_subbed_crlf_prefix);
+ATF_TC_WITHOUT_HEAD(unsubscribe_crlf_prefix);
 ATF_TC_WITHOUT_HEAD(getaddrsfromfile);
 ATF_TC_WITHOUT_HEAD(dumpfd2fd);
 ATF_TC_WITHOUT_HEAD(dumpfd2fd_large);
@@ -1629,6 +1632,89 @@ ATF_TC_BODY(unsubscribe_test, tc)
 
 	/* Unsubscribe non-existent address should still return true */
 	ATF_REQUIRE(unsubscribe(ml.fd, "nobody@example.com", SUB_NORMAL));
+}
+
+ATF_TC_BODY(find_addr_line_edge, tc)
+{
+	/* Exact hit, trailing newline. */
+	const char a[] = "alice@x.org\nbob@x.org\n";
+	ATF_REQUIRE(find_addr_line(a, a + sizeof(a) - 1, "alice@x.org") != NULL);
+	ATF_REQUIRE(find_addr_line(a, a + sizeof(a) - 1, "bob@x.org") != NULL);
+
+	/* CRLF line must match (find_subscriber always did). */
+	const char c[] = "alice@x.org\r\nbob@x.org\r\n";
+	ATF_REQUIRE(find_addr_line(c, c + sizeof(c) - 1, "alice@x.org") != NULL);
+
+	/* A prefix of the address must NOT match. */
+	const char p[] = "ali\nalice@x.org\n";
+	ATF_REQUIRE(find_addr_line(p, p + sizeof(p) - 1, "alice@x.org") != NULL);
+	ATF_REQUIRE(find_addr_line(p, p + sizeof(p) - 1, "ali") != NULL);
+	ATF_REQUIRE(find_addr_line(p, p + sizeof(p) - 1, "al") == NULL);
+
+	/* Empty lines must never match a non-empty address. */
+	const char e[] = "\n\nalice@x.org\n\n";
+	ATF_REQUIRE(find_addr_line(e, e + sizeof(e) - 1, "alice@x.org") != NULL);
+	const char onlyempty[] = "\n\n\n";
+	ATF_REQUIRE(find_addr_line(onlyempty, onlyempty + sizeof(onlyempty) - 1,
+	    "alice@x.org") == NULL);
+
+	/* No trailing newline on the last line. */
+	const char n[] = "alice@x.org\nbob@x.org";
+	ATF_REQUIRE(find_addr_line(n, n + sizeof(n) - 1, "bob@x.org") != NULL);
+
+	/* Genuine miss. */
+	ATF_REQUIRE(find_addr_line(a, a + sizeof(a) - 1, "carol@x.org") == NULL);
+}
+
+ATF_TC_BODY(is_subbed_crlf_prefix, tc)
+{
+	struct ml ml;
+	init_ml(true);
+	ml_init(&ml);
+	ml.dir = "list";
+	ml_open(&ml, false);
+
+	/*
+	 * A non-shard-named file (not address[0]) holding a CRLF address,
+	 * a prefix line, and an empty line.  is_subbed must find the real
+	 * address despite the flexible on-disk layout.
+	 */
+	atf_utils_create_file("list/subscribers.d/mysubscribers",
+	    "ali\nalice@x.org\r\n\nbob@x.org\n");
+	ml_open(&ml, false);
+
+	ATF_REQUIRE_EQ(is_subbed(ml.fd, "alice@x.org", false), SUB_NORMAL);
+	ATF_REQUIRE_EQ(is_subbed(ml.fd, "bob@x.org", false), SUB_NORMAL);
+	/* The short "ali" line is its own subscriber; it must not fool a
+	 * lookup for the longer address, which finds its real line. */
+	ATF_REQUIRE_EQ(is_subbed(ml.fd, "ali", false), SUB_NORMAL);
+	ATF_REQUIRE_EQ(is_subbed(ml.fd, "carol@x.org", false), SUB_NONE);
+}
+
+ATF_TC_BODY(unsubscribe_crlf_prefix, tc)
+{
+	struct ml ml;
+	init_ml(true);
+	ml_init(&ml);
+	ml.dir = "list";
+	ml_open(&ml, false);
+
+	/*
+	 * "ali" is a prefix of the target and is LF-terminated: the old
+	 * search matched it by prefix and corrupted the file on splice.
+	 * The target itself is CRLF-terminated.  After unsubscribing the
+	 * target, the prefix line and the bystander must be intact.
+	 */
+	atf_utils_create_file("list/subscribers.d/m",
+	    "ali\nalice@x.org\r\nbob@x.org\n");
+	ml_open(&ml, false);
+
+	ATF_REQUIRE(unsubscribe(ml.fd, "alice@x.org", SUB_NORMAL));
+	if (!atf_utils_compare_file("list/subscribers.d/m",
+	    "ali\nbob@x.org\n")) {
+		atf_utils_cat_file("list/subscribers.d/m", ">");
+		atf_tc_fail("unsubscribe corrupted the file");
+	}
 }
 
 ATF_TC_BODY(getaddrsfromfile, tc)
@@ -5402,6 +5488,9 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, is_subbed_normal);
 	ATF_TP_ADD_TC(tp, is_subbed_types);
 	ATF_TP_ADD_TC(tp, unsubscribe_test);
+	ATF_TP_ADD_TC(tp, find_addr_line_edge);
+	ATF_TP_ADD_TC(tp, is_subbed_crlf_prefix);
+	ATF_TP_ADD_TC(tp, unsubscribe_crlf_prefix);
 	ATF_TP_ADD_TC(tp, getaddrsfromfile);
 	ATF_TP_ADD_TC(tp, dumpfd2fd);
 	ATF_TP_ADD_TC(tp, dumpfd2fd_large);

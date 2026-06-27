@@ -22,10 +22,12 @@
  */
 
 #include <sys/stat.h>
+#include <sys/mman.h>
 #include <sys/wait.h>
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <strings.h>
 #include <dirent.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -34,7 +36,6 @@
 #include "mlmmj.h"
 #include "subscriberfuncs.h"
 #include "log_error.h"
-#include "chomp.h"
 #include "utils.h"
 #include "prepstdreply.h"
 #include "xmalloc.h"
@@ -77,29 +78,66 @@ const char * const subtypes[] = {
 	NULL,
 };
 
+/*
+ * Locate the line equal to address (case-insensitively) within a mapped
+ * subscriber file [start, end).  Lines are '\n'-terminated; a trailing
+ * '\r' is tolerated.  Only a full-line, exact-length match counts, so
+ * empty lines or mere prefixes of address never match.  Returns a
+ * pointer to the beginning of the matching line content, or NULL.
+ */
+const char *
+find_addr_line(const char *start, const char *end, const char *address)
+{
+	const char *cur, *next;
+	size_t alen, len;
+
+	alen = strlen(address);
+	for (next = cur = start; next < end; next++) {
+		if (*next != '\n')
+			continue;
+		len = next - cur;
+		if (len > 0 && cur[len - 1] == '\r')
+			len--;
+		if (len == alen && strncasecmp(address, cur, len) == 0)
+			return (cur);
+		cur = next + 1;
+	}
+	/* Trailing line without a terminating newline. */
+	len = next - cur;
+	if (len > 0 && cur[len - 1] == '\r')
+		len--;
+	if (len == alen && strncasecmp(address, cur, len) == 0)
+		return (cur);
+	return (NULL);
+}
+
 bool
 find_subscriber(int fd, const char *address)
 {
-	FILE *f;
-	char *line = NULL;
-	size_t linecap = 0;
+	struct stat st;
+	char *start;
 	bool ret = false;
 
-	f = fdopen(fd, "r");
-	if (f == NULL) {
-		log_error(LOG_ARGS, "Could not fdopen subscriber fd");
+	if (fstat(fd, &st) == -1) {
+		log_error(LOG_ARGS, "Could not fstat subscriber fd");
 		close(fd);
 		return (false);
 	}
-	while (getline(&line, &linecap, f) > 0) {
-		chomp(line);
-		if (strcasecmp(address, line) == 0) {
-			ret = true;
-			break;
-		}
+	if (st.st_size == 0) {
+		close(fd);
+		return (false);
 	}
-	free(line);
-	fclose(f);
+	start = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
+	if (start == MAP_FAILED) {
+		log_error(LOG_ARGS, "Could not mmap subscriber file: %s",
+		    strerror(errno));
+		close(fd);
+		return (false);
+	}
+	if (find_addr_line(start, start + st.st_size, address) != NULL)
+		ret = true;
+	munmap(start, st.st_size);
+	close(fd);
 	return (ret);
 }
 

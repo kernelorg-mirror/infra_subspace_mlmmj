@@ -332,7 +332,7 @@ unsubscribe(int listfd, const char *address, enum subtype typesub)
 	int fd;
 	int groupwritable = 0;
 	const char *subdir;
-	size_t alen, len;
+	size_t alen;
 
 	switch (typesub) {
 	case SUB_ALL:
@@ -368,7 +368,7 @@ unsubscribe(int listfd, const char *address, enum subtype typesub)
 	while ((dp = readdir(dir)) != NULL) {
 		struct stat st;
 		int rfd, wfd;
-		char *wrname, *start, *cur, *next, *end, *pos, *posend;
+		char *wrname, *start, *end, *pos, *posend;
 
 		if (strcmp(dp->d_name, ".") == 0 ||
 		    strcmp(dp->d_name, "..") == 0)
@@ -409,23 +409,7 @@ unsubscribe(int listfd, const char *address, enum subtype typesub)
 
 		end = start + st.st_size;
 
-		pos = NULL;
-		for (next = cur = start; next < end; next++) {
-			if (*next != '\n')
-				continue;
-			len = next - cur;
-			if (strncasecmp(address, cur, len) == 0) {
-				pos = cur;
-				break;
-			}
-			cur = next + 1;
-		}
-
-		if (pos == NULL && next > cur) {
-			len = next - cur;
-			if (strncasecmp(address, cur, len) == 0)
-				pos = cur;
-		}
+		pos = (char *)find_addr_line(start, end, address);
 
 		/* not found */
 		if (pos == NULL) {
@@ -439,6 +423,8 @@ unsubscribe(int listfd, const char *address, enum subtype typesub)
 		 * remove it
 		 */
 		posend = pos + alen;
+		if (posend < end && *posend == '\r')
+			posend++;
 		while (posend < end && *posend == '\n')
 			posend++;
 		if (pos == start && posend == end) {
