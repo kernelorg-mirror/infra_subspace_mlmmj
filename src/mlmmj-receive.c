@@ -373,21 +373,16 @@ int main(int argc, char **argv)
 	if (incfd == -1)
 		err(EXIT_FAILURE, "Cannot open(%s/incoming)", listdir);
 
-	do {
+	fd = mkuniqfileat(incfd, "", S_IRUSR|S_IWUSR, &randomstr);
+	if (fd < 0) {
+		log_error(LOG_ARGS, "could not create mail file in "
+				    "%s/incoming directory", listdir);
 		free(randomstr);
-		randomstr = random_str();
-		fd = openat(incfd, randomstr, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
-	} while(fd < 0 && errno == EEXIST);
+		exit(EXIT_FAILURE);
+	}
 
 	xasprintf(&infilename, "%s/incoming/%s", listdir, randomstr);
 	free(randomstr);
-
-	if(fd < 0) {
-		log_error(LOG_ARGS, "could not create mail file in "
-				    "%s/incoming directory", listdir);
-		free(infilename);
-		exit(EXIT_FAILURE);
-	}
 
 	if(process_mail(STDIN_FILENO, fd, listfd) != 0) {
 		log_error(LOG_ARGS, "Could not receive mail");

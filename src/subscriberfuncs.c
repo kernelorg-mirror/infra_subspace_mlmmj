@@ -305,15 +305,10 @@ generate_subconfirm(struct ml *ml, const char *subaddr, enum subtype typesub,
 		exit(EXIT_FAILURE);
 	}
 
-	do {
-		free(randomstr);
-		randomstr = random_str();
-		subconffd = openat(fd, randomstr, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
-	} while ((subconffd < 0) && (errno == EEXIST));
-
-	if(subconffd < 0) {
-		log_error(LOG_ARGS, "Could not open '%s/%s/%s'", ml->dir,
-		    sub ? "subconf" : "unsubconf", randomstr);
+	subconffd = mkuniqfileat(fd, "", S_IRUSR|S_IWUSR, &randomstr);
+	if (subconffd < 0) {
+		log_error(LOG_ARGS, "Could not open '%s/%s' unique file",
+		    ml->dir, sub ? "subconf" : "unsubconf");
 		free(randomstr);
 		exit(EXIT_FAILURE);
 	}

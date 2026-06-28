@@ -1758,22 +1758,15 @@ char *prepstdreply(text *txt, struct ml *ml, const char *from, const char *to, c
 {
 	int outfd;
 	FILE *outf;
-	char *tmp, *retstr = NULL;
+	char *qprefix, *retstr = NULL;
 
-
-	do {
-		tmp = random_str();
-		if (retstr)
-			free(retstr);
-		xasprintf(&retstr, "%s/queue/%s", ml->dir, tmp);
-		free(tmp);
-
-		outfd = open(retstr, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
-
-	} while ((outfd < 0) && (errno == EEXIST));
+	xasprintf(&qprefix, "%s/queue/", ml->dir);
+	outfd = mkuniqfileat(AT_FDCWD, qprefix, S_IRUSR|S_IWUSR, &retstr);
+	free(qprefix);
 
 	if(outfd < 0) {
-		log_error(LOG_ARGS, "Could not open std mail %s", retstr);
+		log_error(LOG_ARGS, "Could not open std mail in %s/queue",
+		    ml->dir);
 		free(retstr);
 		close_text(txt);
 		return NULL;

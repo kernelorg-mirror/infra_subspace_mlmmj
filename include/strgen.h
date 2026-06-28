@@ -25,8 +25,21 @@
 #define STRGEN_H
 
 #include <stdbool.h>
+#include <sys/types.h>
 
 char *random_str(void);
+char *random_plus_addr(const char *addr);
+/*
+ * Atomically create a uniquely-named file under dirfd.  Its name is
+ * "<prefix><random>" (prefix may be NULL or empty); the file is opened
+ * O_RDWR|O_CREAT|O_EXCL and the call retries on EEXIST.  On success
+ * returns the open fd and, if name_out != NULL, a malloc'd copy of the
+ * basename that was created (caller frees).  On other errors returns -1
+ * with errno set and sets *name_out to NULL.  Use AT_FDCWD with an
+ * absolute or list-relative prefix to create via an absolute path.
+ */
+int mkuniqfileat(int dirfd, const char *prefix, mode_t mode,
+    char **name_out);
 char *random_plus_addr(const char *addr);
 char *genlistname(const char *listaddr);
 const char *genlistfqdn(const char *listaddr);

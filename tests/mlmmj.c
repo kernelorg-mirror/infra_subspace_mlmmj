@@ -41,6 +41,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <unistd.h>
 #include <dirent.h>
 #include <errno.h>
 #include <signal.h>
@@ -136,6 +137,7 @@ ATF_TC_WITHOUT_HEAD(unsubscribe_test);
 ATF_TC_WITHOUT_HEAD(find_addr_line_edge);
 ATF_TC_WITHOUT_HEAD(is_subbed_crlf_prefix);
 ATF_TC_WITHOUT_HEAD(unsubscribe_crlf_prefix);
+ATF_TC_WITHOUT_HEAD(mkuniqfileat_test);
 ATF_TC_WITHOUT_HEAD(getaddrsfromfile);
 ATF_TC_WITHOUT_HEAD(dumpfd2fd);
 ATF_TC_WITHOUT_HEAD(dumpfd2fd_large);
@@ -1715,6 +1717,66 @@ ATF_TC_BODY(unsubscribe_crlf_prefix, tc)
 		atf_utils_cat_file("list/subscribers.d/m", ">");
 		atf_tc_fail("unsubscribe corrupted the file");
 	}
+}
+
+ATF_TC_BODY(mkuniqfileat_test, tc)
+{
+	int dfd, fd, fd2;
+	char *name = NULL, *name2 = NULL, *name3 = NULL, *name4 = NULL;
+
+	ATF_REQUIRE(mkdir("mkuniq", 0755) == 0);
+	dfd = open("mkuniq", O_DIRECTORY);
+	ATF_REQUIRE(dfd >= 0);
+
+	/* Bare unique name, returned via name_out. */
+	fd = mkuniqfileat(dfd, "", S_IRUSR|S_IWUSR, &name);
+	ATF_REQUIRE_MSG(fd >= 0, "mkuniqfileat failed: %s", strerror(errno));
+	ATF_REQUIRE(name != NULL);
+	ATF_REQUIRE_MSG(faccessat(dfd, name, F_OK, 0) == 0,
+	    "created file not visible");
+	ATF_REQUIRE(dprintf(fd, "x") == 1);
+	close(fd);
+
+	/* A second call must yield a different name. */
+	fd2 = mkuniqfileat(dfd, "", S_IRUSR|S_IWUSR, &name2);
+	ATF_REQUIRE(fd2 >= 0);
+	ATF_REQUIRE(name2 != NULL);
+	ATF_REQUIRE_MSG(strcmp(name, name2) != 0,
+	    "two calls produced the same name %s", name);
+	close(fd2);
+
+	/* Prefixed name. */
+	fd = mkuniqfileat(dfd, "pre", S_IRUSR|S_IWUSR, &name3);
+	ATF_REQUIRE(fd >= 0);
+	ATF_REQUIRE_MSG(strncmp(name3, "pre", 3) == 0,
+	    "prefix not honoured: %s", name3);
+	ATF_REQUIRE_MSG(faccessat(dfd, name3, F_OK, 0) == 0,
+	    "prefixed file not visible");
+	close(fd);
+
+	/* name_out == NULL is allowed. */
+	fd = mkuniqfileat(dfd, "", S_IRUSR|S_IWUSR, NULL);
+	ATF_REQUIRE(fd >= 0);
+	close(fd);
+
+	/* AT_FDCWD with a relative path prefix (absolute-path usage). */
+	fd = mkuniqfileat(AT_FDCWD, "mkuniq/", S_IRUSR|S_IWUSR, &name4);
+	ATF_REQUIRE(fd >= 0);
+	ATF_REQUIRE_MSG(strncmp(name4, "mkuniq/", 7) == 0,
+	    "cwd-prefix not honoured: %s", name4);
+	ATF_REQUIRE_MSG(access(name4, F_OK) == 0, "cwd-prefix file not visible");
+	close(fd);
+
+	/* Bad dirfd: returns -1, does not exit, sets *name_out to NULL. */
+	fd = mkuniqfileat(-1, "", S_IRUSR|S_IWUSR, &name);
+	ATF_REQUIRE_EQ_MSG(fd, -1, "expected failure on bad dirfd");
+	ATF_REQUIRE(name == NULL);
+
+	free(name);
+	free(name2);
+	free(name3);
+	free(name4);
+	close(dfd);
 }
 
 ATF_TC_BODY(getaddrsfromfile, tc)
@@ -5491,6 +5553,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, find_addr_line_edge);
 	ATF_TP_ADD_TC(tp, is_subbed_crlf_prefix);
 	ATF_TP_ADD_TC(tp, unsubscribe_crlf_prefix);
+	ATF_TP_ADD_TC(tp, mkuniqfileat_test);
 	ATF_TP_ADD_TC(tp, getaddrsfromfile);
 	ATF_TP_ADD_TC(tp, dumpfd2fd);
 	ATF_TP_ADD_TC(tp, dumpfd2fd_large);

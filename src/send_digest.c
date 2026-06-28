@@ -225,7 +225,7 @@ int send_digest(struct ml *ml, int firstindex, int lastindex,
 	size_t len;
 	text *txt = NULL;
 	char buf[100];
-	char *tmp, *queuename = NULL, *subject = NULL, *line = NULL;
+	char *tmp, *queuename = NULL, *subject = NULL, *line = NULL, *qprefix;
 	char *boundary = NULL;
 	thread_list_state *tls;
 	FILE *f = NULL;
@@ -240,17 +240,12 @@ int send_digest(struct ml *ml, int firstindex, int lastindex,
 	if (firstindex > lastindex)
 		return -1;
 
-	do {
-		tmp = random_str();
-		free(queuename);
-		xasprintf(&queuename, "%s/queue/%s", ml->dir, tmp);
-		free(tmp);
-		fd = open(queuename, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
-	} while ((fd < 0) && (errno == EEXIST));
-
+	xasprintf(&qprefix, "%s/queue/", ml->dir);
+	fd = mkuniqfileat(AT_FDCWD, qprefix, S_IRUSR|S_IWUSR, &queuename);
+	free(qprefix);
 	if (fd < 0) {
-		log_error(LOG_ARGS, "Could not open digest queue file '%s'",
-				queuename);
+		log_error(LOG_ARGS, "Could not open digest queue file in "
+				"%s/queue", ml->dir);
 		free(queuename);
 		return -1;
 	}

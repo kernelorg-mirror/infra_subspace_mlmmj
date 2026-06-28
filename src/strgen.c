@@ -26,6 +26,8 @@
 #include <string.h>
 #include <stdarg.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include <netdb.h>
 #include <libgen.h>
 #include <time.h>
@@ -50,6 +52,37 @@ char *random_str(void)
 	xasprintf(&dest, "%08x%08x", random_int(), random_int());
 
 	return dest;
+}
+
+int
+mkuniqfileat(int dirfd, const char *prefix, mode_t mode, char **name_out)
+{
+	char *name = NULL;
+	int fd;
+
+	if (prefix == NULL)
+		prefix = "";
+	for (;;) {
+		char *r = random_str();
+
+		xasprintf(&name, "%s%s", prefix, r);
+		free(r);
+		fd = openat(dirfd, name, O_RDWR|O_CREAT|O_EXCL, mode);
+		if (fd >= 0)
+			break;
+		free(name);
+		name = NULL;
+		if (errno != EEXIST) {
+			if (name_out != NULL)
+				*name_out = NULL;
+			return (-1);
+		}
+	}
+	if (name_out != NULL)
+		*name_out = name;
+	else
+		free(name);
+	return (fd);
 }
 
 char *genlistname(const char *listaddr)
