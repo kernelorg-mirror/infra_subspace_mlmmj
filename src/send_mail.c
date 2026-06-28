@@ -393,6 +393,18 @@ send_single_mail(struct mail *mail, struct ml *ml, bool bounce)
 	return (true);
 }
 
+void
+send_or_queue(const char *queuefilename, struct mail *mail, struct ml *ml)
+{
+
+	if (!send_single_mail(mail, ml, false))
+		save_queue(queuefilename, mail);
+	else
+		unlink(queuefilename);
+	if (mail->fp)
+		fclose(mail->fp);
+}
+
 bool
 requeuemail(int listfd, int index, strlist *addrs, const char *addr)
 {

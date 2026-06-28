@@ -357,12 +357,7 @@ generate_subconfirm(struct ml *ml, const char *subaddr, enum subtype typesub,
 	mail.fp = fopen(queuefilename, "r");
 	if (mail.fp == NULL)
 		exit(EXIT_FAILURE);
-	if (!send_single_mail(&mail, ml, false))
-		save_queue(queuefilename, &mail);
-	else
-		unlink(queuefilename);
-	if (mail.fp)
-		fclose(mail.fp);
+	send_or_queue(queuefilename, &mail, ml);
 	exit(EXIT_SUCCESS);
 }
 

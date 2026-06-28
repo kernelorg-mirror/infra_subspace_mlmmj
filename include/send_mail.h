@@ -44,6 +44,7 @@ int endsmtp(int *sockfd);
 int send_mail(int sockfd, struct mail *mail, int listfd, int ctrlfd, bool bounce);
 int do_bouncemail(int listfd, int ctrlfd, const char *from);
 bool send_single_mail(struct mail *mail, struct ml *ml, bool bounce);
+void send_or_queue(const char *queuefilename, struct mail *mail, struct ml *ml);
 void save_queue(const char *queuefilename, struct mail *mail);
 bool requeuemail(int listfd, int index, strlist *addrs, const char *addr);
 char *get_bounce_from_adr(const char *recipient, struct ml *ml, int index);

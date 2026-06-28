@@ -169,6 +169,7 @@ ATF_TC_WITHOUT_HEAD(get_processed_text_line);
 ATF_TC_WITHOUT_HEAD(newsmtp);
 ATF_TC_WITHOUT_HEAD(save_queue);
 ATF_TC_WITHOUT_HEAD(send_single_mail);
+ATF_TC_WITHOUT_HEAD(send_or_queue_test);
 ATF_TC_WITHOUT_HEAD(generate_subscription);
 ATF_TC_WITHOUT_HEAD(generate_subconfirm);
 ATF_TC_WITHOUT_HEAD(send_confirmation_mail);
@@ -2867,6 +2868,54 @@ ATF_TC_BODY(send_single_mail, tc)
 		printf("\n===\n");
 		atf_tc_fail("Invalid output");
 	}
+}
+
+ATF_TC_BODY(send_or_queue_test, tc)
+{
+	struct ml ml;
+	struct mail mail = { 0 };
+	int smtppipe[2];
+	pid_t p;
+
+	init_ml(true);
+	ml_init(&ml);
+	ml.dir = "list";
+	ATF_REQUIRE_MSG(ml_open(&ml, false), "cannot open list");
+	atf_utils_create_file("list/control/smtpport", "25678");
+	atf_utils_create_file("list/control/smtphelo", "heloname");
+	atf_utils_create_file("list/control/relayhost", "127.0.0.1");
+
+	/* Success: smtp up -> mail sent, queue file removed, no sidecars. */
+	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
+	p = single_mail_reception(smtppipe[1]);
+	close(smtppipe[1]);
+	atf_utils_readline(smtppipe[0]);
+	atf_utils_create_file("q_ok.txt", "headers\n\nbody\n");
+	mail.to = "plop@meh";
+	mail.from = "test@meh";
+	mail.fp = fopen("q_ok.txt", "r");
+	mail.addtohdr = true;
+	send_or_queue("q_ok.txt", &mail, &ml);
+	ATF_REQUIRE_MSG(!atf_utils_file_exists("q_ok.txt"),
+	    "queue file not removed on success");
+	ATF_REQUIRE_MSG(!atf_utils_file_exists("q_ok.txt.mailfrom"),
+	    "sidecar created on success");
+	atf_utils_wait(p, 0, "save:out_ok.txt", "");
+
+	/* Failure: smtp down -> refiled, queue file kept, sidecars created. */
+	atf_utils_create_file("list/control/smtpport", "65500");
+	atf_utils_create_file("q_fail.txt", "headers\n\nbody\n");
+	mail.to = "plop@meh";
+	mail.from = "test@meh";
+	mail.fp = fopen("q_fail.txt", "r");
+	mail.addtohdr = false;
+	send_or_queue("q_fail.txt", &mail, &ml);
+	ATF_REQUIRE_MSG(atf_utils_file_exists("q_fail.txt"),
+	    "queue file removed on failure");
+	ATF_REQUIRE_MSG(atf_utils_file_exists("q_fail.txt.mailfrom"),
+	    "mailfrom sidecar not created on failure");
+	ATF_REQUIRE_MSG(atf_utils_file_exists("q_fail.txt.reciptto"),
+	    "reciptto sidecar not created on failure");
 }
 
 ATF_TC_BODY(generate_subscription, tc)
@@ -5585,6 +5634,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, newsmtp);
 	ATF_TP_ADD_TC(tp, save_queue);
 	ATF_TP_ADD_TC(tp, send_single_mail);
+	ATF_TP_ADD_TC(tp, send_or_queue_test);
 	ATF_TP_ADD_TC(tp, generate_subscription);
 	ATF_TP_ADD_TC(tp, generate_subconfirm);
 	ATF_TP_ADD_TC(tp, send_confirmation_mail);
