@@ -146,8 +146,7 @@ archive_migrate(int listfd, int logfd)
 	DIR *dirp;
 	struct dirent *dp;
 	struct stat st;
-	char **names = NULL;
-	size_t nnames = 0, namesalloc = 0;
+	strlist names = vec_init();
 
 	archivefd = openat(listfd, "archive",
 	    O_RDONLY|O_DIRECTORY|O_CLOEXEC);
@@ -166,36 +165,29 @@ archive_migrate(int listfd, int logfd)
 			continue;
 		if (dp->d_name[strspn(dp->d_name, "0123456789")] != '\0')
 			continue;
-		if (nnames >= namesalloc) {
-			namesalloc = namesalloc ? namesalloc * 2 : 64;
-			names = xrealloc(names,
-			    namesalloc * sizeof(char *));
-		}
-		names[nnames++] = xstrdup(dp->d_name);
+		vec_push(&names, xstrdup(dp->d_name));
 	}
 	closedir(dirp);
 
 	archivefd = openat(listfd, "archive",
 	    O_RDONLY|O_DIRECTORY|O_CLOEXEC);
 	if (archivefd == -1) {
-		for (size_t i = 0; i < nnames; i++)
-			free(names[i]);
-		free(names);
+		vec_free_and_free(&names, free);
 		return;
 	}
 
-	for (size_t i = 0; i < nnames; i++) {
+	vec_foreach(names, i) {
 		char src[64], dst[64], yeardir[32], monthdir[48];
 		struct tm tm;
 
-		snprintf(src, sizeof(src), "archive/%s", names[i]);
+		snprintf(src, sizeof(src), "archive/%s", names.d[i]);
 
 		if (fstatat(listfd, src, &st, 0) == -1) {
 			if (logfd != -1)
 				dprintf(logfd,
 				    "archive_migrate: cannot stat %s\n",
 				    src);
-			free(names[i]);
+			free(names.d[i]);
 			continue;
 		}
 
@@ -209,7 +201,7 @@ archive_migrate(int listfd, int logfd)
 		mkdirat(listfd, yeardir, 0755);
 		mkdirat(listfd, monthdir, 0755);
 
-		snprintf(dst, sizeof(dst), "%s/%s", monthdir, names[i]);
+		snprintf(dst, sizeof(dst), "%s/%s", monthdir, names.d[i]);
 
 		if (renameat(listfd, src, listfd, dst) == 0) {
 			if (logfd != -1)
@@ -221,9 +213,9 @@ archive_migrate(int listfd, int logfd)
 				    "archive_migrate: rename %s -> %s "
 				    "failed\n", src, dst);
 		}
-		free(names[i]);
+		free(names.d[i]);
 	}
 
 	close(archivefd);
-	free(names);
+	vec_free(&names);
 }
