@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -409,44 +410,53 @@ clean_nolongerbouncing(int dfd, int logfd)
 	return (ret);
 }
 
+/*
+ * A bounce directory entry is "active" if it is a real bounce record
+ * (not ".", "..", a "-probe" file, a ".lastmsg" marker, and no probe is
+ * already out for it).  Returns true when the caller should skip the
+ * entry; on a stat failure it also sets *ret to false.  Pass the bounce
+ * directory fd and the maintenance log fd.
+ */
+static bool
+bounce_skip(int dirfd, const char *name, bool *ret, int logfd)
+{
+	char *probefile, *s;
+
+	if (strcmp(name, "..") == 0 || strcmp(name, ".") == 0)
+		return (true);
+	s = strrchr(name, '-');
+	if (s != NULL && strcmp(s, "-probe") == 0)
+		return (true);
+	s = strrchr(name, '.');
+	if (s != NULL && strcmp(s, ".lastmsg") == 0)
+		return (true);
+	if (faccessat(dirfd, name, F_OK, 0) < 0) {
+		log(" - Could not stat(bounce/%s): %s\n", name,
+		    strerror(errno));
+		*ret = false;
+		return (true);
+	}
+	xasprintf(&probefile, "%s-probe", name);
+	if (faccessat(dirfd, probefile, F_OK, 0) == 0) {
+		free(probefile);
+		return (true);
+	}
+	free(probefile);
+	return (false);
+}
+
 static bool
 probe_bouncers(struct ml *ml, const char *mlmmjbounce, int logfd)
 {
 	DIR *bouncedir;
-	char *probefile, *s;
 	struct dirent *dp;
 	int fd;
 	bool ret = true;
 
 	opendirat(ml->fd, fd, bouncedir, "bounce");
 	while((dp = readdir(bouncedir)) != NULL) {
-		if((strcmp(dp->d_name, "..") == 0) ||
-		   (strcmp(dp->d_name, ".") == 0))
-				continue;
-
-		s = strrchr(dp->d_name, '-');
-		if(s && (strcmp(s, "-probe") == 0))
+		if (bounce_skip(fd, dp->d_name, &ret, logfd))
 			continue;
-
-		s = strrchr(dp->d_name, '.');
-		if(s && (strcmp(s, ".lastmsg") == 0))
-			continue;
-
-		if(faccessat(fd, dp->d_name, F_OK, 0) < 0) {
-			log(" - Could not stat(bounce/%s): %s\n", dp->d_name,
-			    strerror(errno));
-			ret = false;
-			continue;
-		}
-
-		xasprintf(&probefile, "%s-probe", dp->d_name);
-
-		/* Skip files which already have a probe out */
-		if(faccessat(fd, probefile, F_OK, 0) == 0) {
-			free(probefile);
-			continue;
-		}
-		free(probefile);
 
 		exec_and_wait(mlmmjbounce, "-L", ml->dir, "-a", dp->d_name,
 		    "-p", NULL);
@@ -460,7 +470,7 @@ static bool
 unsub_bouncers(int dfd, int ctrlfd, int logfd)
 {
 	DIR *bouncedir;
-	char *probefile, *address, *a, *firstbounce;
+	char *address, *a, *firstbounce;
 	struct dirent *dp;
 	int bfd;
 	time_t bouncetime, t, bouncelife;
@@ -472,33 +482,8 @@ unsub_bouncers(int dfd, int ctrlfd, int logfd)
 	bouncelife = ctrltimet(ctrlfd, "bouncelife", BOUNCELIFE);
 
 	while((dp = readdir(bouncedir)) != NULL) {
-		if((strcmp(dp->d_name, "..") == 0) ||
-		   (strcmp(dp->d_name, ".") == 0))
-				continue;
-
-		a = strrchr(dp->d_name, '-');
-		if(a && (strcmp(a, "-probe") == 0))
+		if (bounce_skip(bfd, dp->d_name, &ret, logfd))
 			continue;
-
-		a = strrchr(dp->d_name, '.');
-		if(a && (strcmp(a, ".lastmsg") == 0))
-			continue;
-
-		if(faccessat(bfd, dp->d_name, F_OK, 0) < 0) {
-			log(" - Could not stat(bounce/%s): %s\n",
-			    dp->d_name, strerror(errno));
-			ret = false;
-			continue;
-		}
-
-		xasprintf(&probefile, "%s-probe", dp->d_name);
-
-		/* Skip files which already have a probe out */
-		if(faccessat(bfd, probefile, F_OK, 0) == 0) {
-			free(probefile);
-			continue;
-		}
-		free(probefile);
 
 		/* Get the first line of the bounce file to check if it's
 		 * been bouncing for long enough
