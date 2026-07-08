@@ -1,5 +1,5 @@
 /*-
- * Copyright(c) 2024-2025 Baptiste Daroussin <bapt@FreeBSD.org>
+ * Copyright(c) 2024-2026 Baptiste Daroussin <bapt@FreeBSD.org>
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
@@ -33,9 +33,9 @@
 
 #define vec_free_and_free(v, free_func)        \
 	do {                                   \
-		vec_foreach(*(v), _i) {        \
-			free_func((v)->d[_i]); \
-			(v)->d[_i] = NULL;     \
+		vec_foreach(*(v), __vec_i) {     \
+			free_func((v)->d[__vec_i]); \
+			(v)->d[__vec_i] = NULL;     \
 		}                              \
 		vec_free((v));                 \
 	} while(0)
@@ -51,9 +51,9 @@
 
 #define vec_clear_and_free(v, free_func)       \
 	do {                                   \
-		vec_foreach(*(v), _i) {        \
-			free_func((v)->d[_i]); \
-			(v)->d[_i] = NULL;     \
+		vec_foreach(*(v), __vec_i) {     \
+			free_func((v)->d[__vec_i]); \
+			(v)->d[__vec_i] = NULL;     \
 		}                              \
 		(v)->len = 0;                  \
 	} while (0)
@@ -83,7 +83,7 @@
 			if ((v)->d == NULL)                         \
 				abort();                           \
 		}                                                  \
-		for (size_t _i = (v)->len; _i > 0; _i--)          \
+		for (size_t _i = (v)->len; _i > 0; _i--)           \
 			(v)->d[_i] = (v)->d[_i - 1];              \
 		(v)->d[0] = (_d);                                  \
 		(v)->len++;                                        \
