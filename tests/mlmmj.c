@@ -151,6 +151,8 @@ ATF_TC_WITHOUT_HEAD(copy_file_2);
 ATF_TC_WITHOUT_HEAD(controls);
 ATF_TC_WITHOUT_HEAD(incindexfile);
 ATF_TC_WITHOUT_HEAD(log_oper);
+ATF_TC_WITHOUT_HEAD(log_oper_rotate);
+ATF_TC_WITHOUT_HEAD(mygetline_edge);
 ATF_TC_WITHOUT_HEAD(get_ctrl_command);
 ATF_TC_WITHOUT_HEAD(get_recipextra_from_env_none);
 ATF_TC_WITHOUT_HEAD(get_recipextra_from_env_qmail);
@@ -2123,6 +2125,51 @@ ATF_TC_BODY(log_oper, tc)
 		atf_utils_cat_file("list/plop", ">");
 		atf_tc_fail("Invalid log file");
 	}
+}
+
+ATF_TC_BODY(log_oper_rotate, tc)
+{
+	mkdir("list", 0755);
+	int fd = open("list", O_DIRECTORY);
+	/* Create a log file larger than OPLOGSIZE (524288) */
+	FILE *big = fopen("list/biglog", "w");
+	ATF_REQUIRE(big != NULL);
+	for (int i = 0; i < 60000; i++)
+		fprintf(big, "0123456789\n");
+	fclose(big);
+	/* This should trigger rotation */
+	ATF_REQUIRE_EQ(log_oper(fd, "biglog", "test %d", 42), 0);
+	/* The rotated file should exist */
+	struct stat st;
+	ATF_REQUIRE_EQ(stat("list/biglog.rotated", &st), 0);
+	ATF_REQUIRE(st.st_size > 0);
+	close(fd);
+}
+
+ATF_TC_BODY(mygetline_edge, tc)
+{
+	int fd;
+
+	/* Read from empty file: should return NULL */
+	fd = open("empty", O_CREAT|O_RDWR, 0644);
+	ATF_REQUIRE(mygetline(fd) == NULL);
+	close(fd);
+	unlink("empty");
+
+	/* Line longer than BUFSIZE (256) triggers buffer resize */
+	fd = open("longline", O_CREAT|O_RDWR, 0644);
+	char longbuf[512];
+	memset(longbuf, 'a', 511);
+	longbuf[511] = '\0';
+	dprintf(fd, "%s", longbuf);
+	lseek(fd, 0, SEEK_SET);
+	char *res = mygetline(fd);
+	ATF_REQUIRE(res != NULL);
+	ATF_REQUIRE_EQ(strlen(res), 511);
+	ATF_REQUIRE(res[0] == 'a' && res[510] == 'a');
+	free(res);
+	close(fd);
+	unlink("longline");
 }
 
 ATF_TC_BODY(get_ctrl_command, tc)
@@ -5885,6 +5932,8 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, controls);
 	ATF_TP_ADD_TC(tp, incindexfile);
 	ATF_TP_ADD_TC(tp, log_oper);
+	ATF_TP_ADD_TC(tp, log_oper_rotate);
+	ATF_TP_ADD_TC(tp, mygetline_edge);
 	ATF_TP_ADD_TC(tp, get_ctrl_command);
 	ATF_TP_ADD_TC(tp, get_recipextra_from_env_none);
 	ATF_TP_ADD_TC(tp, get_recipextra_from_env_qmail);
