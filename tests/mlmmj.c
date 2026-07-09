@@ -190,6 +190,10 @@ ATF_TC_WITHOUT_HEAD(do_access);
 ATF_TC_WITHOUT_HEAD(unistr_header_to_utf8);
 ATF_TC_WITHOUT_HEAD(unistr_utf8_to_header);
 ATF_TC_WITHOUT_HEAD(unistr_roundtrip);
+ATF_TC_WITHOUT_HEAD(unistr_to_utf8_4byte);
+ATF_TC_WITHOUT_HEAD(unistr_append_utf8_edge);
+ATF_TC_WITHOUT_HEAD(unistr_to_utf8_large);
+ATF_TC_WITHOUT_HEAD(unistr_append_utf8_invalid);
 ATF_TC_WITHOUT_HEAD(unistr_escaped_to_utf8);
 ATF_TC_WITHOUT_HEAD(line_startwithany);
 ATF_TC_WITHOUT_HEAD(save_hdr_if_needed);
@@ -4034,6 +4038,29 @@ ATF_TC_BODY(do_access, tc)
 	ATF_REQUIRE_EQ(do_access(&rules, &headers, "test@plop", &msg, &qualifier), ACT_MODERATE);
 	ATF_REQUIRE_STREQ(qualifier, "meh");
 	ATF_REQUIRE_STREQ(msg, "access - A mail from \"test@plop\" with header \"from: toto@bla\" was moderated by rule #0 \"moderate-meh ^from: toto@\"");
+
+	/* Test '!' negation: rule with '!' and matching header should NOT match */
+	vec_clear(&rules);
+	vec_push(&rules, "deny !^from: toto@");
+	ATF_REQUIRE_EQ(do_access(&rules, &headers, "test@plop", &msg, &qualifier), ACT_DENY);
+	ATF_REQUIRE_STREQ(msg, "access - A mail from \"test@plop\" didn't match any rules, and was denied by default.");
+
+	/* Test '^.*' prefix stripping */
+	vec_clear(&rules);
+	vec_push(&rules, "allow ^.*from: toto@");
+	ATF_REQUIRE_EQ(do_access(&rules, &headers, "test@plop", &msg, &qualifier), ACT_ALLOW);
+
+	/* Test '.*' prefix stripping */
+	vec_clear(&rules);
+	vec_push(&rules, "allow .*from: toto@");
+	ATF_REQUIRE_EQ(do_access(&rules, &headers, "test@plop", &msg, &qualifier), ACT_ALLOW);
+
+	/* Test no-match fallthrough: none of the rules match, denied by default */
+	vec_clear(&rules);
+	vec_push(&rules, "allow ^from: other@");
+	vec_push(&rules, "allow ^from: nobody@");
+	ATF_REQUIRE_EQ(do_access(&rules, &headers, "test@plop", &msg, &qualifier), ACT_DENY);
+	ATF_REQUIRE_STREQ(msg, "access - A mail from \"test@plop\" didn't match any rules, and was denied by default.");
 }
 
 ATF_TC_BODY(unistr_header_to_utf8, tc)
@@ -4136,6 +4163,133 @@ ATF_TC_BODY(unistr_roundtrip, tc)
 	ATF_REQUIRE_STREQ(decoded, "Привет мир");
 	free(encoded);
 	free(decoded);
+}
+
+ATF_TC_BODY(unistr_to_utf8_4byte, tc)
+{
+	unistr *us;
+	char *result;
+
+	/* 4-byte UTF-8 encoding: U+1F600 (emoji) */
+	us = unistr_new();
+	unistr_append_char(us, 0x1F600);
+	result = unistr_to_utf8(us);
+	ATF_REQUIRE_STREQ(result, "\xF0\x9F\x98\x80");
+	free(result);
+	unistr_free(us);
+
+	/* 4-byte with 3-byte mixed */
+	us = unistr_new();
+	unistr_append_char(us, 'A');
+	unistr_append_char(us, 0x1F600);
+	unistr_append_char(us, 0x20AC); /* euro sign */
+	result = unistr_to_utf8(us);
+	/* 0x20AC = E2 82 AC in UTF-8 */
+	ATF_REQUIRE_STREQ(result, "A\xF0\x9F\x98\x80\xE2\x82\xAC");
+	free(result);
+	unistr_free(us);
+}
+
+ATF_TC_BODY(unistr_append_utf8_edge, tc)
+{
+	unistr *us;
+	char *result;
+
+	/* Valid 4-byte UTF-8 sequence (emoji) */
+	us = unistr_new();
+	unistr_append_utf8(us, "\xF0\x9F\x98\x80", 4);
+	result = unistr_to_utf8(us);
+	ATF_REQUIRE_STREQ(result, "\xF0\x9F\x98\x80");
+	free(result);
+	unistr_free(us);
+
+	/* Truncated 4-byte sequence (only 3 bytes) */
+	us = unistr_new();
+	unistr_append_utf8(us, "\xF0\x9F\x98", 3);
+	result = unistr_to_utf8(us);
+	/* truncated sequence should produce '?' */
+	ATF_REQUIRE_STREQ(result, "?");
+	free(result);
+	unistr_free(us);
+
+	/* Invalid continuation byte in 3-byte sequence */
+	us = unistr_new();
+	unistr_append_utf8(us, "\xE0\xA0\xC0", 3);
+	result = unistr_to_utf8(us);
+	ATF_REQUIRE_STREQ(result, "?");
+	free(result);
+	unistr_free(us);
+}
+
+ATF_TC_BODY(unistr_to_utf8_large, tc)
+{
+	unistr *us;
+	char *result;
+
+	/* 5-byte encoding: U+400000 */
+	us = unistr_new();
+	unistr_append_char(us, 0x400000);
+	result = unistr_to_utf8(us);
+	/* F8 90 80 80 80 in UTF-8 */
+	ATF_REQUIRE_STREQ(result, "\xF8\x90\x80\x80\x80");
+	free(result);
+	unistr_free(us);
+
+	/* 6-byte encoding: U+40000000 */
+	us = unistr_new();
+	unistr_append_char(us, 0x40000000);
+	result = unistr_to_utf8(us);
+	/* FD 80 80 80 80 80 in UTF-8 */
+	ATF_REQUIRE_STREQ(result, "\xFD\x80\x80\x80\x80\x80");
+	free(result);
+	unistr_free(us);
+}
+
+ATF_TC_BODY(unistr_append_utf8_invalid, tc)
+{
+	unistr *us;
+	char *result;
+
+	/* Invalid first byte (0xFE) */
+	us = unistr_new();
+	unistr_append_utf8(us, "\xFE\x80\x80\x80", 4);
+	result = unistr_to_utf8(us);
+	ATF_REQUIRE_STREQ(result, "????");
+	free(result);
+	unistr_free(us);
+
+	/* Overlong sequence: 2-byte encoding of NUL (U+0000) */
+	us = unistr_new();
+	unistr_append_utf8(us, "\xC0\x80", 2);
+	result = unistr_to_utf8(us);
+	/* overlong encoding of NUL -> '?' */
+	ATF_REQUIRE_STREQ(result, "?");
+	free(result);
+	unistr_free(us);
+
+	/* Overlong sequence: 3-byte encoding of NUL */
+	us = unistr_new();
+	unistr_append_utf8(us, "\xE0\x80\x80", 3);
+	result = unistr_to_utf8(us);
+	ATF_REQUIRE_STREQ(result, "?");
+	free(result);
+	unistr_free(us);
+
+	/* Overlong sequence: 4-byte encoding of NUL */
+	us = unistr_new();
+	unistr_append_utf8(us, "\xF0\x80\x80\x80", 4);
+	result = unistr_to_utf8(us);
+	ATF_REQUIRE_STREQ(result, "?");
+	free(result);
+	unistr_free(us);
+
+	/* Mixed valid and invalid */
+	us = unistr_new();
+	unistr_append_utf8(us, "A\xFE\x80\x80\x80" "B", 7);
+	result = unistr_to_utf8(us);
+	ATF_REQUIRE_STREQ(result, "A????B");
+	free(result);
+	unistr_free(us);
 }
 
 ATF_TC_BODY(unistr_escaped_to_utf8, tc)
@@ -5774,6 +5928,10 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, unistr_header_to_utf8);
 	ATF_TP_ADD_TC(tp, unistr_utf8_to_header);
 	ATF_TP_ADD_TC(tp, unistr_roundtrip);
+	ATF_TP_ADD_TC(tp, unistr_to_utf8_4byte);
+	ATF_TP_ADD_TC(tp, unistr_append_utf8_edge);
+	ATF_TP_ADD_TC(tp, unistr_to_utf8_large);
+	ATF_TP_ADD_TC(tp, unistr_append_utf8_invalid);
 	ATF_TP_ADD_TC(tp, unistr_escaped_to_utf8);
 	ATF_TP_ADD_TC(tp, line_startwithany);
 	ATF_TP_ADD_TC(tp, save_hdr_if_needed);

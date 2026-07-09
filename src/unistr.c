@@ -116,11 +116,6 @@ void unistr_append_utf8(unistr *str, const char *binary, size_t bin_len)
 				unistr_append_char(str, '?');
 				continue;
 			}
-			if (ch == 0) {
-				/* invalid encoding, no data bits set in first byte */
-				unistr_append_char(str, '?');
-				continue;
-			}
 			for (;j>0; j--) {
 				i++;
 				if (i >= bin_len) {
@@ -135,6 +130,11 @@ void unistr_append_utf8(unistr *str, const char *binary, size_t bin_len)
 					break;
 				}
 				ch |= bin[i] & 63;
+			}
+			if (ch == 0) {
+				/* overlong encoding: no data bits set */
+				unistr_append_char(str, '?');
+				continue;
 			}
 			unistr_append_char(str, ch);
 		}
