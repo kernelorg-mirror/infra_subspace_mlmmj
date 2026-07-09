@@ -21,6 +21,7 @@
  */
 
 #include "vec.h"
+#include "sb.h"
 
 #if defined(__clang__)
 #pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
@@ -189,11 +190,16 @@ ATF_TC_WITHOUT_HEAD(do_access);
 ATF_TC_WITHOUT_HEAD(unistr_header_to_utf8);
 ATF_TC_WITHOUT_HEAD(unistr_utf8_to_header);
 ATF_TC_WITHOUT_HEAD(unistr_roundtrip);
+ATF_TC_WITHOUT_HEAD(unistr_escaped_to_utf8);
 ATF_TC_WITHOUT_HEAD(line_startwithany);
 ATF_TC_WITHOUT_HEAD(save_hdr_if_needed);
 ATF_TC_WITHOUT_HEAD(autosubscribe_sender);
 ATF_TC_WITHOUT_HEAD(scan_headers_test);
 ATF_TC_WITHOUT_HEAD(substitute_test);
+ATF_TC_WITHOUT_HEAD(sb_cat_n);
+ATF_TC_WITHOUT_HEAD(sb_reset);
+ATF_TC_WITHOUT_HEAD(sb_str);
+ATF_TC_WITHOUT_HEAD(sb_printf_growth);
 ATF_TC_WITHOUT_HEAD(voodoo_replyto);
 ATF_TC_WITHOUT_HEAD(voodoo_replyto_once);
 ATF_TC_WITHOUT_HEAD(voodoo_prefix_dedup);
@@ -4132,6 +4138,32 @@ ATF_TC_BODY(unistr_roundtrip, tc)
 	free(decoded);
 }
 
+ATF_TC_BODY(unistr_escaped_to_utf8, tc)
+{
+	char *result;
+
+	/* Basic escaped unicode */
+	result = unistr_escaped_to_utf8("hyggem\\u00F8de torsdag");
+	ATF_REQUIRE(result != NULL);
+	ATF_REQUIRE_STREQ(result, "hyggem\303\270de torsdag");
+	free(result);
+
+	/* Double backslash escapes */
+	result = unistr_escaped_to_utf8("c:\\\\path\\\\to\\\\file");
+	ATF_REQUIRE_STREQ(result, "c:\\\\path\\\\to\\\\file");
+	free(result);
+
+	/* Invalid hex digits */
+	result = unistr_escaped_to_utf8("\\uXXYZ");
+	ATF_REQUIRE(result != NULL);
+	free(result);
+
+	/* Multiple escapes */
+	result = unistr_escaped_to_utf8("\\u0048\\u0065\\u006C\\u006C\\u006F");
+	ATF_REQUIRE_STREQ(result, "Hello");
+	free(result);
+}
+
 ATF_TC_BODY(line_startwithany, tc)
 {
 	strlist l  = vec_init();
@@ -4355,6 +4387,90 @@ ATF_TC_BODY(substitute_test, tc)
 	free(result);
 
 	close_text(txt);
+}
+
+ATF_TC_BODY(sb_cat_n, tc)
+{
+	sb_t sb = sb_init();
+
+	/* Test basic sb_cat_n */
+	sb_cat_n(&sb, "hello", 5);
+	ATF_REQUIRE_EQ(sb.len, 5);
+	ATF_REQUIRE_STREQ(sb.d, "hello");
+
+	/* Append n with null terminator */
+	sb_cat_n(&sb, " world", 6);
+	ATF_REQUIRE_EQ(sb.len, 11);
+	ATF_REQUIRE_STREQ(sb.d, "hello world");
+
+	/* Append n with zero length */
+	sb_cat_n(&sb, "", 0);
+	ATF_REQUIRE_EQ(sb.len, 11);
+	ATF_REQUIRE_STREQ(sb.d, "hello world");
+
+	sb_fini(&sb);
+}
+
+ATF_TC_BODY(sb_reset, tc)
+{
+	sb_t sb = sb_init();
+
+	/* Reset empty sb */
+	sb_reset(&sb);
+	ATF_REQUIRE_EQ(sb.len, 0);
+
+	/* Reset sb with content */
+	sb_cat(&sb, "hello");
+	ATF_REQUIRE_EQ(sb.len, 5);
+	sb_reset(&sb);
+	ATF_REQUIRE_EQ(sb.len, 0);
+	ATF_REQUIRE_STREQ(sb.d, "");
+
+	/* Reset and reuse */
+	sb_cat(&sb, "world");
+	ATF_REQUIRE_STREQ(sb.d, "world");
+
+	sb_fini(&sb);
+}
+
+ATF_TC_BODY(sb_str, tc)
+{
+	sb_t sb = sb_init();
+
+	/* sb_str on empty sb */
+	char *s = sb_str(&sb);
+	ATF_REQUIRE(s != NULL);
+	ATF_REQUIRE_STREQ(s, "");
+
+	/* sb_str does not transfer ownership, sb is still valid */
+	sb_cat(&sb, "hello");
+	ATF_REQUIRE_STREQ(sb.d, "hello");
+	sb_fini(&sb);
+}
+
+ATF_TC_BODY(sb_printf_growth, tc)
+{
+	sb_t sb = sb_init();
+
+	/* Start with small buffer, force growth */
+	sb_printf(&sb, "hello");
+	ATF_REQUIRE_STREQ(sb.d, "hello");
+
+	/* Something that fits */
+	sb_printf(&sb, " ");
+	ATF_REQUIRE_STREQ(sb.d, "hello ");
+
+	/* Force growth by appending a long string */
+	sb_printf(&sb, "world and all the people who live on this beautiful planet");
+	ATF_REQUIRE_STREQ(sb.d, "hello world and all the people who live on this beautiful planet");
+
+	/* sb_printf into empty sb */
+	sb_t sb2 = sb_init();
+	sb_printf(&sb2, "direct prinf %d", 42);
+	ATF_REQUIRE_STREQ(sb2.d, "direct prinf 42");
+	sb_fini(&sb2);
+
+	sb_fini(&sb);
 }
 
 ATF_TC_BODY(voodoo_header_manipulation, tc)
@@ -5658,11 +5774,16 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, unistr_header_to_utf8);
 	ATF_TP_ADD_TC(tp, unistr_utf8_to_header);
 	ATF_TP_ADD_TC(tp, unistr_roundtrip);
+	ATF_TP_ADD_TC(tp, unistr_escaped_to_utf8);
 	ATF_TP_ADD_TC(tp, line_startwithany);
 	ATF_TP_ADD_TC(tp, save_hdr_if_needed);
 	ATF_TP_ADD_TC(tp, autosubscribe_sender);
 	ATF_TP_ADD_TC(tp, scan_headers_test);
 	ATF_TP_ADD_TC(tp, substitute_test);
+	ATF_TP_ADD_TC(tp, sb_cat_n);
+	ATF_TP_ADD_TC(tp, sb_reset);
+	ATF_TP_ADD_TC(tp, sb_str);
+	ATF_TP_ADD_TC(tp, sb_printf_growth);
 	ATF_TP_ADD_TC(tp, voodoo_replyto);
 	ATF_TP_ADD_TC(tp, voodoo_replyto_once);
 	ATF_TP_ADD_TC(tp, voodoo_prefix_dedup);
