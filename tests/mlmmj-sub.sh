@@ -20,13 +20,25 @@ tests_init \
 	add_digest_with_both \
 	add_nomail_with_both \
 	add_batch \
+	add_batch_invalid \
+	add_C_R_conflict \
+	add_f_flag \
+	add_r_flag \
+	add_U_flag \
 	remove_basics \
 	remove_normal \
 	remove_normal_confirm \
 	remove_normal_confirm_and_send_owner \
 	remove_normal_owner \
 	remove_nomail \
-	remove_digest
+	remove_digest \
+	remove_C_flag \
+	remove_N_flag \
+	remove_r_flag \
+	remove_U_flag \
+	remove_d_n_N_conflict \
+	remove_C_c_conflict \
+	remove_C_R_conflict
 
 add_normal_body()
 {
@@ -442,6 +454,57 @@ add_batch_body()
 	    cat ml/subscribers.d/a ml/subscribers.d/b ml/subscribers.d/c
 }
 
+add_batch_invalid_body()
+{
+	init_ml ml
+	mlmmjsub=$(command -v mlmmj-sub)
+	echo test@mlmmjtest > ml/control/listaddress
+	# Batch with invalid addresses (no @) should be skipped
+	printf "invalid\nvalid@test.org\n# comment\n\n" | \
+	    $mlmmjsub -L ml -a - -f -q -s 2>/dev/null
+	# Only valid@test.org should be subscribed
+	atf_check -o inline:"valid@test.org\n" cat ml/subscribers.d/v
+}
+
+add_C_R_conflict_body()
+{
+	mlmmjsub=$(command -v mlmmj-sub)
+	init_ml ml
+	echo "test@mlmmjtest" > ml/control/listaddress
+	atf_check -s exit:1 -e "inline:mlmmj-sub: Cannot specify both -C and -R\n$mlmmjsub -h for help\n" \
+	    $mlmmjsub -L ml -a john@doe.org -C -R
+}
+
+add_f_flag_body()
+{
+	init_ml ml
+	mlmmjsub=$(command -v mlmmj-sub)
+	echo test@mlmmjtest > ml/control/listaddress
+	# -f forces subscription and skips moderation
+	atf_check -s exit:0 $mlmmjsub -L ml -f -a john@doe.org
+	atf_check -o inline:"john@doe.org\n" cat ml/subscribers.d/j
+}
+
+add_r_flag_body()
+{
+	init_ml ml
+	mlmmjsub=$(command -v mlmmj-sub)
+	echo test@mlmmjtest > ml/control/listaddress
+	# -r is internal use (behave as if request arrived via email)
+	atf_check -s exit:0 $mlmmjsub -L ml -r -a john@doe.org
+	atf_check -o inline:"john@doe.org\n" cat ml/subscribers.d/j
+}
+
+add_U_flag_body()
+{
+	init_ml ml
+	mlmmjsub=$(command -v mlmmj-sub)
+	echo test@mlmmjtest > ml/control/listaddress
+	# -U disables uid switching
+	atf_check -s exit:0 $mlmmjsub -L ml -U -a john@doe.org
+	atf_check -o inline:"john@doe.org\n" cat ml/subscribers.d/j
+}
+
 remove_normal_body()
 {
 	init_ml ml
@@ -815,4 +878,83 @@ To ensure a silent unsubscription, use -q -s"
 	atf_check -s exit:0 -o "inline:${helptxt}\n" $mlmmjsub -h
 	atf_check -s exit:0 -o "match:mlmmj-unsub version" $mlmmjsub -V
 	atf_check -s exit:1 -e "inline:mlmmj-unsub: You have to specify -L and -a\n$mlmmjsub -h for help\n" $mlmmjsub
+}
+
+remove_C_flag_body()
+{
+	init_ml ml
+	mlmmjsub=$(command -v mlmmj-unsub)
+	echo test@mlmmjtest > ml/control/listaddress
+	echo "john@doe.org" > ml/subscribers.d/j
+	start_fakesmtp ml
+	echo "heloname" > ml/control/smtphelo
+	rmdir ml/text
+	ln -s ${top_srcdir}/listtexts/en ml/text
+	# -C requests confirmation, so john should NOT be removed yet
+	# but a confirmation mail should be sent
+	atf_check -s exit:0 $mlmmjsub -L ml -C -a john@doe.org
+	atf_check -o inline:"john@doe.org\n" cat ml/subscribers.d/j
+	# There should be a confirmation file in unsubconf
+	atf_check -o match:"^ml/unsubconf/.*" find ml/unsubconf/ -type f
+	kill_fakesmtp
+}
+
+remove_N_flag_body()
+{
+	init_ml ml
+	mlmmjsub=$(command -v mlmmj-unsub)
+	echo test@mlmmjtest > ml/control/listaddress
+	echo "john@doe.org" > ml/subscribers.d/j
+	# -N removes from normal subscription
+	atf_check -s exit:0 $mlmmjsub -L ml -N -a john@doe.org
+	atf_check -s exit:1 test -f ml/subscribers.d/j
+}
+
+remove_d_n_N_conflict_body()
+{
+	mlmmjsub=$(command -v mlmmj-unsub)
+	init_ml ml
+	echo "test@mlmmjtest" > ml/control/listaddress
+	atf_check -s exit:1 -e "inline:mlmmj-unsub: Specify at most one of -d, -n and -N\n$mlmmjsub -h for help\n" \
+	    $mlmmjsub -L ml -a john@doe.org -d -n -N
+}
+
+remove_C_c_conflict_body()
+{
+	mlmmjsub=$(command -v mlmmj-unsub)
+	init_ml ml
+	echo "test@mlmmjtest" > ml/control/listaddress
+	atf_check -s exit:1 -e "inline:mlmmj-unsub: Cannot specify both -C and -c\n$mlmmjsub -h for help\n" \
+	    $mlmmjsub -L ml -a john@doe.org -C -c
+}
+
+remove_C_R_conflict_body()
+{
+	mlmmjsub=$(command -v mlmmj-unsub)
+	init_ml ml
+	echo "test@mlmmjtest" > ml/control/listaddress
+	atf_check -s exit:1 -e "inline:mlmmj-unsub: Cannot specify both -C and -R\n$mlmmjsub -h for help\n" \
+	    $mlmmjsub -L ml -a john@doe.org -C -R
+}
+
+remove_r_flag_body()
+{
+	init_ml ml
+	mlmmjsub=$(command -v mlmmj-unsub)
+	echo test@mlmmjtest > ml/control/listaddress
+	echo "john@doe.org" > ml/subscribers.d/j
+	# -r is internal use (behave as if request arrived via email)
+	atf_check -s exit:0 $mlmmjsub -L ml -r -a john@doe.org
+	atf_check -s exit:1 test -f ml/subscribers.d/j
+}
+
+remove_U_flag_body()
+{
+	init_ml ml
+	mlmmjsub=$(command -v mlmmj-unsub)
+	echo test@mlmmjtest > ml/control/listaddress
+	echo "john@doe.org" > ml/subscribers.d/j
+	# -U disables uid switching
+	atf_check -s exit:0 $mlmmjsub -L ml -U -a john@doe.org
+	atf_check -s exit:1 test -f ml/subscribers.d/j
 }
