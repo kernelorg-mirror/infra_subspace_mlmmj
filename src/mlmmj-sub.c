@@ -46,7 +46,6 @@
 #include "chomp.h"
 #include "utils.h"
 #include "send_help.h"
-#include "xstring.h"
 
 extern const char * const subtypes[];
 

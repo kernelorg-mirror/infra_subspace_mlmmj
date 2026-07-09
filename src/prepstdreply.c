@@ -42,7 +42,7 @@
 #include "wrappers.h"
 #include "mlmmj.h"
 #include "unistr.h"
-#include "xstring.h"
+#include "sb.h"
 #include "do_all_the_voodoo_here.h"
 
 struct substitution {
@@ -173,7 +173,7 @@ get_memory_line(void *state)
 		s->pos = s->lines;
 		return (s->pos);
 	}
- 
+
 	s->pos += strlen(s->pos);
 	if (s->pos >= s->end)
 		return (NULL);
@@ -343,7 +343,7 @@ static char *numeric_token(char *token)
 }
 
 static size_t
-do_substitute(xstring *str, const char *line, int listfd, int ctrlfd, text *txt)
+do_substitute(sb_t *str, const char *line, int listfd, int ctrlfd, text *txt)
 {
 	const char *key, *endpos;
 	char *value = NULL;
@@ -357,7 +357,7 @@ do_substitute(xstring *str, const char *line, int listfd, int ctrlfd, text *txt)
 	key = line;
 	endpos = strchr(key, '$');
 	if (endpos == NULL) {
-		fputc('$', str->fp);
+		sb_append_c(str, '$');
 		return (0);
 	}
 	len = endpos - key;
@@ -375,7 +375,7 @@ do_substitute(xstring *str, const char *line, int listfd, int ctrlfd, text *txt)
 			subst = txt->substs.d[_i];
 			if (strlen (subst->token) == len &&
 			    strncmp(key, subst->token, len) == 0) {
-				fputs(subst->subst, str->fp);
+				sb_append(str, subst->subst);
 				found = true;
 				break;
 			}
@@ -384,7 +384,7 @@ do_substitute(xstring *str, const char *line, int listfd, int ctrlfd, text *txt)
 	free(value);
 	free(token);
 	if (!found)
-		fprintf(str->fp, "$%.*s$", (int)(endpos - key), key);
+		sb_printf(str, "$%.*s$", (int)(endpos - key), key);
 	return (len +1);
 }
 
@@ -449,17 +449,17 @@ static void substitute_one(char **line_p, char **pos_p, int *width_p,
 char *substitute(const char *line, int listfd, int ctrlfd, text *txt)
 {
 	const char *pos = line;
-	xstring *str = xstring_new();
+	sb_t str = sb_init();
 
 	while (*pos != '\0') {
 		if (*pos != '$')
-			fputc(*pos, str->fp);
+			sb_append_c(&str, *pos);
 		else
-			pos += do_substitute(str, pos, listfd, ctrlfd, txt);
+			pos += do_substitute(&str, pos, listfd, ctrlfd, txt);
 		pos++;
 	}
 
-	return xstring_get(str);
+	return sb_get(&str);
 }
 
 text *open_text_file(int listfd, const char *filename)

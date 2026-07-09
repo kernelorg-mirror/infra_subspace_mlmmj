@@ -52,7 +52,7 @@
 #include "chomp.h"
 #include "mlmmj-process.h"
 #include "utils.h"
-#include "xstring.h"
+#include "sb.h"
 #include "send_help.h"
 #include "send_mail.h"
 
@@ -93,7 +93,7 @@ static bool is_moderator(int listfd, const char *address,
 	char *line = NULL;
 	size_t linecap = 0;
 	int moderatorsfd, foundaddr = 0;
-	xstring *str = NULL;
+	sb_t str = sb_init();
 	FILE *fp;
 
 	if ((moderatorsfd = openat(listfd, "control/moderators", O_RDONLY)) < 0) {
@@ -114,15 +114,12 @@ static bool is_moderator(int listfd, const char *address,
 			if (moderators == NULL)
 				goto out;
 		}
-		if (moderators) {
-			if (str == NULL)
-				str = xstring_new();
-			fprintf(str->fp, "%s\n", line);
-		}
+		if (moderators)
+			sb_append(&str, line);
 	}
 
 	if (moderators)
-		*moderators = xstring_get(str);
+		*moderators = sb_get(&str);
 out:
 	free(line);
 	fclose(fp);

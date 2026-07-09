@@ -24,7 +24,7 @@
 #include <unistd.h>
 
 #include "xmalloc.h"
-#include "xstring.h"
+#include "sb.h"
 #include "gethdrline.h"
 #include "strgen.h"
 #include "wrappers.h"
@@ -37,7 +37,8 @@ char *gethdrline(FILE *f, char **unfolded)
 	char *line = NULL;
 	int ch;
 	size_t linecap = 0;
-	xstring *folded = NULL, *raw = NULL;
+	sb_t folded = sb_init();
+	sb_t raw = sb_init();
 
 	if (getline(&line, &linecap, f) <= 0) {
 		if (unfolded != NULL)
@@ -45,24 +46,21 @@ char *gethdrline(FILE *f, char **unfolded)
 		return NULL;
 	}
 
-	if (unfolded != NULL) {
-		raw = xstring_new();
-		fputs(line, raw->fp);
-	}
+	if (unfolded != NULL)
+		sb_append(&raw, line);
 
 	chomp(line);
 
 	/* end-of-headers */
 	if (*line == '\0') {
-		xstring_free(raw);
+		sb_free(&raw);
 		if (unfolded != NULL)
 			*unfolded = NULL;
 		free(line);
 		return NULL;
 	}
 
-	folded = xstring_new();
-	fputs(line, folded->fp);
+	sb_append(&folded, line);
 
 	for(;;) {
 		/* look ahead one char to determine if we need to fold */
@@ -77,14 +75,14 @@ char *gethdrline(FILE *f, char **unfolded)
 		if (getline(&line, &linecap, f) <= 0)
 			break;
 
-		if (raw != NULL)
-			fputs(line, raw->fp);
+		if (raw.len != 0)
+			sb_append(&raw, line);
 
 		chomp(line);
-		fputs(line, folded->fp);
+		sb_append(&folded, line);
 	}
 	free(line);
 	if (unfolded != NULL)
-		*unfolded = xstring_get(raw);
-	return xstring_get(folded);
+		*unfolded = sb_get(&raw);
+	return sb_get(&folded);
 }

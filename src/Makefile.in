@@ -10,7 +10,7 @@ SRCS= access.c archive.c mail-functions.c chomp.c incindexfile.c \
       do_all_the_voodoo_here.c log_oper.c send_list.c \
       unistr.c gethdrline.c send_digest.c \
       statctrl.c ctrlvalue.c getlistdelim.c ctrlvalues.c \
-      utils.c mlmmj.c send_mail.c
+      utils.c mlmmj.c send_mail.c sb.c
 
 LOCAL_CFLAGS= -I@builddir@ -I$(top_srcdir)/include -DDEFAULTTEXTDIR='"@textlibdir@"'
 

@@ -39,7 +39,7 @@
 #endif
 
 #include "xmalloc.h"
-#include "xstring.h"
+#include "sb.h"
 #include "mlmmj.h"
 #include "strgen.h"
 #include "wrappers.h"
@@ -133,7 +133,7 @@ char *hostnamestr(void)
 			free(hostname);
 			return xstrdup("localhost");
 		}
-		
+
 		/* Check if the hostname was truncated: gethostname() may
 		 * return 0 even when truncation occurs (POSIX allows it).
 		 * If the string fills the buffer, retry with a larger one. */
@@ -234,13 +234,13 @@ decode_char(const char *s)
 char *
 decode_qp(const char *qpstr, bool qformat)
 {
-	xstring *str = xstring_new();
+	sb_t str = sb_init();
 
 	while (*qpstr) {
 		switch (*qpstr) {
 		case '=':
 			if (strlen(qpstr) < 2) {
-				xstring_putc(str, *qpstr);
+				sb_append_c(&str, *qpstr);
 				break;
 			}
 			if (qpstr[1] == '\r' && qpstr[2] == '\n') {
@@ -252,30 +252,30 @@ decode_qp(const char *qpstr, bool qformat)
 				break;
 			}
 			if (strchr("0123456789ABCDEFabcdef", qpstr[1]) == NULL) {
-				xstring_putc(str, *qpstr);
+				sb_append_c(&str, *qpstr);
 				break;
 			}
 			if (strchr("0123456789ABCDEFabcdef", qpstr[2]) == NULL) {
-				xstring_putc(str, *qpstr);
+				sb_append_c(&str, *qpstr);
 				break;
 			}
-			xstring_putc(str, decode_char(qpstr));
+			sb_append_c(&str, decode_char(qpstr));
 			qpstr += 2;
 			break;
 		case '_':
 			if (qformat) {
-				xstring_putc(str, 0x20);
+				sb_append_c(&str, 0x20);
 				break;
 			}
 			/* FALLTHROUGH */
 		default:
-			xstring_putc(str, *qpstr);
+			sb_append_c(&str, *qpstr);
 			break;
 		}
 		qpstr++;
 	}
 
-	return (xstring_get(str));
+	return (sb_get(&str));
 }
 
 bool

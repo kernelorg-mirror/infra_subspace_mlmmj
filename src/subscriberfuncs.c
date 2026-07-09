@@ -43,7 +43,7 @@
 #include "strgen.h"
 #include "send_help.h"
 #include "statctrl.h"
-#include "xstring.h"
+#include "sb.h"
 #include "ctrlvalues.h"
 
 #include "find_email_adr.h"
@@ -517,7 +517,7 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 	strlist *submods;
 	const char *type;
 	pid_t childpid, pid;
-	xstring *str = NULL;
+	sb_t str = sb_init();
 	int modfd = -1;
 
 	type = subtypes[sub->typesub];
@@ -571,11 +571,9 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 	gen_addr_cookie(obstruct, ml, "obstruct-", cookie);
 	free(cookie);
 	vec_foreach(*submods, _i) {
-		if (str == NULL)
-			str = xstring_new();
-		fprintf(str->fp, "%s\n", submods->d[_i]);
+		sb_printf(&str, "%s\n", submods->d[_i]);
 	}
-	moderators = xstring_get(str);
+	moderators = sb_get(&str);
 	mls = init_memory_lines(moderators);
 	free(moderators);
 
@@ -593,7 +591,7 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 	queuefilename = prepstdreply(txt, ml, "$listowner$", to, replyto);
 	MY_ASSERT(queuefilename);
 	close_text(txt);
-	
+
 	/* we might need to exec more than one mlmmj-send */
 
 	if (statctrl(ml->ctrlfd, "nosubmodmails"))
@@ -626,7 +624,7 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 
 	free(to);
 	free(replyto);
-	
+
 	/* send mail to requester that the list is submod'ed */
 
 	txt = open_text(ml->fd,
