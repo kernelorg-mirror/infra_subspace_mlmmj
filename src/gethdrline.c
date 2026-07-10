@@ -47,20 +47,20 @@ char *gethdrline(FILE *f, char **unfolded)
 	}
 
 	if (unfolded != NULL)
-		sb_append(&raw, line);
+		sb_cat(&raw, line);
 
 	chomp(line);
 
 	/* end-of-headers */
 	if (*line == '\0') {
-		sb_free(&raw);
+		sb_fini(&raw);
 		if (unfolded != NULL)
 			*unfolded = NULL;
 		free(line);
 		return NULL;
 	}
 
-	sb_append(&folded, line);
+	sb_cat(&folded, line);
 
 	for(;;) {
 		/* look ahead one char to determine if we need to fold */
@@ -76,10 +76,10 @@ char *gethdrline(FILE *f, char **unfolded)
 			break;
 
 		if (raw.len != 0)
-			sb_append(&raw, line);
+			sb_cat(&raw, line);
 
 		chomp(line);
-		sb_append(&folded, line);
+		sb_cat(&folded, line);
 	}
 	free(line);
 	if (unfolded != NULL)

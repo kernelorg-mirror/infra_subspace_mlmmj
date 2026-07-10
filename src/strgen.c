@@ -240,7 +240,7 @@ decode_qp(const char *qpstr, bool qformat)
 		switch (*qpstr) {
 		case '=':
 			if (strlen(qpstr) < 2) {
-				sb_append_c(&str, *qpstr);
+				sb_cat_c(&str, *qpstr);
 				break;
 			}
 			if (qpstr[1] == '\r' && qpstr[2] == '\n') {
@@ -252,24 +252,24 @@ decode_qp(const char *qpstr, bool qformat)
 				break;
 			}
 			if (strchr("0123456789ABCDEFabcdef", qpstr[1]) == NULL) {
-				sb_append_c(&str, *qpstr);
+				sb_cat_c(&str, *qpstr);
 				break;
 			}
 			if (strchr("0123456789ABCDEFabcdef", qpstr[2]) == NULL) {
-				sb_append_c(&str, *qpstr);
+				sb_cat_c(&str, *qpstr);
 				break;
 			}
-			sb_append_c(&str, decode_char(qpstr));
+			sb_cat_c(&str, decode_char(qpstr));
 			qpstr += 2;
 			break;
 		case '_':
 			if (qformat) {
-				sb_append_c(&str, 0x20);
+				sb_cat_c(&str, 0x20);
 				break;
 			}
 			/* FALLTHROUGH */
 		default:
-			sb_append_c(&str, *qpstr);
+			sb_cat_c(&str, *qpstr);
 			break;
 		}
 		qpstr++;

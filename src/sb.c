@@ -12,7 +12,7 @@ sb_grow(sb_t *sb, size_t needed)
 {
 	if (needed <= sb->cap)
 		return;
-	size_t newcap = sb->cap ? sb->cap : 64;
+	size_t newcap = sb->cap ? sb->cap * 2 : 512;
 	while (newcap < needed)
 		newcap *= 2;
 	char *nd = realloc(sb->d, newcap);
@@ -23,7 +23,7 @@ sb_grow(sb_t *sb, size_t needed)
 }
 
 void
-sb_append(sb_t *sb, const char *s)
+sb_cat(sb_t *sb, const char *s)
 {
 	size_t slen = strlen(s);
 	sb_grow(sb, sb->len + slen + 1);
@@ -32,7 +32,7 @@ sb_append(sb_t *sb, const char *s)
 }
 
 void
-sb_append_n(sb_t *sb, const char *s, size_t n)
+sb_cat_n(sb_t *sb, const char *s, size_t n)
 {
 	if (n == 0)
 		return;
@@ -43,7 +43,7 @@ sb_append_n(sb_t *sb, const char *s, size_t n)
 }
 
 void
-sb_append_c(sb_t *sb, char c)
+sb_cat_c(sb_t *sb, char c)
 {
 	sb_grow(sb, sb->len + 2);
 	sb->d[sb->len++] = c;
@@ -57,7 +57,7 @@ sb_printf(sb_t *sb, const char *fmt, ...)
 	int n;
 
 	if (sb->cap == 0)
-		sb_grow(sb, 64);
+		sb_grow(sb, 512);
 
 	for (;;) {
 		size_t remain = sb->cap - sb->len;
@@ -78,8 +78,10 @@ sb_printf(sb_t *sb, const char *fmt, ...)
 }
 
 void
-sb_free(sb_t *sb)
+sb_fini(sb_t *sb)
 {
+	if (sb == NULL)
+		return;
 	free(sb->d);
 	sb->d = NULL;
 	sb->len = 0;
@@ -89,6 +91,8 @@ sb_free(sb_t *sb)
 void
 sb_reset(sb_t *sb)
 {
+	if (sb == NULL)
+		return;
 	sb->len = 0;
 	if (sb->d)
 		sb->d[0] = '\0';
@@ -97,6 +101,8 @@ sb_reset(sb_t *sb)
 char *
 sb_get(sb_t *sb)
 {
+	if (sb == NULL)
+		return (NULL);
 	if (sb->d == NULL) {
 		sb_grow(sb, 1);
 		sb->d[0] = '\0';

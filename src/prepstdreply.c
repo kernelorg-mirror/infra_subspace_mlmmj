@@ -357,7 +357,7 @@ do_substitute(sb_t *str, const char *line, int listfd, int ctrlfd, text *txt)
 	key = line;
 	endpos = strchr(key, '$');
 	if (endpos == NULL) {
-		sb_append_c(str, '$');
+		sb_cat_c(str, '$');
 		return (0);
 	}
 	len = endpos - key;
@@ -375,7 +375,7 @@ do_substitute(sb_t *str, const char *line, int listfd, int ctrlfd, text *txt)
 			subst = txt->substs.d[_i];
 			if (strlen (subst->token) == len &&
 			    strncmp(key, subst->token, len) == 0) {
-				sb_append(str, subst->subst);
+				sb_cat(str, subst->subst);
 				found = true;
 				break;
 			}
@@ -453,7 +453,7 @@ char *substitute(const char *line, int listfd, int ctrlfd, text *txt)
 
 	while (*pos != '\0') {
 		if (*pos != '$')
-			sb_append_c(&str, *pos);
+			sb_cat_c(&str, *pos);
 		else
 			pos += do_substitute(&str, pos, listfd, ctrlfd, txt);
 		pos++;

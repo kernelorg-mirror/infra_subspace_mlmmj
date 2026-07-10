@@ -6,7 +6,7 @@
  * Usage:
  *   sb_t sb = sb_init();
  *   sb_printf(&sb, "hello %s", "world");
- *   sb_append(&sb, "!");
+ *   sb_cat(&sb, "!");
  *   char *s = sb_get(&sb);  // transfers ownership
  *   free(s);
  *
@@ -14,7 +14,7 @@
  *   sb_t sb2 = sb_init();
  *   sb_printf(&sb2, "answer = %d", 42);
  *   puts(sb2.d);   // direct access
- *   sb_free(&sb2); // frees buffer
+ *   sb_fini(&sb2); // frees buffer
  */
 
 #ifndef SB_H
@@ -43,11 +43,11 @@ typedef struct {
 
 /* Larger functions defined in sb.c (non-inline to save space). */
 void sb_grow(sb_t *sb, size_t needed);
-void sb_append(sb_t *sb, const char *s);
-void sb_append_n(sb_t *sb, const char *s, size_t n);
-void sb_append_c(sb_t *sb, char c);
+void sb_cat(sb_t *sb, const char *s);
+void sb_cat_n(sb_t *sb, const char *s, size_t n);
+void sb_cat_c(sb_t *sb, char c);
 void sb_printf(sb_t *sb, const char *fmt, ...) SB_PRINTF_ATTR(2, 3);
-void sb_free(sb_t *sb);
+void sb_fini(sb_t *sb);
 void sb_reset(sb_t *sb);
 char *sb_get(sb_t *sb);
 char *sb_str(sb_t *sb);
