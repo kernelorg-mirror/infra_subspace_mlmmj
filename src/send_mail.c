@@ -157,22 +157,26 @@ int do_bouncemail(int listfd, int ctrlfd, const char *from)
 	num = strrchr(myfrom, '-');
 	if (num == NULL) {
 		free(tofree);
+		free(listdelim);
 		return (0); /* Success when malformed 'from' */
 	}
 	num++;
 	c = strstr(myfrom, listdelim);
 	if (c == NULL) {
 		free(tofree);
+		free(listdelim);
 		return (0); /* Success when malformed 'from' */
 	}
 	myfrom = strchr(c, '-'); /* malformed entry with delimiter after the -num */
 	if (myfrom == NULL) {
 		free(tofree);
+		free(listdelim);
 		return (0);
 	}
 	myfrom++;
 	if (num <= myfrom) {
 		free(tofree);
+		free(listdelim);
 		return (0); /* Success when malformed 'from' */
 	}
 	addr = xstrndup(myfrom, num - myfrom - 1);

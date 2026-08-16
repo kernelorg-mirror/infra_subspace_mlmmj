@@ -466,7 +466,7 @@ unsubscribe(int listfd, const char *address, enum subtype typesub)
 bounce_t
 bouncemail(int listfd, const char *theaddress, const char *identifier)
 {
-	char *tmp, buf[26];
+	char *tmp, buf[27];
 	char *address = lowercase(theaddress);
 	int fd, bdfd, bfd;
 	time_t t;
