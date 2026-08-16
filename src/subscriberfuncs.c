@@ -558,7 +558,6 @@ static void moderate_sub(struct ml *ml, const char *subaddr,
 	if(a == NULL) {
 		/* free the submods struct from above */
 		vec_free_and_free(submods, free);
-		free(submods);
 		submods = ctrlvalues(ml->ctrlfd, "owner");
 		modfd = openat(ml->ctrlfd, "owner", O_RDONLY);
 	}
