@@ -126,10 +126,10 @@ send_probe(struct ml *ml, const char *addr)
 		free(from);
 		return (false);
 	}
-	free(probefile);
 	if (mail.fp)
 		fclose(mail.fp);
 	close(bfd);
+	free(probefile);
 	free(myaddr);
 	free(from);
 	return (true);
