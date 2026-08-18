@@ -7,19 +7,35 @@
 
 #include "sb.h"
 
+/* Growth strategy modeled on FreeBSD's sbuf(9): double while the buffer
+ * is smaller than one page, then grow linearly by page-sized increments.
+ * This keeps the capacity close to the used length for large buffers,
+ * unlike plain doubling which over-allocates up to 2x. */
+#define SB_MINEXTENDSIZE 16		/* power of 2 */
+#define SB_MAXEXTENDSIZE 4096		/* one page */
+#define SB_MAXEXTENDINCR 4096		/* page size */
+
 void
 sb_grow(sb_t *sb, size_t needed)
 {
+	size_t newcap;
+
 	if (needed <= sb->cap)
 		return;
-	size_t newcap = sb->cap ? sb->cap * 2 : 512;
-	while (newcap < needed)
-		newcap *= 2;
+	if (needed < SB_MAXEXTENDSIZE) {
+		newcap = SB_MINEXTENDSIZE;
+		while (newcap < needed)
+			newcap *= 2;
+	} else {
+		newcap = (needed + (SB_MAXEXTENDINCR - 1)) &
+		    ~(size_t)(SB_MAXEXTENDINCR - 1);
+	}
 	char *nd = realloc(sb->d, newcap);
 	if (nd == NULL)
 		abort();
 	sb->d = nd;
 	sb->cap = newcap;
+	sb->d[sb->len] = '\0';
 }
 
 void
