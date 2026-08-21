@@ -431,11 +431,11 @@ Unformatted substitutions that are available are:
   DEPRECATED: use %bouncenumbers%
 
 - $confaddr$
+  DEPRECATED: this substitution no longer works; use $confirmaddr$
 - $confirmaddr$
   (available only in confirm-[un]sub-*)
   the address to which to send mail to confirm the (un-)subscription in
   question
-  NOTE: the short version of this substitution is DEPRECATED
 
 - $control C$
   the contents of the control file named C in listdir/control, with its final
