@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <unistd.h>
 
 #include "xmalloc.h"
@@ -114,6 +115,11 @@ disarmedEmail(const char *s)
 	if (s == NULL || *s == '\0')
 		return (NULL);
 	cpy = xstrdup(s);
+	/* Skip leading whitespace (e.g. the space after the From: colon) */
+	for (p = cpy; *p != '\0' && isspace((unsigned char)*p); p++)
+		;
+	if (p != cpy)
+		memmove(cpy, p, strlen(p) + 1);
 	for (p = cpy; *p != '\0'; p++) {
 		switch (*p) {
 		case '<':

@@ -30,6 +30,7 @@ tests_init \
 	customheaders \
 	customheaders_blanks \
 	customheaders_with_subst \
+	customheaders_disarmedfrom \
 	verp \
 	normal_email_with_dot \
 	multi_line_headers \
@@ -3513,5 +3514,36 @@ EOF
 	atf_check -s exit:0 $mlmmjreceive -L list -P -F <mailcontent
 	file=$(find list/incoming -type f)
 	atf_check -o match:"X-ThisMailContainsUnwantedMimeParts: Y" cat $file
+}
+
+# Regression test for #108: the $disarmedfrom$ macro used to always
+# contain a leading space because the From: header value keeps the
+# whitespace after the colon. disarmedEmail() now skips leading
+# whitespace, so $disarmedfrom$ renders without a leading space.
+customheaders_disarmedfrom_body()
+{
+	init_ml list
+	rmdir list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
+	echo test@mlmmjtest > list/control/listaddress
+	touch list/control/nolistheaders
+	start_fakesmtp list
+	echo "heloname" > list/control/smtphelo
+	printf "X-Original-From: \$disarmedfrom\$\n" > list/control/customheaders
+
+	printf "user@test" > list/subscribers.d/u
+cat > mailfile <<EOF
+From: John Doe <john@example.com>
+To: test@mlmmjtest
+Return-Path: john@example.com
+Subject: hello
+
+hello world
+EOF
+	atf_check -s exit:0 $mlmmjreceive -L list -F <mailfile
+	# disarmedfrom must not have a leading space: it is "John Doe
+	# (john=example.com)", not " John Doe (john=example.com)"
+	atf_check -o match:"X-Original-From: John Doe \(john=example\.com\)" \
+	    sed -e "/^Message-ID:/d; /^Date:/d;" mail-1.txt
 }
 
