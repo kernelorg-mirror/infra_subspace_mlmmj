@@ -254,6 +254,15 @@ entire content is used as value, it's marked "text".
 
    With this option the maximal allowed size of incoming mails can be specified.
 
+ * mimedeny			(list)
+
+   If this file exists, incoming mails are scanned for their MIME content
+   type (`Content-Type:` header). If the type matches one of the entries in
+   this file (matched as a prefix), the mail is not rejected but flagged by
+   adding the header `X-ThisMailContainsUnwantedMimeParts: Y`. For
+   multipart messages, the content types of nested parts are checked too.
+   Example: `text/html`.
+
  * nomaxmailsizedenymails	(boolean)
 
    If this is set, no reject notifications caused by violation of maxmailsize
