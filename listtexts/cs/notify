@@ -4,7 +4,7 @@
 %text prologue%
 
 %ifaction sub%
-  %^%%wrap%Adresa <$subaddr$> byla přihlášena do 
+  %^%%wrap%Adresa <$subaddr$> byla přihlášena do
   %iftype normal% normal %endif%
   %iftype digest% digest %endif%
   %iftype nomail% no-mail %endif%

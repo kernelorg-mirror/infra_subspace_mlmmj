@@ -38,7 +38,7 @@ Zpráva byla zamítnuta moderátorem konference.
     Můžete použít emailovou adresu <$list+$owner@$domain$>.
   %endif%
 
-  %^%%wrap%Pokud si myslíte (nebo víte), že jste členem konference, zaslal/a 
+  %^%%wrap%Pokud si myslíte (nebo víte), že jste členem konference, zaslal/a
   jste zprávu z jiné emailové adresy, než se kterou jste přihlášen/a.
   Můžete ji zjistit z uvítacího emailu do konference, který jste odbržel/a.
   (Podívejte se na pole "Return-Path" v hlavičce uvítacího emailu.)

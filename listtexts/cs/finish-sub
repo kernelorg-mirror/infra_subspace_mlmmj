@@ -13,12 +13,12 @@ Subject: Vítejte v konferenci $list$@$domain$
   Správa konference povolila přihlášení do konference.
 %endif%
 %ifreason switch%
-  Vaše členství v konferenci bylo změněno na 
+  Vaše členství v konferenci bylo změněno na
 %else%
   %ifreason admin%
-    Správce vás přihlásil k 
+    Správce vás přihlásil k
   %else%
-    Jste nyní přihlášeni k 
+    Jste nyní přihlášeni k
   %endif%
 %endif%
 %iftype normal% normal %endif%

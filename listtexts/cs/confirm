@@ -13,17 +13,17 @@
   %endif%
   vyžádal přidání vaší emailové adresy <$subaddr$>
   %iftype normal%
-    do konference. To znamená, že kdykoli, když někdo pošle zprávu do konference, 
+    do konference. To znamená, že kdykoli, když někdo pošle zprávu do konference,
     dostanete kopii této zprávy.
   %endif%
   %iftype digest%
-    do Digest verze konference. To znamená, že zprávy zaslané do konference 
-    budete dostávat v jedné zprávě. Buďto po uplynutí pravidelné lhůty, nebo 
+    do Digest verze konference. To znamená, že zprávy zaslané do konference
+    budete dostávat v jedné zprávě. Buďto po uplynutí pravidelné lhůty, nebo
     až se naschromáždí dostatek zpráv.
   %endif%
   %iftype nomail%
     do No-mail verze konference. To znamená, že nebudete dostávat žádné zprávy,
-    ale jste považován za člena konference. Takže pokud je někde přístupný archiv, 
+    ale jste považován za člena konference. Takže pokud je někde přístupný archiv,
     můžete jej procházet a hlavně můžete do konference zasílat zprávy (a být třeba
     prihlášen ještě pod jinou adresou).
   %endif%
