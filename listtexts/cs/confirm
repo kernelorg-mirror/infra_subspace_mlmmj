@@ -11,7 +11,7 @@
   %ifreason request%
     Někdo (doufáme, že vy)
   %endif%
-  vyžádal přidání vaší emailové adresy <$subaddr$>
+  požádal o přidání Vaší emailové adresy <$subaddr$>
   %iftype normal%
     do konference. To znamená, že kdykoli, když někdo pošle zprávu do konference,
     dostanete kopii této zprávy.
@@ -23,7 +23,7 @@
   %endif%
   %iftype nomail%
     do no-mail verze konference. To znamená, že nebudete dostávat žádné zprávy,
-    ale jste považován za člena. Například můžete přispívat do uzavřené konference
+    ale jste považováni za člena. Například můžete přispívat do uzavřené konference
     (takové, do které mohou přispívat pouze členové), a sledovat konferenci
     prostřednictvím webového archívu nebo jiné přihlášené emailové adresy.
   %endif%
