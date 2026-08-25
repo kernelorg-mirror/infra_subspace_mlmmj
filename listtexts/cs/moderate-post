@@ -1,4 +1,4 @@
-Subject: Žádost o moderování $list$@$domain$: $subject$
+Subject: Moderujte prosím konferenci $list$@$domain$: $subject$
 MIME-Version: 1.0
 Content-Type: multipart/mixed;
  boundary="=_$random0$$random1$_="
@@ -10,7 +10,8 @@ Content-Transfer-Encoding: 8bit
 
 %text prologue%
 
-%wrap%Zpráva od <$posteraddr$> s předmětem "$subject$" byla zaslána a nastal požadavek na moderování,
+%wrap%Zpráva od <$posteraddr$> s předmětem "$subject$" byla zaslána a nastal
+požadavek na moderování,
 %ifreason modnonsubposts%
   protože odesílatel není členem konference.
 %endif%
@@ -22,11 +23,11 @@ Content-Transfer-Encoding: 8bit
 %endif%
 Zpráva je uvedena níže.
 
-%wrap%K potvrzení a odeslání do konference zašlete zprávu na <$releaseaddr$>,
-což lze většinou udělat jen odpovědí na tento emailový požadavek.
+%wrap%Pro schválení a uvolnění zprávy do konference zašlete email na
+<$releaseaddr$>, což lze většinou udělat odpovědí na tento email.
 
-%wrap%Pokud nechcete zprávu odeslat, zašlete zprávu na <$rejectaddr$>,
-nebo prostě jednoduše tento email ignorujte.
+%wrap%Pokud nechcete zprávu schválit, zašlete zprávu na <$rejectaddr$>,
+nebo jednoduše tento email ignorujte.
 
 Následující moderátoři obrželi tento požadavek:
 - %moderators%

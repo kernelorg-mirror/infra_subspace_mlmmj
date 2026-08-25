@@ -1,4 +1,4 @@
-%ifaction unsub%Subject: Nashledanou v $list$@$domain$%endif%
+%ifaction unsub%Subject: Nashledanou z $list$@$domain$%endif%
 %ifaction release reject%Subject: Moderovaná konference $list$@$domain$: $subject$%endif%
 %ifaction permit obstruct%Subject: Chráněná konference $list$@$domain$: $subaddr$%endif%
 %ifaction post%Subject: Zasláno do $list$@$domain$: $subject$%endif%
@@ -10,17 +10,17 @@
   %ifreason request%
   %endif%
   %ifreason confirm%
-    Děkujeme za potvrzení odhlášení.
+    Děkujeme za potvrzení odhlášky z konference.
   %endif%
   %ifreason admin%
     Správce vás odhlásil z konference.
   %else%
-    Byl jste odhlášen z konference.
+    Byli jste odhlášeni z konference.
   %endif%
 %endif%
 
 %ifaction release%
-  %^%%wrap%Úspěšně jste zaslal zpravu od <$posteraddr$> s předmětem "$subject$" do konference.
+  %^%%wrap%Úspěšně jste uvolnil zprávu od <$posteraddr$> s předmětem "$subject$" do konference.
 %endif%
 
 %ifaction reject%
@@ -28,24 +28,24 @@
 %endif%
 
 %ifaction permit%
-  %^%%wrap%Úspěšně jste povolil přihlášení <$subaddr$> do konference.
+  %^%%wrap%Úspěšně jste povolil přihlášení <$subaddr$> za člena konference.
 %endif%
 
 %ifaction obstruct%
-  %^%%wrap%Úspěšně jste zamítnul přihlášení <$subaddr$> do konference.
+  %^%%wrap%Úspěšně jste zamítnul přihlášení <$subaddr$> za člena konference.
 %endif%
 
 %ifaction post%
   %^%%wrap%
   %ifreason confirm%
-    Děkujeme za potvrzení
+    Děkujeme za potvrzení příspěvku
   %endif%
   %ifreason release%
-    Moderátor umožnil zaslání
+    Moderátor uvolnil příspěvek
   %endif%
   %ifreason request%
-    Děkujeme za
+    Děkujeme za příspěvek
   %endif%
-  zprávy s předmětem "$subject$". Nyní je odesílána do konference.
+  s předmětem "$subject$". Nyní bude odeslán do konference.
 %endif%
 

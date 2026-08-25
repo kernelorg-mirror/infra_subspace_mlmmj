@@ -1,4 +1,4 @@
-Subject: Čeká se na potvrzení $list$@$domain$: $subject$
+Subject: Čeká se na uvolnění příspěvku do $list$@$domain$: $subject$
 MIME-Version: 1.0
 Content-Type: multipart/mixed;
  boundary="=_$random0$$random1$_="
@@ -10,16 +10,17 @@ Content-Transfer-Encoding: 8bit
 
 %text prologue%
 
-%wrap%Zpráva od <$posteraddr$> s předmětem "$subject$" byla zaslána do konference.
-Moderátoři konference byli kontaktováni, aby tuto zprávu schválili před zasláním.
+%wrap%Zpráva od <$posteraddr$> s předmětem "$subject$" byla zaslána.
+Moderátoři byli kontaktováni, aby tuto zprávu schválili před jejím
+uvolněním do konference, protože
 %ifreason moderated%
-  Důvodem je to, že tato konference je moderovaná.
+  je tato konference moderovaná.
 %endif%
 %ifreason access%
-  Důvodem je nastavení přístupových práv ke konferenci.
+  má konference nastavena přístupová pravidla.
 %endif%
 %ifreason modnonsubposts%
-  Důvodem je, že nejste členem konference (nebo píšete zprávu z adresy, se kterou nejste v konferenci přihlášen).
+  nejste členem konference.
 
   %ifncontrol closedlist%%ifncontrol closedlistsub%%ifncontrol moderators%
     %^%%text subrelease%

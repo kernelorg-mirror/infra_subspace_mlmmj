@@ -1,41 +1,41 @@
-%ifaction sub%Subject: Přihlášení do $list$@$domain$: $subaddr$%endif%
-%ifaction unsub%Subject: Odhlášení z $list$@$domain$: $subaddr$%endif%
+%ifaction sub%Subject: Přihlášeno do $list$@$domain$: $subaddr$%endif%
+%ifaction unsub%Subject: Odhlášeno z $list$@$domain$: $subaddr$%endif%
 
 %text prologue%
 
 %ifaction sub%
-  %^%%wrap%Adresa <$subaddr$> byla přihlášena do
+  %^%%wrap%Adresa <$subaddr$> byla přihlášena za člena
   %iftype normal% normal %endif%
   %iftype digest% digest %endif%
   %iftype nomail% no-mail %endif%
-  verze konference
+  verze konference, protože
   %ifreason request%
-    z důvodu přijetí požadavku na přihlášení.
+    byl přijat požadavek na přihlášení.
   %endif%
   %ifreason confirm%
-    z důvodu potvrzení požadavku na přihlášení.
+    byl potvrzen požadavek na přihlášení.
   %endif%
   %ifreason admin%
-    z důvodu zadání požadavku správcem.
+    to tak učinil správce.
   %endif%
   %ifreason permit%
-    z důvodu povolení adminstrací listu.
+    to schválil moderátor.
   %endif%
 %endif%
 
 %ifaction unsub%
   %^%%wrap%Adresa <$subaddr$> byla odhlášena z konference
   %ifreason request%
-    z důvodu přijetí požadavku na odhlášení.
+    byl přijat požadavek na odhlášení.
   %endif%
   %ifreason confirm%
-    z důvodu potvrzení požadavku na odhlášení.
+    byl potvrzen požadavek na odhlášení.
   %endif%
   %ifreason admin%
-    z důvodu zadání požadavku správcem.
+    to tak učinil správce.
   %endif%
   %ifreason bouncing%
-    z důvodu nemožnosti odesílání po příliš dlouhou dobu (bouncing).
+    se nepodařilo ji odeslat ve stanovené lhůtě (bouncing).
   %endif%
 %endif%
 

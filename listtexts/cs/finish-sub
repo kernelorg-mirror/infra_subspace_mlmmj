@@ -4,16 +4,16 @@ Subject: Vítejte v konferenci $list$@$domain$
 
 %wrap%
 %ifreason request%
-  Potvrzujeme přihlášení do konference.
+  Děkujeme za Vaši přihlášku.
 %endif%
 %ifreason confirm%
-  Děkujeme za potvrzení přihlášení.
+  Děkujeme za potvrzení přihlášky.
 %endif%
 %ifreason permit%
-  Správce konference povolil přihlášení do konference.
+  Správce schválil vaše členství.
 %endif%
 %ifreason switch%
-  Vaše členství v konferenci bylo změněno na
+  Vaše členství bylo změněno na
 %else%
   %ifreason admin%
     Správce vás přihlásil k
@@ -26,16 +26,16 @@ Subject: Vítejte v konferenci $list$@$domain$
 %iftype nomail% no-mail %endif%
 verzi odebírání konference.
 
-%wrap%Emailová adresa, se kterou jste prihlášen/a je <$subaddr$>.
+%wrap%Emailová adresa, se kterou jste členem je <$subaddr$>.
 
 %ifcontrol closedlist%
   %^%%wrap%Pokud se chcete odhlásit, musíte kontaktovat správce konference.
   Můžete mu zaslat email na adresu <$list+$owner@$domain$>.
 %else%
-  %^%%wrap%Pokud se budete chtít odhlásit, zašlete zprávu na adresu
-  <$list+$unsubscribe@$domain$>. Předmět a obsah zprávy může být libovolný.
+  %^%%wrap%Pokud se chcete odhlásit, zašlete zprávu na adresu
+  <$list+$unsubscribe@$domain$>. Předmět a obsah zprávy je libovolný.
   Následně obdržíte zprávu s dalšími instrukcemi.
 %endif%
 
-%wrap%Pro získání dalších informací můžete zaslat zprávu na adresu <$list+$help@$domain$>.
+%wrap%Pro zobrazení nápovědy k této konferenci zašlete zprávu na adresu <$list+$help@$domain$>. Obsah i předmět mohou být cokoli.
 

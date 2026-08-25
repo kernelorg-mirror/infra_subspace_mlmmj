@@ -1,4 +1,4 @@
-Subject: Digest verze $list$@$domain$ vydání $digestissue$ ($digestinterval$)
+Subject: Digest $list$@$domain$ vydání $digestissue$ ($digestinterval$)
 
 Témata (zprávy od $digestfirst$ do $digestlast$):
 - %digestthreads%

@@ -1,5 +1,5 @@
-%ifaction sub%Subject: Potvrzení přihlášení do $list$@$domain$%endif%
-%ifaction unsub%Subject: Potvrzení odhlášení z $list$@$domain$%endif%
+%ifaction sub%Subject: Potvrďte přihlášení do $list$@$domain$%endif%
+%ifaction unsub%Subject: Potvrďte odhlášení z $list$@$domain$%endif%
 
 %text prologue%
 
@@ -17,15 +17,15 @@
     dostanete kopii této zprávy.
   %endif%
   %iftype digest%
-    do Digest verze konference. To znamená, že zprávy zaslané do konference
-    budete dostávat v jedné zprávě. Buďto po uplynutí pravidelné lhůty, nebo
-    až se naschromáždí dostatek zpráv.
+    do digest verze konference. To znamená, že zprávy zaslané do konference
+    budete dostávat v jednom emailu, Buďto v pravidelných intervalech, nebo
+    až se nashromáždí dostatek zpráv.
   %endif%
   %iftype nomail%
-    do No-mail verze konference. To znamená, že nebudete dostávat žádné zprávy,
-    ale jste považován za člena konference. Takže pokud je někde přístupný archiv,
-    můžete jej procházet a hlavně můžete do konference zasílat zprávy (a být třeba
-    prihlášen ještě pod jinou adresou).
+    do no-mail verze konference. To znamená, že nebudete dostávat žádné zprávy,
+    ale jste považován za člena. Například můžete přispívat do uzavřené konference
+    (takové, do které mohou přispívat pouze členové), a sledovat konferenci
+    prostřednictvím webového archívu nebo jiné přihlášené emailové adresy.
   %endif%
 %endif%
 
@@ -40,10 +40,10 @@
   požádal o vyřazení adresy <$subaddr$> z konference.
 %endif%
 
-%wrap%Pro potvrzení odhlášení zašlete prosím zprávu na <$confirmaddr$>,
-což většinou znamená jen odpovědět na tento email. Předmět a obsah
-mailu nehrají roli, může to být cokoli.
+%wrap%Pro potvrzení akce zašlete prosím zprávu na <$confirmaddr$>. Většinou stačí
+jen odpovědět na tento email. Předmět a obsah nehrají roli, může to být cokoli.
 
-Až tak učiníte, měl/a byste dostat zprávu potvrzující úspěch odhlášení.
-Pokud si akci nepřejete, prostě tento email ignorujte.
+Až tak učiníte, dostanete zprávu potvrzující úspěch odhlášení.
+
+Pokud si akci nepřejete, jednoduše tento email ignorujte.
 

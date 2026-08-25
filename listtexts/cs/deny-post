@@ -1,4 +1,4 @@
-Subject: Zaslat email do $list$@$domain$ není možné ($subject$)
+Subject: Příspěvek do $list$@$domain$ nebyl odeslán ($subject$)
 MIME-Version: 1.0
 Content-Type: multipart/mixed;
  boundary="=_$random0$$random1$_="
@@ -10,41 +10,42 @@ Content-Transfer-Encoding: 8bit
 
 %text prologue%
 
-%wrap%Zprávu od <$posteraddr$> s předmětem "$subject$" není možné doručit.
+%wrap%Zprávu od <$posteraddr$> s předmětem "$subject$" se nepodařilo doručit,
+protože
 %ifreason maxmailsize%
-Zpráva je příliš velká, maximální velikost zprávy je $maxmailsize$ bajtů.
+  je příliš velká. Maximální velikost zprávy je $maxmailsize$ bajtů.
 %endif%
 %ifreason tocc%
-Adresa konference nebyla nalezena v poli Komu: (To:) nebo Kopie: (Cc:).
+  adresa konference nebyla nalezena v poli přijemce (To:) nebo kopie (Cc:).
 %endif%
 %ifreason access%
-Zaslání bylo zamezeno přístupovými právy ke konferenci stanovenými správcem.
+  její zaslání bylo zamezeno přístupovými právy stanovenými správcem konference.
 %endif%
 %ifreason expired%
-Zpráva měla být schválena moderátorem konference, ale žádný ji delší čas neschválil.
+  vypršela lhůta pro uvolnění zprávy moderátorem konference.
 %endif%
 %ifreason reject%
-Zpráva byla zamítnuta moderátorem konference.
+  byla zamítnuta moderátorem konference.
 %endif%
 %ifreason subonlypost%
-  Adresa, ze které byla zpráva zaslána, není v seznamu členů konference.
+  nejste členem konference.
 
   %ifncontrol closedlist%%ifncontrol closedlistsub%%ifncontrol moderators%
     %^%%text subrelease%
   %endif%%endif%%endif%
 
   %ifcontrol closedlist closedlistsub%
-    %^%%wrap%Pokud si přejete být členem konference kontaktujte správce.
-    Můžete použít emailovou adresu <$list+$owner@$domain$>.
+    %^%%wrap%Pokud si přejete být členem, musíte kontaktovat vlastníka konference.
+    Můžete ho kontaktovat na adrese <$list+$owner@$domain$>.
   %endif%
 
-  %^%%wrap%Pokud si myslíte (nebo víte), že jste členem konference, zaslal/a
-  jste zprávu z jiné emailové adresy, než se kterou jste přihlášen/a.
-  Můžete ji zjistit z uvítacího emailu do konference, který jste odbržel/a.
-  (Podívejte se na pole "Return-Path" v hlavičce uvítacího emailu.)
+  %^%%wrap%Pokud si myslíte, že členem jste, možná jste přihlášení s jinou
+  emailovou adresou. Můžete ji zjistit z uvítacího emailu, který jste
+  obdrželi po přihlášení do konference. Hledejte pole "Return-Path" v
+  hlavičce uvítacího emailu.
 %endif%
 %ifreason modonlypost%
-  protože nejste moderator konference.
+  nejste moderátor konference.
 %endif%
 
 %ifreason maxmailsize%
