@@ -46,6 +46,6 @@
   %ifreason request%
     Děkujeme za
   %endif%
-  zpráva s předmětem "$subject$". Nyní je odesílána do konference.
+  zprávy s předmětem "$subject$". Nyní je odesílána do konference.
 %endif%
 

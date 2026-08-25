@@ -10,7 +10,7 @@ Subject: Vítejte v konferenci $list$@$domain$
   Děkujeme za potvrzení přihlášení.
 %endif%
 %ifreason permit%
-  Správa konference povolila přihlášení do konference.
+  Správce konference povolil přihlášení do konference.
 %endif%
 %ifreason switch%
   Vaše členství v konferenci bylo změněno na
@@ -29,7 +29,7 @@ verzi odebírání konference.
 %wrap%Emailová adresa, se kterou jste prihlášen/a je <$subaddr$>.
 
 %ifcontrol closedlist%
-  %^%%wrap%Pokud se chcete odhlásit musíte kontaktovat správce konference.
+  %^%%wrap%Pokud se chcete odhlásit, musíte kontaktovat správce konference.
   Můžete mu zaslat email na adresu <$list+$owner@$domain$>.
 %else%
   %^%%wrap%Pokud se budete chtít odhlásit, zašlete zprávu na adresu

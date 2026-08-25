@@ -6,7 +6,7 @@ Zde jsou informace o konferenci.
 
 Je možné se přihlásit k následujícím verzím:
 
-- %wrap%Normal: Pokaždé, když je zaslána zpráva do konference dostane každý její člen kopii.
+- %wrap%Normal: Pokaždé, když je zaslána zpráva do konference, dostane každý její člen kopii.
 %ifcontrol closedlist closedlistsub%
   Přihlášení se děje kontaktováním správce.
 %else%
