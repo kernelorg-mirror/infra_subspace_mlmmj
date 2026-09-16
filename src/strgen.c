@@ -217,6 +217,13 @@ char *gendatestr(void)
 	return timestr;
 }
 
+static bool
+ishexdigit(char c)
+{
+	return ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') ||
+	    (c >= 'A' && c <= 'F'));
+}
+
 static int
 hexval(int c)
 {
@@ -251,11 +258,7 @@ decode_qp(const char *qpstr, bool qformat)
 				qpstr++;
 				break;
 			}
-			if (strchr("0123456789ABCDEFabcdef", qpstr[1]) == NULL) {
-				sb_cat_c(&str, *qpstr);
-				break;
-			}
-			if (strchr("0123456789ABCDEFabcdef", qpstr[2]) == NULL) {
+			if (!ishexdigit(qpstr[1]) || !ishexdigit(qpstr[2])) {
 				sb_cat_c(&str, *qpstr);
 				break;
 			}

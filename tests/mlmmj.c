@@ -866,6 +866,11 @@ ATF_TC_BODY(decode_qp, tc)
 	ATF_REQUIRE_STREQ(decode_qp("This=3D is a subject", false), "This= is a subject");
 	ATF_REQUIRE_STREQ(decode_qp("This_ is a subject", false), "This_ is a subject");
 	ATF_REQUIRE_STREQ(decode_qp("This_ is a subject", true), "This  is a subject");
+	/* Lowercase and uppercase hex digits are accepted */
+	ATF_REQUIRE_STREQ(decode_qp("This=2f is a subject", false), "This/ is a subject");
+	ATF_REQUIRE_STREQ(decode_qp("This=2F is a subject", false), "This/ is a subject");
+	/* A non hex digit after '=' is kept verbatim */
+	ATF_REQUIRE_STREQ(decode_qp("This=2G is a subject", false), "This=2G is a subject");
 }
 
 ATF_TC_BODY(parse_lastdigest, tc)
