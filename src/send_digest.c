@@ -54,8 +54,7 @@ thread_list_state *init_thread_list(
 	s.ctrlfd = ctrlfd;
 	s.firstindex = firstindex;
 	s.lastindex = lastindex;
-	s.num_threads = 0;
-	s.threads = NULL;
+	s.threads = (digest_threads_t)vec_init();
 	s.cur_thread = -1;
 	return &s;
 }
@@ -65,11 +64,11 @@ void rewind_thread_list(void * state)
 {
 	thread_list_state *s = (thread_list_state *)state;
 	FILE *archivef;
-	int i, j, thread_idx;
-	char *line = NULL, *tmp, *subj, *from, *tmpfrom;
+	int i, thread_idx;
+	size_t j;
+	char *line = NULL, *tmp, *subj, *from;
 	size_t linecap = 0, tmplen;
-	int num_threads = 0, threads_alloc = 0;
-	struct digest_thread *threads = NULL;
+	digest_threads_t threads = vec_init();
 	if (s->cur_thread != -1) {
 		/* We have gathered the data already; just rewind */
 		s->cur_thread = 0;
@@ -78,6 +77,7 @@ void rewind_thread_list(void * state)
 	}
 
 	for (i=s->firstindex; i<=s->lastindex; i++) {
+		struct digest_mail mail;
 		int afd = archive_open(s->listfd, i);
 		if (afd == -1)
 			continue;
@@ -128,24 +128,20 @@ void rewind_thread_list(void * state)
 
 		tmplen = strlen(tmp);
 		thread_idx = -1;
-		for (j=0; j<num_threads; j++) {
-			if (strncmp(tmp, threads[j].subject, tmplen) == 0 &&
-			    threads[j].subject[tmplen] == '\n') {
-				thread_idx = j;
+		for (j = 0; j < threads.len; j++) {
+			if (strncmp(tmp, threads.d[j].subject, tmplen) == 0 &&
+			    threads.d[j].subject[tmplen] == '\n') {
+				thread_idx = (int)j;
 				break;
 			}
 		}
 		if (thread_idx == -1) {
-			if (num_threads == threads_alloc) {
-				threads_alloc = threads_alloc ? threads_alloc * 2 : 16;
-				threads = xrealloc(threads,
-						threads_alloc*sizeof(struct digest_thread));
-			}
-			xasprintf(&(threads[num_threads].subject), "%s\n", tmp);
-			threads[num_threads].num_mails = 0;
-			threads[num_threads].mails = NULL;
-			thread_idx = num_threads;
-			num_threads++;
+			struct digest_thread thread;
+
+			xasprintf(&thread.subject, "%s\n", tmp);
+			thread.mails = (digest_mails_t)vec_init();
+			vec_push(&threads, thread);
+			thread_idx = (int)threads.len - 1;
 		}
 
 		tmp = from;
@@ -153,18 +149,9 @@ void rewind_thread_list(void * state)
 			tmp++;
 		/* tmp is now left-trimmed from */
 
-		threads[thread_idx].num_mails++;
-		if (threads[thread_idx].num_mails > 1 &&
-		    (threads[thread_idx].num_mails & (threads[thread_idx].num_mails - 1)) == 0) {
-			/* power of 2: double the allocation */
-			threads[thread_idx].mails = xrealloc(threads[thread_idx].mails,
-					threads[thread_idx].num_mails*2*sizeof(struct digest_mail));
-		} else if (threads[thread_idx].num_mails == 1) {
-			threads[thread_idx].mails = xmalloc(sizeof(struct digest_mail));
-		}
-		threads[thread_idx].mails[threads[thread_idx].num_mails-1].idx = i;
-		xasprintf(&tmpfrom, "      %d - %s\n", i, tmp);
-		threads[thread_idx].mails[threads[thread_idx].num_mails-1].from = tmpfrom;
+		mail.idx = i;
+		xasprintf(&mail.from, "      %d - %s\n", i, tmp);
+		vec_push(&threads.d[thread_idx].mails, mail);
 
 		free(subj);
 		free(from);
@@ -173,7 +160,6 @@ void rewind_thread_list(void * state)
 	}
 	free(line);
 
-	s->num_threads = num_threads;
 	s->threads = threads;
 	s->cur_thread = 0;
 	s->cur_mail = -1;
@@ -184,36 +170,32 @@ const char *get_thread_list_line(void * state)
 {
 	thread_list_state *s = (thread_list_state *)state;
 
-	if (s->cur_thread >= s->num_threads) return NULL;
+	if (s->cur_thread >= (int)s->threads.len) return NULL;
 
 	if (s->cur_mail == -1) {
 		s->cur_mail = 0;
-		return s->threads[s->cur_thread].subject;
+		return s->threads.d[s->cur_thread].subject;
 	}
 
-	if (s->cur_mail >= s->threads[s->cur_thread].num_mails) {
+	if (s->cur_mail >= (int)s->threads.d[s->cur_thread].mails.len) {
 		s->cur_thread++;
 		s->cur_mail = -1;
 		return "\n";
 	}
 
-	return s->threads[s->cur_thread].mails[s->cur_mail++].from;
+	return s->threads.d[s->cur_thread].mails.d[s->cur_mail++].from;
 }
 
 
 void finish_thread_list(thread_list_state * s)
 {
-	int i, j;
-	if (s->threads == NULL) return;
-	for (i=0; i<s->num_threads; i++) {
-		free(s->threads[i].subject);
-		for (j=0; j<s->threads[i].num_mails; j++) {
-			free(s->threads[i].mails[j].from);
-		}
-		free(s->threads[i].mails);
+	vec_foreach(s->threads, i) {
+		vec_foreach(s->threads.d[i].mails, j)
+			free(s->threads.d[i].mails.d[j].from);
+		vec_free(&s->threads.d[i].mails);
+		free(s->threads.d[i].subject);
 	}
-	free(s->threads);
-	s->threads = NULL;
+	vec_free(&s->threads);
 }
 
 

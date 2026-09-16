@@ -23,16 +23,21 @@
 
 #pragma once
 
+#include "mlmmj.h" /* For vec_t and struct ml */
+
 struct digest_mail {
 	int idx;
 	char *from;
 };
 
+typedef vec_t(struct digest_mail) digest_mails_t;
+
 struct digest_thread {
 	char *subject;
-	int num_mails;
-	struct digest_mail *mails;
+	digest_mails_t mails;
 };
+
+typedef vec_t(struct digest_thread) digest_threads_t;
 
 struct thread_list_state;
 typedef struct thread_list_state thread_list_state;
@@ -42,8 +47,7 @@ struct thread_list_state {
 	int ctrlfd;
 	int firstindex;
 	int lastindex;
-	int num_threads;
-	struct digest_thread *threads;
+	digest_threads_t threads;
 	int cur_thread;
 	int cur_mail;
 };

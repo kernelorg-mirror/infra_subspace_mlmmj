@@ -5750,9 +5750,75 @@ ATF_TC_BODY(digest_thread_stops_at_headers, tc)
 	ATF_CHECK(line == NULL);
 
 	/* "Fake subject in body" must NOT have created a third thread */
-	ATF_CHECK_MSG(tls->num_threads == 2,
-	    "expected 2 threads (body headers ignored), got %d",
-	    tls->num_threads);
+	ATF_CHECK_MSG(tls->threads.len == 2,
+	    "expected 2 threads (body headers ignored), got %zu",
+	    tls->threads.len);
+
+	finish_thread_list(tls);
+	close(fakectrlfd);
+	close(fakelistfd);
+}
+
+ATF_TC_WITHOUT_HEAD(digest_thread_growth);
+ATF_TC_BODY(digest_thread_growth, tc)
+{
+	thread_list_state *tls;
+	const char *line;
+	char *mail = NULL;
+	int fakelistfd, fakectrlfd, i;
+	const int nmails = 40;
+
+	/*
+	 * Create many archive mails: the first few share a subject (to
+	 * grow the per-thread mail list) and the rest each have their own
+	 * subject (to grow the thread list well past its initial size).
+	 */
+	mkdir("fakelist", 0755);
+	mkdir("fakelist/archive", 0755);
+	mkdir("fakelist/control", 0755);
+	fakelistfd = open("fakelist", O_RDONLY|O_DIRECTORY);
+	fakectrlfd = openat(fakelistfd, "control", O_RDONLY|O_DIRECTORY);
+
+	for (i = 1; i <= nmails; i++) {
+		char *path = NULL;
+
+		if (i <= 3)
+			xasprintf(&mail, "From: a%d@test\nSubject: Shared\n\nbody%d\n", i, i);
+		else
+			xasprintf(&mail, "From: a%d@test\nSubject: Topic %d\n\nbody%d\n", i, i, i);
+		xasprintf(&path, "fakelist/archive/%d", i);
+		atf_utils_create_file(path, "%s", mail);
+		free(path);
+		free(mail);
+		mail = NULL;
+	}
+
+	tls = init_thread_list("fakelist", fakelistfd, fakectrlfd, 1, nmails);
+	rewind_thread_list(tls);
+
+	/* 3 mails in the first thread + one thread for each remaining mail. */
+	ATF_REQUIRE_MSG(tls->threads.len == (size_t)(nmails - 3) + 1,
+	    "expected %d threads, got %zu", (nmails - 3) + 1,
+	    tls->threads.len);
+
+	/* First thread subject and its three mails. */
+	line = get_thread_list_line(tls);
+	ATF_REQUIRE_MSG(line != NULL, "expected first thread subject");
+	ATF_CHECK_MSG(strstr(line, "Shared") != NULL,
+	    "first thread subject, got: %s", line);
+
+	ATF_CHECK_MSG(tls->threads.d[0].mails.len == 3,
+	    "expected 3 mails in first thread, got %zu",
+	    tls->threads.d[0].mails.len);
+	for (i = 1; i <= 3; i++) {
+		char expect[32];
+
+		line = get_thread_list_line(tls);
+		ATF_REQUIRE(line != NULL);
+		snprintf(expect, sizeof(expect), "%d - ", i);
+		ATF_CHECK_MSG(strstr(line, expect) != NULL,
+		    "expected mail %d in first thread, got: %s", i, line);
+	}
 
 	finish_thread_list(tls);
 	close(fakectrlfd);
@@ -6085,6 +6151,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, digest_thread_list_format);
 	ATF_TP_ADD_TC(tp, digest_thread_grouping);
 	ATF_TP_ADD_TC(tp, digest_thread_stops_at_headers);
+	ATF_TP_ADD_TC(tp, digest_thread_growth);
 	ATF_TP_ADD_TC(tp, archive_open_flat);
 	ATF_TP_ADD_TC(tp, archive_open_partitioned);
 	ATF_TP_ADD_TC(tp, archive_open_fallback);
