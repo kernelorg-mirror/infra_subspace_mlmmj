@@ -75,6 +75,21 @@ skip_comment(char *cp)
 }
 
 /*
+ * Strip CR and LF in place to prevent header/SMTP injection.
+ */
+static void
+strip_crlf(char *s)
+{
+	char *cp, *cp2;
+
+	for (cp = cp2 = s; *cp != '\0'; cp++) {
+		if (*cp != '\r' && *cp != '\n')
+			*cp2++ = *cp;
+	}
+	*cp2 = '\0';
+}
+
+/*
  * Skin an arpa net address according to the RFC 822 interpretation
  * of "host-phrase."
  */
@@ -92,11 +107,7 @@ static char *skin(char *name)
 	    && strchr(name, ' ') == NULL) {
 		nbuf = xstrdup(name);
 		/* Strip CR and LF to prevent header/SMTP injection */
-		for (cp = cp2 = nbuf; *cp != '\0'; cp++) {
-			if (*cp != '\r' && *cp != '\n')
-				*cp2++ = *cp;
-		}
-		*cp2 = '\0';
+		strip_crlf(nbuf);
 		return (nbuf);
 	}
 	nbuf = xmalloc(strlen(name) +1);
@@ -185,11 +196,7 @@ static char *skin(char *name)
 	*cp2 = '\0';
 
 	/* Strip CR and LF to prevent header/SMTP injection */
-	for (cp = cp2 = nbuf; *cp != '\0'; cp++) {
-		if (*cp != '\r' && *cp != '\n')
-			*cp2++ = *cp;
-	}
-	*cp2 = '\0';
+	strip_crlf(nbuf);
 
 	nbuf = (char *)xrealloc(nbuf, strlen(nbuf) + 1);
 	return (nbuf);

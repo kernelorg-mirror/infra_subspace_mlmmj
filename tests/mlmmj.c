@@ -421,6 +421,7 @@ ATF_TC_BODY(find_email_adr, tc)
 	strlist c5 = vec_init();
 	strlist c6 = vec_init();
 	strlist c7 = vec_init();
+	strlist c8 = vec_init();
 	find_email_adr("test@foo.bar", &c);
 	ATF_REQUIRE_EQ(c.len, 1);
 	find_email_adr("test@foo.bar, meh@bar", &c1);
@@ -509,6 +510,12 @@ ATF_TC_BODY(find_email_adr, tc)
 	find_email_adr("test\n@foo.com", &c7);
 	ATF_REQUIRE_EQ(c7.len, 23);
 	ATF_REQUIRE_STREQ(c7.d[c7.len - 1], "test@foo.com");
+
+	/* CR/LF stripping applies to every address of a list */
+	find_email_adr("aaa@bbb\r\n, ccc@ddd\n", &c8);
+	ATF_REQUIRE_EQ(c8.len, 2);
+	ATF_REQUIRE_STREQ(c8.d[0], "aaa@bbb");
+	ATF_REQUIRE_STREQ(c8.d[1], "ccc@ddd");
 }
 
 ATF_TC_BODY(strtoim, tc)
