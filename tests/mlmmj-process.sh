@@ -12,7 +12,12 @@ tests_init \
 	basic_5 \
 	addr_in_to_cc \
 	owner_recipextra \
-	cleanup_queue_on_owner_write_failure
+	cleanup_queue_on_owner_write_failure \
+	notocc_deny \
+	notocc_discard \
+	invalid_from_discarded \
+	maxmailsize_deny \
+	subonlypost_deny
 
 mlmmjprocess=$(command -v mlmmj-process)
 usage_body()
@@ -154,4 +159,104 @@ EOF
 		fi
 		limit=$((limit - 1))
 	done
+}
+
+# The list address is not in To: or Cc: and notoccdenymails is off, so a
+# deny mail is sent to the poster.
+notocc_deny_body()
+{
+	init_ml list
+	echo "list@test" > list/control/listaddress
+	echo 1 > list/control/smtpport
+	rmdir list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
+	cat > mailfile <<EOF
+Return-Path: sender@test
+From: sender@test
+To: somebody@else
+Subject: not for the list
+EOF
+	atf_check -s exit:0 $mlmmjprocess -L list -m mailfile
+	atf_check -o match:"the list address was not found in" \
+	    find list/queue -maxdepth 1 -type f -exec cat {} +
+}
+
+# Same, but notoccdenymails is set: the mail is silently discarded.
+notocc_discard_body()
+{
+	init_ml list
+	echo "list@test" > list/control/listaddress
+	echo 1 > list/control/smtpport
+	rmdir list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
+	echo 1 > list/control/notoccdenymails
+	cat > mailfile <<EOF
+Return-Path: sender@test
+From: sender@test
+To: somebody@else
+Subject: not for the list
+EOF
+	atf_check -s exit:0 $mlmmjprocess -L list -m mailfile -P
+	# No deny mail must be queued
+	atf_check -o empty find list/queue -maxdepth 1 -type f
+}
+
+# A mail whose From: holds several addresses is moved to queue/discarded.
+invalid_from_discarded_body()
+{
+	init_ml list
+	echo "list@test" > list/control/listaddress
+	rmdir list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
+	cat > mailfile <<EOF
+Return-Path: sender@test
+From: sender@test, other@test
+To: list@test
+Subject: two addresses
+EOF
+	atf_check -s exit:0 -o ignore $mlmmjprocess -L list -m mailfile -P
+	discarded=$(find list/queue/discarded -type f)
+	atf_check test -n "$discarded"
+}
+
+# A mail bigger than control/maxmailsize gets a deny mail.
+maxmailsize_deny_body()
+{
+	init_ml list
+	echo "list@test" > list/control/listaddress
+	echo 1 > list/control/smtpport
+	echo 10 > list/control/maxmailsize
+	rmdir list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
+	cat > mailfile <<EOF
+Return-Path: sender@test
+From: sender@test
+To: list@test
+Subject: too big
+
+this body is longer than ten bytes
+EOF
+	atf_check -s exit:0 $mlmmjprocess -L list -m mailfile
+	atf_check -o match:"exceeded the maximum allowed message size" \
+	    find list/queue -maxdepth 1 -type f -exec cat {} +
+}
+
+# A non subscriber posting to a subonlypost list gets a deny mail.
+subonlypost_deny_body()
+{
+	init_ml list
+	echo "list@test" > list/control/listaddress
+	echo 1 > list/control/smtpport
+	echo 1 > list/control/subonlypost
+	rmdir list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
+	cat > mailfile <<EOF
+Return-Path: sender@test
+From: sender@test
+To: list@test
+Subject: not subscribed
+EOF
+	atf_check -s exit:0 $mlmmjprocess -L list -m mailfile
+	atf_check -o match:"you are not a list subscriber" \
+	    find list/queue -maxdepth 1 -type f -exec cat {} +
 }

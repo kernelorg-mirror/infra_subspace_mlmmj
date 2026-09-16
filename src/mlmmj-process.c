@@ -274,11 +274,12 @@ int main(int argc, char **argv)
 	bool addr_in_to_or_cc, notmetoo, replyto;
 	bool findaddress = false, intocc = false, noprocess = false;
 	int maxmailsize = 0;
+	int ret = EXIT_FAILURE;
 	bool subonlypost, modonlypost, modnonsubposts, foundaddr = false;
 	char *mailfile = NULL, *donemailname = NULL;
-	char *randomstr = NULL, *mqueuename, *omitfilename;
+	char *randomstr = NULL, *mqueuename = NULL, *omitfilename;
 	char *mlmmjsend;
-	char *bindir, *subjectprefix, *discardname;
+	char *bindir, *subjectprefix, *discardname = NULL;
 	text *txt = NULL;
 	char *queuefilename, *recipextra = NULL, *owner = NULL;
 	char *subject = NULL, *posteraddr = NULL;
@@ -361,14 +362,12 @@ int main(int argc, char **argv)
 
 	if (donemailfd < 0) {
 		log_error(LOG_ARGS, "could not create %s", donemailname);
-		free(donemailname);
-		exit(EXIT_FAILURE);
+		goto out;
 	}
 	if ((rawmailfd = open(mailfile, O_RDONLY)) < 0) {
 		unlink(donemailname);
-		free(donemailname);
 		log_error(LOG_ARGS, "could not open() input mail file");
-		exit(EXIT_FAILURE);
+		goto out;
 	}
 
 	/* hdrfd is checked in do_all_the_voodoo_here(), because the
@@ -395,10 +394,7 @@ int main(int argc, char **argv)
 		log_error(LOG_ARGS, "Error in do_all_the_voodoo_here");
 		close(donemailfd);
 		unlink(donemailname);
-		free(donemailname);
-		free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-			    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
-		exit(EXIT_FAILURE);
+		goto out;
 	}
 
 	vec_free_and_free(delheaders, free);
@@ -485,12 +481,8 @@ int main(int argc, char **argv)
 					fromemails.d[_i]);
 		rename(mailfile, discardname);
 		unlink(donemailname);
-		free(donemailname);
-		free(discardname);
-		free(randomstr);
-		free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-			    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
-		exit(EXIT_SUCCESS);
+		ret = EXIT_SUCCESS;
+		goto out;
 	}
 	/* The only time posteraddr will remain unset is when the mail is a
 	 * bounce, so the mail will be processed by listcontrol() and the
@@ -530,17 +522,13 @@ int main(int argc, char **argv)
 			if ((rawmailfd = open(mailfile, O_RDONLY)) < 0) {
 				log_error(LOG_ARGS, "could not open() "
 						    "input mail file");
-				free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-					    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
-				exit(EXIT_FAILURE);
+				goto out;
 			}
 			if ((donemailfd = open(donemailname,
 						O_WRONLY|O_TRUNC)) < 0) {
 				log_error(LOG_ARGS, "could not open() "
 						    "output mail file");
-				free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-					    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
-				exit(EXIT_FAILURE);
+				goto out;
 			}
 			{
 			strlist ownerhdrs = vec_init();
@@ -553,10 +541,7 @@ int main(int argc, char **argv)
 				close(rawmailfd);
 				close(donemailfd);
 				unlink(donemailname);
-				free(donemailname);
-				free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-					    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
-				exit(EXIT_FAILURE);
+				goto out;
 			}
 			vec_free_and_free(&ownerhdrs, free);
 			}
@@ -578,9 +563,8 @@ int main(int argc, char **argv)
 		listcontrol(testfrom, &rtoemails, &ml, recipextra,
 			    mlmmjsend, donemailname);
 
-		free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-			    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
-		return EXIT_SUCCESS;
+		ret = EXIT_SUCCESS;
+		goto out;
 	}
 
 	/* checking incoming mail's size */
@@ -589,9 +573,7 @@ int main(int argc, char **argv)
 	if (errno != ENOENT) {
 		if (stat(donemailname, &st) < 0) {
 			log_error(LOG_ARGS, "stat(%s,..) failed", donemailname);
-			free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-				    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
-			exit(EXIT_FAILURE);
+			goto out;
 		}
 
 		if (st.st_size > maxmailsize) {
@@ -603,10 +585,8 @@ int main(int argc, char **argv)
 						donemailname, (st.st_size - maxmailsize));
 				unlink(donemailname);
 				unlink(mailfile);
-				free(donemailname);
-				free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-					    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
-				exit(EXIT_SUCCESS);
+				ret = EXIT_SUCCESS;
+				goto out;
 			}
 
 			txt = open_text(ml.fd, "deny", "post",
@@ -624,7 +604,6 @@ int main(int argc, char **argv)
 			close_text(txt);
 			unlink(donemailname);
 			unlink(mailfile);
-			free(donemailname);
 			free(maxmailsizestr);
 			send_help(&ml, queuefilename, posteraddr);
 		}
@@ -640,12 +619,7 @@ int main(int argc, char **argv)
 				" from address", mailfile);
 		rename(mailfile, discardname);
 		unlink(donemailname);
-		free(donemailname);
-		free(discardname);
-		free(randomstr);
-		free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-			    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
-		exit(EXIT_FAILURE);
+		goto out;
 	}
 
 	unlink(mailfile);
@@ -662,10 +636,8 @@ int main(int argc, char **argv)
 					" notoccdenymails was set",
 					mailfile);
 			unlink(donemailname);
-			free(donemailname);
-			free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-				    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
-			exit(EXIT_SUCCESS);
+			ret = EXIT_SUCCESS;
+			goto out;
 		}
 		txt = open_text(ml.fd, "deny", "post",
 				"tocc", NULL, "notintocc");
@@ -679,7 +651,6 @@ int main(int argc, char **argv)
 		MY_ASSERT(queuefilename)
 		close_text(txt);
 		unlink(donemailname);
-		free(donemailname);
 		send_help(&ml, queuefilename, posteraddr);
 	}
 
@@ -706,10 +677,8 @@ int main(int argc, char **argv)
 					" was set",
 					mailfile);
 				unlink(donemailname);
-				free(donemailname);
-				free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-					    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
-				exit(EXIT_SUCCESS);
+				ret = EXIT_SUCCESS;
+				goto out;
 			}
 			txt = open_text(ml.fd, "deny", "post",
 					"access", qualifier, "access");
@@ -723,8 +692,6 @@ int main(int argc, char **argv)
 			MY_ASSERT(queuefilename)
 			close_text(txt);
 			unlink(donemailname);
-			free(donemailname);
-			free(randomstr);
 			send_help(&ml, queuefilename, posteraddr);
 		} else if (accret == ACT_MODERATE) {
 			moderated = 1;
@@ -732,21 +699,13 @@ int main(int argc, char **argv)
 		} else if (accret == ACT_DISCARD) {
 			xasprintf(&discardname, "%s/queue/discarded/%s", ml.dir,
 			    randomstr);
-			free(randomstr);
-                	if (rename(donemailname, discardname) < 0) {
+			if (rename(donemailname, discardname) < 0) {
 				log_error(LOG_ARGS, "could not rename(%s,%s)",
 					    donemailname, discardname);
-				free(donemailname);
-				free(discardname);
-				free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-					    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
-				exit(EXIT_FAILURE);
+				goto out;
 			}
-			free(donemailname);
-			free(discardname);
-			free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-				    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
-                	exit(EXIT_SUCCESS);
+			ret = EXIT_SUCCESS;
+			goto out;
 		} else if (accret == ACT_SEND) {
 			send = 1;
 		} else if (accret == ACT_ALLOW) {
@@ -783,10 +742,8 @@ int main(int argc, char **argv)
 					" From: was the list address",
 					mailfile);
 			unlink(donemailname);
-			free(donemailname);
-			free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-				    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
-			exit(EXIT_SUCCESS);
+			ret = EXIT_SUCCESS;
+			goto out;
 		}
 		if (subonlypost) {
 			foundaddr = (is_subbed(ml.fd, testaddr, 0) !=
@@ -810,10 +767,8 @@ int main(int argc, char **argv)
 					" no{sub|mod}onlydenymails was set",
 					mailfile);
 				unlink(donemailname);
-				free(donemailname);
-				free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-					    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
-				exit(EXIT_SUCCESS);
+				ret = EXIT_SUCCESS;
+				goto out;
 			    }
 			    if (subonlypost) {
 				txt = open_text(ml.fd, "deny", "post",
@@ -848,11 +803,7 @@ int main(int argc, char **argv)
 					    donemailname, modname);
 					free(modname);
 					close_text(txt);
-					free_parsed_hdrs(readhdrs, &fromemails,
-					    &originalfromemails, &toemails,
-					    &ccemails, &rpemails, &dtemails,
-					    &rtoemails, &allheaders);
-					exit(EXIT_FAILURE);
+					goto out;
 				}
 				free(modname);
 				gen_addr_cookie(listsubreleaseaddr, &ml,
@@ -876,7 +827,6 @@ int main(int argc, char **argv)
 			    close_text(txt);
 			    if (subreplyto == NULL)
 				unlink(donemailname);
-			    free(donemailname);
 			    send_help(&ml, queuefilename, testaddr);
 			}
 		}
@@ -893,59 +843,54 @@ int main(int argc, char **argv)
 
 	if (moderated) {
 		xasprintf(&mqueuename, "%s/moderation/%s", ml.dir, randomstr);
-		free(randomstr);
 		if (rename(donemailname, mqueuename) < 0) {
 			log_error(LOG_ARGS, "could not rename(%s,%s)",
 					    donemailname, mqueuename);
-			free(donemailname);
-			free(mqueuename);
-			free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-				    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
-			exit(EXIT_FAILURE);
+			goto out;
 		}
-		free(donemailname);
 		if (notmetoo) {
 			xasprintf(&omitfilename, "%s.omit", mqueuename);
 			omitfd = open(omitfilename, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR);
 			if (omitfd < 0) {
 				log_error(LOG_ARGS, "could not open %s",
 					    	    omitfilename);
-				free(mqueuename);
 				free(omitfilename);
-				free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-					    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
-				exit(EXIT_FAILURE);
+				goto out;
 			}
 			free(omitfilename);
 			if (dprintf(omitfd, "%s", posteraddr) < 0) {
 				log_error(LOG_ARGS,
 						"could not write omit file");
-				free(mqueuename);
-				free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-					    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
-				exit(EXIT_FAILURE);
+				goto out;
 			}
 			fsync(omitfd);
 			close(omitfd);
 		}
 		newmoderated(&ml, mqueuename, mlmmjsend, efrom, subject,
 		    posteraddr, modreason);
-		free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-			    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
-		return EXIT_SUCCESS;
+		ret = EXIT_SUCCESS;
+		goto out;
 	}
 
-	free(randomstr);
-
 	if (noprocess) {
-		free(donemailname);
-		free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails,
-			    &toemails, &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
-		exit(EXIT_SUCCESS);
+		ret = EXIT_SUCCESS;
+		goto out;
 	}
 
 	if (notmetoo)
 		exec_or_die(mlmmjsend, "-L", ml.dir, "-o", posteraddr,
 		    "-m", donemailname, NULL);
 	exec_or_die(mlmmjsend, "-L", ml.dir, "-m", donemailname, NULL);
+
+out:
+	free_parsed_hdrs(readhdrs, &fromemails, &originalfromemails, &toemails,
+	    &ccemails, &rpemails, &dtemails, &rtoemails, &allheaders);
+	free(donemailname);
+	free(randomstr);
+	free(discardname);
+	free(owner);
+	free(mqueuename);
+	free(subject);
+	free(recipextra);
+	return (ret);
 }
