@@ -1316,18 +1316,11 @@ char *get_processed_text_line(text *txt, bool headers, struct ml *ml)
 				linebreak = len;
 				linebreakwidth = width;
 			}
-			if (*pos == '\r') {
+			if (*pos == '\r' || *pos == '\n') {
+				int skip = (*pos == '\r' && pos[1] == '\n') ? 2 : 1;
+
 				*pos = '\0';
-				pos++;
-				if (*pos == '\n') pos++;
-				if (*pos == '\0') break;
-				txt->src->upcoming = xstrdup(pos);
-				txt->src->processedlen = 0;
-				txt->src->processedwidth = 0;
-				break;
-			} else if (*pos == '\n') {
-				*pos = '\0';
-				pos++;
+				pos += skip;
 				if (*pos == '\0') break;
 				txt->src->upcoming = xstrdup(pos);
 				txt->src->processedlen = 0;

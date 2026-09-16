@@ -170,6 +170,7 @@ ATF_TC_WITHOUT_HEAD(list_subs);
 ATF_TC_WITHOUT_HEAD(notify_sub);
 ATF_TC_WITHOUT_HEAD(get_processed_text_line);
 ATF_TC_WITHOUT_HEAD(get_processed_text_line_directives);
+ATF_TC_WITHOUT_HEAD(get_processed_text_line_crlf);
 ATF_TC_WITHOUT_HEAD(newsmtp);
 ATF_TC_WITHOUT_HEAD(save_queue);
 ATF_TC_WITHOUT_HEAD(send_single_mail);
@@ -2832,6 +2833,33 @@ ATF_TC_BODY(get_processed_text_line_directives, tc)
 	/* Unsatisfied conditional skipped, %else% part kept. */
 	ret = get_processed_text_line(txt, true, &ml);
 	ATF_REQUIRE_STREQ(ret, "xZw");
+	close_text(txt);
+}
+
+ATF_TC_BODY(get_processed_text_line_crlf, tc)
+{
+	struct ml ml;
+	char *ret;
+	/* CRLF, LF and lone CR line endings must all terminate the line. */
+	atf_utils_create_file("intextcrlf", "%s", "a\r\nb\nc\rd");
+	int fd = open("intextcrlf", O_RDONLY);
+	text *txt = open_text_fd(fd);
+	ATF_REQUIRE(txt != NULL);
+	init_ml(true);
+	ml_init(&ml);
+	ml.dir = "list";
+	ATF_REQUIRE(ml_open(&ml, false));
+	register_default_unformatted(txt, &ml);
+
+	ret = get_processed_text_line(txt, true, &ml);
+	ATF_REQUIRE(ret != NULL);
+	ATF_REQUIRE_STREQ(ret, "a");
+	ret = get_processed_text_line(txt, true, &ml);
+	ATF_REQUIRE_STREQ(ret, "b");
+	ret = get_processed_text_line(txt, true, &ml);
+	ATF_REQUIRE_STREQ(ret, "c");
+	ret = get_processed_text_line(txt, true, &ml);
+	ATF_REQUIRE_STREQ(ret, "d");
 	close_text(txt);
 }
 
@@ -5999,6 +6027,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, notify_sub);
 	ATF_TP_ADD_TC(tp, get_processed_text_line);
 	ATF_TP_ADD_TC(tp, get_processed_text_line_directives);
+	ATF_TP_ADD_TC(tp, get_processed_text_line_crlf);
 	ATF_TP_ADD_TC(tp, newsmtp);
 	ATF_TP_ADD_TC(tp, save_queue);
 	ATF_TP_ADD_TC(tp, send_single_mail);
