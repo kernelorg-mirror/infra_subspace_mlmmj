@@ -171,6 +171,7 @@ ATF_TC_WITHOUT_HEAD(notify_sub);
 ATF_TC_WITHOUT_HEAD(get_processed_text_line);
 ATF_TC_WITHOUT_HEAD(get_processed_text_line_directives);
 ATF_TC_WITHOUT_HEAD(get_processed_text_line_crlf);
+ATF_TC_WITHOUT_HEAD(get_processed_text_line_includes);
 ATF_TC_WITHOUT_HEAD(newsmtp);
 ATF_TC_WITHOUT_HEAD(save_queue);
 ATF_TC_WITHOUT_HEAD(send_single_mail);
@@ -2860,6 +2861,58 @@ ATF_TC_BODY(get_processed_text_line_crlf, tc)
 	ATF_REQUIRE_STREQ(ret, "c");
 	ret = get_processed_text_line(txt, true, &ml);
 	ATF_REQUIRE_STREQ(ret, "d");
+	close_text(txt);
+}
+
+ATF_TC_BODY(get_processed_text_line_includes, tc)
+{
+	struct ml ml;
+	char *ret;
+	int fd;
+	text *txt;
+
+	init_ml(true);
+	ml_init(&ml);
+	ml.dir = "list";
+	ATF_REQUIRE(ml_open(&ml, false));
+
+	/*
+	 * Token names that are not plain filenames (containing '/' or a
+	 * leading "..") must be left untouched in the output.
+	 */
+	atf_utils_create_file("intextinc", "%s",
+	    "a%text bad/name%b\n"
+	    "c%control ../x%d\n");
+	fd = open("intextinc", O_RDONLY);
+	txt = open_text_fd(fd);
+	ATF_REQUIRE(txt != NULL);
+	register_default_unformatted(txt, &ml);
+
+	ret = get_processed_text_line(txt, true, &ml);
+	ATF_REQUIRE(ret != NULL);
+	ATF_REQUIRE_STREQ(ret, "a%text bad/name%b");
+	ret = get_processed_text_line(txt, true, &ml);
+	ATF_REQUIRE(ret != NULL);
+	ATF_REQUIRE_STREQ(ret, "c%control ../x%d");
+	close_text(txt);
+
+	/*
+	 * A valid token name is accepted; a missing control file behaves
+	 * as an empty inclusion, i.e. the directive is simply removed.
+	 */
+	atf_utils_create_file("intextinc", "%s",
+	    "a%control missing%\nc\n");
+	fd = open("intextinc", O_RDONLY);
+	txt = open_text_fd(fd);
+	ATF_REQUIRE(txt != NULL);
+	register_default_unformatted(txt, &ml);
+
+	ret = get_processed_text_line(txt, true, &ml);
+	ATF_REQUIRE(ret != NULL);
+	ATF_REQUIRE_STREQ(ret, "a");
+	ret = get_processed_text_line(txt, true, &ml);
+	ATF_REQUIRE(ret != NULL);
+	ATF_REQUIRE_STREQ(ret, "c");
 	close_text(txt);
 }
 
@@ -6094,6 +6147,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, get_processed_text_line);
 	ATF_TP_ADD_TC(tp, get_processed_text_line_directives);
 	ATF_TP_ADD_TC(tp, get_processed_text_line_crlf);
+	ATF_TP_ADD_TC(tp, get_processed_text_line_includes);
 	ATF_TP_ADD_TC(tp, newsmtp);
 	ATF_TP_ADD_TC(tp, save_queue);
 	ATF_TP_ADD_TC(tp, send_single_mail);

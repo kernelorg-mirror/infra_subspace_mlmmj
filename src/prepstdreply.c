@@ -312,19 +312,26 @@ void finish_file_lines(file_lines_state *s)
 }
 
 
+/*
+ * Characters allowed in a listtext token: ASCII alphanumerics, '_' and
+ * '-' anywhere, and '.' anywhere but as the first character.
+ */
+static bool
+istokenchar(char c, bool first)
+{
+	if ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') ||
+	    (c >= 'a' && c <= 'z') || c == '_' || c == '-')
+		return (true);
+	return (c == '.' && !first);
+}
+
 static char *filename_token(char *token)
 {
 	const char *pos = token;
+
 	if (*pos == '\0') return NULL;
-	while (
-		(*pos >= '0' && *pos <= '9') ||
-		(*pos >= 'A' && *pos <= 'Z') ||
-		(*pos >= 'a' && *pos <= 'z') ||
-		(*pos == '_') || (*pos == '-') ||
-		(*pos == '.' && pos != token)
-	) {
+	while (istokenchar(*pos, pos == token))
 		pos++;
-	}
 	if (*pos != '\0') return NULL;
 	return token;
 }
@@ -784,15 +791,8 @@ static int handle_conditional(text *txt, char **line_p, char **pos_p,
 		for (;;) {
 			pos = token;
 			if (*pos == '\0') break;
-			while (
-				(*pos >= '0' && *pos <= '9') ||
-				(*pos >= 'A' && *pos <= 'Z') ||
-				(*pos >= 'a' && *pos <= 'z') ||
-				(*pos == '_') || (*pos == '-') ||
-				(*pos == '.' && pos != token)
-			) {
+			while (istokenchar(*pos, pos == token))
 				pos++;
-			}
 			if (*pos == ' ') {
 				*pos = '\0';
 			} else {
