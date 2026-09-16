@@ -729,6 +729,31 @@ ml_open(struct ml *ml, bool checkuser)
 	return (true);
 }
 
+/*
+ * When invoked as root and the list directory is owned by another user,
+ * drop privileges to that user's uid and gid.
+ */
+void
+ml_become_list_owner(struct ml *ml)
+{
+	struct stat st;
+	uid_t uid;
+
+	uid = getuid();
+	if (uid != 0)
+		return;
+	if (fstat(ml->fd, &st) != 0)
+		return;
+	if (uid == st.st_uid)
+		return;
+	printf("Changing to uid %d gid %d, owner of %s.\n",
+	    (int)st.st_uid, (int)st.st_gid, ml->dir);
+	if (setgid(st.st_gid) < 0)
+		err(EXIT_FAILURE, "setgid");
+	if (setuid(st.st_uid) < 0)
+		err(EXIT_FAILURE, "setuid");
+}
+
 void
 save_hdr_if_needed(const char *line, struct mailhdr *readhdrs)
 {

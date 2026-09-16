@@ -76,8 +76,6 @@ int main(int argc, char **argv)
 	char *address = NULL;
 	enum subtype typesub = SUB_ALL;
 	enum subreason reasonsub = SUB_ADMIN;
-	uid_t uid;
-	struct stat st;
 	struct ml ml;
 
 	ml_init(&ml);
@@ -161,18 +159,8 @@ int main(int argc, char **argv)
 		    "%s -h for help", argv[0]);
 	}
 
-	if(changeuid) {
-		uid = getuid();
-		if(!uid && fstat(ml.fd, &st) == 0 && uid != st.st_uid) {
-			printf("Changing to uid %d gid %d, owner of %s.\n",
-					(int)st.st_uid, (int)st.st_gid,
-					ml.dir);
-			if(setgid(st.st_gid) < 0)
-				err(EXIT_FAILURE, "setgid");
-			if(setuid(st.st_uid) < 0)
-				err(EXIT_FAILURE, "setuid");
-		}
-	}
+	if(changeuid)
+		ml_become_list_owner(&ml);
 	if (do_unsubscribe(&ml, address, typesub, reasonsub, inform_not_subscribed,
 	    unsubconfirm, quiet, send_goodbye_mail))
 		return(EXIT_SUCCESS);

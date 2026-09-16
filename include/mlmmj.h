@@ -137,6 +137,7 @@ char *dsnparseaddr(const char *mailname);
 int open_listdir(const char *listdir, bool usercheck);
 void ml_init(struct ml *ml);
 bool ml_open(struct ml *ml, bool checkuser);
+void ml_become_list_owner(struct ml *ml);
 void ml_close(struct ml *ml);
 bool send_probe(struct ml *ml, const char *addr);
 void parse_content_type(strlist *, char **mime_type, char **boundary);

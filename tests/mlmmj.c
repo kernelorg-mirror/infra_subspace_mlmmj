@@ -161,6 +161,7 @@ ATF_TC_WITHOUT_HEAD(get_recipextra_from_env_exim);
 ATF_TC_WITHOUT_HEAD(addrmatch);
 ATF_TC_WITHOUT_HEAD(get_subcookie_content);
 ATF_TC_WITHOUT_HEAD(ml_list);
+ATF_TC_WITHOUT_HEAD(ml_become_list_owner);
 ATF_TC_WITHOUT_HEAD(gen_addr);
 ATF_TC_WITHOUT_HEAD(memory_lines);
 ATF_TC_WITHOUT_HEAD(text_0);
@@ -2372,6 +2373,28 @@ ATF_TC_BODY(ml_list, tc)
 		exit (0);
 	}
 	atf_utils_wait(p, 0, "", "");
+}
+
+ATF_TC_BODY(ml_become_list_owner, tc)
+{
+	struct ml ml;
+	uid_t uid;
+
+	init_ml(true);
+	ml_init(&ml);
+	ml.dir = "list";
+	ATF_REQUIRE(ml_open(&ml, false));
+
+	/*
+	 * The list directory is owned by the user running the test, so the
+	 * helper must leave the credentials untouched (whether or not we
+	 * are root).
+	 */
+	uid = getuid();
+	ml_become_list_owner(&ml);
+	ATF_REQUIRE_EQ(getuid(), uid);
+	ATF_REQUIRE_EQ(geteuid(), uid);
+	ml_close(&ml);
 }
 
 ATF_TC_BODY(gen_addr, tc)
@@ -6153,6 +6176,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, addrmatch);
 	ATF_TP_ADD_TC(tp, get_subcookie_content);
 	ATF_TP_ADD_TC(tp, ml_list);
+	ATF_TP_ADD_TC(tp, ml_become_list_owner);
 	ATF_TP_ADD_TC(tp, gen_addr);
 	ATF_TP_ADD_TC(tp, memory_lines);
 	ATF_TP_ADD_TC(tp, text_0);
