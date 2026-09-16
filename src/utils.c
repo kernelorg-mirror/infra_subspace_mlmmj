@@ -124,14 +124,11 @@ strtouim(const char *np, uintmax_t minval, uintmax_t maxval, const char **errpp)
 char *
 lowercase(const char *address)
 {
-	char *loweraddress;
-	int i = 0;
+	char *p, *loweraddress;
 
 	loweraddress = xstrdup(address);
-	while (loweraddress[i] != '\0') {
-		loweraddress[i] = tolower(loweraddress[i]);
-		i++;
-	}
+	for (p = loweraddress; *p != '\0'; p++)
+		*p = tolower((unsigned char)*p);
 	return (loweraddress);
 }
 

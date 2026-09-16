@@ -326,7 +326,16 @@ ATF_TC_BODY(mygetline, tc)
 
 ATF_TC_BODY(lowercase, tc)
 {
-	ATF_REQUIRE_STREQ(lowercase("MAR23anC"), "mar23anc");
+	char *l;
+
+	l = lowercase("MAR23anC");
+	ATF_REQUIRE_STREQ(l, "mar23anc");
+	free(l);
+
+	/* Bytes above 0x7f must be left untouched. */
+	l = lowercase("\xc3\x89" "ABC");
+	ATF_REQUIRE_STREQ(l, "\xc3\x89" "abc");
+	free(l);
 }
 
 ATF_TC_BODY(init_sock, tc)
