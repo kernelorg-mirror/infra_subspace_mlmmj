@@ -169,6 +169,7 @@ ATF_TC_WITHOUT_HEAD(file_lines);
 ATF_TC_WITHOUT_HEAD(list_subs);
 ATF_TC_WITHOUT_HEAD(notify_sub);
 ATF_TC_WITHOUT_HEAD(get_processed_text_line);
+ATF_TC_WITHOUT_HEAD(get_processed_text_line_directives);
 ATF_TC_WITHOUT_HEAD(newsmtp);
 ATF_TC_WITHOUT_HEAD(save_queue);
 ATF_TC_WITHOUT_HEAD(send_single_mail);
@@ -2794,6 +2795,43 @@ ATF_TC_BODY(get_processed_text_line, tc)
 	ATF_REQUIRE_STREQ(ret, "Subject: huhu, test@test test+owner@test");
 	ret = get_processed_text_line(txt, true, &ml);
 	ATF_REQUIRE_STREQ(ret, "plop");
+	close_text(txt);
+}
+
+ATF_TC_BODY(get_processed_text_line_directives, tc)
+{
+	struct ml ml;
+	char *ret;
+	atf_utils_create_file("intextdir", "%s",
+	   "a%thin%b\n"
+	   "c%wide%d\n"
+	   "e%nowrap%f\n"
+	   "g%comment% dropped\n"
+	   "x%ifcontrol nocontrol%Y%else%Z%endif%w\n"
+	   );
+	int fd = open("intextdir", O_RDONLY);
+	text *txt = open_text_fd(fd);
+	ATF_REQUIRE(txt != NULL);
+	init_ml(true);
+	ml_init(&ml);
+	ml.dir = "list";
+	ATF_REQUIRE(ml_open(&ml, false));
+	register_default_unformatted(txt, &ml);
+
+	/* Directives are spliced out of the line in place. */
+	ret = get_processed_text_line(txt, true, &ml);
+	ATF_REQUIRE(ret != NULL);
+	ATF_REQUIRE_STREQ(ret, "ab");
+	ret = get_processed_text_line(txt, true, &ml);
+	ATF_REQUIRE_STREQ(ret, "cd");
+	ret = get_processed_text_line(txt, true, &ml);
+	ATF_REQUIRE_STREQ(ret, "ef");
+	/* %comment% drops the rest of the line. */
+	ret = get_processed_text_line(txt, true, &ml);
+	ATF_REQUIRE_STREQ(ret, "g");
+	/* Unsatisfied conditional skipped, %else% part kept. */
+	ret = get_processed_text_line(txt, true, &ml);
+	ATF_REQUIRE_STREQ(ret, "xZw");
 	close_text(txt);
 }
 
@@ -5960,6 +5998,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, list_subs);
 	ATF_TP_ADD_TC(tp, notify_sub);
 	ATF_TP_ADD_TC(tp, get_processed_text_line);
+	ATF_TP_ADD_TC(tp, get_processed_text_line_directives);
 	ATF_TP_ADD_TC(tp, newsmtp);
 	ATF_TP_ADD_TC(tp, save_queue);
 	ATF_TP_ADD_TC(tp, send_single_mail);

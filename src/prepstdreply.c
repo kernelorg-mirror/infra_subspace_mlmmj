@@ -633,6 +633,23 @@ void register_formatted(text *txt, const char *token,
 }
 
 
+/*
+ * Replace the current line with the concatenation of itself and rest,
+ * keeping pos_p at the same offset within the line.  The previous line
+ * buffer is freed.
+ */
+static void
+replace_line(char **line_p, char **pos_p, const char *rest)
+{
+	char *line;
+
+	xasprintf(&line, "%s%s", *line_p, rest);
+	*pos_p = line + (*pos_p - *line_p);
+	free(*line_p);
+	*line_p = line;
+}
+
+
 static void begin_new_source_file(text *txt, char **line_p, char **pos_p,
 		int *width_p, const char *filename, int transparent) {
 	char *line = *line_p;
@@ -685,10 +702,7 @@ static void begin_new_source_file(text *txt, char **line_p, char **pos_p,
 		free(tmp);
 		tmp = esc;
 	}
-	xasprintf(&line, "%s%s", line, tmp);
-	*pos_p = line + (*pos_p - *line_p);
-	free(*line_p);
-	*line_p = line;
+	replace_line(line_p, pos_p, tmp);
 	free(tmp);
 }
 
@@ -761,7 +775,6 @@ static int handle_conditional(text *txt, char **line_p, char **pos_p,
 	 * acceptable, and the position of the first parameter should be passed
 	 * in.
 	*/
-	char *line = *line_p;
 	char *pos;
 	int satisfied = 0;
 	int matches;
@@ -839,10 +852,7 @@ static int handle_conditional(text *txt, char **line_p, char **pos_p,
 	if (*skipwhite_p) {
 		while (*pos == ' ' || *pos == '\t') pos++;
 	}
-	xasprintf(&line, "%s%s", line, pos);
-	*pos_p = line + (*pos_p - *line_p);
-	free(*line_p);
-	*line_p = line;
+	replace_line(line_p, pos_p, pos);
 
 	return 0;
 }
@@ -918,10 +928,7 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 				while (*endpos == ' ' || *endpos == '\t')
 						endpos++;
 			}
-			xasprintf(&line, "%s%s", line, endpos);
-			*pos_p = line + (*pos_p - *line_p);
-			free(*line_p);
-			*line_p = line;
+			replace_line(line_p, pos_p, endpos);
 			return 0;
 		}
 	} else if(strcmp(token, "endif") == 0) {
@@ -936,10 +943,7 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 				while (*endpos == ' ' || *endpos == '\t')
 						endpos++;
 			}
-			xasprintf(&line, "%s%s", line, endpos);
-			*pos_p = line + (*pos_p - *line_p);
-			free(*line_p);
-			*line_p = line;
+			replace_line(line_p, pos_p, endpos);
 			return swallow;
 		}
 	}
@@ -985,10 +989,7 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 	} else if(strcmp(token, "comment") == 0 || strcmp(token, "$") == 0 ) {
 		pos = endpos + 1;
 		while (*pos != '\0' && *pos != '\r' && *pos != '\n') pos++;
-		xasprintf(&line, "%s%s", line, pos);
-		*pos_p = line + (*pos_p - *line_p);
-		free(*line_p);
-		*line_p = line;
+		replace_line(line_p, pos_p, pos);
 		return 0;
 	} else if(strncmp(token, "wrap", 4) == 0) {
 		token += 4;
@@ -1002,18 +1003,12 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 		if (limit != 0) {
 			txt->wrapindent = *width_p;
 			txt->wrapwidth = limit;
-			xasprintf(&line, "%s%s", line, endpos + 1);
-			*pos_p = line + (*pos_p - *line_p);
-			free(*line_p);
-			*line_p = line;
+			replace_line(line_p, pos_p, endpos + 1);
 			return 0;
 		}
 	} else if(strcmp(token, "nowrap") == 0) {
 		txt->wrapwidth = 0;
-		xasprintf(&line, "%s%s", line, endpos + 1);
-		*pos_p = line + (*pos_p - *line_p);
-		free(*line_p);
-		*line_p = line;
+		replace_line(line_p, pos_p, endpos + 1);
 		return 0;
 	} else if(strcmp(token, "ww") == 0 ||
 			strcmp(token, "wordwrap") == 0 ||
