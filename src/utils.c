@@ -135,25 +135,45 @@ lowercase(const char *address)
 	return (loweraddress);
 }
 
+/*
+ * Build a NULL-terminated argv array from a varargs list of strings.
+ * The list must be terminated by a NULL pointer.  The caller owns the
+ * returned array.
+ */
+static const char **
+build_argv(const char *arg, va_list ap)
+{
+	va_list aq;
+	const char **argv;
+	int n;
+
+	va_copy(aq, ap);
+	n = 1;
+	while (va_arg(aq, char *) != NULL)
+		n++;
+	va_end(aq);
+
+	argv = xmalloc((n + 1) * sizeof(*argv));
+	va_copy(aq, ap);
+	argv[0] = arg;
+	n = 1;
+	while ((argv[n] = va_arg(aq, char *)) != NULL)
+		n++;
+	va_end(aq);
+
+	return (argv);
+}
+
 void
 exec_or_die(const char *arg, ...)
 {
 	va_list ap;
 	const char **argv;
-	int n;
 
 	va_start(ap, arg);
-	n = 1;
-	while (va_arg(ap, char *) != NULL)
-		n++;
+	argv = build_argv(arg, ap);
 	va_end(ap);
-	argv = xmalloc((n +1) * sizeof(argv));
-	va_start(ap, arg);
-	argv[0] = arg;
-	n = 1;
-	while ((argv[n] = va_arg(ap, char *)) != NULL)
-		n++;
-	va_end(ap);
+
 	execvp(argv[0], (char *const *)argv);
 	err(EXIT_FAILURE, "Execution failed for '%s'", argv[0]);
 }
@@ -163,21 +183,11 @@ exec_and_wait(const char *arg, ...)
 {
 	va_list ap;
 	const char **argv;
-	int n;
 	pid_t p;
 	int pstat;
 
 	va_start(ap, arg);
-	n = 1;
-	while (va_arg(ap, char *) != NULL)
-		n++;
-	va_end(ap);
-	argv = xmalloc((n +1) * sizeof(argv));
-	va_start(ap, arg);
-	argv[0] = arg;
-	n = 1;
-	while ((argv[n] = va_arg(ap, char *)) != NULL)
-		n++;
+	argv = build_argv(arg, ap);
 	va_end(ap);
 
 	if (0 != posix_spawnp(&p, argv[0], NULL, NULL,

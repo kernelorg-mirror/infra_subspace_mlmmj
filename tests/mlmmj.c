@@ -386,6 +386,11 @@ ATF_TC_BODY(exec_or_die, tc)
 		exec_or_die("/bin/echo", "a", (char *)NULL);
 	}
 	atf_utils_wait(p, 0, "a\n", "");
+	p = atf_utils_fork();
+	if (p == 0) {
+		exec_or_die("/bin/echo", "a", "b", "c", (char *)NULL);
+	}
+	atf_utils_wait(p, 0, "a b c\n", "");
 }
 
 ATF_TC_BODY(exec_and_wait, tc)
@@ -395,6 +400,11 @@ ATF_TC_BODY(exec_and_wait, tc)
 	val = exec_and_wait("true", NULL);
 	ATF_REQUIRE_EQ(val, 0);
 	val = exec_and_wait("false", NULL);
+	ATF_REQUIRE_EQ(val, 1);
+	/* Multiple arguments must all be passed to the child. */
+	val = exec_and_wait("/bin/sh", "-c", "exit 3", NULL);
+	ATF_REQUIRE_EQ(val, 3);
+	val = exec_and_wait("/bin/sh", "-c", "test a = b", NULL);
 	ATF_REQUIRE_EQ(val, 1);
 }
 
