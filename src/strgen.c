@@ -281,6 +281,44 @@ decode_qp(const char *qpstr, bool qformat)
 	return (sb_get(&str));
 }
 
+/*
+ * Return a copy of the From: header value with special characters
+ * replaced to make it safe for use in a display name:
+ *   '<' -> '(',  '>' -> ')',  '@' -> '=',  truncate at '\n'
+ * Returns NULL if s is NULL or empty.
+ */
+char *
+disarm_email(const char *from)
+{
+	char *cpy, *p;
+
+	if (from == NULL || *from == '\0')
+		return (NULL);
+	cpy = xstrdup(from);
+	/* Skip leading whitespace (e.g. the space after the From: colon) */
+	for (p = cpy; *p != '\0' && isspace((unsigned char)*p); p++)
+		;
+	if (p != cpy)
+		memmove(cpy, p, strlen(p) + 1);
+	for (p = cpy; *p != '\0'; p++) {
+		switch (*p) {
+		case '<':
+			*p = '(';
+			break;
+		case '>':
+			*p = ')';
+			break;
+		case '@':
+			*p = '=';
+			break;
+		case '\n':
+			*p = '\0';
+			break;
+		}
+	}
+	return (cpy);
+}
+
 bool
 splitlistaddr(const char *listaddr, char **listname, const char **listfqdn)
 {

@@ -13,6 +13,7 @@ tests_init \
 	digests_3 \
 	digests_4 \
 	digests_5 \
+	digest_customheaders \
 	unsub_bouncers_0 \
 	unsub_bouncers_1 \
 	unsub_bouncers_2 \
@@ -513,6 +514,41 @@ probe_bouncers
 run_digests
 "
 	atf_check -o "inline:$output" sed -e "s/at .*/at/" lists/ml/mlmmj-maintd.lastrun.log
+}
+
+digest_customheaders_body()
+{
+	mkdir lists
+	init_ml lists/ml
+	rmdir lists/ml/text
+	ln -s ${top_srcdir}/listtexts/en lists/ml/text
+	echo test@mlmmjtest > lists/ml/control/listaddress
+	start_fakesmtp lists/ml
+
+	# A From: munging recipe: the From: must not be added to the
+	# digest (which already has one), the variables must be expanded
+	printf "From: \$disarmedfrom\$ via MyList <test@mlmmjtest>\n" \
+	    > lists/ml/control/customheaders
+	printf "Reply-To: \$posteraddr\$\n" \
+	    >> lists/ml/control/customheaders
+
+	echo digest@example.com > lists/ml/digesters.d/d
+	printf 'From: Martin <martin@here.com>\nSubject: hello\n\nbody\n' \
+	    > lists/ml/archive/1
+	echo 1 > lists/ml/index
+	echo "0:1:0" > lists/ml/lastdigest
+
+	atf_check -s exit:0 $mlmmjmaintd -L lists/ml -F
+
+	# Exactly one From: in the top level headers, the archive part
+	# embedded in the digest does not count
+	atf_check -s exit:0 -o inline:"1\n" \
+	    awk '/^From:/{n++} /^\r?$/{exit} END{print n+0}' mail-1.txt
+	# No leftover unexpanded variable
+	atf_check -s exit:1 grep -q posteraddr mail-1.txt
+	atf_check -s exit:1 grep -q disarmedfrom mail-1.txt
+	# $posteraddr$ expands to the address the digest is sent from
+	atf_check -s exit:0 grep -q "^Reply-To: test+help@mlmmjtest" mail-1.txt
 }
 
 unsub_bouncers_0_body()

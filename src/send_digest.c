@@ -209,6 +209,7 @@ int send_digest(struct ml *ml, int firstindex, int lastindex,
 	char buf[100];
 	char *tmp, *queuename = NULL, *subject = NULL, *line = NULL, *qprefix;
 	char *boundary = NULL;
+	char *digestfrom = NULL, *disarmedfrom = NULL;
 	thread_list_state *tls;
 	FILE *f = NULL;
 
@@ -317,20 +318,26 @@ int send_digest(struct ml *ml, int firstindex, int lastindex,
 		if (f == NULL) { close(dupfd); goto cleanup; }
 	}
 
-	if (fprintf(f, "From: %s%shelp@%s"
+	/* The digest is sent by the list itself: $posteraddr$ and
+	 * $disarmedfrom$ expand to the list address it is sent from */
+	xasprintf(&digestfrom, "%s%shelp@%s", ml->name, ml->delim, ml->fqdn);
+	disarmedfrom = disarm_email(digestfrom);
+
+	if (fprintf(f, "From: %s"
 	    "\nMIME-Version: 1.0"
 	    "\nContent-Type: multipart/" DIGESTMIMETYPE "; "
 	    "boundary=%s"
 	    "\nSubject: %s\n",
-	    ml->name, ml->delim, ml->fqdn, boundary, subject) < 0) {
+	    digestfrom, boundary, subject) < 0) {
 		log_error(LOG_ARGS, "Could not write digest headers to '%s'",
 				queuename);
 		goto cleanup;
 	}
 
 	if (hdrfd >= 0) {
-		fflush(f);
-		if (dumpfd2fd(hdrfd, fd) < 0) {
+		/* skipfrom: the digest already has exactly one From: */
+		if (process_headers(hdrfd, f, digestfrom, disarmedfrom,
+		    true) < 0) {
 			log_error(LOG_ARGS, "Could not write digest headers "
 					"to '%s'", queuename);
 			goto cleanup;
@@ -438,6 +445,8 @@ cleanup:
 	free(line);
 	free(boundary);
 	free(queuename);
+	free(digestfrom);
+	free(disarmedfrom);
 
 	return retval;
 }

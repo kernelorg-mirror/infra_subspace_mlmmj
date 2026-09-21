@@ -23,7 +23,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 #include <unistd.h>
 
 #include "xmalloc.h"
@@ -101,44 +100,6 @@ write_list_headers(FILE *outf, struct ml *ml)
 	fprintf(outf, "Precedence: list\n");
 }
 
-/*
- * Return a copy of the From: header value with special characters
- * replaced to make it safe for use in a display name:
- *   '<' -> '(',  '>' -> ')',  '@' -> '=',  truncate at '\n'
- * Returns NULL if s is NULL or empty.
- */
-static char *
-disarmedEmail(const char *s)
-{
-	char *cpy, *p;
-
-	if (s == NULL || *s == '\0')
-		return (NULL);
-	cpy = xstrdup(s);
-	/* Skip leading whitespace (e.g. the space after the From: colon) */
-	for (p = cpy; *p != '\0' && isspace((unsigned char)*p); p++)
-		;
-	if (p != cpy)
-		memmove(cpy, p, strlen(p) + 1);
-	for (p = cpy; *p != '\0'; p++) {
-		switch (*p) {
-		case '<':
-			*p = '(';
-			break;
-		case '>':
-			*p = ')';
-			break;
-		case '@':
-			*p = '=';
-			break;
-		case '\n':
-			*p = '\0';
-			break;
-		}
-	}
-	return (cpy);
-}
-
 int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 		 const strlist *delhdrs, struct mailhdr *readhdrs,
 		 strlist *allhdrs, const char *prefix, int replyto,
@@ -183,7 +144,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 		        find_email_adr(readhdrs[0].values[0], &fromemails);
 			if (fromemails.len > 0)
 				posteraddr = xstrdup(vec_first(&fromemails));
-			disarmedfrom = disarmedEmail(readhdrs[0].values[0]);
+			disarmedfrom = disarm_email(readhdrs[0].values[0]);
 		}
 		vec_free_and_free(&fromemails, free);
 	}
@@ -201,7 +162,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 			if(hdrfd >= 0) {
 			        if(process_headers(hdrfd,outf,
 				    posteraddr ? posteraddr : "",
-				    disarmedfrom ? disarmedfrom : "") < 0) {
+				    disarmedfrom ? disarmedfrom : "", false) < 0) {
 					log_error(LOG_ARGS, "Could not "
 						"add extra headers");
 					free(unfolded);
@@ -251,7 +212,7 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 		if(hdrfd >= 0) {
 		  if(process_headers(hdrfd,outf,
 		      posteraddr ? posteraddr : "",
-		      disarmedfrom ? disarmedfrom : "") < 0) {
+		      disarmedfrom ? disarmedfrom : "", false) < 0) {
 				log_error(LOG_ARGS, "Could not "
 					"add extra headers");
 				vec_free_and_free(&allunfoldeds, free);

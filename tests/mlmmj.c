@@ -144,6 +144,7 @@ ATF_TC_WITHOUT_HEAD(dumpfd2fd);
 ATF_TC_WITHOUT_HEAD(dumpfd2fd_large);
 ATF_TC_WITHOUT_HEAD(dumpfd2fd_empty);
 ATF_TC_WITHOUT_HEAD(process_headers_test);
+ATF_TC_WITHOUT_HEAD(process_headers_skipfrom);
 ATF_TC_WITHOUT_HEAD(process_headers_disarmedfrom);
 ATF_TC_WITHOUT_HEAD(copy_file);
 ATF_TC_WITHOUT_HEAD(copy_file_1);
@@ -1936,7 +1937,7 @@ ATF_TC_BODY(process_headers_test, tc)
 	infd = open("hdr_in", O_RDONLY);
 	outf = fopen("hdr_out", "w");
 	ATF_REQUIRE(outf != NULL);
-	ATF_REQUIRE_EQ(process_headers(infd, outf, "sender@test", NULL), 0);
+	ATF_REQUIRE_EQ(process_headers(infd, outf, "sender@test", NULL, false), 0);
 	close(infd);
 	fclose(outf);
 	if (!atf_utils_compare_file("hdr_out", "X-Custom: value\n")) {
@@ -1949,7 +1950,7 @@ ATF_TC_BODY(process_headers_test, tc)
 	infd = open("hdr_in2", O_RDONLY);
 	outf = fopen("hdr_out2", "w");
 	ATF_REQUIRE(outf != NULL);
-	ATF_REQUIRE_EQ(process_headers(infd, outf, "bob@example.com", NULL), 0);
+	ATF_REQUIRE_EQ(process_headers(infd, outf, "bob@example.com", NULL, false), 0);
 	close(infd);
 	fclose(outf);
 	if (!atf_utils_compare_file("hdr_out2", "Reply-To: bob@example.com\n")) {
@@ -1963,7 +1964,7 @@ ATF_TC_BODY(process_headers_test, tc)
 	infd = open("hdr_in3", O_RDONLY);
 	outf = fopen("hdr_out3", "w");
 	ATF_REQUIRE(outf != NULL);
-	ATF_REQUIRE_EQ(process_headers(infd, outf, "alice@test.org", NULL), 0);
+	ATF_REQUIRE_EQ(process_headers(infd, outf, "alice@test.org", NULL, false), 0);
 	close(infd);
 	fclose(outf);
 	if (!atf_utils_compare_file("hdr_out3",
@@ -1977,7 +1978,7 @@ ATF_TC_BODY(process_headers_test, tc)
 	infd = open("hdr_in4", O_RDONLY);
 	outf = fopen("hdr_out4", "w");
 	ATF_REQUIRE(outf != NULL);
-	ATF_REQUIRE_EQ(process_headers(infd, outf, "test@test", NULL), 0);
+	ATF_REQUIRE_EQ(process_headers(infd, outf, "test@test", NULL, false), 0);
 	close(infd);
 	fclose(outf);
 	struct stat st;
@@ -1990,12 +1991,38 @@ ATF_TC_BODY(process_headers_test, tc)
 	infd = open("hdr_in5", O_RDONLY);
 	outf = fopen("hdr_out5", "w");
 	ATF_REQUIRE(outf != NULL);
-	ATF_REQUIRE_EQ(process_headers(infd, outf, "sender@test", NULL), 0);
+	ATF_REQUIRE_EQ(process_headers(infd, outf, "sender@test", NULL, false), 0);
 	close(infd);
 	fclose(outf);
 	if (!atf_utils_compare_file("hdr_out5", "X-Custom: header\n")) {
 		atf_utils_cat_file("hdr_out5", ">");
 		atf_tc_fail("process_headers should stop at blank line");
+	}
+}
+
+ATF_TC_BODY(process_headers_skipfrom, tc)
+{
+	int infd;
+	FILE *outf;
+
+	/* The digest sender sets its own From: header, a From: coming
+	 * from customheaders must not be added a second time */
+	atf_utils_create_file("hdr_in_s1",
+	    "From: $disarmedfrom$ via MyList <list@example.com>\n"
+	    "Reply-To: $posteraddr$\n"
+	    "Author: $posteraddr$\n\n");
+	infd = open("hdr_in_s1", O_RDONLY);
+	outf = fopen("hdr_out_s1", "w");
+	ATF_REQUIRE(outf != NULL);
+	ATF_REQUIRE_EQ(process_headers(infd, outf, "list@example.com",
+	    "list=example.com", true), 0);
+	close(infd);
+	fclose(outf);
+	if (!atf_utils_compare_file("hdr_out_s1",
+	    "Reply-To: list@example.com\n"
+	    "Author: list@example.com\n")) {
+		atf_utils_cat_file("hdr_out_s1", ">");
+		atf_tc_fail("skipfrom did not drop the custom From: header");
 	}
 }
 
@@ -2011,7 +2038,7 @@ ATF_TC_BODY(process_headers_disarmedfrom, tc)
 	outf = fopen("hdr_out_d1", "w");
 	ATF_REQUIRE(outf != NULL);
 	ATF_REQUIRE_EQ(process_headers(infd, outf, NULL,
-	    "Martin (me=here.com)"), 0);
+	    "Martin (me=here.com)", false), 0);
 	close(infd);
 	fclose(outf);
 	if (!atf_utils_compare_file("hdr_out_d1",
@@ -2028,7 +2055,7 @@ ATF_TC_BODY(process_headers_disarmedfrom, tc)
 	outf = fopen("hdr_out_d2", "w");
 	ATF_REQUIRE(outf != NULL);
 	ATF_REQUIRE_EQ(process_headers(infd, outf, "bob@example.com",
-	    "Bob (bob=example.com)"), 0);
+	    "Bob (bob=example.com)", false), 0);
 	close(infd);
 	fclose(outf);
 	if (!atf_utils_compare_file("hdr_out_d2",
@@ -6164,6 +6191,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, dumpfd2fd_large);
 	ATF_TP_ADD_TC(tp, dumpfd2fd_empty);
 	ATF_TP_ADD_TC(tp, process_headers_test);
+	ATF_TP_ADD_TC(tp, process_headers_skipfrom);
 	ATF_TP_ADD_TC(tp, process_headers_disarmedfrom);
 	ATF_TP_ADD_TC(tp, copy_file);
 	ATF_TP_ADD_TC(tp, copy_file_1);

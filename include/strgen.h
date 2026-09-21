@@ -50,5 +50,6 @@ char *genmsgid(const char *fqdn);
 char *gendatestr(void);
 char *decode_qp(const char *qpstr, bool qformat);
 bool splitlistaddr(const char *listaddr, char **listname, const char **listfqdn);
+char *disarm_email(const char *from);
 
 #endif /* STRGEN_H */

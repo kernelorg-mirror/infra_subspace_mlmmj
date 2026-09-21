@@ -85,7 +85,7 @@ int dumpfd2fd(int from, int to)
 }
 
 int process_headers(int infd, FILE *outf, const char *from,
-    const char *disarmedfrom)
+    const char *disarmedfrom, bool skipfrom)
 {
 	char *line = NULL, *p, *to_be_subst, *new_line;
 	size_t linecap = 0;
@@ -108,6 +108,11 @@ int process_headers(int infd, FILE *outf, const char *from,
 			p++;
 		if (*p == '\0')
 			break;
+		/* Some callers (the digest sender) already set a From:
+		 * header and must not get a second one from the custom
+		 * headers */
+		if (skipfrom && strncasecmp(p, "From:", 5) == 0)
+			continue;
 		to_be_subst = strstr(p, "$posteraddr$");
 		if (to_be_subst != NULL) {
 			*to_be_subst = '\0';
