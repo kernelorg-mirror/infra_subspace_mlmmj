@@ -8,6 +8,8 @@
 #define STRVIEW_H
 
 #include <ctype.h>
+#include <errno.h>
+#include <limits.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -30,8 +32,14 @@ typedef struct {
 	size_t len;
 } strview_t;
 
-/* Create a view from a nul-terminated C string (O(n) strlen) */
-#define sv(s)                 ((strview_t){ .ptr = (s), .len = strlen(s) })
+/*
+ * Create a view from a nul-terminated C string (O(n) strlen).
+ * The argument is evaluated once.
+ */
+#define sv(s) __extension__ ({         \
+	const char *_sv = (s);         \
+	(strview_t){ .ptr = _sv, .len = strlen(_sv) }; \
+})
 
 /* Accessors */
 #define sv_data(sv)           ((sv).ptr)
@@ -112,22 +120,34 @@ sv_trim(strview_t sv)
 
 /*
  * Convert a view to an integer via strtol.
- * Returns 0 on success, -1 on failure.
+ *
+ * The whole view must be a plain decimal integer: an optional sign
+ * followed by digits, with no surrounding whitespace.  Returns 0 on
+ * success, -1 on failure (empty input, trailing garbage, out-of-range
+ * values, ...).
  */
 static inline int
 sv_to_int(strview_t sv, int *val)
 {
 	char buf[64];
+	char *endptr;
+	long v;
 
-	if (sv.len >= sizeof(buf))
+	if (sv.len == 0 || sv.len >= sizeof(buf))
 		return (-1);
 	memcpy(buf, sv.ptr, sv.len);
 	buf[sv.len] = '\0';
 
-	char *endptr;
-	long v = strtol(buf, &endptr, 10);
+	/* strtol() silently skips leading whitespace; we do not want that. */
+	if (buf[0] != '+' && buf[0] != '-' &&
+	    !isdigit((unsigned char)buf[0]))
+		return (-1);
 
-	if (endptr != buf + sv.len)
+	errno = 0;
+	v = strtol(buf, &endptr, 10);
+	if (errno == ERANGE || endptr != buf + sv.len)
+		return (-1);
+	if (v < INT_MIN || v > INT_MAX)
 		return (-1);
 	*val = (int)v;
 	return (0);
