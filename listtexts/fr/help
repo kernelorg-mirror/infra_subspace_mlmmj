@@ -2,7 +2,7 @@ Subject: Information pour $list$@$domain$
 
 %text prologue%
 
-Vous trouverez ci-après des informations à propos de la liste
+Vous trouverez ci-après des informations à propos de la liste.
 
 Vous pouvez vous inscrire aux versions suivantes :
 
@@ -28,9 +28,9 @@ liste, les inscrits reçoivent une copie de celui-ci.
 
 %ifncontrol nonomailsub%
   %^%- %wrap%La version no-mail\ : les inscrits ne reçoivent aucun message de
-  la liste. Cela signifie qu'alors qu'ils peuvent poster des messages à la
-  liste que seuls les inscrits peuvent envoyer, ils suivent la liste en
-  utilisant une archive web ou via une autre adresse e-mail inscrite.
+  la liste. Cela signifie qu'ils peuvent poster des messages sur une liste
+  où seuls les inscrits peuvent poster, tout en suivant la liste au moyen
+  d'une archive web ou d'une autre adresse e-mail inscrite.
   %ifcontrol closedlist closedlistsub%
     Inscrivez-vous en contactant un administrateur de la liste.
   %else%
@@ -75,7 +75,7 @@ liste, les inscrits reçoivent une copie de celui-ci.
 %ifncontrol noget%%ifncontrol noarchive%
   %^%%wrap%
   %ifcontrol subonlyget%
-    Tous 
+    Tous
   %else%
     Les inscrits
   %endif%
