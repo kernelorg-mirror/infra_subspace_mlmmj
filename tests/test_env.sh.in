@@ -41,7 +41,9 @@ kill_fakesmtp()
 	if [ -f fakesmtp.pid ]; then
 		pid=$(cat fakesmtp.pid)
 		kill -15 $pid 2>/dev/null
-		wait $pid 2>/dev/null
+		# fakesmtpd daemonizes, so it is not a child of this shell and
+		# wait can only fail (127 with OpenBSD's ksh).
+		wait $pid 2>/dev/null || true
 	fi
 	rm -f fakesmtp.pid fakesmtp.port
 }
