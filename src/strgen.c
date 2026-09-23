@@ -42,6 +42,7 @@
 #include "sb.h"
 #include "mlmmj.h"
 #include "strgen.h"
+#include "unistr.h"
 #include "wrappers.h"
 #include "log_error.h"
 
@@ -285,12 +286,15 @@ decode_qp(const char *qpstr, bool qformat)
  * Return a copy of the From: header value with special characters
  * replaced to make it safe for use in a display name:
  *   '<' -> '(',  '>' -> ')',  '@' -> '=',  truncate at '\n'
+ * The result is encoded as an RFC 2047 encoded word when it contains
+ * characters that are not allowed in a display name, so that it is
+ * displayed as is, and not as an RFC 5322 comment.
  * Returns NULL if s is NULL or empty.
  */
 char *
 disarm_email(const char *from)
 {
-	char *cpy, *p;
+	char *cpy, *enc, *p;
 
 	if (from == NULL || *from == '\0')
 		return (NULL);
@@ -316,7 +320,10 @@ disarm_email(const char *from)
 			break;
 		}
 	}
-	return (cpy);
+	enc = unistr_utf8_to_header(cpy);
+	free(cpy);
+
+	return (enc);
 }
 
 bool

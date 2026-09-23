@@ -145,6 +145,10 @@ That's it! You probably want to go through the next steps too.
         characters replaced for safe use in a display name:
         '<' → '(',  '>' → ')',  '@' → '='.
         Example: "Martin (me=here.com)"
+        The value is encoded as an RFC 2047 encoded word when it contains
+        characters that are not allowed in a display name, so that mail
+        clients display it as is (an unencoded "(me=here.com)" would be
+        taken for a comment and dropped).
         Note: this is not a valid email address and must not be used where
         an address is expected (Reply-To:, MAIL FROM, ...).
 

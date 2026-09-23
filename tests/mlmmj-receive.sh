@@ -3522,6 +3522,9 @@ EOF
 # contain a leading space because the From: header value keeps the
 # whitespace after the colon. disarmedEmail() now skips leading
 # whitespace, so $disarmedfrom$ renders without a leading space.
+# The value is also encoded as an RFC 2047 encoded word so that mail
+# clients display the disarmed address instead of dropping it as an
+# RFC 5322 comment (#111).
 customheaders_disarmedfrom_body()
 {
 	init_ml list
@@ -3544,8 +3547,10 @@ hello world
 EOF
 	atf_check -s exit:0 $mlmmjreceive -L list -F <mailfile
 	# disarmedfrom must not have a leading space: it is "John Doe
-	# (john=example.com)", not " John Doe (john=example.com)"
-	atf_check -o match:"X-Original-From: John Doe \(john=example\.com\)" \
+	# (john=example.com)", not " John Doe (john=example.com)".  It is
+	# RFC 2047 encoded because it contains characters that are not
+	# allowed in a display name.
+	atf_check -o match:"X-Original-From: =\?utf-8\?q\?John_Doe_=28john=3Dexample.com=29\?=" \
 	    sed -e "/^Message-ID:/d; /^Date:/d;" mail-1.txt
 }
 
