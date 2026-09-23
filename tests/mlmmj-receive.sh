@@ -3587,6 +3587,7 @@ Subject: second post
 
 Second email from bob
 EOF
+	sleep .1
 	atf_check -s exit:0 $mlmmjreceive -L list -F <second
 
 cat > third <<EOF
@@ -3597,6 +3598,7 @@ Subject: third post
 
 Third email from bob
 EOF
+	sleep .1
 	atf_check -s exit:0 $mlmmjreceive -L list -F <third
 
 	# And one from another non-subscriber
@@ -3633,6 +3635,11 @@ EOF
 	if [ "$archived" -ne 3 ]; then
 		atf_fail "Expected 3 archived mails, got $archived"
 	fi
+
+	# Verify they have been released in the order they were received
+	atf_check -o match:"Subject: first post" cat list/archive/1
+	atf_check -o match:"Subject: second post" cat list/archive/2
+	atf_check -o match:"Subject: third post" cat list/archive/3
 
 	# Verify alice's mail is still held for moderation
 	remaining=$(ls list/moderation/ | wc -l)

@@ -271,20 +271,44 @@ send_moderated_release(struct ml *ml, const char *mlmmjsend,
 }
 
 /*
- * Release every other message held in moderation for the same sender.
- * Called from the subrelease flow when control/subreleaseall is set, to
- * deal with batches of mail (such as a patch series) sent before the
- * sender subscribed. The message being released by the caller has already
- * been renamed to .sending and is therefore not picked up here.
+ * A moderated message queued for release by the subrelease flow.
+ */
+struct pending_release {
+	char *sendfn;
+	char *omit;
+	struct timespec mtime;
+};
+
+typedef vec_t(struct pending_release) pending_releases_t;
+
+static int
+cmp_pending_release(const void *a, const void *b)
+{
+	const struct pending_release *pa = a;
+	const struct pending_release *pb = b;
+
+	if (pa->mtime.tv_sec != pb->mtime.tv_sec)
+		return (pa->mtime.tv_sec < pb->mtime.tv_sec ? -1 : 1);
+	if (pa->mtime.tv_nsec != pb->mtime.tv_nsec)
+		return (pa->mtime.tv_nsec < pb->mtime.tv_nsec ? -1 : 1);
+	return (strcmp(pa->sendfn, pb->sendfn));
+}
+
+/*
+ * Queue every message held in moderation for the same sender, except the
+ * one named by 'skipname' which the caller handles. Only plain moderated
+ * mails are considered: .omit files, files already renamed to .sending and
+ * the subscribe/ subdirectory are ignored.
  */
 static void
-release_sender_moderation(struct ml *ml, const char *mlmmjsend,
-    const char *sender)
+collect_sender_moderation(struct ml *ml, const char *sender,
+    const char *skipname, pending_releases_t *pend)
 {
+	struct pending_release pending;
 	struct dirent *dp;
 	struct stat st;
 	DIR *dir;
-	char *filesender, *sendfn, *omit;
+	char *filesender;
 	int modfd, mfd;
 
 	modfd = openat(ml->fd, "moderation", O_RDONLY|O_DIRECTORY|O_CLOEXEC);
@@ -298,6 +322,8 @@ release_sender_moderation(struct ml *ml, const char *mlmmjsend,
 
 	while ((dp = readdir(dir)) != NULL) {
 		if (dp->d_name[0] == '.')
+			continue;
+		if (strcmp(dp->d_name, skipname) == 0)
 			continue;
 		if (strstr(dp->d_name, ".sending") != NULL ||
 		    strstr(dp->d_name, ".omit") != NULL)
@@ -319,16 +345,59 @@ release_sender_moderation(struct ml *ml, const char *mlmmjsend,
 		}
 		free(filesender);
 
-		if (prepare_moderated_release(ml, dp->d_name, &sendfn, &omit) != 0)
+		if (prepare_moderated_release(ml, dp->d_name,
+		    &pending.sendfn, &pending.omit) != 0)
 			continue;
-		log_oper(ml->fd, OPLOGFNAME, "subreleaseall: released %s"
-		    " from %s", dp->d_name, sender);
-		send_moderated_release(ml, mlmmjsend, sendfn, omit, true);
-		free(sendfn);
-		free(omit);
+		pending.mtime = st.st_mtim;
+		vec_push(pend, pending);
 	}
 
 	closedir(dir);
+}
+
+/*
+ * Release every message held in moderation for the same sender, oldest
+ * first so that a batch of mail (such as a patch series) keeps the order in
+ * which it was received. Called from the subrelease flow when
+ * control/subreleaseall is set. 'trigger' is the message the caller is
+ * releasing, already renamed to .sending, and 'triggeromit' its omit value.
+ */
+static void
+release_sender_moderation(struct ml *ml, const char *mlmmjsend,
+    const char *sender, const char *trigger, const char *triggeromit)
+{
+	struct pending_release pending;
+	pending_releases_t pend = vec_init();
+	const char *base;
+	struct stat st;
+	size_t i;
+
+	base = strrchr(trigger, '/');
+	base = (base != NULL) ? base + 1 : trigger;
+
+	/* The message the caller is releasing is part of the batch */
+	if (fstatat(ml->fd, trigger, &st, 0) == 0) {
+		pending.sendfn = xstrdup(trigger);
+		pending.omit = (triggeromit != NULL) ?
+		    xstrdup(triggeromit) : NULL;
+		pending.mtime = st.st_mtim;
+		vec_push(&pend, pending);
+	}
+
+	collect_sender_moderation(ml, sender, base, &pend);
+
+	if (pend.len > 1)
+		qsort(pend.d, pend.len, sizeof(pend.d[0]), cmp_pending_release);
+
+	for (i = 0; i < pend.len; i++) {
+		log_oper(ml->fd, OPLOGFNAME, "subreleaseall: released %s"
+		    " from %s", pend.d[i].sendfn, sender);
+		send_moderated_release(ml, mlmmjsend, pend.d[i].sendfn,
+		    pend.d[i].omit, true);
+		free(pend.d[i].sendfn);
+		free(pend.d[i].omit);
+	}
+	vec_free(&pend);
 }
 
 int listcontrol(strlist *fromemails, strlist *rtoemails, struct ml *ml,
@@ -573,6 +642,8 @@ int listcontrol(strlist *fromemails, strlist *rtoemails, struct ml *ml,
 			goto permit;
 		}
 
+		bool releaseall = false;
+
 		if (prepare_moderated_release(ml, param, &sendfilename, &omit) != 0) {
 			if (errno == ENOENT) {
 				errno = 0;
@@ -592,9 +663,11 @@ int listcontrol(strlist *fromemails, strlist *rtoemails, struct ml *ml,
 				return (-1);
 			}
 			char *sender = autosubscribe_sender(ml, mfd, ts);
-			if (sender != NULL &&
-			    statctrl(ml->ctrlfd, "subreleaseall"))
-				release_sender_moderation(ml, mlmmjsend, sender);
+			releaseall = (sender != NULL &&
+			    statctrl(ml->ctrlfd, "subreleaseall"));
+			if (releaseall)
+				release_sender_moderation(ml, mlmmjsend,
+				    sender, sendfilename, omit);
 			free(sender);
 		} else if (statctrl(ml->ctrlfd, "autosubscribe")) {
 			int mfd = openat(ml->fd, sendfilename, O_RDONLY);
@@ -606,6 +679,13 @@ int listcontrol(strlist *fromemails, strlist *rtoemails, struct ml *ml,
 		}
 
 		log_oper(ml->fd, OPLOGFNAME, "%s released %s", lc.fromemail, param);
+
+		if (releaseall) {
+			/* The whole batch, including this mail, is sent */
+			free(sendfilename);
+			free(omit);
+			break;
+		}
 
 		/* Does not return */
 		send_moderated_release(ml, mlmmjsend, sendfilename, omit, false);
