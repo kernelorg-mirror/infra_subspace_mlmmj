@@ -6,14 +6,11 @@ CFLAGS+=	$(CPPFLAGS)
 CFLAGS+=	-Werror=implicit-function-declaration
 CFLAGS+=	-Werror=return-type
 
-# bmake's traditional include support treats empty strings in the expanded
-# result (whether because the variable is empty or there are consecutive
-# whitespace characters) as file names, and thus tries to read the containing
-# directory as a Makefile, which fails, and isn't ignored since it exists.
-# Work around this quirky behaviour by adding an extra entry that should never
-# exist and then normalize its whitespace during substitution with :=.
-DEPFILES_NONEMPTY=	$(DEPFILES) /nonexistent
--include $(DEPFILES_NONEMPTY:=)
+# Only include the dependency files when there are some: an empty file name
+# in an -include directive makes make try to read the directory as a makefile.
+.if !empty(DEPFILES)
+-include ${DEPFILES}
+.endif
 
 .SUFFIXES: .pico
 
