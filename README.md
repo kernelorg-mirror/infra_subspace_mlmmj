@@ -145,6 +145,8 @@ That's it! You probably want to go through the next steps too.
         characters replaced for safe use in a display name:
         '<' → '(',  '>' → ')',  '@' → '='.
         Example: "Martin (me=here.com)"
+        Note: this is not a valid email address and must not be used where
+        an address is expected (Reply-To:, MAIL FROM, ...).
 
     DKIM / From: munging recipe
     ---------------------------
