@@ -89,11 +89,16 @@ entire content is used as value, it's marked "text".
    The prefix for the `Subject:` line of mails to the list. This will alter the
    `Subject:` line, and add a prefix if it's not present elsewhere.
 
- * replyto			(boolean)
+ * replyto			(boolean) DEPRECATED
 
    When this file is present, the `From:` line of mails will be added as a
    `Reply-To:` header. This allows the mail to be delivered safely when DMARC
    protected emails are received from the list.
+
+   This control is deprecated: add a `Reply-To:` header to `customheaders`
+   instead (see the DKIM recipe in `README.md`). Using both results in two
+   `Reply-To:` headers, which is not RFC 5322 compliant and gets the mail
+   rejected by several large providers.
 
  * owner			(list)
 

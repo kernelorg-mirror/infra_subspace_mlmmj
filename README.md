@@ -155,7 +155,7 @@ That's it! You probably want to go through the next steps too.
 
     You can rewrite the From: header to use the list's domain — so your MTA
     will sign it — while keeping a Reply-To: back to the original author.
-    No code changes needed, just three control files:
+    No code changes needed, just two control files:
 
     control/customheaders:
         From: $disarmedfrom$ via MyList <mylist@lists.example.com>
@@ -165,11 +165,13 @@ That's it! You probably want to go through the next steps too.
         From:
         Reply-To:
 
-    control/replyto:          (empty file — just touch it)
-
     This strips the original From: and Reply-To:, then injects new ones.
     The resulting From: uses your list domain → MTA signs it → DKIM passes.
     Replies still go to the original sender thanks to Reply-To:.
+
+    Do not also create control/replyto: it is deprecated and may add a
+    second Reply-To: header, which is not RFC 5322 compliant and is rejected
+    by several large providers.
 
     Use $posteraddr$ instead of $disarmedfrom$ in the From: line if you
     prefer to show only the email address (e.g. for privacy reasons).

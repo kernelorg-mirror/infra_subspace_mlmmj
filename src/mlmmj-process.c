@@ -387,6 +387,9 @@ int main(int argc, char **argv)
 	subjectprefix = ctrlvalue(ml.ctrlfd, "prefix");
 
 	replyto = statctrl(ml.ctrlfd, "replyto");
+	if (replyto)
+		log_err("control/replyto is deprecated, use a Reply-To: header"
+		    " in control/customheaders instead");
 
 	if (do_all_the_voodoo_here(rawmailfd, donemailfd, hdrfd, footfd,
 				delheaders, readhdrs,
