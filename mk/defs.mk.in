@@ -3,6 +3,10 @@ VERSION=	@VERSION@
 RANLIB=	@RANLIB@
 AR=	@AR@
 CC=	@CC@
+# iconv(3) is available in libc on most systems, but on OpenBSD it lives
+# in /usr/local.
+CPPFLAGS+=	@ICONV_CPPFLAGS@
+LDFLAGS+=	@ICONV_LDFLAGS@
 @if coverage
 CFLAGS+=	@COVERAGE_CFLAGS@
 LDFLAGS+=	@COVERAGE_LDFLAGS@

@@ -24,6 +24,34 @@ cc_check_tools ar ranlib strip
 # Function checks
 cc_check_functions arc4random_uniform copy_file_range
 
+# iconv(3) is available in libc on most systems, but on OpenBSD it lives
+# in /usr/local. Probe libiconv first in libc and then in /usr/local.
+_iconv_test='
+#include <iconv.h>
+int main(void)
+{
+	iconv_t cd = iconv_open("UTF-8", "ISO-8859-1");
+
+	return (cd == (iconv_t)-1);
+}
+'
+ICONV_CPPFLAGS=""
+ICONV_LDFLAGS=""
+msg_checking "Checking for iconv... "
+if cc_try_link "$_iconv_test"; then
+	msg_result "yes"
+elif cc_with "-cflags -I/usr/local/include -libs -L/usr/local/lib -liconv" \
+    cc_try_link "$_iconv_test"; then
+	msg_result "yes (in /usr/local)"
+	ICONV_CPPFLAGS="-I/usr/local/include"
+	ICONV_LDFLAGS="-L/usr/local/lib -liconv"
+else
+	msg_result "no"
+	user_error "iconv is required but was not found"
+fi
+define ICONV_CPPFLAGS "$ICONV_CPPFLAGS"
+define ICONV_LDFLAGS "$ICONV_LDFLAGS"
+
 if opt_bool with-asan; then
 	define ASAN_CFLAGS "-O0 -ggdb -fsanitize=address"
 	define ASAN_LDFLAGS "-fsanitize=address"
