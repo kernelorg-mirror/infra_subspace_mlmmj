@@ -58,6 +58,15 @@ entire content is used as value, it's marked "text".
    This tunable takes precedence over `modonlypost`: if both are present,
    only the subscriber check is performed.
 
+ * subreleaseall		(boolean)
+
+   When this file is present, a sender using the self-release option of
+   `subonlypost` (or `modnonsubposts`) also releases every other message
+   of theirs still awaiting moderation, instead of only the one they
+   replied to. This is meant for batches of mail such as a patch series
+   sent before subscribing. Messages are matched against the `From:`
+   header of the held mail.
+
  * modonlypost			(boolean)
 
    When this file is present, only people listed in listdir/control/moderators

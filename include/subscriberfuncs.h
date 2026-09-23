@@ -52,4 +52,5 @@ void send_confirmation_mail(struct ml *ml, const char *subaddr, enum subtype typ
 bool do_unsubscribe(struct ml *ml, const char *addr, enum subtype typesub, enum subreason reasonsub, bool inform_not_subscribed, bool confirm_unsubscription, bool quiet, bool send_goodbye_mail);
 void mod_get_addr_and_type(struct ml *ml, const char *modstr, char **addrptr, enum subtype *subtypeptr);
 bool do_subscribe(struct ml *ml, struct subscription *sub, const char *addr);
-void autosubscribe_sender(struct ml *ml, int mailfd, enum subtype typesub);
+char *get_mail_sender(int mailfd);
+char *autosubscribe_sender(struct ml *ml, int mailfd, enum subtype typesub);

@@ -759,40 +759,46 @@ do_subscribe(struct ml *ml, struct subscription *sub, const char *addr)
 	return (true);
 }
 
-void
-autosubscribe_sender(struct ml *ml, int mailfd, enum subtype typesub)
+char *
+get_mail_sender(int mailfd)
 {
 	struct mailhdr readhdrs[] = {
 		{ "From:", 0, NULL },
 		{ NULL, 0, NULL }
 	};
+	char *sender = NULL;
 	strlist from = vec_init();
 
 	FILE *f = fdopen(mailfd, "r");
 	if (f == NULL) {
 		log_error(LOG_ARGS, "Could not fdopen mail fd");
 		close(mailfd);
-		return;
+		return (NULL);
 	}
 	scan_headers(f, readhdrs, NULL, NULL);
 	fclose(f);
 	if (readhdrs[0].valuecount == 0) {
 		free_mailhdrs(readhdrs);
-		return;
+		return (NULL);
 	}
 	find_email_adr(readhdrs[0].values[0], &from);
-	if (from.len == 0) {
-		vec_free(&from);
-		free_mailhdrs(readhdrs);
-		return;
-	}
-	if (strchr(vec_first(&from), '@') == NULL) {
-		vec_free_and_free(&from, free);
-		free_mailhdrs(readhdrs);
-		return;
-	}
-	subscribe_type(ml->fd, vec_first(&from), typesub);
+	if (from.len > 0 && strchr(vec_first(&from), '@') != NULL)
+		sender = xstrdup(vec_first(&from));
 	vec_free_and_free(&from, free);
 	free_mailhdrs(readhdrs);
+
+	return (sender);
+}
+
+char *
+autosubscribe_sender(struct ml *ml, int mailfd, enum subtype typesub)
+{
+	char *sender = get_mail_sender(mailfd);
+
+	if (sender == NULL)
+		return (NULL);
+	subscribe_type(ml->fd, sender, typesub);
+
+	return (sender);
 }
 

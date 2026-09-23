@@ -4606,20 +4606,20 @@ ATF_TC_BODY(autosubscribe_sender, tc)
 
 	atf_utils_create_file("myemailbody.txt", "line");
 	int mfd = open("myemailbody.txt", O_RDONLY);
-	autosubscribe_sender(&list, mfd, SUB_NOMAIL);
+	free(autosubscribe_sender(&list, mfd, SUB_NOMAIL));
 	cnt = count_dir_entries_from_mldir(list.fd, "nomailsubs.d");
 	close(mfd);
 
 	atf_utils_create_file("myemailbody.txt", "From: bapt");
 	mfd = open("myemailbody.txt", O_RDONLY);
-	autosubscribe_sender(&list, mfd, SUB_NOMAIL);
+	free(autosubscribe_sender(&list, mfd, SUB_NOMAIL));
 	cnt = count_dir_entries_from_mldir(list.fd, "nomailsubs.d");
 	ATF_REQUIRE_EQ_MSG(cnt, 0, "Invalid number of entries %d, expectiing 0", cnt);
 	close(mfd);
 
 	atf_utils_create_file("myemailbody.txt", "From: bapt@plop");
 	mfd = open("myemailbody.txt", O_RDONLY);
-	autosubscribe_sender(&list, mfd, SUB_NOMAIL);
+	free(autosubscribe_sender(&list, mfd, SUB_NOMAIL));
 	cnt = count_dir_entries_from_mldir(list.fd, "nomailsubs.d");
 	ATF_REQUIRE_EQ_MSG(cnt, 1, "Invalid number of entries %d, expectiing 0", cnt);
 	close(mfd);
@@ -4630,7 +4630,7 @@ ATF_TC_BODY(autosubscribe_sender, tc)
 
 	atf_utils_create_file("myemailbody.txt", "From: bapt <bapt@meh>");
 	mfd = open("myemailbody.txt", O_RDONLY);
-	autosubscribe_sender(&list, mfd, SUB_NOMAIL);
+	free(autosubscribe_sender(&list, mfd, SUB_NOMAIL));
 	cnt = count_dir_entries_from_mldir(list.fd, "nomailsubs.d");
 	ATF_REQUIRE_EQ_MSG(cnt, 1, "Invalid number of entries %d, expectiing 0", cnt);
 	close(mfd);

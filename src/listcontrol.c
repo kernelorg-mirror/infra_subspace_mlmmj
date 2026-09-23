@@ -22,6 +22,7 @@
  */
 
 #include <sys/param.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 
 #include <stdio.h>
@@ -29,8 +30,9 @@
 #include <string.h>
 #include <strings.h>
 #include <unistd.h>
-#include <fcntl.h>
 #include <ctype.h>
+#include <dirent.h>
+#include <fcntl.h>
 
 #include "xmalloc.h"
 #include "mlmmj.h"
@@ -203,14 +205,139 @@ get_ctrl_command(const char *controlstr, char **param)
 	return (NULL);
 }
 
+/*
+ * Prepare a moderated message for release: rename it to .sending so that
+ * it cannot be sent twice, and drop any stale .omit file. On success
+ * *sendfnp and *omitp are set and must be freed by the caller, on failure
+ * -1 is returned with errno set.
+ */
+static int
+prepare_moderated_release(struct ml *ml, const char *param,
+    char **sendfnp, char **omitp)
+{
+	char *modfn, *sendfn, *omitfn, *omit;
+	int err;
+
+	xasprintf(&modfn, "moderation/%s", param);
+	xasprintf(&sendfn, "%s.sending", modfn);
+	if (renameat(ml->fd, modfn, ml->fd, sendfn) != 0) {
+		err = errno;
+		free(sendfn);
+		free(modfn);
+		errno = err;
+		return (-1);
+	}
+
+	xasprintf(&omitfn, "%s.omit", modfn);
+	errno = 0;
+	omit = ctrlvalue(ml->fd, omitfn);
+	if (omit != NULL || errno != ENOENT)
+		unlinkat(ml->fd, omitfn, 0);
+	free(omitfn);
+	free(modfn);
+
+	*sendfnp = sendfn;
+	*omitp = omit;
+	return (0);
+}
+
+/*
+ * Send a prepared moderated message through mlmmj-send. When wait is
+ * false the current process is replaced and this function never returns.
+ */
+static void
+send_moderated_release(struct ml *ml, const char *mlmmjsend,
+    const char *sendfn, const char *omit, bool wait)
+{
+	char *tosend;
+
+	xasprintf(&tosend, "%s/%s", ml->dir, sendfn);
+	if (wait) {
+		if (omit != NULL)
+			exec_and_wait(mlmmjsend, "-L", ml->dir, "-o", omit,
+			    "-m", tosend, NULL);
+		else
+			exec_and_wait(mlmmjsend, "-L", ml->dir, "-m", tosend,
+			    NULL);
+		free(tosend);
+	} else {
+		if (omit != NULL)
+			exec_or_die(mlmmjsend, "-L", ml->dir, "-o", omit,
+			    "-m", tosend, NULL);
+		else
+			exec_or_die(mlmmjsend, "-L", ml->dir, "-m", tosend,
+			    NULL);
+	}
+}
+
+/*
+ * Release every other message held in moderation for the same sender.
+ * Called from the subrelease flow when control/subreleaseall is set, to
+ * deal with batches of mail (such as a patch series) sent before the
+ * sender subscribed. The message being released by the caller has already
+ * been renamed to .sending and is therefore not picked up here.
+ */
+static void
+release_sender_moderation(struct ml *ml, const char *mlmmjsend,
+    const char *sender)
+{
+	struct dirent *dp;
+	struct stat st;
+	DIR *dir;
+	char *filesender, *sendfn, *omit;
+	int modfd, mfd;
+
+	modfd = openat(ml->fd, "moderation", O_RDONLY|O_DIRECTORY|O_CLOEXEC);
+	if (modfd == -1)
+		return;
+	dir = fdopendir(modfd);
+	if (dir == NULL) {
+		close(modfd);
+		return;
+	}
+
+	while ((dp = readdir(dir)) != NULL) {
+		if (dp->d_name[0] == '.')
+			continue;
+		if (strstr(dp->d_name, ".sending") != NULL ||
+		    strstr(dp->d_name, ".omit") != NULL)
+			continue;
+		/* moderation/ also holds the subscribe/ subdirectory */
+		if (fstatat(modfd, dp->d_name, &st, 0) != 0 ||
+		    !S_ISREG(st.st_mode))
+			continue;
+
+		mfd = openat(modfd, dp->d_name, O_RDONLY|O_CLOEXEC);
+		if (mfd == -1)
+			continue;
+		filesender = get_mail_sender(mfd);
+		if (filesender == NULL)
+			continue;
+		if (strcasecmp(filesender, sender) != 0) {
+			free(filesender);
+			continue;
+		}
+		free(filesender);
+
+		if (prepare_moderated_release(ml, dp->d_name, &sendfn, &omit) != 0)
+			continue;
+		log_oper(ml->fd, OPLOGFNAME, "subreleaseall: released %s"
+		    " from %s", dp->d_name, sender);
+		send_moderated_release(ml, mlmmjsend, sendfn, omit, true);
+		free(sendfn);
+		free(omit);
+	}
+
+	closedir(dir);
+}
+
 int listcontrol(strlist *fromemails, strlist *rtoemails, struct ml *ml,
     const char *controlstr, const char *mlmmjsend, const char *mailname)
 {
 	char *bouncenr, *tmpstr;
 	char *param = NULL, *moderatefilename, *gatekeepfilename;
-	char *omitfilename;
 	char *omit = NULL;
-	char *c, *sendfilename, *tosend;
+	char *c, *sendfilename;
 	text *txt;
 	char *queuefilename;
 	enum subtype ts = SUB_NONE;
@@ -446,10 +573,7 @@ int listcontrol(strlist *fromemails, strlist *rtoemails, struct ml *ml,
 			goto permit;
 		}
 
-		xasprintf(&moderatefilename, "moderation/%s", param);
-		xasprintf(&sendfilename, "%s.sending", moderatefilename);
-		/* Rename it to avoid mail being sent twice */
-		if (renameat(ml->fd, moderatefilename, ml->fd, sendfilename) != 0) {
+		if (prepare_moderated_release(ml, param, &sendfilename, &omit) != 0) {
 			if (errno == ENOENT) {
 				errno = 0;
 				log_error(LOG_ARGS, "A release request was"
@@ -458,18 +582,8 @@ int listcontrol(strlist *fromemails, strlist *rtoemails, struct ml *ml,
 			} else {
 				log_error(LOG_ARGS, "Could not rename to .sending");
 			}
-			free(sendfilename);
-			free(moderatefilename);
 			return (-1);
 		}
-
-		xasprintf(&omitfilename, "%s.omit", moderatefilename);
-		errno = 0;
-		omit = ctrlvalue(ml->fd, omitfilename);
-		if (omit != NULL || errno != ENOENT)
-			unlinkat(ml->fd, omitfilename, 0);
-		free(omitfilename);
-		free(moderatefilename);
 		if (ts != SUB_NONE) {
 			/* subrelease: always subscribe with requested type */
 			int mfd = openat(ml->fd, sendfilename, O_RDONLY);
@@ -477,23 +591,24 @@ int listcontrol(strlist *fromemails, strlist *rtoemails, struct ml *ml,
 				free(sendfilename);
 				return (-1);
 			}
-			autosubscribe_sender(ml, mfd, ts);
+			char *sender = autosubscribe_sender(ml, mfd, ts);
+			if (sender != NULL &&
+			    statctrl(ml->ctrlfd, "subreleaseall"))
+				release_sender_moderation(ml, mlmmjsend, sender);
+			free(sender);
 		} else if (statctrl(ml->ctrlfd, "autosubscribe")) {
 			int mfd = openat(ml->fd, sendfilename, O_RDONLY);
 			if (mfd == -1) {
 				free(sendfilename);
 				return (-1);
 			}
-			autosubscribe_sender(ml, mfd, SUB_NOMAIL);
+			free(autosubscribe_sender(ml, mfd, SUB_NOMAIL));
 		}
 
 		log_oper(ml->fd, OPLOGFNAME, "%s released %s", lc.fromemail, param);
 
-		xasprintf(&tosend, "%s/%s", ml->dir, sendfilename);
-		if (omit != NULL)
-			exec_or_die(mlmmjsend, "-L", ml->dir, "-o", omit,
-			    "-m", tosend, NULL);
-		exec_or_die(mlmmjsend, "-L", ml->dir, "-m", tosend, NULL);
+		/* Does not return */
+		send_moderated_release(ml, mlmmjsend, sendfilename, omit, false);
 		break;
 
 	/* listname+reject-COOKIE@domain.tld */

@@ -36,6 +36,8 @@ tests_init \
 	multi_line_headers \
 	subrelease \
 	subrelease_with_moderators \
+	subreleaseall \
+	subreleaseall_off \
 	mimedeny_simple \
 	mimedeny_none \
 	mimedeny_nocontenttype \
@@ -3547,3 +3549,152 @@ EOF
 	    sed -e "/^Message-ID:/d; /^Date:/d;" mail-1.txt
 }
 
+subreleaseall_body()
+{
+	init_ml list
+	rmdir list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
+	echo test@mlmmjtest > list/control/listaddress
+	start_fakesmtp list
+	echo "heloname" > list/control/smtphelo
+
+	touch list/control/subonlypost
+	touch list/control/subreleaseall
+	printf "user@test\nuser2@test" > list/subscribers.d/u
+
+	# First mail from a non-subscriber: keep its cookie, the subrelease
+	# reply used further down refers to that mail.
+cat > first <<EOF
+From: bob@test
+To: test@mlmmjtest
+Return-path: bob@test
+Subject: first post
+
+First email from bob
+EOF
+	atf_check -s exit:0 $mlmmjreceive -L list -F <first
+	var=$(ls list/moderation/)
+	if [ -z "$var" ]; then
+		atf_fail "No file in moderation directory"
+	fi
+
+	# Two more mails from the same non-subscriber
+cat > second <<EOF
+From: bob@test
+To: test@mlmmjtest
+Return-path: bob@test
+Subject: second post
+
+Second email from bob
+EOF
+	atf_check -s exit:0 $mlmmjreceive -L list -F <second
+
+cat > third <<EOF
+From: bob@test
+To: test@mlmmjtest
+Return-path: bob@test
+Subject: third post
+
+Third email from bob
+EOF
+	atf_check -s exit:0 $mlmmjreceive -L list -F <third
+
+	# And one from another non-subscriber
+cat > other <<EOF
+From: alice@test
+To: test@mlmmjtest
+Return-path: alice@test
+Subject: alice post
+
+Email from alice
+EOF
+	atf_check -s exit:0 $mlmmjreceive -L list -F <other
+
+	# All four mails are held for moderation
+	held=$(ls list/moderation/ | wc -l)
+	if [ "$held" -ne 4 ]; then
+		atf_fail "Expected 4 files in moderation, got $held"
+	fi
+
+	# Send to the subrelease address of the first mail to subscribe and
+	# release everything held for that sender
+cat > subrel <<EOF
+From: bob@test
+To: test+subrelease-${var}@mlmmjtest
+Return-path: bob@test
+EOF
+	atf_check -s exit:0 $mlmmjreceive -L list -F <subrel
+
+	# Verify the sender is subscribed
+	atf_check -o match:"bob@test" cat list/subscribers.d/b
+
+	# Verify all three mails of bob have been released and archived
+	archived=$(ls list/archive/ | wc -l)
+	if [ "$archived" -ne 3 ]; then
+		atf_fail "Expected 3 archived mails, got $archived"
+	fi
+
+	# Verify alice's mail is still held for moderation
+	remaining=$(ls list/moderation/ | wc -l)
+	if [ "$remaining" -ne 1 ]; then
+		atf_fail "Expected 1 file left in moderation, got $remaining"
+	fi
+}
+
+subreleaseall_off_body()
+{
+	init_ml list
+	rmdir list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
+	echo test@mlmmjtest > list/control/listaddress
+	start_fakesmtp list
+	echo "heloname" > list/control/smtphelo
+
+	# Same as subreleaseall, but without control/subreleaseall
+	touch list/control/subonlypost
+	printf "user@test\nuser2@test" > list/subscribers.d/u
+
+cat > first <<EOF
+From: bob@test
+To: test@mlmmjtest
+Return-path: bob@test
+Subject: first post
+
+First email from bob
+EOF
+	atf_check -s exit:0 $mlmmjreceive -L list -F <first
+	var=$(ls list/moderation/)
+	if [ -z "$var" ]; then
+		atf_fail "No file in moderation directory"
+	fi
+
+	# Another mail from the same non-subscriber
+cat > second <<EOF
+From: bob@test
+To: test@mlmmjtest
+Return-path: bob@test
+Subject: second post
+
+Second email from bob
+EOF
+	atf_check -s exit:0 $mlmmjreceive -L list -F <second
+
+cat > subrel <<EOF
+From: bob@test
+To: test+subrelease-${var}@mlmmjtest
+Return-path: bob@test
+EOF
+	atf_check -s exit:0 $mlmmjreceive -L list -F <subrel
+
+	# Verify only the mail that was replied to has been released
+	archived=$(ls list/archive/ | wc -l)
+	if [ "$archived" -ne 1 ]; then
+		atf_fail "Expected 1 archived mail, got $archived"
+	fi
+
+	# Verify the other one is still held for moderation
+	remaining=$(ls list/moderation/ | wc -l)
+	if [ "$remaining" -ne 1 ]; then
+		atf_fail "Expected 1 file left in moderation, got $remaining"
+	fi
+}
