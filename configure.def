@@ -71,6 +71,8 @@ if opt_bool with-coverage; then
 fi
 
 if opt_bool enable-receive-strip; then
+	user_notice "mlmmj-receive-strip is deprecated and will be removed" \
+	    "in a future release"
 	define receive-strip 1
 fi
 

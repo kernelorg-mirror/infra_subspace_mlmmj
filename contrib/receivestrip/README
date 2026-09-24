@@ -1,3 +1,14 @@
+mlmmj-receive-strip is DEPRECATED and will be removed in a future release.
+
+The "deny" part it implements (control/mimedeny) is now handled by
+mlmmj-receive directly, so there is no reason to replace mlmmj-receive
+anymore.
+
+Only the stripping of parts listed in control/mimestrip has no equivalent,
+and will not get one: mlmmj should never alter the content of the mails it
+processes.  Such messages are flagged with control/mimedeny instead, the
+stripping itself has to be done before mlmmj (MTA side).
+
 mlmmj-receive-strip is a replacement for mlmmj-receive
 
 It opens the files control/mimedeny and control/mimestrip to get a list of mimetypes

@@ -32,9 +32,10 @@ To use mlmmj, do the following:
 
         $ ./configure && make && make install
 
-    If you want to filter multipart/mime messages, pass the option
-    --enable-receive-strip to configure, and take a look at
-    contrib/receivestrip/README.
+    If you want to filter multipart/mime messages, mlmmj-receive handles
+    the control/mimedeny file natively.  The optional mlmmj-receive-strip
+    (--enable-receive-strip, see contrib/receivestrip/README) is
+    deprecated and will be removed in a future release.
 
  1) Configure a recipient delimiter. The default is to use '+', and in
     Postfix it's done by adding

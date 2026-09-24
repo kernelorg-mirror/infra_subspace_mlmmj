@@ -286,7 +286,9 @@ static void print_help(const char *prg)
 	       " -F: Don't fork in the background\n"
 	       " -L: Full path to list directory\n"
 	       " -P: Don't execute mlmmj-process\n"
-	       " -V: Print version\n", prg);
+	       " -V: Print version\n"
+	       "\n"
+	       "DEPRECATED: this program will be removed in a future release.\n", prg);
 	exit(EXIT_SUCCESS);
 }
 
@@ -301,6 +303,9 @@ int main(int argc, char **argv)
 	CHECKFULLPATH(argv[0]);
 
 	log_set_name(argv[0]);
+	log_err("mlmmj-receive-strip is deprecated and will be removed in a "
+	    "future release; the mimedeny control file is now handled by "
+	    "mlmmj-receive directly");
 
 	bindir = mydirname(argv[0]);
 	xasprintf(&mlmmjprocess, "%s/mlmmj-process", bindir);
