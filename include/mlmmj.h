@@ -42,7 +42,6 @@
 #endif
 
 #define RELAYHOST "127.0.0.1"
-#define READ_BUFSIZE 2048
 #define DEFAULT_RECIPDELIM "+"  /* Default recipient delimiter */
 #define MODREQLIFE 604800 /* How long time will moderation requests be kept?
 			   * 604800s is 7 days */

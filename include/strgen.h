@@ -28,7 +28,6 @@
 #include <sys/types.h>
 
 char *random_str(void);
-char *random_plus_addr(const char *addr);
 /*
  * Atomically create a uniquely-named file under dirfd.  Its name is
  * "<prefix><random>" (prefix may be NULL or empty); the file is opened
@@ -40,7 +39,6 @@ char *random_plus_addr(const char *addr);
  */
 int mkuniqfileat(int dirfd, const char *prefix, mode_t mode,
     char **name_out);
-char *random_plus_addr(const char *addr);
 char *genlistname(const char *listaddr);
 const char *genlistfqdn(const char *listaddr);
 char *hostnamestr(void);
