@@ -3,6 +3,8 @@ include @builddir@/mk/defs.mk
 @if tests
 LOCAL_CFLAGS= -I@builddir@ -I$(top_srcdir)/include @PKG_ATF_C_CFLAGS@ -DTOP_SRCDIR=\"@abs_top_srcdir@\"
 
+SRCS=	mlmmj.c mlmmj_tests.c fakesmtpd.c
+
 include $(MK)/common.mk
 
 TESTS_SH= \

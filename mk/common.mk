@@ -6,11 +6,9 @@ CFLAGS+=	$(CPPFLAGS)
 CFLAGS+=	-Werror=implicit-function-declaration
 CFLAGS+=	-Werror=return-type
 
-# Only include the dependency files when there are some: an empty file name
-# in an -include directive makes make try to read the directory as a makefile.
-.if !empty(DEPFILES)
+# Plain -include: .if breaks GNU make and $(VAR:=) breaks OpenBSD's make(1);
+# SRCS must be set by the including makefile so that DEPFILES is not empty.
 -include ${DEPFILES}
-.endif
 
 .SUFFIXES: .pico
 
