@@ -2640,20 +2640,20 @@ ATF_TC_BODY(text_1, tc)
 
 ATF_TC_BODY(file_lines, tc)
 {
+	file_lines_state *s;
+
 	atf_utils_create_file("file", "line1\nline2\n");
 
-	file_lines_state *s = init_file_lines("file", ':');
+	s = init_file_lines_fd(open("file", O_RDONLY), ':');
 	ATF_REQUIRE(s != NULL);
-	ATF_REQUIRE(get_file_line(s) == NULL);
 	rewind_file_lines(s);
 	ATF_REQUIRE(get_file_line(s) == NULL);
 	finish_file_lines(s);
 
 	atf_utils_create_file("file", "line1: plop\nline2\nline3: meh");
 
-	s = init_file_lines("file", ':');
+	s = init_file_lines_fd(open("file", O_RDONLY), ':');
 	ATF_REQUIRE(s != NULL);
-	ATF_REQUIRE(get_file_line(s) == NULL);
 	rewind_file_lines(s);
 	ATF_REQUIRE_STREQ(get_file_line(s), "line1");
 	ATF_REQUIRE(get_file_line(s) == NULL);
@@ -2661,12 +2661,11 @@ ATF_TC_BODY(file_lines, tc)
 	ATF_REQUIRE(get_file_line(s) == NULL);
 	finish_file_lines(s);
 
-	s = init_file_lines("file", '\0');
+	s = init_file_lines_fd(open("file", O_RDONLY), '\0');
 	finish_file_lines(s);
 
-	s = init_file_lines("file", '\0');
+	s = init_file_lines_fd(open("file", O_RDONLY), '\0');
 	ATF_REQUIRE(s != NULL);
-	ATF_REQUIRE(get_file_line(s) == NULL);
 	rewind_file_lines(s);
 	ATF_REQUIRE_STREQ(get_file_line(s), "line1: plop");
 	ATF_REQUIRE_STREQ(get_file_line(s), "line2");

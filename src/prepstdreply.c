@@ -131,7 +131,6 @@ struct memory_lines_state {
 
 
 struct file_lines_state {
-	char *filename;
 	FILE *fp;
 	char truncate;
 	char *line;
@@ -191,15 +190,6 @@ finish_memory_lines(memory_lines_state *s)
 }
 
 
-file_lines_state *
-init_file_lines(const char *filename, char truncate)
-{
-	file_lines_state *s = xcalloc(1, sizeof(file_lines_state));
-	s->filename = xstrdup(filename);
-	s->truncate = truncate;
-	return s;
-}
-
 file_lines_state
 *init_file_lines_fd(int fd, char truncate)
 {
@@ -234,11 +224,6 @@ void rewind_file_lines(void *state)
 {
 	file_lines_state *s = (file_lines_state *)state;
 	if (s == NULL) return;
-	if (s->filename != NULL) {
-		s->fp = fopen(s->filename, "r");
-		free(s->filename);
-		s->filename = NULL;
-	}
 	if (s->fp != NULL)
 		rewind(s->fp);
 }
@@ -307,7 +292,6 @@ void finish_file_lines(file_lines_state *s)
 	free(s->line);
 	free(s->formatted_str);
 	if (s->fp != NULL) fclose(s->fp);
-	if (s->filename != NULL) free(s->filename);
 	free(s);
 }
 
