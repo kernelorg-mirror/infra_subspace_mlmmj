@@ -1,3 +1,24 @@
+2.2.0
+ o New control/subreleaseall: when a non subscriber uses the self
+   release option of subonlypost, every message of theirs still held in
+   moderation is released too, oldest first. Useful for batches such as
+   a patch series sent before subscribing.
+ o $disarmedfrom$ is now encoded as an RFC 2047 encoded word when it
+   contains characters that are not allowed in a display name, so that
+   mail clients display the disarmed address instead of dropping it as
+   an RFC 5322 comment. Leading whitespace is stripped too.
+ o control/replyto is deprecated: add a Reply-To: header to
+   control/customheaders instead (with $posteraddr$). A notice is logged
+   when the control file is used.
+ o mlmmj-receive-strip (contrib/receivestrip) is deprecated and will be
+   removed in a future release: the deny part (control/mimedeny) is now
+   handled by mlmmj-receive directly.
+ o Build: the dependency files are included in a way that works with BSD
+   make, GNU make and the make(1) shipped by OpenBSD; configure now
+   detects iconv, which makes the build work on OpenBSD out of the box.
+ o Many memory fixes: potential double free, leaks and potential overflows.
+ o Updated French and Czech.
+ o Various code simplifications.
 2.1.0
  o New $disarmedfrom$ variable for control/customheaders. Expands to
    the original From: header value with '<', '>', '@' replaced by
