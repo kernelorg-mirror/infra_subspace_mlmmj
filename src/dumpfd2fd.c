@@ -30,11 +30,11 @@
 #include <ctype.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "config.h"
 #include "log_error.h"
-#include "xmalloc.h"
 
 #define DUMPBUF 4096
 
@@ -87,7 +87,7 @@ int dumpfd2fd(int from, int to)
 int process_headers(int infd, FILE *outf, const char *from,
     const char *disarmedfrom, bool skipfrom)
 {
-	char *line = NULL, *p, *to_be_subst, *new_line;
+	char *line = NULL, *p, *to_be_subst;
 	size_t linecap = 0;
 	int dupfd;
 	FILE *f;
@@ -113,40 +113,44 @@ int process_headers(int infd, FILE *outf, const char *from,
 		 * headers */
 		if (skipfrom && strncasecmp(p, "From:", 5) == 0)
 			continue;
-		to_be_subst = strstr(p, "$posteraddr$");
-		if (to_be_subst != NULL) {
+		/* Expand every known variable, whichever comes first on
+		 * the line, and as many times as it appears: a
+		 * customheaders line may mix $disarmedfrom$ and
+		 * $posteraddr$ (or repeat one of them). */
+		for (;;) {
+			char *poster, *disarmed;
+			const char *subst;
+			size_t macrolen;
+
+			poster = strstr(p, "$posteraddr$");
+			disarmed = disarmedfrom != NULL ?
+			    strstr(p, "$disarmedfrom$") : NULL;
+			if (poster == NULL && disarmed == NULL)
+				break;
+			if (disarmed == NULL ||
+			    (poster != NULL && poster < disarmed)) {
+				to_be_subst = poster;
+				macrolen = strlen("$posteraddr$");
+				subst = from != NULL ? from : "";
+			} else {
+				to_be_subst = disarmed;
+				macrolen = strlen("$disarmedfrom$");
+				subst = disarmedfrom;
+			}
 			*to_be_subst = '\0';
-			to_be_subst += 12;
-			xasprintf(&new_line, "%s%s%s", p, from, to_be_subst);
-			if (fprintf(outf, "%s", new_line) < 0) {
-				log_error(LOG_ARGS, "Could not write headers");
-				free(new_line);
-				free(line);
-				fclose(f);
-				return -1;
-			}
-			free(new_line);
-		} else if (disarmedfrom != NULL &&
-		    (to_be_subst = strstr(p, "$disarmedfrom$")) != NULL) {
-			*to_be_subst = '\0';
-			to_be_subst += 14;
-			xasprintf(&new_line, "%s%s%s", p, disarmedfrom,
-			    to_be_subst);
-			if (fprintf(outf, "%s", new_line) < 0) {
-				log_error(LOG_ARGS, "Could not write headers");
-				free(new_line);
-				free(line);
-				fclose(f);
-				return -1;
-			}
-			free(new_line);
-		} else {
-			if (fprintf(outf, "%s", p) < 0) {
+			if (fprintf(outf, "%s%s", p, subst) < 0) {
 				log_error(LOG_ARGS, "Could not write headers");
 				free(line);
 				fclose(f);
 				return -1;
 			}
+			p = to_be_subst + macrolen;
+		}
+		if (fprintf(outf, "%s", p) < 0) {
+			log_error(LOG_ARGS, "Could not write headers");
+			free(line);
+			fclose(f);
+			return -1;
 		}
 	}
 	free(line);

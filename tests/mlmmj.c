@@ -2064,6 +2064,26 @@ ATF_TC_BODY(process_headers_disarmedfrom, tc)
 		atf_utils_cat_file("hdr_out_d2", ">");
 		atf_tc_fail("Both $posteraddr$ and $disarmedfrom$ failed");
 	}
+
+	/* Issue #117: both variables on the same line, and repeated
+	 * occurrences, must all be expanded */
+	atf_utils_create_file("hdr_in_d3",
+	    "X-From: $disarmedfrom$ -- $posteraddr$\n"
+	    "X-Both: $disarmedfrom$ / $posteraddr$ / $posteraddr$\n\n");
+	infd = open("hdr_in_d3", O_RDONLY);
+	outf = fopen("hdr_out_d3", "w");
+	ATF_REQUIRE(outf != NULL);
+	ATF_REQUIRE_EQ(process_headers(infd, outf, "bob@example.com",
+	    "Bob (bob=example.com)", false), 0);
+	close(infd);
+	fclose(outf);
+	if (!atf_utils_compare_file("hdr_out_d3",
+	    "X-From: Bob (bob=example.com) -- bob@example.com\n"
+	    "X-Both: Bob (bob=example.com) / bob@example.com"
+	    " / bob@example.com\n")) {
+		atf_utils_cat_file("hdr_out_d3", ">");
+		atf_tc_fail("mixing/repeating substitutions failed");
+	}
 }
 
 ATF_TC_BODY(copy_file, tc)
