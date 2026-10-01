@@ -5461,7 +5461,7 @@ ATF_TC_BODY(voodoo_listheaders_owner, tc)
 	close(outfd);
 
 	const char *path = "listhdr_own_out.txt";
-	if (!atf_utils_grep_file("List-Owner: <mailto:admin@example.com>", path)) {
+	if (!atf_utils_grep_file("List-Owner: <mailto:test\\+owner@test>", path)) {
 		atf_utils_cat_file(path, ">");
 		atf_tc_fail("List-Owner header missing");
 	}

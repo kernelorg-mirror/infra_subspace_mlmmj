@@ -29,7 +29,6 @@
 #include "mlmmj.h"
 #include "gethdrline.h"
 #include "strgen.h"
-#include "ctrlvalue.h"
 #include "statctrl.h"
 #include "do_all_the_voodoo_here.h"
 #include "log_error.h"
@@ -92,8 +91,11 @@ write_list_headers(FILE *outf, struct ml *ml)
 	    ml->name, ml->delim, ml->fqdn);
 	fprintf(outf, "List-Unsubscribe: <mailto:%s%sunsubscribe@%s>\n",
 	    ml->name, ml->delim, ml->fqdn);
-	owner = ctrlvalue(ml->ctrlfd, "owner");
-	if (owner != NULL) {
+	/* RFC 2369 allows only one List-Owner field, and its value is a
+	 * path to contact the list administrators.  Use the role address
+	 * that reaches every address in control/owner. */
+	if (statctrl(ml->ctrlfd, "owner")) {
+		gen_addr(owner, ml, "owner");
 		fprintf(outf, "List-Owner: <mailto:%s>\n", owner);
 		free(owner);
 	}
