@@ -146,6 +146,7 @@ ATF_TC_WITHOUT_HEAD(dumpfd2fd_empty);
 ATF_TC_WITHOUT_HEAD(process_headers_test);
 ATF_TC_WITHOUT_HEAD(process_headers_skipfrom);
 ATF_TC_WITHOUT_HEAD(process_headers_disarmedfrom);
+ATF_TC_WITHOUT_HEAD(disarm_email_test);
 ATF_TC_WITHOUT_HEAD(copy_file);
 ATF_TC_WITHOUT_HEAD(copy_file_1);
 ATF_TC_WITHOUT_HEAD(copy_file_2);
@@ -2084,6 +2085,44 @@ ATF_TC_BODY(process_headers_disarmedfrom, tc)
 		atf_utils_cat_file("hdr_out_d3", ">");
 		atf_tc_fail("mixing/repeating substitutions failed");
 	}
+}
+
+ATF_TC_BODY(disarm_email_test, tc)
+{
+	char *out;
+
+	/* A plain ASCII From: value is disarmed and encoded once */
+	out = disarm_email("John Doe <john@example.com>");
+	ATF_REQUIRE(out != NULL);
+	ATF_REQUIRE_STREQ(out,
+	    "=?utf-8?q?John_Doe_=28john=3Dexample.com=29?=");
+	free(out);
+
+	/* Issue #118: when the display name is already an RFC 2047
+	 * encoded word it must be decoded before being encoded again,
+	 * not encoded a second time.  The result is the same as for the
+	 * equivalent decoded value above. */
+	out = disarm_email("=?UTF-8?B?Sm9obiBEb2U=?= <john@example.com>");
+	ATF_REQUIRE(out != NULL);
+	ATF_REQUIRE_STREQ(out,
+	    "=?utf-8?q?John_Doe_=28john=3Dexample.com=29?=");
+	ATF_REQUIRE(strstr(out, "=3D=3F") == NULL);
+	free(out);
+
+	/* Raw UTF-8 display names (no encoded word) keep being handled */
+	out = disarm_email("Jürgen <juergen@example.com>");
+	ATF_REQUIRE(out != NULL);
+	ATF_REQUIRE_STREQ(out,
+	    "=?utf-8?q?J=C3=BCrgen_=28juergen=3Dexample.com=29?=");
+	free(out);
+
+	/* A token that only looks like an encoded word but is malformed
+	 * must be preserved rather than replaced by "???" */
+	out = disarm_email("=?bar?= <j@example.com>");
+	ATF_REQUIRE(out != NULL);
+	ATF_REQUIRE(strstr(out, "bar") != NULL);
+	ATF_REQUIRE(strstr(out, "???") == NULL);
+	free(out);
 }
 
 ATF_TC_BODY(copy_file, tc)
@@ -6213,6 +6252,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, process_headers_test);
 	ATF_TP_ADD_TC(tp, process_headers_skipfrom);
 	ATF_TP_ADD_TC(tp, process_headers_disarmedfrom);
+	ATF_TP_ADD_TC(tp, disarm_email_test);
 	ATF_TP_ADD_TC(tp, copy_file);
 	ATF_TP_ADD_TC(tp, copy_file_1);
 	ATF_TP_ADD_TC(tp, copy_file_2);

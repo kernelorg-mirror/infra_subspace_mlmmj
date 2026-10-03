@@ -283,6 +283,68 @@ decode_qp(const char *qpstr, bool qformat)
 }
 
 /*
+ * Return true if the len-byte token tok is a well-formed RFC 2047
+ * encoded word ("=?charset?encoding?encoded-text?="), that is one that
+ * unistr_header_to_utf8() decodes instead of replacing with "???".
+ */
+static bool
+is_encoded_word(const char *tok, size_t len)
+{
+	const char *p = tok, *end = tok + len;
+	size_t fieldlen;
+	int i;
+
+	if (len < 7 || p[0] != '=' || p[1] != '?')
+		return (false);
+	p += 2;
+	/* charset?encoding?encoded-text?= */
+	for (i = 0; i < 3; i++) {
+		const char *field = p;
+
+		p = memchr(p, '?', (size_t)(end - p));
+		if (p == NULL)
+			return (false);
+		fieldlen = (size_t)(p - field);
+		if (fieldlen == 0)
+			return (false);
+		if (i == 1 && tolower((unsigned char)field[0]) != 'q' &&
+		    tolower((unsigned char)field[0]) != 'b')
+			return (false);
+		p++;		/* skip the '?' */
+	}
+	/* the encoded word ends right after the third '?' with '=' */
+	return (p + 1 == end && p[0] == '=');
+}
+
+/*
+ * Return true if s contains only well-formed encoded words among the
+ * tokens that look like one, and at least one such encoded word.
+ */
+static bool
+has_encoded_word(const char *s)
+{
+	bool found = false;
+
+	while (*s != '\0') {
+		size_t len;
+
+		s += strspn(s, " \t\n");
+		if (*s == '\0')
+			break;
+		len = strcspn(s, " \t\n");
+		if (is_encoded_word(s, len)) {
+			found = true;
+		} else if (s[0] == '=' && s[1] == '?') {
+			/* a broken encoded word, unistr_header_to_utf8()
+			 * would turn it into "???" */
+			return (false);
+		}
+		s += len;
+	}
+	return (found);
+}
+
+/*
  * Return a copy of the From: header value with special characters
  * replaced to make it safe for use in a display name:
  *   '<' -> '(',  '>' -> ')',  '@' -> '=',  truncate at '\n'
@@ -298,7 +360,16 @@ disarm_email(const char *from)
 
 	if (from == NULL || *from == '\0')
 		return (NULL);
-	cpy = xstrdup(from);
+	/* The value is taken verbatim from the message, so a non-ASCII
+	 * display name may already be an RFC 2047 encoded word.  Decode
+	 * it first: unistr_utf8_to_header() below expects UTF-8 and would
+	 * otherwise encode the encoded word a second time (#118).  Only
+	 * decode when an encoded word is present, as
+	 * unistr_header_to_utf8() is not meant to handle raw 8-bit text. */
+	if (has_encoded_word(from))
+		cpy = unistr_header_to_utf8(from);
+	else
+		cpy = xstrdup(from);
 	/* Skip leading whitespace (e.g. the space after the From: colon) */
 	for (p = cpy; *p != '\0' && isspace((unsigned char)*p); p++)
 		;

@@ -150,6 +150,8 @@ That's it! You probably want to go through the next steps too.
         characters that are not allowed in a display name, so that mail
         clients display it as is (an unencoded "(me=here.com)" would be
         taken for a comment and dropped).
+        A display name that is already RFC 2047 encoded in the original
+        From: header is decoded first, so that it is not encoded twice.
         Note: this is not a valid email address and must not be used where
         an address is expected (Reply-To:, MAIL FROM, ...).
 

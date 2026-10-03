@@ -3552,6 +3552,20 @@ EOF
 	# allowed in a display name.
 	atf_check -o match:"X-Original-From: =\?utf-8\?q\?John_Doe_=28john=3Dexample.com=29\?=" \
 	    sed -e "/^Message-ID:/d; /^Date:/d;" mail-1.txt
+
+	# Issue #118: a From: display name that is already an RFC 2047
+	# encoded word must be decoded first, not encoded a second time.
+cat > mailfile <<EOF
+From: =?UTF-8?B?Sm9obiBEb2U=?= <john@example.com>
+To: test@mlmmjtest
+Return-Path: john@example.com
+Subject: hello again
+
+hello again
+EOF
+	atf_check -s exit:0 $mlmmjreceive -L list -F <mailfile
+	atf_check -o match:"X-Original-From: =\?utf-8\?q\?John_Doe_=28john=3Dexample.com=29\?=" \
+	    sed -e "/^Message-ID:/d; /^Date:/d;" mail-2.txt
 }
 
 subreleaseall_body()
