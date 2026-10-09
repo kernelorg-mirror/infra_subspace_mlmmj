@@ -1,3 +1,14 @@
+2.2.1
+ o Cleanup: remove some dead code.
+ o control/customheaders: expand every variable on a line, including
+   when both $disarmedfrom$ and $posteraddr$ appear on the same line or
+   when the same variable is repeated. Only the first occurrence was
+   expanded before.
+ o List-Owner: use the list+owner role address so that a single header
+   reaches every address listed in control/owner.
+ o $disarmedfrom$: decode a From: display name that is already an
+   RFC 2047 encoded word before disarming it, instead of encoding it a
+   second time.
 2.2.0
  o New control/subreleaseall: when a non subscriber uses the self
    release option of subonlypost, every message of theirs still held in
