@@ -221,6 +221,7 @@ ATF_TC_WITHOUT_HEAD(voodoo_failure_cleans_queue);
 ATF_TC_WITHOUT_HEAD(voodoo_listheaders);
 ATF_TC_WITHOUT_HEAD(voodoo_listheaders_disabled);
 ATF_TC_WITHOUT_HEAD(voodoo_listheaders_owner);
+ATF_TC_WITHOUT_HEAD(voodoo_listheaders_phrase);
 ATF_TC_WITHOUT_HEAD(checkwait_smtpreply_connect);
 ATF_TC_WITHOUT_HEAD(checkwait_smtpreply_ehlo_multiline);
 ATF_TC_WITHOUT_HEAD(checkwait_smtpreply_errors);
@@ -5512,6 +5513,79 @@ ATF_TC_BODY(voodoo_listheaders_owner, tc)
 	ml_close(&ml);
 }
 
+ATF_TC_BODY(voodoo_listheaders_phrase, tc)
+{
+	struct ml ml;
+	strlist allheaders = vec_init();
+	struct mailhdr readhdrs[] = {
+		{ "From:", 0, NULL },
+		{ "To:", 0, NULL },
+		{ "Subject:", 0, NULL },
+		{ NULL, 0, NULL }
+	};
+	int infd, outfd, ret;
+
+	init_ml(true);
+	ml_init(&ml);
+	ml.dir = "list";
+	ml_open(&ml, false);
+
+	/* An RFC 2919 phrase is emitted verbatim before the <list-id> */
+	atf_utils_create_file("list/control/listidphrase", "My list\n");
+
+	atf_utils_create_file("listhdr_phrase_in.txt",
+	    "From: sender@example.org\n"
+	    "To: test@test\n"
+	    "Subject: Hello\n"
+	    "\n"
+	    "Body.\n");
+
+	infd = open("listhdr_phrase_in.txt", O_RDONLY);
+	ATF_REQUIRE(infd >= 0);
+	outfd = open("listhdr_phrase_out.txt", O_RDWR|O_CREAT|O_TRUNC, 0600);
+	ATF_REQUIRE(outfd >= 0);
+
+	ret = do_all_the_voodoo_here(infd, outfd, -1, -1,
+	    NULL, readhdrs, &allheaders, NULL, 0, &ml);
+	ATF_REQUIRE_EQ(ret, 0);
+	close(infd);
+	close(outfd);
+
+	if (!atf_utils_grep_file("List-Id: My list <test\\.test>",
+	    "listhdr_phrase_out.txt")) {
+		atf_utils_cat_file("listhdr_phrase_out.txt", ">");
+		atf_tc_fail("List-Id phrase missing");
+	}
+
+	/* An empty phrase falls back to the bare <list-id> */
+	atf_utils_create_file("list/control/listidphrase", "");
+
+	/* scan_headers() keeps allhdrs and its private unfolded list in
+	 * lockstep, so reset the per-message state before a second run */
+	free_mailhdrs(readhdrs);
+	vec_free_and_free(&allheaders, free);
+
+	infd = open("listhdr_phrase_in.txt", O_RDONLY);
+	ATF_REQUIRE(infd >= 0);
+	outfd = open("listhdr_phrase_out.txt", O_RDWR|O_CREAT|O_TRUNC, 0600);
+	ATF_REQUIRE(outfd >= 0);
+
+	ret = do_all_the_voodoo_here(infd, outfd, -1, -1,
+	    NULL, readhdrs, &allheaders, NULL, 0, &ml);
+	ATF_REQUIRE_EQ(ret, 0);
+	close(infd);
+	close(outfd);
+
+	if (!atf_utils_grep_file("List-Id: <test\\.test>",
+	    "listhdr_phrase_out.txt")) {
+		atf_utils_cat_file("listhdr_phrase_out.txt", ">");
+		atf_tc_fail("List-Id without phrase missing");
+	}
+
+	vec_free_and_free(&allheaders, free);
+	ml_close(&ml);
+}
+
 ATF_TC_BODY(checkwait_smtpreply_connect, tc)
 {
 	int sp[2];
@@ -6330,6 +6404,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, voodoo_listheaders);
 	ATF_TP_ADD_TC(tp, voodoo_listheaders_disabled);
 	ATF_TP_ADD_TC(tp, voodoo_listheaders_owner);
+	ATF_TP_ADD_TC(tp, voodoo_listheaders_phrase);
 	ATF_TP_ADD_TC(tp, checkwait_smtpreply_connect);
 	ATF_TP_ADD_TC(tp, checkwait_smtpreply_ehlo_multiline);
 	ATF_TP_ADD_TC(tp, checkwait_smtpreply_errors);

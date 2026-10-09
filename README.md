@@ -128,7 +128,9 @@ That's it! You probably want to go through the next steps too.
  6) mlmmj automatically generates RFC 2919/2369 headers (List-Id, List-Post,
     List-Help, List-Subscribe, List-Unsubscribe, Precedence) on all list
     messages. List-Owner is included when control/owner exists. To disable
-    these, create control/nolistheaders.
+    these, create control/nolistheaders. The optional display phrase shown
+    before the list identifier can be set in control/listidphrase (see
+    TUNABLES.md).
 
     If you want additional custom headers like X-Mailinglist, Reply-To: etc.
     just add a file called 'customheaders' in the list control/ directory

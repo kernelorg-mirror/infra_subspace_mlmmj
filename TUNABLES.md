@@ -316,6 +316,15 @@ entire content is used as value, it's marked "text".
    When this file is present, it contains the hostname to send in the SMTP
    EHLO or HELO command. Otherwise the machine hostname is used.
 
+ * listidphrase		(normal)
+
+   The optional phrase (display name) inserted before the `<list-id>` in the
+   `List-Id:` header, as allowed by RFC 2919: `List-Id: [phrase] <list-id>`.
+   The value is used verbatim, so it has to be a valid RFC 5322 phrase; encode
+   non-ASCII text as an RFC 2047 encoded word. When the file is absent or
+   empty, the header is `List-Id: <name.fqdn>`. Ignored when `nolistheaders`
+   is set.
+
  * nolistheaders		(boolean)
 
    If this file exists, mlmmj will not add the automatic RFC 2919/2369

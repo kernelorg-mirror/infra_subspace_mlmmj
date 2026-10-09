@@ -30,6 +30,7 @@
 #include "gethdrline.h"
 #include "strgen.h"
 #include "statctrl.h"
+#include "ctrlvalue.h"
 #include "do_all_the_voodoo_here.h"
 #include "log_error.h"
 #include "wrappers.h"
@@ -76,14 +77,23 @@ scan_headers(FILE *f, struct mailhdr *readhdrs, strlist *allhdrs, strlist *allun
 static void
 write_list_headers(FILE *outf, struct ml *ml)
 {
-	char *owner;
+	char *owner, *phrase;
 
 	if (ml == NULL)
 		return;
 	if (statctrl(ml->ctrlfd, "nolistheaders"))
 		return;
 
-	fprintf(outf, "List-Id: <%s.%s>\n", ml->name, ml->fqdn);
+	/* RFC 2919 allows an optional phrase before the <list-id>.  The
+	 * value is used verbatim, so it has to be a valid RFC 5322
+	 * phrase; encode non-ASCII text as an RFC 2047 encoded word. */
+	phrase = ctrlvalue(ml->ctrlfd, "listidphrase");
+	if (phrase != NULL && *phrase != '\0')
+		fprintf(outf, "List-Id: %s <%s.%s>\n", phrase, ml->name,
+		    ml->fqdn);
+	else
+		fprintf(outf, "List-Id: <%s.%s>\n", ml->name, ml->fqdn);
+	free(phrase);
 	fprintf(outf, "List-Post: <mailto:%s@%s>\n", ml->name, ml->fqdn);
 	fprintf(outf, "List-Help: <mailto:%s%shelp@%s>\n",
 	    ml->name, ml->delim, ml->fqdn);
