@@ -347,7 +347,8 @@ has_encoded_word(const char *s)
 /*
  * Return a copy of the From: header value with special characters
  * replaced to make it safe for use in a display name:
- *   '<' -> '(',  '>' -> ')',  '@' -> '=',  truncate at '\n'
+ *   '<' -> '(',  '>' -> ')',  '@' -> '=',
+ *   ',' -> ' ',  ';' -> ' ',  truncate at '\n'
  * The result is encoded as an RFC 2047 encoded word when it contains
  * characters that are not allowed in a display name, so that it is
  * displayed as is, and not as an RFC 5322 comment.
@@ -385,6 +386,15 @@ disarm_email(const char *from)
 			break;
 		case '@':
 			*p = '=';
+			break;
+		case ',':
+		case ';':
+			/* A comma or semicolon left in the display name makes some
+			 * providers see more than one address in the From: header and
+			 * reject the mail, even when the value is an RFC 2047 encoded
+			 * word.
+			 * Replace them with a space. */
+			*p = ' ';
 			break;
 		case '\n':
 			*p = '\0';

@@ -1,3 +1,8 @@
+2.2.3
+ o $disarmedfrom$: replace a comma or semicolon in the From: display
+   name by a space. Some providers (GMX, web.de, Yahoo) see more than
+   one address and reject the mail otherwise, even when the value is an
+   RFC 2047 encoded word.
 2.2.2
  o Add new listidphrase control
 2.2.1

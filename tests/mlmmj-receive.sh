@@ -3566,6 +3566,23 @@ EOF
 	atf_check -s exit:0 $mlmmjreceive -L list -F <mailfile
 	atf_check -o match:"X-Original-From: =\?utf-8\?q\?John_Doe_=28john=3Dexample.com=29\?=" \
 	    sed -e "/^Message-ID:/d; /^Date:/d;" mail-2.txt
+
+	# Issue #120: a comma in the display name makes some providers
+	# see more than one address in From: and reject the mail.
+	# The comma is replaced by a space.
+cat > mailfile <<EOF
+From: "Lastname, Firstname" <mail@domain.tld>
+To: test@mlmmjtest
+Return-Path: mail@domain.tld
+Subject: hello comma
+
+hello comma
+EOF
+	atf_check -s exit:0 $mlmmjreceive -L list -F <mailfile
+	atf_check -o match:"X-Original-From: =\?utf-8\?q\?=22Lastname__Firstname=22_=28mail=3Ddomain.tld=29\?=" \
+	    sed -e "/^Message-ID:/d; /^Date:/d;" mail-3.txt
+	atf_check -o not-match:"," \
+	    sed -e "/^Message-ID:/d; /^Date:/d; /^X-Original-From:/!d;" mail-3.txt
 }
 
 subreleaseall_body()
