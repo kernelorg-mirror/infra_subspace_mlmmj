@@ -2128,12 +2128,14 @@ ATF_TC_BODY(disarm_email_test, tc)
 	/* Issue #120: a comma or semicolon in the display name makes
 	 * some providers see more than one address in From:, even when
 	 * the value is an RFC 2047 encoded word.  They are replaced by a
-	 * space. */
+	 * space, and the double quotes that delimit the display name are
+	 * dropped. */
 	out = disarm_email("\"Lastname, Firstname\" <mail@domain.tld>");
 	ATF_REQUIRE(out != NULL);
 	ATF_REQUIRE_STREQ(out,
-	    "=?utf-8?q?=22Lastname__Firstname=22_=28mail=3Ddomain.tld=29?=");
+	    "=?utf-8?q?Lastname__Firstname_=28mail=3Ddomain.tld=29?=");
 	ATF_REQUIRE(strchr(out, ',') == NULL);
+	ATF_REQUIRE(strchr(out, '"') == NULL);
 	free(out);
 
 	out = disarm_email("Doe, John <john@example.com>");
@@ -2148,6 +2150,14 @@ ATF_TC_BODY(disarm_email_test, tc)
 	ATF_REQUIRE_STREQ(out,
 	    "=?utf-8?q?Doe__John_=28john=3Dexample.com=29?=");
 	ATF_REQUIRE(strchr(out, ';') == NULL);
+	free(out);
+
+	/* A quoted display name is unquoted; the value is the same as the
+	 * unquoted one above. */
+	out = disarm_email("\"John Doe\" <john@example.com>");
+	ATF_REQUIRE(out != NULL);
+	ATF_REQUIRE_STREQ(out,
+	    "=?utf-8?q?John_Doe_=28john=3Dexample.com=29?=");
 	free(out);
 
 	/* Even when the value stays unencoded (nothing but comma is

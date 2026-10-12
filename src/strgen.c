@@ -348,7 +348,7 @@ has_encoded_word(const char *s)
  * Return a copy of the From: header value with special characters
  * replaced to make it safe for use in a display name:
  *   '<' -> '(',  '>' -> ')',  '@' -> '=',
- *   ',' -> ' ',  ';' -> ' ',  truncate at '\n'
+ *   ',' -> ' ',  ';' -> ' ',  '"' removed,  truncate at '\n'
  * The result is encoded as an RFC 2047 encoded word when it contains
  * characters that are not allowed in a display name, so that it is
  * displayed as is, and not as an RFC 5322 comment.
@@ -357,7 +357,7 @@ has_encoded_word(const char *s)
 char *
 disarm_email(const char *from)
 {
-	char *cpy, *enc, *p;
+	char *cpy, *enc, *p, *src, *dst;
 
 	if (from == NULL || *from == '\0')
 		return (NULL);
@@ -401,6 +401,13 @@ disarm_email(const char *from)
 			break;
 		}
 	}
+	/* The double quotes only delimit the original display name.  Mail
+	 * clients re-quote the disarmed value when displaying it, which
+	 * looks wrong, so drop them. */
+	for (src = dst = cpy; *src != '\0'; src++)
+		if (*src != '"')
+			*dst++ = *src;
+	*dst = '\0';
 	enc = unistr_utf8_to_header(cpy);
 	free(cpy);
 

@@ -147,9 +147,10 @@ That's it! You probably want to go through the next steps too.
     $disarmedfrom$ — expands to the full From: value with special
         characters replaced for safe use in a display name:
         '<' → '(',  '>' → ')',  '@' → '=',  ',' → ' ',  ';' → ' '.
+        Double quotes are dropped.
         The comma and semicolon are replaced because some providers
         see more than one address in the From: header when the display name
-        contains one ',' and reject the mail.
+        contains a comma, and reject the mail.
         Example: "Martin (me=here.com)"
         The value is encoded as an RFC 2047 encoded word when it contains
         characters that are not allowed in a display name, so that mail
