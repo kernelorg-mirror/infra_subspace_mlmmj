@@ -1,3 +1,5 @@
+2.2.2
+ o Add new listidphrase control
 2.2.1
  o Cleanup: remove some dead code.
  o control/customheaders: expand every variable on a line, including
