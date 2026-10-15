@@ -115,7 +115,7 @@ static bool is_moderator(int listfd, const char *address,
 				goto out;
 		}
 		if (moderators)
-			sb_cat(&str, line);
+			sb_printf(&str, "%s\n", line);
 	}
 
 	if (moderators)

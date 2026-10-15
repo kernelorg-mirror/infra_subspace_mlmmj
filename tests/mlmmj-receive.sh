@@ -21,6 +21,7 @@ tests_init \
 	moderation_autosubscribe \
 	moderation_notifymod \
 	moderation_notmetoo \
+	moderation_multiple_moderators \
 	moderation_reject_invalid \
 	maxmailsize \
 	maxmailsize0 \
@@ -1974,6 +1975,34 @@ moderation_create_body() {
 
 moderation_body() {
 	moderation_create_body test@modos
+}
+
+moderation_multiple_moderators_body() {
+	init_ml list
+	rmdir list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
+	echo test@mlmmjtest > list/control/listaddress
+	touch list/control/nolistheaders
+	start_fakesmtp list
+	echo "heloname" > list/control/smtphelo
+
+	printf "me@modos\nme2@modos\nme3@modos\n" > list/control/moderators
+	touch list/control/moderated
+	printf "user@test\nuser2@test" > list/subscribers.d/u
+
+cat > first <<EOF
+From: bob@test
+To: test@mlmmjtest
+Return-path: bob@test
+Subject: yeah
+
+Let's go, first email
+EOF
+	atf_check -s exit:0 $mlmmjreceive -L list -F <first
+
+	# Each moderator must be listed on its own line.
+	atf_check -o inline:"The following moderators have received this mail:\n- me@modos\n- me2@modos\n- me3@modos\n" \
+	    awk '{sub(/\r$/, "")} /^The following moderators/{p=1} p&&!NF{exit} p' mail-1.txt
 }
 
 moderation_autosubscribe_body() {

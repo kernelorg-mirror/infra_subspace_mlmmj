@@ -1,4 +1,6 @@
 2.2.3
+ o Fix %moderators% in the moderation notice: list each moderator on
+   its own line, they were concatenated on a single line by mistake.
  o $disarmedfrom$: replace a comma or semicolon in the From: display
    name by a space and drop the double quotes around it. Some providers
    see more than one address and reject the mail otherwise, even when
