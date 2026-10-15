@@ -35,6 +35,8 @@ check: all
 
 install:
 
+uninstall:
+
 .sh:
 	install -m 755 $< $@
 
@@ -42,5 +44,6 @@ install:
 all:
 clean:
 install:
+uninstall:
 check:
 @endif

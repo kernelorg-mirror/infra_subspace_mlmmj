@@ -14,3 +14,17 @@ install-lists:
 			install -m 644 $$f $(DESTDIR)@textlibdir@/$$langname/; \
 		done; \
 	done
+
+uninstall: uninstall-lists
+
+uninstall-lists:
+	textdir=$(DESTDIR)@textlibdir@; \
+	for lang in $(top_srcdir)/listtexts/*/; do \
+		langname=$$(basename $$lang); \
+		for f in $$lang/*; do \
+			rm -f $$textdir/$$langname/$$(basename $$f); \
+		done; \
+		rmdir $$textdir/$$langname 2>/dev/null || true; \
+	done; \
+	rmdir $$textdir 2>/dev/null || true; \
+	rmdir $${textdir%/*} 2>/dev/null || true

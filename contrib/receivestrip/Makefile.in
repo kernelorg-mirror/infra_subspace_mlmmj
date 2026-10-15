@@ -11,8 +11,12 @@ include $(MK)/prog.mk
 install: $(PROG)
 	install -d -m 755 $(DESTDIR)$(bindir)
 	install -m 755 $(PROG) $(DESTDIR)$(bindir)/
+
+uninstall:
+	rm -f $(DESTDIR)$(bindir)/$(PROG)
 @else
 all:
 clean:
 install:
+uninstall:
 @endif

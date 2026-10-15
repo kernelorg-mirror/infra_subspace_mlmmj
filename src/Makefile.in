@@ -61,3 +61,12 @@ install-programs: $(PROGRAMS)
 	ln -f -s mlmmj-make-ml $(DESTDIR)$(bindir)/mlmmj-make-ml.sh
 	install -d -m 755 $(DESTDIR)$(mandir)/man1
 	for m in $(top_srcdir)/man/*.1; do install -m 644 $$m $(DESTDIR)$(mandir)/man1/; done
+
+uninstall: uninstall-programs
+
+uninstall-programs:
+	for p in $(PROGRAMS); do rm -f $(DESTDIR)$(bindir)/$$p; done
+	rm -f $(DESTDIR)$(bindir)/mlmmj-make-ml
+	rm -f $(DESTDIR)$(bindir)/mlmmj-make-ml.sh
+	rm -f $(DESTDIR)$(bindir)/mlmmj-recieve
+	for m in $(top_srcdir)/man/*.1; do rm -f $(DESTDIR)$(mandir)/man1/$$(basename $$m); done

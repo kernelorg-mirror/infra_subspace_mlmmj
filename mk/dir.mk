@@ -8,6 +8,11 @@ install:
 		$(MAKE) -C $$d install ; \
 	done
 
+uninstall:
+	@set -e ; for d in $(DIRS); do \
+		$(MAKE) -C $$d uninstall ; \
+	done
+
 clean:
 	@set -e; for d in $(DIRS); do \
 		$(MAKE) -C $$d clean ; \
