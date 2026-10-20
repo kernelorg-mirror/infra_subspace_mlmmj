@@ -354,16 +354,18 @@ resend_requeue(struct ml *ml, const char *mlmmjsend, int logfd)
 }
 
 static bool
-clean_nolongerbouncing(int dfd, int logfd)
+clean_nolongerbouncing(int dfd, int ctrlfd, int logfd)
 {
 	DIR *bouncedir;
 	char *filename, *s;
-	time_t probetime, t;
+	time_t probetime, t, waitprobe;
 	struct dirent *dp;
 	int fd;
 	bool ret = true;
 
 	opendirat(dfd, fd, bouncedir, "bounce");
+
+	waitprobe = ctrltimet(ctrlfd, "waitprobe", WAITPROBE);
 	while((dp = readdir(bouncedir)) != NULL) {
 		if((strcmp(dp->d_name, "..") == 0) ||
 		   (strcmp(dp->d_name, ".") == 0))
@@ -387,7 +389,7 @@ clean_nolongerbouncing(int dfd, int logfd)
 				continue;
 			}
 			t = time(NULL);
-			if(t - probetime > WAITPROBE) {
+			if(t - probetime > waitprobe) {
 				if (unlinkat(fd, filename, 0) == -1) {
 					log(" - Could not remove bounce/%s: "
 					    "%s\n", filename,
@@ -473,13 +475,14 @@ unsub_bouncers(int dfd, int ctrlfd, int logfd)
 	char *address, *a, *firstbounce;
 	struct dirent *dp;
 	int bfd;
-	time_t bouncetime, t, bouncelife;
+	time_t bouncetime, t, bouncelife, waitprobe;
 	const char *errstr;
 	bool ret = true;
 
 	opendirat(dfd, bfd, bouncedir, "bounce");
 
 	bouncelife = ctrltimet(ctrlfd, "bouncelife", BOUNCELIFE);
+	waitprobe = ctrltimet(ctrlfd, "waitprobe", WAITPROBE);
 
 	while((dp = readdir(bouncedir)) != NULL) {
 		if (bounce_skip(bfd, dp->d_name, &ret, logfd))
@@ -508,7 +511,7 @@ unsub_bouncers(int dfd, int ctrlfd, int logfd)
 			continue;
 		}
 		t = time(NULL);
-		if(t - bouncetime < bouncelife + WAITPROBE)
+		if(t - bouncetime < bouncelife + waitprobe)
 			continue; /* ok, don't unsub this one */
 		
 		/* Ok, go ahead and unsubscribe the address */
@@ -686,7 +689,7 @@ void do_maintenance(struct ml *ml, const char *mlmmjsend, const char *mlmmjbounc
 		    "%s", MAINTD_LOGFILE);
 
 	log("clean_nolongerbouncing\n");
-	if (!clean_nolongerbouncing(ml->fd, logfd))
+	if (!clean_nolongerbouncing(ml->fd, ml->ctrlfd, logfd))
 		log_err("An error occurred while cleaning no longer bouncing "
 		   "traces, see %s", MAINTD_LOGFILE);
 

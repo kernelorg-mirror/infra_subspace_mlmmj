@@ -174,6 +174,14 @@ entire content is used as value, it's marked "text".
    This specifies how long in seconds an address can bounce before it's
    unsubscribed. Defaults to 432000 seconds, which is 5 days.
 
+ * waitprobe			(normal)
+
+   This specifies how long in seconds to wait for a probe to bounce
+   before concluding the address no longer bounces. Defaults to 43200
+   seconds, which is 12 hours. Set it longer than the MTA keeps retrying
+   a deferred message, or an address whose probe is deferred is never
+   unsubscribed.
+
  * noarchive			(boolean)
 
    If this file exists, the mail won't be saved in the archive but simply
