@@ -37,6 +37,7 @@ tests_init \
 	multi_line_headers \
 	subrelease \
 	subrelease_with_moderators \
+	subrelease_modnonsubposts \
 	subreleaseall \
 	subreleaseall_off \
 	mimedeny_simple \
@@ -3474,6 +3475,59 @@ EOF
 
 	# Verify the deny mail was sent to the poster
 	atf_check -o match:"RCPT TO:<bob@test>" cat mail-1.txt
+}
+
+subrelease_modnonsubposts_body()
+{
+	init_ml list
+	rmdir list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
+	echo test@mlmmjtest > list/control/listaddress
+	start_fakesmtp list
+	echo "heloname" > list/control/smtphelo
+
+	# No control/moderators: nobody to ask, so the poster may self-release
+	touch list/control/modnonsubposts
+	touch list/control/notifymod
+	printf "user@test\nuser2@test" > list/subscribers.d/u
+
+cat > first <<EOF
+From: bob@test
+To: test@mlmmjtest
+Return-path: bob@test
+Subject: yeah
+
+Let's go, first email
+EOF
+	atf_check -s exit:0 $mlmmjreceive -L list -F <first
+
+	# Verify the mail was held in moderation
+	var=$(ls list/moderation/)
+	if [ -z "$var" ]; then
+		atf_fail "No file in moderation directory"
+	fi
+
+	# Verify the wait-post mail went to the poster with subrelease addresses
+	atf_check -o match:"RCPT TO:<bob@test>" cat mail-1.txt
+	atf_check -o match:"Awaiting_release" cat mail-1.txt
+	atf_check -o match:"test\+subrelease-${var}@mlmmjtest" cat mail-1.txt
+	atf_check -o match:"Reply-To: test\+subrelease-${var}@mlmmjtest" cat mail-1.txt
+	# Verify no moderate-post mail was sent
+	atf_check -s exit:1 test -f mail-2.txt
+
+	# Now send to the subrelease address to subscribe and release
+cat > subrel <<EOF
+From: bob@test
+To: test+subrelease-${var}@mlmmjtest
+Return-path: bob@test
+EOF
+	atf_check -s exit:0 $mlmmjreceive -L list -F <subrel
+
+	# Verify the sender is subscribed and the post was released
+	atf_check -o match:"bob@test" cat list/subscribers.d/b
+	atf_check -s exit:0 test -f list/archive/1
+	atf_check -o match:"RCPT TO:<user@test>" cat mail-2.txt
+	atf_check -o match:"Let's go, first email" cat mail-2.txt
 }
 
 mimedeny_simple_body()

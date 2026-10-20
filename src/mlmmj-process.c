@@ -97,6 +97,13 @@ static bool is_moderator(int listfd, const char *address,
 	FILE *fp;
 
 	if ((moderatorsfd = openat(listfd, "control/moderators", O_RDONLY)) < 0) {
+		/* No moderators is no error, as in mlmmj-send: the
+		 * sysadmin may moderate by hand. */
+		if (errno == ENOENT) {
+			if (moderators)
+				*moderators = sb_get(&str);
+			return (false);
+		}
 		log_error(LOG_ARGS, "Could not open 'control/moderators'");
 		exit(EXIT_FAILURE);
 	}
@@ -158,6 +165,7 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 	const char *efromismod = NULL;
 	const char *mailbasename = mybasename(mailfilename);
 	int notifymod = 0;
+	bool hasmods = statctrl(ml->ctrlfd, "moderators");
 	if (statctrl(ml->ctrlfd, "ifmodsendonlymodmoderate"))
 		efromismod = efromsender;
 
@@ -176,20 +184,23 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 
 	xasprintf(&to, "%s-moderators@%s", ml->name, ml->fqdn);
 
-	txt = open_text(ml->fd, "moderate", "post",
-			modreason_strs[modreason], NULL, "moderation");
-	MY_ASSERT(txt);
-	register_default_unformatted(txt, ml);
-	register_unformatted(txt, "subject", subject);
-	register_unformatted(txt, "posteraddr", posteraddr);
-	register_unformatted(txt, "releaseaddr", replyto);
-	register_unformatted(txt, "rejectaddr", reject);
-	register_formatted(txt, "moderators",
-			rewind_memory_lines, get_memory_line, mls);
-	register_originalmail(txt, mailfilename);
-	queuefilename = prepstdreply(txt, ml, "$listowner$", to, replyto);
-	MY_ASSERT(queuefilename);
-	close_text(txt);
+	if (hasmods) {
+		txt = open_text(ml->fd, "moderate", "post",
+				modreason_strs[modreason], NULL, "moderation");
+		MY_ASSERT(txt);
+		register_default_unformatted(txt, ml);
+		register_unformatted(txt, "subject", subject);
+		register_unformatted(txt, "posteraddr", posteraddr);
+		register_unformatted(txt, "releaseaddr", replyto);
+		register_unformatted(txt, "rejectaddr", reject);
+		register_formatted(txt, "moderators",
+				rewind_memory_lines, get_memory_line, mls);
+		register_originalmail(txt, mailfilename);
+		queuefilename = prepstdreply(txt, ml, "$listowner$", to,
+		    replyto);
+		MY_ASSERT(queuefilename);
+		close_text(txt);
+	}
 
 	/* we might need to exec more than one mlmmj-send */
 
@@ -212,8 +223,7 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 		char *subreplyto = NULL;
 		if (modreason == MODNONSUBPOSTS &&
 		    !statctrl(ml->ctrlfd, "closedlist") &&
-		    !statctrl(ml->ctrlfd, "closedlistsub") &&
-		    !statctrl(ml->ctrlfd, "moderators")) {
+		    !statctrl(ml->ctrlfd, "closedlistsub") && !hasmods) {
 			char *listsubreleaseaddr;
 			char *digestsubreleaseaddr;
 			char *nomailsubreleaseaddr;
@@ -245,6 +255,15 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 	if (efromismod) {
 		send_mail_from_file(ml, from, efromsender, queuefilename);
 		exit(EXIT_SUCCESS);
+	}
+
+	/* Nobody to ask: the post waits in moderation/ for the sysadmin.
+	 * Log it, or without notifymod nobody hears of the post at all. */
+	if (!hasmods) {
+		errno = 0;
+		log_error(LOG_ARGS, "No control/moderators, %s is held for "
+		    "manual moderation", mailbasename);
+		return;
 	}
 
 	exec_or_die(mlmmjsend, "-l", "2", "-L", ml->dir, "-F", from,
