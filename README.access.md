@@ -37,6 +37,8 @@ The action "deny" can be specialised with "dash-extension". The dash-extension
 is used to identify the listtext to use, if present.
 For example, if "deny-html" is triggered, the rejection message is loaded from
 listtexts/deny-post-access-html
+As with the other actions, the regexp is optional: a bare "deny-html" rule
+matches every mail.
 
 The action "discard" will not send the mail to the list, and will not send a
 rejection mail.

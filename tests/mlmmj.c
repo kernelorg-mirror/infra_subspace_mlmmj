@@ -4409,6 +4409,27 @@ ATF_TC_BODY(do_access, tc)
 	vec_push(&rules, "allow ^from: nobody@");
 	ATF_REQUIRE_EQ(do_access(&rules, &headers, "test@plop", &msg, &qualifier), ACT_DENY);
 	ATF_REQUIRE_STREQ(msg, "access - A mail from \"test@plop\" didn't match any rules, and was denied by default.");
+
+	/* Test the qualifier of a rule that did not match is not used by a
+	 * later rule, nor by the deny by default */
+	vec_clear(&rules);
+	vec_push(&rules, "deny-a ^from: other@");
+	vec_push(&rules, "deny-b ^from: nobody@");
+	vec_push(&rules, "deny ^from: toto@");
+	ATF_REQUIRE_EQ(do_access(&rules, &headers, "test@plop", &msg, &qualifier), ACT_DENY);
+	ATF_REQUIRE_STREQ(msg, "access - A mail from \"test@plop\" with header \"from: toto@bla\" was denied by rule #2 \"deny ^from: toto@\"");
+	ATF_REQUIRE(qualifier == NULL);
+	(void) vec_pop(&rules);
+	ATF_REQUIRE_EQ(do_access(&rules, &headers, "test@plop", &msg, &qualifier), ACT_DENY);
+	ATF_REQUIRE_STREQ(msg, "access - A mail from \"test@plop\" didn't match any rules, and was denied by default.");
+	ATF_REQUIRE(qualifier == NULL);
+
+	/* Test a qualified rule without a regexp matches like a bare keyword */
+	vec_clear(&rules);
+	vec_push(&rules, "deny-meh");
+	ATF_REQUIRE_EQ(do_access(&rules, &headers, "test@plop", &msg, &qualifier), ACT_DENY);
+	ATF_REQUIRE_STREQ(msg, "access - A mail from \"test@plop\" was denied by rule #0 \"deny-meh\"");
+	ATF_REQUIRE_STREQ(qualifier, "meh");
 }
 
 ATF_TC_BODY(unistr_header_to_utf8, tc)

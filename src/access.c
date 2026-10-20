@@ -73,6 +73,7 @@ do_access(strlist *rules, strlist *headers, const char *from, char **msg, char *
 	unsigned int not;
 	regex_t regexp;
 	char *hdr;
+	char *rulequal;
 	if (msg != NULL)
 		*msg = NULL;
 	if (qualifier != NULL)
@@ -93,15 +94,20 @@ do_access(strlist *rules, strlist *headers, const char *from, char **msg, char *
 			return ACT_DENY;
 		}
 
-		if (*rule_ptr == ' ') {
-			rule_ptr++;
-		} else if (*rule_ptr == '-') {
+		/* Hand the qualifier back only if this rule matches.
+		 * Otherwise a later rule, or the deny by default, would
+		 * use its text. */
+		rulequal = NULL;
+		if (*rule_ptr == '-') {
 			rule_ptr++;
 			const char *qual = rule_ptr;
 			while (*rule_ptr != ' ' && *rule_ptr != '\0')
 				rule_ptr++;
 			if (rule_ptr - qual != 0 && qualifier != NULL)
-				*qualifier = xstrndup(qual, rule_ptr - qual);
+				rulequal = xstrndup(qual, rule_ptr - qual);
+		}
+
+		if (*rule_ptr == ' ') {
 			rule_ptr++;
 		} else if (*rule_ptr == '\0') {
 			/* the rule is a keyword and no regexp */
@@ -109,6 +115,8 @@ do_access(strlist *rules, strlist *headers, const char *from, char **msg, char *
 				xasprintf(msg, "access -"
 					" A mail from \"%s\" was %s by rule #%zu \"%s\"",
 					from, action_strs[act], _i, rules->d[_i]);
+			if (qualifier != NULL)
+				*qualifier = rulequal;
 			return act;
 		} else {
 			/* we must have space or end of string */
@@ -141,6 +149,7 @@ do_access(strlist *rules, strlist *headers, const char *from, char **msg, char *
 				REG_EXTENDED | REG_NOSUB | REG_ICASE))) {
 			regerror(err, &regexp, errbuf, sizeof(errbuf));
 			regfree(&regexp);
+			free(rulequal);
 			errno = 0;
 			if (msg != NULL)
 				xasprintf(msg, "regcomp() failed for rule #%zu \"%s\""
@@ -176,8 +185,11 @@ do_access(strlist *rules, strlist *headers, const char *from, char **msg, char *
 						" because no header matched.", from,
 						action_strs[act], _i, rules->d[_i]);
 			}
+			if (qualifier != NULL)
+				*qualifier = rulequal;
 			return act;
 		}
+		free(rulequal);
 	}
 
 	if (msg != NULL)
