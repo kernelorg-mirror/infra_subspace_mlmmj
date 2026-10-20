@@ -31,3 +31,4 @@ int do_all_the_voodoo_here(int infd, int outfd, int hdrfd, int footfd,
 	      struct ml *ml);
 void scan_headers(FILE *f, struct mailhdr *readhdrs, strlist *allhdrs,
 	strlist *allunfoldeds);
+void write_list_headers(FILE *outf, struct ml *ml);

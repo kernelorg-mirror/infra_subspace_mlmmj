@@ -39,6 +39,7 @@
 #include "unistr.h"
 #include "utils.h"
 #include "archive.h"
+#include "do_all_the_voodoo_here.h"
 
 
 
@@ -330,6 +331,10 @@ int send_digest(struct ml *ml, int firstindex, int lastindex,
 				queuename);
 		goto cleanup;
 	}
+
+	/* List-Unsubscribe stays on +unsubscribe: it also removes digest
+	 * subscribers, and +unsubscribe-digest is deprecated. */
+	write_list_headers(f, ml);
 
 	if (hdrfd >= 0) {
 		/* skipfrom: the digest already has exactly one From: */

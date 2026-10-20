@@ -74,7 +74,7 @@ scan_headers(FILE *f, struct mailhdr *readhdrs, strlist *allhdrs, strlist *allun
 	}
 }
 
-static void
+void
 write_list_headers(FILE *outf, struct ml *ml)
 {
 	char *owner, *phrase;

@@ -14,6 +14,7 @@ tests_init \
 	digests_4 \
 	digests_5 \
 	digest_customheaders \
+	digest_nolistheaders \
 	unsub_bouncers_0 \
 	unsub_bouncers_1 \
 	unsub_bouncers_2 \
@@ -516,6 +517,31 @@ run_digests
 	atf_check -o "inline:$output" sed -e "s/at .*/at/" lists/ml/mlmmj-maintd.lastrun.log
 }
 
+digest_nolistheaders_body()
+{
+	mkdir lists
+	init_ml lists/ml
+	rmdir lists/ml/text
+	ln -s ${top_srcdir}/listtexts/en lists/ml/text
+	echo test@mlmmjtest > lists/ml/control/listaddress
+	touch lists/ml/control/nolistheaders
+	start_fakesmtp lists/ml
+
+	echo digest@example.com > lists/ml/digesters.d/d
+	printf 'From: Martin <martin@here.com>\nSubject: hello\n\nbody\n' \
+	    > lists/ml/archive/1
+	echo 1 > lists/ml/index
+	echo "0:1:0" > lists/ml/lastdigest
+
+	atf_check -s exit:0 $mlmmjmaintd -L lists/ml -F
+
+	# A digest was sent, so the check below is not trivially empty
+	atf_check -s exit:0 grep -q "^Content-Type: multipart/digest" mail-1.txt
+	# nolistheaders applies to digests as to posts
+	atf_check -s exit:0 -o empty \
+	    awk '/^\r?$/{exit} /^(List-|Precedence:)/' mail-1.txt
+}
+
 digest_customheaders_body()
 {
 	mkdir lists
@@ -544,6 +570,10 @@ digest_customheaders_body()
 	# embedded in the digest does not count
 	atf_check -s exit:0 -o inline:"1\n" \
 	    awk '/^From:/{n++} /^\r?$/{exit} END{print n+0}' mail-1.txt
+	# The same List-* headers as a post, in the top level headers
+	atf_check -s exit:0 \
+	    -o inline:"List-Id: <test.mlmmjtest>\nPrecedence: list\n" \
+	    awk '/^\r?$/{exit} /^(List-Id|Precedence):/{sub(/\r$/, ""); print}' mail-1.txt
 	# No leftover unexpanded variable
 	atf_check -s exit:1 grep -q posteraddr mail-1.txt
 	atf_check -s exit:1 grep -q disarmedfrom mail-1.txt
