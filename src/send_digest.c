@@ -274,10 +274,7 @@ int send_digest(struct ml *ml, int firstindex, int lastindex,
 				tmp++;
 				len++;
 				if (strncasecmp(line, "Subject:", len) == 0) {
-					tmp = unistr_utf8_to_header(tmp);
-					xasprintf(&subject, "Subject: %s",
-					    tmp);
-					free(tmp);
+					subject = unistr_utf8_to_header(tmp);
 
 					free(line);
 					line = get_processed_text_line(txt,
