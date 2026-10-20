@@ -6,6 +6,7 @@ mlmmjmaintd=$(command -v mlmmj-maintd)
 
 tests_init \
 	nolongerbouncing \
+	nolongerbouncing_waitprobe \
 	discarded \
 	digests_0 \
 	digests_1 \
@@ -27,6 +28,7 @@ tests_init \
 	unsub_bouncers_8 \
 	unsub_bouncers_9 \
 	unsub_bouncers_10 \
+	unsub_bouncers_waitprobe \
 	basics_0 \
 	basics_1 \
 	basics_2 \
@@ -66,6 +68,35 @@ nolongerbouncing_body()
 	atf_check -s exit:0 -o empty -e empty test -f $f2
 	atf_check -s exit:0 -o empty -e empty test -f $f2-probe
 	atf_check -s exit:0 -o empty -e empty test -f $f2.lastmsg
+}
+
+nolongerbouncing_waitprobe_body()
+{
+	mkdir lists
+	init_ml lists/ml
+	mkdir -p lists/ml/bounce
+
+	echo test@mlmmjtest > lists/ml/control/listaddress
+	f=lists/ml/bounce/msg1
+	now=$(date +%s)
+
+	# out for 13 hours: past the default, kept with waitprobe at 3 days
+	echo 259200 > lists/ml/control/waitprobe
+	echo "$((now - 46800))" > ${f}-probe
+	touch ${f}
+	touch ${f}.lastmsg
+	atf_check -s exit:0 -o empty $mlmmjmaintd -L lists/ml -F
+	atf_check -s exit:0 -o empty -e empty test -f $f
+	atf_check -s exit:0 -o empty -e empty test -f $f-probe
+	atf_check -s exit:0 -o empty -e empty test -f $f.lastmsg
+
+	# out for 2 minutes: cleaned with waitprobe at 1 minute
+	echo 60 > lists/ml/control/waitprobe
+	echo "$((now - 120))" > ${f}-probe
+	atf_check -s exit:0 -o empty $mlmmjmaintd -L lists/ml -F
+	atf_check -s exit:1 -o empty -e empty test -f $f
+	atf_check -s exit:1 -o empty -e empty test -f $f-probe
+	atf_check -s exit:1 -o empty -e empty test -f $f.lastmsg
 }
 
 discarded_body()
@@ -755,6 +786,27 @@ unsub_bouncers_9_body()
 	atf_check -s exit:0 $mlmmjmaintd -L list -F
 	atf_check -s exit:1 test -f list/bounce/plop=meh
 	atf_check -s exit:1 test -f list/bounce/plop=meh.lastmsg
+}
+
+unsub_bouncers_waitprobe_body()
+{
+	init_ml list
+	echo "test@test" > list/control/listaddress
+
+	# bouncing for bouncelife and 14 hours, and the last probe bounced:
+	# past bouncelife plus the default 12 hours, not plus 3 days
+	echo "a:$(($(date +%s) - 432000 - 50400)) # plop" > list/bounce/plop=meh
+	echo "plop@meh" > list/subscribers.d/p
+	echo 259200 > list/control/waitprobe
+	atf_check -s exit:0 $mlmmjmaintd -L list -F
+	atf_check -s exit:0 test -f list/bounce/plop=meh
+	atf_check -s exit:0 test -f list/subscribers.d/p
+
+	# that run sent a new probe; let it bounce, and go back to 12 hours
+	rm -f list/bounce/plop=meh-probe list/control/waitprobe
+	atf_check -s exit:0 $mlmmjmaintd -L list -F
+	atf_check -s exit:1 test -f list/bounce/plop=meh
+	atf_check -s exit:1 test -f list/subscribers.d/p
 }
 
 unsub_bouncers_10_body()
