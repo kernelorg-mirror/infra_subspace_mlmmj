@@ -393,8 +393,8 @@ int send_digest(struct ml *ml, int firstindex, int lastindex,
 
 		if (fprintf(f, "\n--%s"
 		    "\nContent-Type: message/rfc822"
-		    "\nContent-Disposition: inline; filename=\"%s_%s.eml\"\n\n",
-		    boundary, ml->name, buf) < 0) {
+		    "\nContent-Disposition: inline; filename=\"%s_%d.eml\"\n\n",
+		    boundary, ml->name, i) < 0) {
 			log_error(LOG_ARGS, "Could not write digest part "
 					"headers for archive index %d to "
 					"'%s'", i, queuename);
