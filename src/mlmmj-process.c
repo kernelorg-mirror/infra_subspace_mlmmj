@@ -260,9 +260,8 @@ static void newmoderated(struct ml *ml, const char *mailfilename,
 	/* Nobody to ask: the post waits in moderation/ for the sysadmin.
 	 * Log it, or without notifymod nobody hears of the post at all. */
 	if (!hasmods) {
-		errno = 0;
-		log_error(LOG_ARGS, "No control/moderators, %s is held for "
-		    "manual moderation", mailbasename);
+		log_err("No control/moderators, %s is held for manual moderation",
+		    mailbasename);
 		return;
 	}
 
