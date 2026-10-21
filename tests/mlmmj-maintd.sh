@@ -15,6 +15,7 @@ tests_init \
 	digests_5 \
 	digest_customheaders \
 	digest_nolistheaders \
+	digest_subject \
 	unsub_bouncers_0 \
 	unsub_bouncers_1 \
 	unsub_bouncers_2 \
@@ -579,6 +580,33 @@ digest_customheaders_body()
 	atf_check -s exit:1 grep -q disarmedfrom mail-1.txt
 	# $posteraddr$ expands to the address the digest is sent from
 	atf_check -s exit:0 grep -q "^Reply-To: test+help@mlmmjtest" mail-1.txt
+}
+
+digest_subject_body()
+{
+	mkdir lists
+	init_ml lists/ml
+	rmdir lists/ml/text
+	ln -s ${top_srcdir}/listtexts/en lists/ml/text
+	echo test@mlmmjtest > lists/ml/control/listaddress
+	start_fakesmtp lists/ml
+
+	echo digest@example.com > lists/ml/digesters.d/d
+	printf 'From: Martin <martin@here.com>\nSubject: hello\n\nbody\n' \
+	    > lists/ml/archive/1
+	echo 1 > lists/ml/index
+	echo "0:1:0" > lists/ml/lastdigest
+
+	atf_check -s exit:0 $mlmmjmaintd -L lists/ml -F
+
+	# The default digest listtext starts with a "Subject:" line.  Its
+	# value must be used as the subject as is, without repeating the
+	# header name ("Subject: Subject: ...").
+	atf_check -s exit:1 grep -q "^Subject: Subject:" mail-1.txt
+	atf_check -s exit:0 -o inline:"1\n" \
+	    awk '/^\r?$/{exit} /^Subject:/{n++} END{print n+0}' mail-1.txt
+	# The subject is the encoded digest listtext value
+	atf_check -s exit:0 grep -q "^Subject: =?utf-8?q?Digest_of_" mail-1.txt
 }
 
 unsub_bouncers_0_body()
