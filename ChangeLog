@@ -1,3 +1,12 @@
+2.2.4
+ o control/access: a deny-<qualifier> rule reports its listtext only
+   when it matches; a bare deny-<qualifier> rule matches every mail.
+ o Moderation: no control/moderators is no longer fatal; the post is
+   held for manual moderation and the poster is notified when notifymod.
+ o Digests: same List-* and Precedence headers as posts, unless
+   control/nolistheaders is set.
+ o Digests: do not repeat "Subject:" in the digest subject.
+ o Digests: give each attached message a unique filename.
 2.2.3
  o Fix %moderators% in the moderation notice: list each moderator on
    its own line, they were concatenated on a single line by mistake.
