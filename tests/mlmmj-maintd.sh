@@ -98,6 +98,10 @@ nolongerbouncing_reactivate_body()
 	init_ml list
 	echo test@mlmmjtest > list/control/listaddress
 	mlmmjbounce=$(command -v mlmmj-bounce)
+	# for the probes sent after a regular bounce
+	rmdir list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
+	start_fakesmtp list
 
 	# A record old enough to unsubscribe whose probe did not bounce
 	# in time is put to sleep, not deleted.
@@ -118,7 +122,9 @@ nolongerbouncing_reactivate_body()
 	atf_check -s exit:1 -e empty test -f list/bounce/plop=meh
 	atf_check -s exit:1 -e empty test -f list/subscribers.d/p
 
-	# A regular bounce also reactivates a dormant record.
+	# A regular bounce may be a short problem, unrelated to the one
+	# that created the record: it must not unsubscribe a recovered
+	# address on its own, only get it probed again.
 	echo "plop2@meh" > list/subscribers.d/p2
 	now=$(date +%s)
 	echo "a:$((now - 432000 - 86400)) # plop2" > list/bounce/plop2=meh
@@ -127,6 +133,23 @@ nolongerbouncing_reactivate_body()
 	atf_check -s exit:0 -e empty test -f list/bounce/plop2=meh-quiet
 	atf_check -s exit:0 $mlmmjbounce -L list -a plop2=meh -n 1
 	atf_check -s exit:1 -e empty test -f list/bounce/plop2=meh-quiet
+	atf_check -s exit:0 -e empty test -f list/bounce/plop2=meh-wake
+	atf_check -s exit:0 $mlmmjmaintd -L list -F
+	atf_check -s exit:0 -e empty test -f list/subscribers.d/p2
+	atf_check -s exit:0 -e empty test -f list/bounce/plop2=meh-probe
+	atf_check -s exit:1 -e empty test -f list/bounce/plop2=meh-wake
+
+	# The probe is delivered and does not bounce: back to sleep
+	echo "12" > list/bounce/plop2=meh-probe
+	atf_check -s exit:0 $mlmmjmaintd -L list -F
+	atf_check -s exit:0 -e empty test -f list/bounce/plop2=meh-quiet
+	atf_check -s exit:0 -e empty test -f list/subscribers.d/p2
+
+	# The next problem lasts, so its probe bounces: unsubscribed
+	atf_check -s exit:0 $mlmmjbounce -L list -a plop2=meh -n 2
+	atf_check -s exit:0 $mlmmjmaintd -L list -F
+	atf_check -s exit:0 -e empty test -f list/subscribers.d/p2
+	atf_check -s exit:0 $mlmmjbounce -L list -a plop2=meh -n probe
 	atf_check -s exit:0 $mlmmjmaintd -L list -F
 	atf_check -s exit:1 -e empty test -f list/bounce/plop2=meh
 	atf_check -s exit:1 -e empty test -f list/subscribers.d/p2

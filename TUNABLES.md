@@ -176,8 +176,9 @@ entire content is used as value, it's marked "text".
    A probe that does not bounce within 12 hours puts the bounce record to
    sleep instead of deleting it. A probe bouncing later (for example
    because the MTA keeps retrying it) reactivates the record and the
-   address is unsubscribed normally. Dormant records are removed after
-   30 days.
+   address is unsubscribed normally. Any other bounce only gets the
+   address probed again, so a short problem cannot unsubscribe an address
+   that recovered. Dormant records are removed after 30 days.
 
  * noarchive			(boolean)
 

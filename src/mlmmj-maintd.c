@@ -451,13 +451,15 @@ clean_nolongerbouncing(int dfd, int logfd)
 
 /*
  * A bounce directory entry is "active" if it is a real bounce record
- * (not ".", "..", a "-probe" file, a ".lastmsg" marker, and no probe is
- * already out for it).  Returns true when the caller should skip the
- * entry; on a stat failure it also sets *ret to false.  Pass the bounce
- * directory fd and the maintenance log fd.
+ * (not ".", "..", a "-probe", "-quiet" or "-wake" marker, a ".lastmsg"
+ * file, and no probe is already out for it, and it is not asleep).
+ * Returns true when the caller should skip the entry; on a stat failure
+ * it also sets *ret to false.  A waking record is skipped only with
+ * skipwake: it must be probed again, but not unsubscribed before that
+ * probe bounces.  Pass the bounce directory fd and the maintenance log fd.
  */
 static bool
-bounce_skip(int dirfd, const char *name, bool *ret, int logfd)
+bounce_skip(int dirfd, const char *name, bool skipwake, bool *ret, int logfd)
 {
 	char *marker, *s;
 
@@ -465,7 +467,7 @@ bounce_skip(int dirfd, const char *name, bool *ret, int logfd)
 		return (true);
 	s = strrchr(name, '-');
 	if (s != NULL && (strcmp(s, "-probe") == 0 ||
-	    strcmp(s, "-quiet") == 0))
+	    strcmp(s, "-quiet") == 0 || strcmp(s, "-wake") == 0))
 		return (true);
 	s = strrchr(name, '.');
 	if (s != NULL && strcmp(s, ".lastmsg") == 0)
@@ -488,6 +490,14 @@ bounce_skip(int dirfd, const char *name, bool *ret, int logfd)
 		return (true);
 	}
 	free(marker);
+	if (skipwake) {
+		xasprintf(&marker, "%s-wake", name);
+		if (faccessat(dirfd, marker, F_OK, 0) == 0) {
+			free(marker);
+			return (true);
+		}
+		free(marker);
+	}
 	return (false);
 }
 
@@ -501,7 +511,7 @@ probe_bouncers(struct ml *ml, const char *mlmmjbounce, int logfd)
 
 	opendirat(ml->fd, fd, bouncedir, "bounce");
 	while((dp = readdir(bouncedir)) != NULL) {
-		if (bounce_skip(fd, dp->d_name, &ret, logfd))
+		if (bounce_skip(fd, dp->d_name, false, &ret, logfd))
 			continue;
 
 		exec_and_wait(mlmmjbounce, "-L", ml->dir, "-a", dp->d_name,
@@ -528,7 +538,7 @@ unsub_bouncers(int dfd, int ctrlfd, int logfd)
 	bouncelife = ctrltimet(ctrlfd, "bouncelife", BOUNCELIFE);
 
 	while((dp = readdir(bouncedir)) != NULL) {
-		if (bounce_skip(bfd, dp->d_name, &ret, logfd))
+		if (bounce_skip(bfd, dp->d_name, true, &ret, logfd))
 			continue;
 
 		/* Get the first line of the bounce file to check if it's

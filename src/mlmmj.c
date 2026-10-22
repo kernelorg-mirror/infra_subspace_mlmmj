@@ -128,6 +128,11 @@ send_probe(struct ml *ml, const char *addr)
 	}
 	if (mail.fp)
 		fclose(mail.fp);
+	free(probefile);
+	/* Only after sending: if it failed, the record stays waking and the
+	 * next maintenance run probes it again */
+	xasprintf(&probefile, "%s-wake", addr);
+	unlinkat(bfd, probefile, 0);
 	close(bfd);
 	free(probefile);
 	free(myaddr);
@@ -492,14 +497,16 @@ bouncemail(int listfd, const char *theaddress, const char *identifier)
 		return (BOUNCE_FAIL);
 	}
 
-	/* Any bounce reactivates a record that was put to sleep because
-	 * its probe did not bounce in time (see clean_nolongerbouncing). */
-	xasprintf(&a, "%s-quiet", address);
-	unlinkat(bdfd, a, 0);
-	free(a);
-
-	/* Probe bouncing: simply remove the probe file */
+	/* Probe bouncing: the address is broken now, so wake a record that
+	 * was put to sleep because its probe did not bounce in time (see
+	 * clean_nolongerbouncing). */
 	if (strcmp(identifier, "probe") == 0) {
+		xasprintf(&a, "%s-quiet", address);
+		unlinkat(bdfd, a, 0);
+		free(a);
+		xasprintf(&a, "%s-wake", address);
+		unlinkat(bdfd, a, 0);
+		free(a);
 		xasprintf(&a, "%s-probe", address);
 		unlinkat(bdfd, a, 0);
 		close(bdfd);
@@ -507,6 +514,15 @@ bouncemail(int listfd, const char *theaddress, const char *identifier)
 		free(a);
 		return (BOUNCE_OK);
 	}
+
+	/* Any other bounce may be a short problem, unrelated to the one that
+	 * created a sleeping record. Probe the address again before the old
+	 * record can unsubscribe it. */
+	xasprintf(&a, "%s-quiet", address);
+	xasprintf(&tmp, "%s-wake", address);
+	renameat(bdfd, a, bdfd, tmp);
+	free(a);
+	free(tmp);
 
 	tmp = strrchr(address, '=');
 	if (tmp == NULL) {
