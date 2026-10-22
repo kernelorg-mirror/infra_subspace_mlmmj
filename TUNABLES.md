@@ -173,6 +173,11 @@ entire content is used as value, it's marked "text".
 
    This specifies how long in seconds an address can bounce before it's
    unsubscribed. Defaults to 432000 seconds, which is 5 days.
+   A probe that does not bounce within 12 hours puts the bounce record to
+   sleep instead of deleting it. A probe bouncing later (for example
+   because the MTA keeps retrying it) reactivates the record and the
+   address is unsubscribed normally. Dormant records are removed after
+   30 days.
 
  * noarchive			(boolean)
 

@@ -6,6 +6,8 @@ mlmmjmaintd=$(command -v mlmmj-maintd)
 
 tests_init \
 	nolongerbouncing \
+	nolongerbouncing_gc \
+	nolongerbouncing_reactivate \
 	discarded \
 	digests_0 \
 	digests_1 \
@@ -60,12 +62,74 @@ nolongerbouncing_body()
 	touch ${f2}
 	touch ${f2}.lastmsg
 	atf_check -s exit:0 -o empty $mlmmjmaintd -L lists/ml -F
-	atf_check -s exit:1 -o empty -e empty test -f $f1
+	# the probe timed out: the record is kept but put to sleep
+	atf_check -s exit:0 -o empty -e empty test -f $f1
 	atf_check -s exit:1 -o empty -e empty test -f $f1-probe
+	atf_check -s exit:0 -o empty -e empty test -f $f1-quiet
 	atf_check -s exit:1 -o empty -e empty test -f $f1.lastmsg
+	# the recent probe is left alone
 	atf_check -s exit:0 -o empty -e empty test -f $f2
 	atf_check -s exit:0 -o empty -e empty test -f $f2-probe
+	atf_check -s exit:1 -o empty -e empty test -f $f2-quiet
 	atf_check -s exit:0 -o empty -e empty test -f $f2.lastmsg
+}
+
+nolongerbouncing_gc_body()
+{
+	mkdir lists
+	init_ml lists/ml
+	mkdir -p lists/ml/bounce
+
+	echo test@mlmmjtest > lists/ml/control/listaddress
+	f=lists/ml/bounce/msg1
+	now=$(date +%s)
+	# dormant for more than the 30 days retention
+	echo "$((now - 2592001))" > ${f}-quiet
+	touch ${f}
+	touch ${f}.lastmsg
+	atf_check -s exit:0 -o empty $mlmmjmaintd -L lists/ml -F
+	atf_check -s exit:1 -o empty -e empty test -f $f
+	atf_check -s exit:1 -o empty -e empty test -f $f-quiet
+	atf_check -s exit:1 -o empty -e empty test -f $f.lastmsg
+}
+
+nolongerbouncing_reactivate_body()
+{
+	init_ml list
+	echo test@mlmmjtest > list/control/listaddress
+	mlmmjbounce=$(command -v mlmmj-bounce)
+
+	# A record old enough to unsubscribe whose probe did not bounce
+	# in time is put to sleep, not deleted.
+	echo "plop@meh" > list/subscribers.d/p
+	now=$(date +%s)
+	echo "a:$((now - 432000 - 86400)) # plop" > list/bounce/plop=meh
+	echo "12" > list/bounce/plop=meh-probe
+	atf_check -s exit:0 $mlmmjmaintd -L list -F
+	atf_check -s exit:0 -e empty test -f list/bounce/plop=meh
+	atf_check -s exit:0 -e empty test -f list/bounce/plop=meh-quiet
+	atf_check -s exit:0 -e empty test -f list/subscribers.d/p
+
+	# The deferred probe bounces late: the record is reactivated and
+	# the address is unsubscribed on the next maintenance run.
+	atf_check -s exit:0 $mlmmjbounce -L list -a plop=meh -n probe
+	atf_check -s exit:1 -e empty test -f list/bounce/plop=meh-quiet
+	atf_check -s exit:0 $mlmmjmaintd -L list -F
+	atf_check -s exit:1 -e empty test -f list/bounce/plop=meh
+	atf_check -s exit:1 -e empty test -f list/subscribers.d/p
+
+	# A regular bounce also reactivates a dormant record.
+	echo "plop2@meh" > list/subscribers.d/p2
+	now=$(date +%s)
+	echo "a:$((now - 432000 - 86400)) # plop2" > list/bounce/plop2=meh
+	echo "12" > list/bounce/plop2=meh-probe
+	atf_check -s exit:0 $mlmmjmaintd -L list -F
+	atf_check -s exit:0 -e empty test -f list/bounce/plop2=meh-quiet
+	atf_check -s exit:0 $mlmmjbounce -L list -a plop2=meh -n 1
+	atf_check -s exit:1 -e empty test -f list/bounce/plop2=meh-quiet
+	atf_check -s exit:0 $mlmmjmaintd -L list -F
+	atf_check -s exit:1 -e empty test -f list/bounce/plop2=meh
+	atf_check -s exit:1 -e empty test -f list/subscribers.d/p2
 }
 
 discarded_body()

@@ -7,6 +7,9 @@
    control/nolistheaders is set.
  o Digests: do not repeat "Subject:" in the digest subject.
  o Digests: give each attached message a unique filename.
+ o Bounces: a probe that does not bounce in time puts the record to sleep
+   instead of deleting it; a probe bouncing later still unsubscribes the
+   address. Dormant records are removed after 30 days.
 2.2.3
  o Fix %moderators% in the moderation notice: list each moderator on
    its own line, they were concatenated on a single line by mistake.

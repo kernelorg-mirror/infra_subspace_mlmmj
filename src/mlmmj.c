@@ -466,7 +466,7 @@ unsubscribe(int listfd, const char *address, enum subtype typesub)
 bounce_t
 bouncemail(int listfd, const char *theaddress, const char *identifier)
 {
-	char *tmp, buf[27];
+	char *tmp, *a, buf[27];
 	char *address = lowercase(theaddress);
 	int fd, bdfd, bfd;
 	time_t t;
@@ -492,9 +492,14 @@ bouncemail(int listfd, const char *theaddress, const char *identifier)
 		return (BOUNCE_FAIL);
 	}
 
+	/* Any bounce reactivates a record that was put to sleep because
+	 * its probe did not bounce in time (see clean_nolongerbouncing). */
+	xasprintf(&a, "%s-quiet", address);
+	unlinkat(bdfd, a, 0);
+	free(a);
+
 	/* Probe bouncing: simply remove the probe file */
 	if (strcmp(identifier, "probe") == 0) {
-		char *a;
 		xasprintf(&a, "%s-probe", address);
 		unlinkat(bdfd, a, 0);
 		close(bdfd);

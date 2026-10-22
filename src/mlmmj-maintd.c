@@ -364,6 +364,7 @@ clean_nolongerbouncing(int dfd, int logfd)
 	bool ret = true;
 
 	opendirat(dfd, fd, bouncedir, "bounce");
+	t = time(NULL);
 	while((dp = readdir(bouncedir)) != NULL) {
 		if((strcmp(dp->d_name, "..") == 0) ||
 		   (strcmp(dp->d_name, ".") == 0))
@@ -386,15 +387,53 @@ clean_nolongerbouncing(int dfd, int logfd)
 				free(filename);
 				continue;
 			}
-			t = time(NULL);
 			if(t - probetime > WAITPROBE) {
+				int qfd;
+				char *quietfile;
+
 				if (unlinkat(fd, filename, 0) == -1) {
 					log(" - Could not remove bounce/%s: "
 					    "%s\n", filename,
 					    strerror(errno));
 					ret = false;
 				}
-				/* remove -probe onwards from filename */
+				/* The probe did not bounce in time: do not
+				 * delete the record, put it to sleep instead.
+				 * A late bounce of the probe reactivates it
+				 * (see bouncemail()). */
+				*s = '\0';
+				xasprintf(&quietfile, "%s-quiet", filename);
+				qfd = openat(fd, quietfile,
+				    O_WRONLY|O_TRUNC|O_CREAT, S_IRUSR|S_IWUSR);
+				if (qfd < 0) {
+					log(" - Could not open bounce/%s: "
+					    "%s\n", quietfile,
+					    strerror(errno));
+					ret = false;
+				} else {
+					if (dprintf(qfd, "%ld", (long int)t)
+					    < 0) {
+						log(" - Could not write "
+						    "bounce/%s: %s\n",
+						    quietfile, strerror(errno));
+						ret = false;
+					}
+					close(qfd);
+				}
+				free(quietfile);
+				xasprintf(&s, "%s.lastmsg", filename);
+				unlinkat(fd, s, 0);
+				free(s);
+			}
+		} else if(s && (strcmp(s, "-quiet") == 0)) {
+			time_t quiettime;
+
+			quiettime = ctrltimet(fd, filename, (time_t)-1);
+			if (quiettime != (time_t)-1 &&
+			    t - quiettime > QUIETLIFE) {
+				/* Dormant for too long: forget the
+				 * address. */
+				unlinkat(fd, filename, 0);
 				*s = '\0';
 				unlinkat(fd, filename, 0);
 				xasprintf(&s, "%s.lastmsg", filename);
@@ -420,12 +459,13 @@ clean_nolongerbouncing(int dfd, int logfd)
 static bool
 bounce_skip(int dirfd, const char *name, bool *ret, int logfd)
 {
-	char *probefile, *s;
+	char *marker, *s;
 
 	if (strcmp(name, "..") == 0 || strcmp(name, ".") == 0)
 		return (true);
 	s = strrchr(name, '-');
-	if (s != NULL && strcmp(s, "-probe") == 0)
+	if (s != NULL && (strcmp(s, "-probe") == 0 ||
+	    strcmp(s, "-quiet") == 0))
 		return (true);
 	s = strrchr(name, '.');
 	if (s != NULL && strcmp(s, ".lastmsg") == 0)
@@ -436,12 +476,18 @@ bounce_skip(int dirfd, const char *name, bool *ret, int logfd)
 		*ret = false;
 		return (true);
 	}
-	xasprintf(&probefile, "%s-probe", name);
-	if (faccessat(dirfd, probefile, F_OK, 0) == 0) {
-		free(probefile);
+	xasprintf(&marker, "%s-probe", name);
+	if (faccessat(dirfd, marker, F_OK, 0) == 0) {
+		free(marker);
 		return (true);
 	}
-	free(probefile);
+	free(marker);
+	xasprintf(&marker, "%s-quiet", name);
+	if (faccessat(dirfd, marker, F_OK, 0) == 0) {
+		free(marker);
+		return (true);
+	}
+	free(marker);
 	return (false);
 }
 

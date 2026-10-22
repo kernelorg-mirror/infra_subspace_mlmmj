@@ -53,8 +53,11 @@
 			     unsubscription happens? 432000s is 5 days
 			     Tweakable with control/bouncelife */
 #define WAITPROBE 43200   /* How long do we wait for a bounce of the probe
-			     mail before concluding the address is no longer
-			     bouncing? 43200 is 12 hours */
+			     mail before putting the bounce record to sleep?
+			     43200 is 12 hours */
+#define QUIETLIFE 2592000 /* How long to keep a dormant bounce record, i.e.
+			     one whose probe did not bounce in time?
+			     2592000s is 30 days */
 #define MAINTD_SLEEP 7200 /* How long between maintenance runs when
 			     mlmmj-maintd runs daemonized? 7200s is 2 hours */
 #define MAINTD_LOGFILE "mlmmj-maintd.lastrun.log"
