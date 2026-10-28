@@ -472,9 +472,21 @@ bounce_t
 bouncemail(int listfd, const char *theaddress, const char *identifier)
 {
 	char *tmp, *a, buf[27];
-	char *address = lowercase(theaddress);
+	char *address;
 	int fd, bdfd, bfd;
 	time_t t;
+
+	/* The address names files below subconf/, unsubconf/ and bounce/,
+	 * and whoever sends the bounce chooses it (in the bounce address or
+	 * the DSN): it must never reach outside of those directories. Such
+	 * a bounce is ignored, not failed, so that its mail is dropped like
+	 * one for an unsubscribed address. */
+	if (strchr(theaddress, '/') != NULL) {
+		errno = 0;
+		log_error(LOG_ARGS, "Ignoring bounce for an address with a '/'");
+		return (BOUNCE_OK);
+	}
+	address = lowercase(theaddress);
 
 	/* If it's a sub/unsub confirmation bounce, remove the file */
 	if (strcmp(identifier, "confsub") == 0 ||
@@ -561,6 +573,12 @@ save_lastbouncedmsg(int listfd, const char *address, const char *mailname)
 {
 	char *savename, *fname;
 
+	/* see bouncemail() */
+	if (strchr(address, '/') != NULL) {
+		errno = 0;
+		log_error(LOG_ARGS, "Not saving bounce for an address with a '/'");
+		return;
+	}
 	fname = lowercase(address);
 
 	xasprintf(&savename, "bounce/%s.lastmsg", fname);
@@ -674,6 +692,16 @@ char *dsnparseaddr(const char *mailname)
 	free(boundary);
 	fclose(f);
 	vec_free_and_free(&emails, free);
+
+	/* The callers turn the address into a file name (see bouncemail()),
+	 * and need its '@' to do so. */
+	if (addr != NULL &&
+	    (strchr(addr, '/') != NULL || strchr(addr, '@') == NULL)) {
+		errno = 0;
+		log_error(LOG_ARGS, "Ignoring invalid address in DSN: %s", addr);
+		free(addr);
+		addr = NULL;
+	}
 	return addr;
 }
 

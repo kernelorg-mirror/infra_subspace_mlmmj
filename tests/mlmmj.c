@@ -1385,6 +1385,27 @@ ATF_TC_BODY(bouncemail, tc)
 
 	ATF_REQUIRE(atf_utils_grep_file("1234:.*", "list/bounce/bapt=freebsd.org"));
 	ATF_REQUIRE(atf_utils_grep_file("2323:.*", "list/bounce/bapt=freebsd.org"));
+
+	/* The address names files below subconf/, unsubconf/ and bounce/,
+	 * and comes from the bounce address or a DSN, both chosen by
+	 * whoever sends the bounce: it must never reach outside of them. */
+	atf_utils_create_file("list/victim=x", "keep");
+	atf_utils_create_file("list/victim=x-quiet", "keep");
+	atf_utils_create_file("list/victim=x-probe", "keep");
+	atf_utils_create_file("list/subscribers.d/v", "../victim@x\n");
+	ATF_REQUIRE_EQ(bouncemail(fd, "../victim=x", "confsub"), BOUNCE_OK);
+	ATF_REQUIRE_EQ(bouncemail(fd, "../victim=x", "confunsub"), BOUNCE_OK);
+	ATF_REQUIRE_EQ(bouncemail(fd, "../victim=x", "probe"), BOUNCE_OK);
+	ATF_REQUIRE_EQ(bouncemail(fd, "../victim=x", "1234"), BOUNCE_OK);
+	ATF_REQUIRE(atf_utils_compare_file("list/victim=x", "keep"));
+	ATF_REQUIRE(atf_utils_compare_file("list/victim=x-quiet", "keep"));
+	ATF_REQUIRE(atf_utils_compare_file("list/victim=x-probe", "keep"));
+	ATF_REQUIRE_EQ(access("list/victim=x-wake", F_OK), -1);
+
+	atf_utils_create_file("bounced-mail", "mail");
+	save_lastbouncedmsg(fd, "../victim=x", "bounced-mail");
+	ATF_REQUIRE_EQ(access("list/victim=x.lastmsg", F_OK), -1);
+	ATF_REQUIRE_EQ(access("bounced-mail", F_OK), 0);
 }
 
 ATF_TC_BODY(send_mail_basics, tc)
@@ -3616,6 +3637,11 @@ ATF_TC_BODY(listcontrol, tc)
 	vec_push(&nul, "evil\x01@bad");
 	ATF_REQUIRE_EQ(listcontrol(&nul, &rtoemails, &ml, "help", NULL, "meh"), -1);
 
+	/* A subscribed address later names files, such as bounce/<addr> */
+	strlist slash = vec_init();
+	vec_push(&slash, "x/../evil@bad");
+	ATF_REQUIRE_EQ(listcontrol(&slash, &rtoemails, &ml, "help", NULL, "meh"), -1);
+
 }
 
 ATF_TC_WITHOUT_HEAD(listcontrol_subscribe_replyto);
@@ -4779,6 +4805,14 @@ ATF_TC_BODY(autosubscribe_sender, tc)
 		atf_utils_cat_file("list/nomailsubs.d/b", "");
 		atf_tc_fail("Unexpected subscribtion");
 	}
+
+	/* A subscribed address later names files, such as bounce/<addr> */
+	atf_utils_create_file("myemailbody.txt", "From: evil <x/../evil@meh>");
+	mfd = open("myemailbody.txt", O_RDONLY);
+	free(autosubscribe_sender(&list, mfd, SUB_NOMAIL));
+	close(mfd);
+	cnt = count_dir_entries_from_mldir(list.fd, "nomailsubs.d");
+	ATF_REQUIRE_EQ_MSG(cnt, 1, "Address with a '/' was subscribed");
 }
 
 ATF_TC_BODY(scan_headers_test, tc)

@@ -13,7 +13,8 @@ tests_init \
 	basics_7 \
 	bounce_subscription \
 	probe \
-	dsnparse
+	dsnparse \
+	dsnparse_bad_address
 
 basics_0_body()
 {
@@ -162,4 +163,25 @@ dsnparse_body()
 	cp ${top_srcdir}/tests/dsnmail dsnmail
 	atf_check -s exit:0 $mlmmjbounce -L ./ml -d -n 2 -m dsnmail
 
+}
+
+# The Final-Recipient: of a DSN is chosen by its sender and becomes a
+# file name below the list directory: it must never reach outside of
+# it, and an address without '@' must be ignored rather than crash.
+dsnparse_bad_address_body()
+{
+	mlmmjbounce=$(command -v mlmmj-bounce)
+
+	init_ml ml
+	echo test@mlmmjtest > ml/control/listaddress
+	echo keep > ml/victim=x
+
+	sed 's|^Final-Recipient: .*|Final-Recipient: rfc822; ../victim@x|' \
+	    ${top_srcdir}/tests/dsnmail > dsnmail
+	atf_check -s exit:0 -e ignore $mlmmjbounce -L ./ml -d -n confsub -m dsnmail
+	atf_check -o inline:"keep\n" cat ml/victim=x
+
+	sed 's|^Final-Recipient: .*|Final-Recipient: rfc822; no-at-sign|' \
+	    ${top_srcdir}/tests/dsnmail > dsnmail
+	atf_check -s exit:0 -e ignore $mlmmjbounce -L ./ml -d -n confsub -m dsnmail
 }

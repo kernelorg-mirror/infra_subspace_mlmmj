@@ -782,7 +782,10 @@ get_mail_sender(int mailfd)
 		return (NULL);
 	}
 	find_email_adr(readhdrs[0].values[0], &from);
-	if (from.len > 0 && strchr(vec_first(&from), '@') != NULL)
+	/* The sender may get subscribed, and a subscribed address later
+	 * names files, such as bounce/<addr>. */
+	if (from.len > 0 && strchr(vec_first(&from), '@') != NULL &&
+	    strchr(vec_first(&from), '/') == NULL)
 		sender = xstrdup(vec_first(&from));
 	vec_free_and_free(&from, free);
 	free_mailhdrs(readhdrs);
