@@ -1156,13 +1156,16 @@ char *get_processed_text_line(text *txt, bool headers, struct ml *ml)
 					/* wrapindent is a width, but includes
 					 * the prefix; the excess we make up
 					 * with just spaces though, so one byte
-					 * per character. */
-					len += txt->wrapindent -
+					 * per character. A prefix wider than
+					 * wrapindent is kept whole, so there
+					 * is no excess. */
+					i = txt->wrapindent -
 						txt->src->prefixwidth;
-					processedlen += txt->wrapindent -
-						txt->src->prefixwidth;
-					processedwidth += txt->wrapindent -
-						txt->src->prefixwidth;
+					if (i < 0)
+						i = 0;
+					len += i;
+					processedlen += i;
+					processedwidth += i;
 				}
 				line = xmalloc((len + 1) * sizeof(char));
 				if (txt->src->prefixwidth != 0) {

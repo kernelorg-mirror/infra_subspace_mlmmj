@@ -3108,6 +3108,33 @@ ATF_TC_BODY(get_processed_text_line_includes, tc)
 	ATF_REQUIRE(ret != NULL);
 	ATF_REQUIRE_STREQ(ret, "c");
 	close_text(txt);
+
+	/*
+	 * The prefix of an inclusion can be wider than the wrap indent,
+	 * as with the shipped "- %listsubs%" idiom following a wrapped
+	 * line; the included lines are then indented by the whole prefix.
+	 */
+	atf_utils_create_file("list/control/owner", "%s",
+	    "alice@example.org\nbob@example.org\ncarol@example.org\n"
+	    "dave@example.org\n");
+	atf_utils_create_file("intextinc", "%s",
+	    "%wrap%Here is the list:\n"
+	    "- %control owner%\n");
+	fd = open("intextinc", O_RDONLY);
+	txt = open_text_fd(fd);
+	ATF_REQUIRE(txt != NULL);
+	register_default_unformatted(txt, &ml);
+
+	ret = get_processed_text_line(txt, true, &ml);
+	ATF_REQUIRE(ret != NULL);
+	ATF_REQUIRE_STREQ(ret, "Here is the list: - alice@example.org"
+	    " bob@example.org carol@example.org");
+	ret = get_processed_text_line(txt, true, &ml);
+	ATF_REQUIRE(ret != NULL);
+	ATF_REQUIRE_STREQ(ret, "                    dave@example.org");
+	ret = get_processed_text_line(txt, true, &ml);
+	ATF_REQUIRE(ret == NULL);
+	close_text(txt);
 }
 
 ATF_TC_BODY(get_processed_text_line_values_literal, tc)
