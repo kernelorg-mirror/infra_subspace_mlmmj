@@ -64,6 +64,10 @@ struct source {
 	char *upcoming;
 	int processedlen;
 	int processedwidth;
+	/* Number of bytes of upcoming, from processedlen on, that belong to
+	 * a substituted value and so must not be parsed for directives,
+	 * substitutions or escapes. */
+	int literallen;
 	char *prefix;
 	int prefixlen;
 	int prefixwidth;
@@ -380,11 +384,12 @@ do_substitute(sb_t *str, const char *line, int listfd, int ctrlfd, text *txt)
 }
 
 static void substitute_one(char **line_p, char **pos_p, int *width_p,
-			int listfd, int ctrlfd, text *txt)
+			int *literal_p, int listfd, int ctrlfd, text *txt)
 {
-	/* It is important for this function to leave the length of the
-	 * processed portion unchanged, or increase it by just one ASCII
-	 * character (for $$). */
+	/* The value is left for the caller to scan, so that it is measured
+	 * and wrapped like any other text, but as *literal_p bytes of data:
+	 * values such as $subject$ come from the incoming mail, and must
+	 * never be expanded themselves. */
 	char *line = *line_p;
 	char *pos = *pos_p;
 	char *token = pos + 1;
@@ -421,10 +426,7 @@ static void substitute_one(char **line_p, char **pos_p, int *width_p,
 	if (value != NULL) {
 		xasprintf(&line, "%s%s%s", line, value, endpos + 1);
 		*pos_p = line + (*pos_p - *line_p);
-		if (strcmp(value, "$") == 0) {
-			(*pos_p)++;
-			(*width_p)++;
-		}
+		*literal_p = strlen(value);
 		free(*line_p);
 		*line_p = line;
 		free(value);
@@ -681,6 +683,7 @@ static void begin_new_source_file(text *txt, char **line_p, char **pos_p,
 	src->fmt = NULL;
 	src->transparent = transparent;
 	src->limit = -1;
+	src->literallen = 0;
 	txt->src = src;
 	tmp = NULL;
 	if (getline(&tmp, &tmpcap, fp) <= 0) {
@@ -736,6 +739,7 @@ static void begin_new_formatted_source(text *txt, char **line_p, char **pos_p,
 	src->fmt = fmt;
 	src->transparent = transparent;
 	src->limit = -1;
+	src->literallen = 0;
 	txt->src = src;
 	str = (*fmt->get)(fmt->state);
 	if (str == NULL) {
@@ -1112,6 +1116,7 @@ char *get_processed_text_line(text *txt, bool headers, struct ml *ml)
 	int directive, inhibitbreak;
 	int peeking = 0; /* for a failed conditional without an else */
 	int skipwhite; /* skip whitespace after a conditional directive */
+	int literal = 0; /* bytes from pos on that are substituted data */
 	int swallow;
 	char utf8char[5] = {0, 0, 0, 0, 0};
 
@@ -1259,6 +1264,11 @@ char *get_processed_text_line(text *txt, bool headers, struct ml *ml)
 						xasprintf(&tmp, "%s%s", prev, pos);
 					}
 				}
+				/* Its leading whitespace was dropped */
+				literal = txt->src->literallen - (pos - line);
+				if (literal < 0)
+					literal = 0;
+				txt->src->literallen = 0;
 				free(line);
 				line = tmp;
 				free(prev);
@@ -1277,6 +1287,8 @@ char *get_processed_text_line(text *txt, bool headers, struct ml *ml)
 			pos = line + processedlen;
 			len = processedlen;
 			width = processedwidth;
+			literal = txt->src->literallen;
+			txt->src->literallen = 0;
 			linebreak = 0;
 			linebreakwidth = 0;
 			skipwhite = 0;
@@ -1309,6 +1321,10 @@ char *get_processed_text_line(text *txt, bool headers, struct ml *ml)
 				txt->src->upcoming = xstrdup(pos);
 				txt->src->processedlen = 0;
 				txt->src->processedwidth = 0;
+				/* A value can span lines; its next line is
+				 * still data. */
+				txt->src->literallen =
+					literal > skip ? literal - skip : 0;
 				break;
 			} else if (*pos == ' ') {
 				if (txt->skip == NULL &&
@@ -1321,9 +1337,9 @@ char *get_processed_text_line(text *txt, bool headers, struct ml *ml)
 			} else if (*pos == '\t') {
 				/* Avoid breaking due to peeking */
 				inhibitbreak = 0;
-			} else if (txt->src->transparent) {
+			} else if (txt->src->transparent || literal > 0) {
 				/* Do nothing if the file is to be included
-			 	 * transparently */
+				 * transparently, or for substituted data */
 				if (peeking && txt->skip == NULL) break;
 				inhibitbreak = 0;
 			} else if (*pos == '\\' && txt->skip == NULL) {
@@ -1354,11 +1370,12 @@ char *get_processed_text_line(text *txt, bool headers, struct ml *ml)
 				continue;
 			} else if (*pos == '$' && txt->skip == NULL) {
 				if (peeking) break;
-				substitute_one(&line, &pos, &width, ml->fd, ml->ctrlfd, txt);
+				substitute_one(&line, &pos, &width, &literal,
+						ml->fd, ml->ctrlfd, txt);
 				if (len != pos - line) {
 					/* Cancel any break inhibition if the
 					 * length changed (which will be
-					 * because of $$) */
+					 * because of a lone '$') */
 					inhibitbreak = 0;
 					len = pos - line;
 				}
@@ -1444,6 +1461,8 @@ char *get_processed_text_line(text *txt, bool headers, struct ml *ml)
 				}
 			}
 			pos++;
+			if (literal > 0)
+				literal--;
 			skipwhite = 0;
 		}
 
@@ -1483,6 +1502,7 @@ char *get_processed_text_line(text *txt, bool headers, struct ml *ml)
 			if (linebreak != 0) {
 				if (txt->src->upcoming == NULL) {
 				    tmp = xstrdup(line + linebreak);
+				    txt->src->literallen = literal;
 				} else {
 				    /* If something's coming up, it's because
 				     * it was a new line. */
@@ -1490,6 +1510,10 @@ char *get_processed_text_line(text *txt, bool headers, struct ml *ml)
 					xasprintf(&tmp, "%s\n%s",
 					    line + linebreak, txt->src->upcoming);
 					free(txt->src->upcoming);
+					/* resuming at the "\n", which is data
+					 * if what follows it is */
+					if (txt->src->literallen > 0)
+						txt->src->literallen++;
 				    } else {
 				    	tmp = txt->src->upcoming;
 				    }
@@ -1529,12 +1553,16 @@ char *get_processed_text_line(text *txt, bool headers, struct ml *ml)
 					txt->src->upcoming = line;
 					txt->src->processedlen = len;
 					txt->src->processedwidth = width;
+					txt->src->literallen = literal;
 				} else {
 					tmp = txt->src->upcoming;
 					xasprintf(&txt->src->upcoming, "%s\n%s",
 					    line, txt->src->upcoming);
 					txt->src->processedlen = len;
 					txt->src->processedwidth = width;
+					/* as when wrapping above */
+					if (txt->src->literallen > 0)
+						txt->src->literallen++;
 					free(line);
 					free(tmp);
 				}

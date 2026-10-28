@@ -175,6 +175,7 @@ ATF_TC_WITHOUT_HEAD(get_processed_text_line);
 ATF_TC_WITHOUT_HEAD(get_processed_text_line_directives);
 ATF_TC_WITHOUT_HEAD(get_processed_text_line_crlf);
 ATF_TC_WITHOUT_HEAD(get_processed_text_line_includes);
+ATF_TC_WITHOUT_HEAD(get_processed_text_line_values_literal);
 ATF_TC_WITHOUT_HEAD(newsmtp);
 ATF_TC_WITHOUT_HEAD(save_queue);
 ATF_TC_WITHOUT_HEAD(send_single_mail);
@@ -3106,6 +3107,134 @@ ATF_TC_BODY(get_processed_text_line_includes, tc)
 	ret = get_processed_text_line(txt, true, &ml);
 	ATF_REQUIRE(ret != NULL);
 	ATF_REQUIRE_STREQ(ret, "c");
+	close_text(txt);
+}
+
+ATF_TC_BODY(get_processed_text_line_values_literal, tc)
+{
+	struct ml ml;
+	char *ret;
+	int fd;
+	text *txt;
+
+	init_ml(true);
+	ml_init(&ml);
+	ml.dir = "list";
+	ATF_REQUIRE(ml_open(&ml, false));
+	atf_utils_create_file("list/control/owner", "secret@example.org\n");
+
+	/*
+	 * Substituted values such as $subject$ come from incoming mail, so
+	 * '$' tokens and '%' directives inside them must stay literal: a
+	 * Subject: of "$control owner$" must not disclose the control file
+	 * to the poster, and one of "$subject$" must not loop forever.
+	 */
+	atf_utils_create_file("intextval", "%s",
+	    "Subject: pre $subject$ post\n"
+	    "a$$b $dollar$ c\n");
+	fd = open("intextval", O_RDONLY);
+	txt = open_text_fd(fd);
+	ATF_REQUIRE(txt != NULL);
+	register_default_unformatted(txt, &ml);
+	register_unformatted(txt, "subject",
+	    "$control owner$ %control owner% $subject$ $listaddr$");
+	register_unformatted(txt, "dollar", "$$");
+
+	ret = get_processed_text_line(txt, true, &ml);
+	ATF_REQUIRE(ret != NULL);
+	ATF_REQUIRE_STREQ(ret, "Subject: pre $control owner$ %control owner%"
+	    " $subject$ $listaddr$ post");
+	ret = get_processed_text_line(txt, true, &ml);
+	ATF_REQUIRE(ret != NULL);
+	ATF_REQUIRE_STREQ(ret, "a$b $$ c");
+	close_text(txt);
+
+	/*
+	 * A value spanning several lines ($control C$ and $text T$ are
+	 * documented to allow that) is split at its line breaks, and stays
+	 * literal past them, also across a blank line.
+	 */
+	atf_utils_create_file("intextval", "%s", "a $multi$ b\n");
+	fd = open("intextval", O_RDONLY);
+	txt = open_text_fd(fd);
+	ATF_REQUIRE(txt != NULL);
+	register_default_unformatted(txt, &ml);
+	register_unformatted(txt, "multi",
+	    "x\n$control owner$\n\n%control owner% y");
+
+	ret = get_processed_text_line(txt, false, &ml);
+	ATF_REQUIRE(ret != NULL);
+	ATF_REQUIRE_STREQ(ret, "a x");
+	ret = get_processed_text_line(txt, false, &ml);
+	ATF_REQUIRE(ret != NULL);
+	ATF_REQUIRE_STREQ(ret, "$control owner$");
+	ret = get_processed_text_line(txt, false, &ml);
+	ATF_REQUIRE(ret != NULL);
+	ATF_REQUIRE_STREQ(ret, "");
+	ret = get_processed_text_line(txt, false, &ml);
+	ATF_REQUIRE(ret != NULL);
+	ATF_REQUIRE_STREQ(ret, "%control owner% y b");
+	close_text(txt);
+
+	/* Peeking past a blank line must not lose track of where the value
+	 * ends either, or its final '$' would open a token in the text
+	 * following it. */
+	atf_utils_create_file("intextval", "%s", "a $multi$listaddr$\n");
+	fd = open("intextval", O_RDONLY);
+	txt = open_text_fd(fd);
+	ATF_REQUIRE(txt != NULL);
+	register_default_unformatted(txt, &ml);
+	register_unformatted(txt, "multi", "x\n\n \nfoo $");
+
+	ret = get_processed_text_line(txt, false, &ml);
+	ATF_REQUIRE(ret != NULL);
+	ATF_REQUIRE_STREQ(ret, "a x");
+	ret = get_processed_text_line(txt, false, &ml);
+	ATF_REQUIRE(ret != NULL);
+	ATF_REQUIRE_STREQ(ret, "");
+	ret = get_processed_text_line(txt, false, &ml);
+	ATF_REQUIRE(ret != NULL);
+	ATF_REQUIRE_STREQ(ret, " ");
+	ret = get_processed_text_line(txt, false, &ml);
+	ATF_REQUIRE(ret != NULL);
+	ATF_REQUIRE_STREQ(ret, "foo $listaddr$");
+	close_text(txt);
+
+	/*
+	 * Spaces inside a value are still wrap points, and the part of the
+	 * value carried over to the next line stays literal.
+	 */
+	atf_utils_create_file("intextval", "%s", "%wrap 20%w $subject$ end\n");
+	fd = open("intextval", O_RDONLY);
+	txt = open_text_fd(fd);
+	ATF_REQUIRE(txt != NULL);
+	register_default_unformatted(txt, &ml);
+	register_unformatted(txt, "subject",
+	    "one two three four $listaddr$ six");
+
+	ret = get_processed_text_line(txt, false, &ml);
+	ATF_REQUIRE(ret != NULL);
+	ATF_REQUIRE_STREQ(ret, "w one two three");
+	ret = get_processed_text_line(txt, false, &ml);
+	ATF_REQUIRE(ret != NULL);
+	ATF_REQUIRE_STREQ(ret, "four $listaddr$ six");
+	ret = get_processed_text_line(txt, false, &ml);
+	ATF_REQUIRE(ret != NULL);
+	ATF_REQUIRE_STREQ(ret, "end");
+	close_text(txt);
+
+	/* The same when a line of a value is joined to the wrapped line
+	 * before it, which drops its leading whitespace. */
+	atf_utils_create_file("intextval", "%s", "%wrap 30%w $subject$$$ end\n");
+	fd = open("intextval", O_RDONLY);
+	txt = open_text_fd(fd);
+	ATF_REQUIRE(txt != NULL);
+	register_default_unformatted(txt, &ml);
+	register_unformatted(txt, "subject", "one\n  $listaddr$");
+
+	ret = get_processed_text_line(txt, false, &ml);
+	ATF_REQUIRE(ret != NULL);
+	ATF_REQUIRE_STREQ(ret, "w one $listaddr$$ end");
 	close_text(txt);
 }
 
@@ -6470,6 +6599,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, get_processed_text_line_directives);
 	ATF_TP_ADD_TC(tp, get_processed_text_line_crlf);
 	ATF_TP_ADD_TC(tp, get_processed_text_line_includes);
+	ATF_TP_ADD_TC(tp, get_processed_text_line_values_literal);
 	ATF_TP_ADD_TC(tp, newsmtp);
 	ATF_TP_ADD_TC(tp, save_queue);
 	ATF_TP_ADD_TC(tp, send_single_mail);
