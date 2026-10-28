@@ -3201,6 +3201,33 @@ ATF_TC_BODY(get_processed_text_line_values_literal, tc)
 	close_text(txt);
 
 	/*
+	 * The lines of a formatted source (subscriber addresses, archived
+	 * subjects in a digest, ...) are data too: no expansion, and no
+	 * \u decoding, which is only meant for the list texts themselves.
+	 */
+	atf_utils_create_file("intextval", "%s", "a %lines%\n");
+	fd = open("intextval", O_RDONLY);
+	txt = open_text_fd(fd);
+	ATF_REQUIRE(txt != NULL);
+	register_default_unformatted(txt, &ml);
+	memory_lines_state *mls = init_memory_lines(
+	    "$control owner$\n%control owner%\n\\u0041");
+	register_formatted(txt, "lines",
+	    rewind_memory_lines, get_memory_line, mls);
+
+	ret = get_processed_text_line(txt, false, &ml);
+	ATF_REQUIRE(ret != NULL);
+	ATF_REQUIRE_STREQ(ret, "a $control owner$");
+	ret = get_processed_text_line(txt, false, &ml);
+	ATF_REQUIRE(ret != NULL);
+	ATF_REQUIRE_STREQ(ret, "a %control owner%");
+	ret = get_processed_text_line(txt, false, &ml);
+	ATF_REQUIRE(ret != NULL);
+	ATF_REQUIRE_STREQ(ret, "a \\u0041");
+	close_text(txt);
+	finish_memory_lines(mls);
+
+	/*
 	 * Spaces inside a value are still wrap points, and the part of the
 	 * value carried over to the next line stays literal.
 	 */

@@ -702,7 +702,7 @@ static void begin_new_source_file(text *txt, char **line_p, char **pos_p,
 
 
 static void begin_new_formatted_source(text *txt, char **line_p, char **pos_p,
-		int *width_p, char *suffix, struct formatted *fmt, int transparent) {
+		int *width_p, char *suffix, struct formatted *fmt) {
 	char *line = *line_p;
 	char *pos = *pos_p;
 	const char *str;
@@ -737,7 +737,9 @@ static void begin_new_formatted_source(text *txt, char **line_p, char **pos_p,
 	}
 	src->fp = NULL;
 	src->fmt = fmt;
-	src->transparent = transparent;
+	/* The lines are runtime data (subscriber addresses, archived
+	 * subjects, ...), not list text, so they are never expanded. */
+	src->transparent = 1;
 	src->limit = -1;
 	src->literallen = 0;
 	txt->src = src;
@@ -749,7 +751,6 @@ static void begin_new_formatted_source(text *txt, char **line_p, char **pos_p,
 		*width_p = 0;
 		return;
 	}
-	if (!transparent) str = unistr_escaped_to_utf8(str);
 	xasprintf(&line, "%s%s", line, str);
 	/* The suffix will be added back in get_processed_text_line() */
 	*pos_p = line + strlen(*line_p);
@@ -1088,7 +1089,7 @@ static int handle_directive(text *txt, char **line_p, char **pos_p,
 		fmt = txt->fmts.d[_i];
 		if (strcmp(token, fmt->token) == 0) {
 			begin_new_formatted_source(txt, line_p, pos_p, width_p,
-					endpos + 1, fmt, 0);
+					endpos + 1, fmt);
 			return 0;
 		}
 	}
