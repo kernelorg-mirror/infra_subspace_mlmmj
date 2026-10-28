@@ -4463,6 +4463,25 @@ ATF_TC_BODY(unistr_header_to_utf8, tc)
     out = unistr_header_to_utf8("=?us-ascii?Q?useless_but_why_not?=");
     ATF_REQUIRE(out != NULL);
     ATF_REQUIRE_STREQ(out, "useless but why not");
+
+    /* The decoded value ends up in headers of mails mlmmj sends, so a
+     * CR or LF must never come out of it (whether encoded or not), nor
+     * a NUL hiding the rest of the value. */
+    out = unistr_header_to_utf8("=?utf-8?q?a=0ABcc:_x=0Db?=");
+    ATF_REQUIRE(out != NULL);
+    ATF_REQUIRE_STREQ(out, "a Bcc: x b");
+
+    out = unistr_header_to_utf8("=?utf-8?q?a=00b?=");
+    ATF_REQUIRE(out != NULL);
+    ATF_REQUIRE_STREQ(out, "a b");
+
+    out = unistr_header_to_utf8("=?utf-8?b?YQpCY2M6IHgNAGI=?=");
+    ATF_REQUIRE(out != NULL);
+    ATF_REQUIRE_STREQ(out, "a Bcc: x  b");
+
+    out = unistr_header_to_utf8("a\rBcc: x");
+    ATF_REQUIRE(out != NULL);
+    ATF_REQUIRE_STREQ(out, "a Bcc: x");
 }
 
 ATF_TC_BODY(unistr_utf8_to_header, tc)

@@ -273,8 +273,7 @@ char *unistr_to_utf8(const unistr *str)
 static void
 decode_quoted_print(char *str, char **binary, size_t *bin_len)
 {
-	*binary = decode_qp(str, true);
-	*bin_len = strlen(*binary);
+	*binary = decode_qp_len(str, true, bin_len);
 }
 
 
@@ -445,6 +444,15 @@ char *unistr_header_to_utf8(const char *str)
 	}
 
 	free(my_str);
+
+	/* The value ends up in headers of the mails mlmmj sends, where a
+	 * CR or LF would start a new header (or the body), and a NUL would
+	 * hide the rest of the value. */
+	for (size_t i = 0; i < us->len; i++) {
+		if (us->chars[i] == '\r' || us->chars[i] == '\n' ||
+		    us->chars[i] == '\0')
+			us->chars[i] = ' ';
+	}
 
 	ret = unistr_to_utf8(us);
 	unistr_free(us);

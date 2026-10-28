@@ -47,6 +47,7 @@ const char *mybasename(const char *path);
 char *genmsgid(const char *fqdn);
 char *gendatestr(void);
 char *decode_qp(const char *qpstr, bool qformat);
+char *decode_qp_len(const char *qpstr, bool qformat, size_t *lenp);
 bool splitlistaddr(const char *listaddr, char **listname, const char **listfqdn);
 char *disarm_email(const char *from);
 

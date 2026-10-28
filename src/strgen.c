@@ -239,8 +239,12 @@ decode_char(const char *s)
 	return (16 * hexval(toupper(s[1])) + hexval(toupper(s[2])));
 }
 
+/*
+ * The decoded data may contain NUL bytes ("=00"); callers treating it as
+ * binary data get its real length through lenp.
+ */
 char *
-decode_qp(const char *qpstr, bool qformat)
+decode_qp_len(const char *qpstr, bool qformat, size_t *lenp)
 {
 	sb_t str = sb_init();
 
@@ -279,7 +283,15 @@ decode_qp(const char *qpstr, bool qformat)
 		qpstr++;
 	}
 
+	if (lenp != NULL)
+		*lenp = str.len;
 	return (sb_get(&str));
+}
+
+char *
+decode_qp(const char *qpstr, bool qformat)
+{
+	return (decode_qp_len(qpstr, qformat, NULL));
 }
 
 /*
