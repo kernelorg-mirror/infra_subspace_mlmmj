@@ -207,7 +207,7 @@ get_subcookie_content(int listfd, bool unsub, const char *param)
 	int dfd, fd;
 	char *line = NULL;
 
-	dfd = openat(listfd, unsub ? "unsubconf" : "subconf", O_DIRECTORY|O_CLOEXEC);
+	dfd = open_beneath(listfd, unsub ? "unsubconf" : "subconf", O_DIRECTORY);
 	if (dfd == -1) {
 		log_error(LOG_ARGS, "Cannot open %ssubconf Ignoring mail", unsub ? "un" : "");
 		return (NULL);
@@ -296,7 +296,7 @@ generate_subconfirm(struct ml *ml, const char *subaddr, enum subtype typesub,
 	char *queuefilename = NULL, *fromaddr;
 	char *randomstr = NULL, *confirmaddr;
 	const char *tmpstr, *listtext;
-	int fd = openat(ml->fd, sub ? "subconf" : "unsubconf", O_DIRECTORY|O_CLOEXEC);
+	int fd = open_beneath(ml->fd, sub ? "subconf" : "unsubconf", O_DIRECTORY);
 	struct mail mail = { 0 };
 
 	if (fd == -1) {

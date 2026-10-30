@@ -74,7 +74,7 @@ send_probe(struct ml *ml, const char *addr)
 		return (false);
 	}
 	*a = '@';
-	bfd = openat(ml->fd, "bounce", O_DIRECTORY);
+	bfd = open_beneath(ml->fd, "bounce", O_DIRECTORY);
 	if (bfd == -1) {
 		free(myaddr);
 		free(from);
@@ -492,7 +492,7 @@ bouncemail(int listfd, const char *theaddress, const char *identifier)
 	if (strcmp(identifier, "confsub") == 0 ||
 	    strcmp(identifier, "confunsub") == 0) {
 		const char *dir = (identifier[4] == 's') ? "subconf" : "unsubconf";
-		fd = openat(listfd, dir, O_DIRECTORY);
+		fd = open_beneath(listfd, dir, O_DIRECTORY);
 		if (fd != -1) {
 			unlinkat(fd, address, 0);
 			close(fd);
@@ -502,7 +502,7 @@ bouncemail(int listfd, const char *theaddress, const char *identifier)
 	}
 
 	/* Open bounce directory for remaining bounce types */
-	bdfd = openat(listfd, "bounce", O_DIRECTORY|O_CLOEXEC);
+	bdfd = open_beneath(listfd, "bounce", O_DIRECTORY);
 	if (bdfd == -1) {
 		log_error(LOG_ARGS, "No bounce directory");
 		free(address);
@@ -572,6 +572,7 @@ void
 save_lastbouncedmsg(int listfd, const char *address, const char *mailname)
 {
 	char *savename, *fname;
+	int bfd;
 
 	/* see bouncemail() */
 	if (strchr(address, '/') != NULL) {
@@ -581,8 +582,17 @@ save_lastbouncedmsg(int listfd, const char *address, const char *mailname)
 	}
 	fname = lowercase(address);
 
-	xasprintf(&savename, "bounce/%s.lastmsg", fname);
-	renameat(AT_FDCWD, mailname, listfd, savename);
+	bfd = open_beneath(listfd, "bounce", O_DIRECTORY);
+	if (bfd == -1) {
+		log_error(LOG_ARGS, "Could not open the bounce directory");
+		free(fname);
+		return;
+	}
+	xasprintf(&savename, "%s.lastmsg", fname);
+	if (renameat(AT_FDCWD, mailname, bfd, savename) < 0)
+		log_error(LOG_ARGS, "Could not rename(%s) to bounce/%s",
+		    mailname, savename);
+	close(bfd);
 	free(savename);
 	free(fname);
 }

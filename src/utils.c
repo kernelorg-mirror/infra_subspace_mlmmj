@@ -366,3 +366,25 @@ line_startwithany(const char *el, const strlist *list,  bool ignore_case)
 
 	return (false);
 }
+
+int
+open_beneath(int dirfd, const char *path, int flags)
+{
+	int fd;
+#ifdef FD_RESOLVE_BENEATH
+	int fdflags;
+#endif
+
+	fd = openat(dirfd, path, flags | O_CLOEXEC);
+	if (fd == -1)
+		return (-1);
+#ifdef FD_RESOLVE_BENEATH
+	/* Every lookup relative to this descriptor, including unlinkat(2)
+	 * and renameat(2), must stay beneath it.  The flag is inherited by
+	 * descriptors opened with openat(2). */
+	fdflags = fcntl(fd, F_GETFD);
+	if (fdflags != -1)
+		(void)fcntl(fd, F_SETFD, fdflags | FD_RESOLVE_BENEATH);
+#endif
+	return (fd);
+}

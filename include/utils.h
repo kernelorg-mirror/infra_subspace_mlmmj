@@ -39,6 +39,7 @@ void exec_or_die(const char *arg, ...);
 int exec_and_wait(const char *arg, ...);
 time_t strtotimet(const char *np, const char **errpp);
 bool lock(int fd, bool write);
+int open_beneath(int dirfd, const char *path, int flags);
 bool find_email(strlist *list, strlist *matches, const char *delim, char **recipextra);
 char *readlf(int fd, bool oneline);
 bool line_startwithany(const char *el, const strlist *list, bool ignore_case);

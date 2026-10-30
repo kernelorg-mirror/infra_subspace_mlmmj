@@ -52,7 +52,7 @@
 #define log(...) dprintf(logfd, __VA_ARGS__);
 #define opendirat(_dirfd, _fd, _dirent, _path) \
 	do { \
-		_fd = openat(_dirfd, _path, O_DIRECTORY|O_CLOEXEC|O_RDONLY); \
+		_fd = open_beneath(_dirfd, _path, O_DIRECTORY|O_RDONLY); \
 		if (_fd == -1 || (_dirent = fdopendir(_fd)) == NULL) { \
 			log(" - Could not open '%s': %s\n", _path, \
 			    strerror(errno)); \
@@ -96,6 +96,9 @@ delolder(int dfd, const char *dirname, time_t than, int logfd)
 
 	opendirat(dfd, fd, dir, dirname);
 	while((dp = readdir(dir)) != NULL) {
+		if (strcmp(dp->d_name, ".") == 0 ||
+		    strcmp(dp->d_name, "..") == 0)
+			continue;
 		if(fstatat(fd, dp->d_name, &st, 0) < 0) {
 			log(" - Could not stat(%s/%s): %s\n",
 			    dirname, dp->d_name, strerror(errno));
@@ -163,6 +166,9 @@ resend_queue(struct ml *ml, int logfd)
 	opendirat(ml->fd, qfd, queuedir, "queue");
 
 	while((dp = readdir(queuedir)) != NULL) {
+		if (strcmp(dp->d_name, ".") == 0 ||
+		    strcmp(dp->d_name, "..") == 0)
+			continue;
 		/* we might have deleted some files like the "mail.*" */
 		if(fstatat(qfd, dp->d_name, &st, 0) < 0)
 			continue;
