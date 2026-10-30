@@ -1,4 +1,17 @@
 2.2.4
+ o Security: do not expand $variables$ or %directives% in substituted
+   values or formatted sources; a crafted Subject: or subscriber address
+   could leak control files into notices, digests and +list replies, or
+   loop forever.
+ o Security: strip CR, LF and NUL from decoded headers to block header
+   injection (e.g. Bcc:).
+ o Security: refuse bouncing addresses containing '/', which could
+   delete or append to files outside bounce/, subconf/ and unsubconf/.
+ o Security: fix a heap overflow with a wide prefix before an included
+   source (e.g. "- %listsubs%").
+ o Bounces: where FD_RESOLVE_BENEATH is available, confine lookups
+   relative to bounce/, subconf/, unsubconf/ and the queue to those
+   directories.
  o control/access: a deny-<qualifier> rule reports its listtext only
    when it matches; a bare deny-<qualifier> rule matches every mail.
  o Moderation: no control/moderators is no longer fatal; the post is
