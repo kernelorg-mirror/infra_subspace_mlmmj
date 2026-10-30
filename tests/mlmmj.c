@@ -2385,6 +2385,21 @@ ATF_TC_BODY(get_ctrl_command, tc)
 	free(param);
 	ctrl = get_ctrl_command("get-a/b", &param);
 	ATF_REQUIRE(ctrl == NULL);
+
+	/* "unsubscribe" takes no parameter, so "unsubscribe-alias" must be
+	 * matched before it, or every alias request would be rejected. */
+	param = NULL;
+	ctrl = get_ctrl_command("unsubscribe", &param);
+	ATF_REQUIRE(ctrl != NULL);
+	ATF_REQUIRE(ctrl->type == CTRL_UNSUBSCRIBE);
+	ATF_REQUIRE(param == NULL);
+	ctrl = get_ctrl_command("unsubscribe-alias-old=example.com", &param);
+	ATF_REQUIRE(ctrl != NULL);
+	ATF_REQUIRE(ctrl->type == CTRL_UNSUBSCRIBE_ALIAS);
+	ATF_REQUIRE_STREQ(param, "old=example.com");
+	free(param);
+	ctrl = get_ctrl_command("unsubscribe-alias", &param);
+	ATF_REQUIRE(ctrl == NULL);
 }
 
 ATF_TC_BODY(get_recipextra_from_env_none, tc)

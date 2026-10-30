@@ -11,6 +11,8 @@ tests_init \
 	subscribe_nomail \
 	subscribe_nomail_confunsub \
 	subscribe_digest_confunsub \
+	unsubscribe_alias \
+	unsubscribe_alias_parse \
 	subscribe_both \
 	ctrl_list \
 	ctrl_help \
@@ -1516,7 +1518,10 @@ You can subscribe to the following versions:
   or another subscribed email address. Subscribe by emailing
   <test+subscribe-nomail@mlmmjtest>.
 
-Unsubscribe by emailing <test+unsubscribe@mlmmjtest>.
+Unsubscribe by emailing <test+unsubscribe@mlmmjtest>. If you cannot send
+mail from your subscribed address any more, for example you@example.com,
+email <test+unsubscribe-alias-you=example.com@mlmmjtest> instead. A
+confirmation is then sent to that address.
 
 Posts are made by emailing <test@mlmmjtest>.
 
@@ -3824,4 +3829,106 @@ EOF
 	if [ "$remaining" -ne 1 ]; then
 		atf_fail "Expected 1 file left in moderation, got $remaining"
 	fi
+}
+
+unsubscribe_alias_body()
+{
+	init_ml list
+	rmdir list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
+	echo test@mlmmjtest > list/control/listaddress
+	start_fakesmtp list
+	echo "heloname" > list/control/smtphelo
+	# The alias form must ask for confirmation even when the list skips
+	# it: the cookie sent to the subscribed address is the only proof
+	# that the requester receives its mail.
+	touch list/control/nosubconfirm
+	echo "old@test" > list/subscribers.d/o
+
+	cat > unsubscribe <<EOF
+From: new@test
+To: test+unsubscribe-alias-old=test@mlmmjtest
+EOF
+	atf_check $mlmmjreceive -L list -F <unsubscribe
+	cat > expected-1.txt <<EOF
+EHLO heloname
+MAIL FROM:<test+bounces-confunsub-@mlmmjtest>
+RCPT TO:<old@test>
+DATA
+Subject: =?utf-8?q?Confirm_unsubscribe_from_test=40mlmmjtest?=
+From: test+help@mlmmjtest
+To: old@test
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Reply-To: test+confunsub-@mlmmjtest
+
+Hi, this is the Mlmmj program managing the <test@mlmmjtest> mailing list.
+
+Somebody (and we hope it was you) has requested that the email address
+<old@test> be removed from the list.
+
+To confirm you want to do this, please send a message to
+<test+confunsub-@mlmmjtest> which can usually be done
+simply by replying to this message. The subject and the body of the message
+can be anything.
+
+After doing so, you should receive a reply informing you that the operation
+succeeded.
+
+If you do not want to do this, simply ignore this message.
+
+
+.
+QUIT
+EOF
+	atf_check -o file:expected-1.txt sed -e "/^Message-ID:/d; /^Date:/d; s/confunsub-.*@mlmmjtest/confunsub-@mlmmjtest/g" mail-1.txt
+	atf_check -o inline:"old@test\n" cat list/subscribers.d/o
+
+	# Replying from the new address is enough: the cookie is the proof.
+	var=$(ls list/unsubconf)
+	cat > confirm-unsub <<EOF
+From: new@test
+To: test+confunsub-${var}@mlmmjtest
+EOF
+	atf_check $mlmmjreceive -L list -F <confirm-unsub
+	atf_check -o match:"^RCPT TO:<old@test>" cat mail-2.txt
+	atf_check -o match:"Subject: =\?utf-8\?q\?Goodbye_from" cat mail-2.txt
+	atf_check -s exit:1 test -f list/subscribers.d/o
+}
+
+unsubscribe_alias_parse_body()
+{
+	init_ml list
+	rmdir list/text
+	ln -s ${top_srcdir}/listtexts/en list/text
+	echo test@mlmmjtest > list/control/listaddress
+	start_fakesmtp list
+	echo "heloname" > list/control/smtphelo
+	echo "a=b@test" > list/subscribers.d/a
+
+	# Not an address once decoded: nothing is sent.
+	cat > noat <<EOF
+From: new@test
+To: test+unsubscribe-alias-oldtest@mlmmjtest
+EOF
+	atf_check $mlmmjreceive -L list -F <noat
+	# Not subscribed: nothing is sent, as with the plain form.
+	cat > notsubbed <<EOF
+From: new@test
+To: test+unsubscribe-alias-other=test@mlmmjtest
+EOF
+	atf_check $mlmmjreceive -L list -F <notsubbed
+	atf_check -s exit:1 test -f mail-1.txt
+	atf_check -o empty ls list/unsubconf
+
+	# A domain has no "=", so only the last one is the "@"; the address
+	# is also lowercased like any other unsubscribe request.
+	cat > localeq <<EOF
+From: new@test
+To: test+unsubscribe-alias-A=B=Test@mlmmjtest
+EOF
+	atf_check $mlmmjreceive -L list -F <localeq
+	atf_check -o match:"^RCPT TO:<a=b@test>" cat mail-1.txt
+	atf_check -o inline:"a=b@test" cat list/unsubconf/*
 }

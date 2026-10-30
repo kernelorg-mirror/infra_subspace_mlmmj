@@ -46,6 +46,10 @@ subscribers receive a copy of it.
   %^%%wrap%Unsubscribe by contacting a list administrator.
 %else%
   %^%%wrap%Unsubscribe by emailing <$list+$unsubscribe@$domain$>.
+  If you cannot send mail from your subscribed address any more, for
+  example you@example.com, email
+  <$list+$unsubscribe-alias-you=example.com@$domain$> instead. A
+  confirmation is then sent to that address.
 %endif%
 
 %wrap%Posts are made by emailing <$list$@$domain$>.

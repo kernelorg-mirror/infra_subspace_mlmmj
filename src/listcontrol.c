@@ -70,6 +70,7 @@ static struct ctrl_command ctrl_commands[] = {
 	{ "confsub",            true , false, true , CTRL_CONFSUB },
 	{ "unsubscribe-digest", false, false, true , CTRL_UNSUBSCRIBE_DIGEST },
 	{ "unsubscribe-nomail", false, false, true , CTRL_UNSUBSCRIBE_NOMAIL },
+	{ "unsubscribe-alias",  true , false, true , CTRL_UNSUBSCRIBE_ALIAS },
 	{ "unsubscribe",        false, false, true , CTRL_UNSUBSCRIBE },
 	{ "confunsub-digest",   true , false, true , CTRL_CONFUNSUB_DIGEST },
 	{ "confunsub-nomail",   true , false, true , CTRL_CONFUNSUB_NOMAIL },
@@ -103,14 +104,16 @@ struct sub {
 	enum subtype typesub;
 };
 
+/* "where" names the source of the address, so the log points an
+ * administrator at the right header or parameter. */
 static bool
-is_valid_email(const char *email, const char *log)
+is_valid_email(const char *email, const char *log, const char *where)
 {
 	if (strchr(email, '@') == NULL) {
 		errno = 0;
 		log_error(LOG_ARGS, "%s request was "
-			    " sent with an invalid From: header."
-			    " Ignoring mail", log);
+			    " sent with an invalid %s."
+			    " Ignoring mail", log, where);
 		return (false);
 	}
 	/* A subscribed address later names files, such as bounce/<addr> */
@@ -125,8 +128,8 @@ is_valid_email(const char *email, const char *log)
 		if ((unsigned char)*p < 0x20) {
 			errno = 0;
 			log_error(LOG_ARGS, "%s request has "
-			    "control character in From: header."
-			    " Ignoring mail", log);
+			    "control character in %s."
+			    " Ignoring mail", log, where);
 			return (false);
 		}
 	}
@@ -136,7 +139,7 @@ is_valid_email(const char *email, const char *log)
 __dead2 static void
 lc_sub(struct listcontrol *lc, struct ml *ml, struct sub *sub)
 {
-	if (!is_valid_email(lc->fromemail, sub->typereq))
+	if (!is_valid_email(lc->fromemail, sub->typereq, "From: header"))
 		exit(EXIT_FAILURE);
 
 	if (sub->ctrlstr != NULL && statctrl(ml->ctrlfd, sub->ctrlstr)) {
@@ -557,12 +560,32 @@ int listcontrol(strlist *fromemails, strlist *rtoemails, struct ml *ml,
 	case CTRL_UNSUBSCRIBE_NOMAIL:
 	/* listname+unsubscribe@domain.tld */
 	case CTRL_UNSUBSCRIBE:
-		if (!is_valid_email(lc.fromemail, "An unsubscribe"))
+		if (!is_valid_email(lc.fromemail, "An unsubscribe",
+		    "From: header"))
 			return -1;
 		log_oper(ml->fd, OPLOGFNAME, "mlmmj-unsub: %s requests"
 			" unsubscribe", lc.fromemail);
 		do_unsubscribe(ml, lc.fromemail, SUB_ALL, SUB_REQUEST,
 		    false, lc.subconfirm, false, lc.subconfirm);
+		exit(EXIT_SUCCESS);
+		break;
+
+	/* listname+unsubscribe-alias-user=example.tld@domain.tld */
+	case CTRL_UNSUBSCRIBE_ALIAS:
+		/* A domain cannot contain '=', so the last one is the '@' */
+		c = strrchr(param, '=');
+		if (c != NULL)
+			*c = '@';
+		if (!is_valid_email(param, "An unsubscribe-alias",
+		    "address parameter"))
+			return -1;
+		log_oper(ml->fd, OPLOGFNAME, "mlmmj-unsub: %s requests"
+			" unsubscribe of %s", lc.fromemail, param);
+		/* Confirm even with nosubconfirm: anyone can name any
+		 * address here, so the cookie sent to it is the only proof
+		 * that the requester receives its mail. */
+		do_unsubscribe(ml, param, SUB_ALL, SUB_REQUEST,
+		    false, true, false, true);
 		exit(EXIT_SUCCESS);
 		break;
 
@@ -771,7 +794,8 @@ permit:
 
 	/* listname+help@domain.tld */
 	case CTRL_HELP:
-		if (!is_valid_email(fromemails->d[0], "A help"))
+		if (!is_valid_email(fromemails->d[0], "A help",
+		    "From: header"))
 			return -1;
 		log_oper(ml->fd, OPLOGFNAME, "%s requested help",
 				fromemails->d[0]);
@@ -787,7 +811,8 @@ permit:
 
 	/* listname+faq@domain.tld */
 	case CTRL_FAQ:
-		if (!is_valid_email(fromemails->d[0], "A faq"))
+		if (!is_valid_email(fromemails->d[0], "A faq",
+		    "From: header"))
 			return -1;
 		log_oper(ml->fd, OPLOGFNAME, "%s requested faq",
 		    fromemails->d[0]);

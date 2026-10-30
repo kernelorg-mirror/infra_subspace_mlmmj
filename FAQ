@@ -4,6 +4,12 @@ A: They send a mail to listname+subscribe@domain.tld or
    people would send a mail to jokes+subscribe@humour.org to subscribe and
    jokes+unsubscribe@humour.org to unsubscribe
 
+Q: How can people unsubscribe an address they can no longer send mail from?
+A: For example, an old work address that now forwards to a new one. They send
+   a mail from any address to listname+unsubscribe-alias-user=example.com@domain.tld
+   to unsubscribe user@example.com. The confirmation goes to user@example.com,
+   so only someone who receives its mail can finish the unsubscribe.
+
 Q: Why is my queue/ in the listdirectory filled with files with cryptip names
    such as '4b35160eee7f63d' '287e3509509e4577' and '49123e175f68fcbc'
 A: mlmmj had a tendency of leaking files in the queue/ in the past. They're
