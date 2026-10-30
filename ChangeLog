@@ -1,4 +1,4 @@
-2.2.4
+2.2.3
  o Security: do not expand $variables$ or %directives% in substituted
    values or formatted sources; a crafted Subject: or subscriber address
    could leak control files into notices, digests and +list replies, or
@@ -23,7 +23,6 @@
  o Bounces: a probe that does not bounce in time puts the record to sleep
    instead of deleting it; a probe bouncing later still unsubscribes the
    address. Dormant records are removed after 30 days.
-2.2.3
  o Fix %moderators% in the moderation notice: list each moderator on
    its own line, they were concatenated on a single line by mistake.
  o $disarmedfrom$: replace a comma or semicolon in the From: display
