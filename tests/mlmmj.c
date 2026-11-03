@@ -169,6 +169,7 @@ ATF_TC_WITHOUT_HEAD(memory_lines);
 ATF_TC_WITHOUT_HEAD(text_0);
 ATF_TC_WITHOUT_HEAD(text_1);
 ATF_TC_WITHOUT_HEAD(file_lines);
+ATF_TC_WITHOUT_HEAD(format_msgid);
 ATF_TC_WITHOUT_HEAD(list_subs);
 ATF_TC_WITHOUT_HEAD(notify_sub);
 ATF_TC_WITHOUT_HEAD(get_processed_text_line);
@@ -193,6 +194,7 @@ ATF_TC_WITHOUT_HEAD(send_probe_no_probefile);
 ATF_TC_WITHOUT_HEAD(send_probe_arobase);
 ATF_TC_WITHOUT_HEAD(send_probe);
 ATF_TC_WITHOUT_HEAD(send_probe_archive);
+ATF_TC_WITHOUT_HEAD(send_probe_archive_msgidformat);
 ATF_TC_WITHOUT_HEAD(parse_content_type);
 ATF_TC_WITHOUT_HEAD(find_in_list);
 ATF_TC_WITHOUT_HEAD(do_access);
@@ -2759,6 +2761,33 @@ ATF_TC_BODY(file_lines, tc)
 	finish_file_lines(NULL);
 }
 
+ATF_TC_BODY(format_msgid, tc)
+{
+	/* The format comes from control/bouncemsgidformat, so only "%s" may
+	 * mean anything: any other '%' sequence must come out unchanged
+	 * rather than reach a printf(3)-style formatter. */
+	static const struct {
+		const char *fmt;
+		const char *value;
+		const char *expected;
+	} cases[] = {
+		{ "Message-ID: <%s>", " <a@b>", "Message-ID: <a@b>" },
+		{ "https://public-inbox.example.org/%s", "\t<a@b> ",
+		    "https://public-inbox.example.org/a@b" },
+		{ "%s and %s", "<a@b>", "a@b and a@b" },
+		{ "<%s>", " a@b", "<a@b>" },
+		{ "see the archives", "<a@b>", "see the archives" },
+		{ "100% %d %n %", "<a@b>", "100% %d %n %" },
+	};
+
+	for (size_t i = 0; i < NELEM(cases); i++) {
+		char *ret = format_msgid(cases[i].fmt, cases[i].value);
+		ATF_CHECK_STREQ_MSG(ret, cases[i].expected, "fmt '%s'",
+		    cases[i].fmt);
+		free(ret);
+	}
+}
+
 ATF_TC_BODY(list_subs, tc)
 {
 	struct ml ml;
@@ -4415,7 +4444,10 @@ ATF_TC_BODY(send_probe, tc)
 	}
 }
 
-ATF_TC_BODY(send_probe_archive, tc)
+/* Send a probe for a record whose first two messages are archived, and save
+ * the mail to mailout.txt */
+static void
+send_archived_probe(const atf_tc_t *tc, const char *msgidformat)
 {
 	init_ml(true);
 	struct ml ml;
@@ -4425,6 +4457,9 @@ ATF_TC_BODY(send_probe_archive, tc)
 	setup_listtext(tc);
 	atf_utils_create_file("list/control/smtpport", "25678");
 	atf_utils_create_file("list/control/smtphelo", "heloname");
+	if (msgidformat != NULL)
+		atf_utils_create_file("list/control/bouncemsgidformat", "%s",
+		    msgidformat);
 	int smtppipe[2];
 	ATF_REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, smtppipe) >= 0);
 	pid_t p2 = single_mail_reception(smtppipe[1]);
@@ -4446,19 +4481,32 @@ ATF_TC_BODY(send_probe_archive, tc)
 	}
 	atf_utils_wait(p2, 0, "save:mailout.txt", "");
 	atf_utils_wait(p, 0, "", "");
+}
 
-	if (!atf_utils_grep_file("- 1234, Message-ID: <msgid>\r", "mailout.txt")) {
+/* line is a regex */
+static void
+require_mail_line(const char *line)
+{
+	if (!atf_utils_grep_file("%s", "mailout.txt", line)) {
 		atf_utils_cat_file("mailout.txt", ">");
-		atf_tc_fail("invalid mail sent");
+		atf_tc_fail("missing line '%s' in the mail sent", line);
 	}
-	if (!atf_utils_grep_file("- 21, Message-ID: <msgid2>\r", "mailout.txt")) {
-		atf_utils_cat_file("mailout.txt", ">");
-		atf_tc_fail("invalid mail sent");
-	}
-	if (!atf_utils_grep_file("- 32\r", "mailout.txt")) {
-		atf_utils_cat_file("mailout.txt", ">");
-		atf_tc_fail("invalid mail sent");
-	}
+}
+
+ATF_TC_BODY(send_probe_archive, tc)
+{
+	send_archived_probe(tc, NULL);
+	require_mail_line("- 1234, Message-ID: <msgid>\r");
+	require_mail_line("- 21, Message-ID: <msgid2>\r");
+	require_mail_line("- 32\r");
+}
+
+ATF_TC_BODY(send_probe_archive_msgidformat, tc)
+{
+	send_archived_probe(tc, "https://public-inbox.example.org/%s\n");
+	require_mail_line("- 1234, https://public-inbox.example.org/msgid\r");
+	require_mail_line("- 21, https://public-inbox.example.org/msgid2\r");
+	require_mail_line("- 32\r");
 }
 
 ATF_TC_BODY(find_in_list, tc)
@@ -6667,6 +6715,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, text_0);
 	ATF_TP_ADD_TC(tp, text_1);
 	ATF_TP_ADD_TC(tp, file_lines);
+	ATF_TP_ADD_TC(tp, format_msgid);
 	ATF_TP_ADD_TC(tp, list_subs);
 	ATF_TP_ADD_TC(tp, notify_sub);
 	ATF_TP_ADD_TC(tp, get_processed_text_line);
@@ -6695,6 +6744,7 @@ ATF_TP_ADD_TCS(tp)
 	ATF_TP_ADD_TC(tp, send_probe_arobase);
 	ATF_TP_ADD_TC(tp, send_probe);
 	ATF_TP_ADD_TC(tp, send_probe_archive);
+	ATF_TP_ADD_TC(tp, send_probe_archive_msgidformat);
 	ATF_TP_ADD_TC(tp, parse_content_type);
 	ATF_TP_ADD_TC(tp, find_in_list);
 	ATF_TP_ADD_TC(tp, do_access);

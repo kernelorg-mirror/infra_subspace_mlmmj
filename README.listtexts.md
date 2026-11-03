@@ -406,7 +406,8 @@ appropriate for use in headers. They are:
 - %bouncenumbers%
   (available only in probe)
   the list of indexes of messages which may not have been received as they
-  bounced
+  bounced; for a message still in the archive, its Message-ID follows the
+  index, formatted by control/bouncemsgidformat (see TUNABLES.md)
 
 Directives which include a list of items have the behaviour that each item is
 preceded and followed by the same text as preceded and followed the directive
