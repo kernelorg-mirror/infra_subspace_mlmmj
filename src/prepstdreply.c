@@ -43,6 +43,8 @@
 #include "mlmmj.h"
 #include "unistr.h"
 #include "sb.h"
+#include "strview.h"
+#include "archive.h"
 #include "do_all_the_voodoo_here.h"
 
 struct substitution {
@@ -265,11 +267,10 @@ get_msgid_line(void *state)
 		{ "Message-ID", 0, NULL },
 		{ NULL, 0, NULL }
 	};
-	int archive_fd = openat(m->fd, "archive", O_DIRECTORY|O_RDONLY);
-	if (archive_fd == -1)
+	int index;
+	if (sv_to_int((strview_t){ id, strlen(id) }, &index) != 0 || index < 0)
 		return (id);
-	int msgfd = openat(archive_fd, id, O_RDONLY);
-	close(archive_fd);
+	int msgfd = archive_open(m->fd, index);
 	if (msgfd == -1)
 		return (id);
 	FILE *f = fdopen(msgfd, "r");
