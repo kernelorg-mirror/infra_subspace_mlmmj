@@ -264,7 +264,7 @@ get_msgid_line(void *state)
 	}
 	struct ml *m = (struct ml *)s->data;
 	struct mailhdr readhdrs[] = {
-		{ "Message-ID", 0, NULL },
+		{ "Message-ID:", 0, NULL },
 		{ NULL, 0, NULL }
 	};
 	int index;
