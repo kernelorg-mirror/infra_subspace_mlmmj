@@ -4417,7 +4417,11 @@ ATF_TC_BODY(send_probe_archive, tc)
 
 	atf_utils_create_file("list/bounce/bapt=freebsd.org", "1234:blabla\n21:hey\n32:ertt\n");
 	atf_utils_create_file("list/archive/1234", "From: bob@test\nMessage-ID: <msgid>\nX-None: bla\n\nContent\n");
-	atf_utils_create_file("list/archive/21", "From: bob@test\nMessage-ID: <msgid2>\nX-None: bla\n\nContent\n");
+	/* One flat and one partitioned message: a list keeps both layouts
+	 * until mlmmj-maintd has migrated its old flat archive */
+	mkdir("list/archive/2026", 0755);
+	mkdir("list/archive/2026/03", 0755);
+	atf_utils_create_file("list/archive/2026/03/21", "From: bob@test\nMessage-ID: <msgid2>\nX-None: bla\n\nContent\n");
 	pid_t p = atf_utils_fork();
 	if (p == 0) {
 		if (send_probe(&ml, "bapt=freebsd.org"))
