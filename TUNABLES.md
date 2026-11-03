@@ -180,6 +180,17 @@ entire content is used as value, it's marked "text".
    address probed again, so a short problem cannot unsubscribe an address
    that recovered. Dormant records are removed after 30 days.
 
+ * bouncemsgidformat		(normal)
+
+   How a bounced message is shown in the probe mail (`%bouncenumbers%`)
+   when it is still in the archive. Every `%s` is replaced with its
+   Message-ID, without the angle brackets. Any other text, including
+   other `%` signs, is kept as it is. Defaults to `Message-ID: <%s>`.
+   If your list archive can find a message by its Message-ID, you can
+   give subscribers a link instead, for example
+   `https://public-inbox.example.org/%s`. The Message-ID is inserted
+   verbatim, without any URL encoding.
+
  * noarchive			(boolean)
 
    If this file exists, the mail won't be saved in the archive but simply

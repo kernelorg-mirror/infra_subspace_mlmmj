@@ -51,6 +51,7 @@ file_lines_state *init_file_lines_fd(int fd, char truncate);
 file_lines_state *init_file_lines_data(int fd, char truncate, void *data);
 void rewind_file_lines(void *state);
 const char *get_file_line(void *state);
+char *format_msgid(const char *fmt, const char *value);
 const char *get_msgid_line(void *state);
 void finish_file_lines(file_lines_state *s);
 

@@ -143,6 +143,7 @@ struct file_lines_state {
 	size_t linecap;
 	char *formatted_str;
 	void *data;
+	char *msgidfmt;
 };
 
 
@@ -252,6 +253,32 @@ const char *get_file_line(void *state)
 	return s->line;
 }
 
+/*
+ * Render a Message-ID header value through fmt, replacing every "%s" with
+ * the id without its angle brackets.  fmt comes from a control file, so it
+ * is expanded here rather than handed to printf(3), and any other '%' is
+ * plain text.
+ */
+char *
+format_msgid(const char *fmt, const char *value)
+{
+	strview_t id = sv_trim((strview_t){ value, strlen(value) });
+	sb_t sb = sb_init();
+	const char *p;
+
+	if (id.len >= 2 && id.ptr[0] == '<' && id.ptr[id.len - 1] == '>') {
+		id.ptr++;
+		id.len -= 2;
+	}
+	while ((p = strstr(fmt, "%s")) != NULL) {
+		sb_cat_n(&sb, fmt, p - fmt);
+		sb_cat_n(&sb, id.ptr, id.len);
+		fmt = p + 2;
+	}
+	sb_cat(&sb, fmt);
+	return (sb_get(&sb));
+}
+
 const char *
 get_msgid_line(void *state)
 {
@@ -284,9 +311,20 @@ get_msgid_line(void *state)
 		free_mailhdrs(readhdrs);
 		return (id);
 	}
+	/* Lists whose archives can be browsed by Message-ID can point
+	 * subscribers straight at the message, e.g. with a URL.  The format
+	 * is the same for every line, so read it once per probe. */
+	if (s->msgidfmt == NULL) {
+		s->msgidfmt = ctrlvalue(m->ctrlfd, "bouncemsgidformat");
+		if (s->msgidfmt == NULL || *s->msgidfmt == '\0') {
+			free(s->msgidfmt);
+			s->msgidfmt = xstrdup("Message-ID: <%s>");
+		}
+	}
+	char *msgid = format_msgid(s->msgidfmt, readhdrs[0].values[0]);
 	free(s->formatted_str);
-	xasprintf(&s->formatted_str, "%s, %s%s",
-	    id, readhdrs[0].token, readhdrs[0].values[0]);
+	xasprintf(&s->formatted_str, "%s, %s", id, msgid);
+	free(msgid);
 	free_mailhdrs(readhdrs);
 	return (s->formatted_str);
 }
@@ -296,6 +334,7 @@ void finish_file_lines(file_lines_state *s)
 	if (s == NULL) return;
 	free(s->line);
 	free(s->formatted_str);
+	free(s->msgidfmt);
 	if (s->fp != NULL) fclose(s->fp);
 	free(s);
 }
